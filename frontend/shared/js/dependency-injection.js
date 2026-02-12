@@ -487,6 +487,64 @@ const DependencyInjection = (function() {
                 "target_field": "talent_gaps_context",
                 "display_label": "Talent Gaps"
             }]
+        },
+        "employer-branding": {
+            "depends_on": ["values", "dream", "fit-abc-analysis", "org-redesign", "value-proposition"],
+            "fields": [{
+                "source_tool": "values",
+                "source_field": "identity.values.cool_not_cool",
+                "target_field": "behaviors_context",
+                "display_label": "Cool/Not-Cool Behaviors"
+            }, {
+                "source_tool": "dream",
+                "source_field": "identity.dream.one_sentence",
+                "target_field": "dream_context",
+                "display_label": "One-Sentence Dream"
+            }, {
+                "source_tool": "fit-abc-analysis",
+                "source_field": "org.abc.talent_gaps",
+                "target_field": "talent_gaps_context",
+                "display_label": "Talent Gap Report"
+            }, {
+                "source_tool": "org-redesign",
+                "source_field": "org.redesign.right_seats",
+                "target_field": "right_seats_context",
+                "display_label": "Right Seats Assignment"
+            }, {
+                "source_tool": "value-proposition",
+                "source_field": "strategy.vp.statement",
+                "target_field": "vp_statement_context",
+                "display_label": "Value Proposition Statement"
+            }]
+        },
+        "agile-teams": {
+            "depends_on": ["values", "dream", "fit-abc-analysis", "org-redesign", "value-proposition"],
+            "fields": [{
+                "source_tool": "values",
+                "source_field": "identity.values.cool_not_cool",
+                "target_field": "behaviors_context",
+                "display_label": "Cool/Not-Cool Behaviors"
+            }, {
+                "source_tool": "dream",
+                "source_field": "identity.dream.one_sentence",
+                "target_field": "dream_context",
+                "display_label": "One-Sentence Dream"
+            }, {
+                "source_tool": "fit-abc-analysis",
+                "source_field": "org.abc.talent_gaps",
+                "target_field": "talent_gaps_context",
+                "display_label": "Talent Gap Report"
+            }, {
+                "source_tool": "org-redesign",
+                "source_field": "org.redesign.right_seats",
+                "target_field": "right_seats_context",
+                "display_label": "Right Seats Assignment"
+            }, {
+                "source_tool": "value-proposition",
+                "source_field": "strategy.vp.statement",
+                "target_field": "vp_statement_context",
+                "display_label": "Value Proposition Statement"
+            }]
         }
     };
 
