@@ -98,16 +98,93 @@ const DependencyInjection = (function() {
                 "display_label": "Company Dream"
             }]
         },
-        "goals": {
+        "cash": {
             "depends_on": ["dream"],
             "fields": [{
                 "source_tool": "dream",
-                "source_field": "company_dream",
-                "target_field": "vision_alignment"
-            }, {
+                "source_field": "identity.dream.narrative",
+                "target_field": "dream_narrative_context",
+                "display_label": "Company Dream Narrative"
+            }]
+        },
+        "energy": {
+            "depends_on": ["know-thyself"],
+            "fields": [{
+                "source_tool": "know-thyself",
+                "source_field": "identity.strengths.matrix",
+                "target_field": "strengths_context",
+                "display_label": "Individual Strength Matrix"
+            }]
+        },
+        "goals": {
+            "depends_on": ["dream", "cash"],
+            "fields": [{
                 "source_tool": "dream",
-                "source_field": "timeline",
-                "target_field": "goal_timeframe"
+                "source_field": "identity.dream.narrative",
+                "target_field": "dream_narrative_context",
+                "display_label": "Company Dream Narrative"
+            }, {
+                "source_tool": "cash",
+                "source_field": "performance.cash.power_of_one",
+                "target_field": "power_of_one_context",
+                "display_label": "Power of One Analysis"
+            }]
+        },
+        "focus": {
+            "depends_on": ["goals", "values"],
+            "fields": [{
+                "source_tool": "goals",
+                "source_field": "performance.goals.big_rocks",
+                "target_field": "big_rocks_context",
+                "display_label": "Big Rocks (90-Day Priorities)"
+            }, {
+                "source_tool": "values",
+                "source_field": "identity.values.core_list",
+                "target_field": "core_values_context",
+                "display_label": "Core Company Values"
+            }]
+        },
+        "performance": {
+            "depends_on": ["goals", "values", "cash"],
+            "fields": [{
+                "source_tool": "goals",
+                "source_field": "performance.goals.quarterly_targets",
+                "target_field": "quarterly_targets_context",
+                "display_label": "Quarterly Targets"
+            }, {
+                "source_tool": "values",
+                "source_field": "identity.values.cool_not_cool",
+                "target_field": "behaviors_context",
+                "display_label": "Cool/Not-Cool Behaviors"
+            }, {
+                "source_tool": "values",
+                "source_field": "identity.values.red_lines",
+                "target_field": "red_lines_context",
+                "display_label": "Cultural Laws (Red Lines)"
+            }, {
+                "source_tool": "cash",
+                "source_field": "performance.cash.top_priority",
+                "target_field": "top_cash_priority_context",
+                "display_label": "Top Cash Priority"
+            }]
+        },
+        "meeting-rhythm": {
+            "depends_on": ["goals", "performance", "cash"],
+            "fields": [{
+                "source_tool": "goals",
+                "source_field": "performance.goals.quarterly_targets",
+                "target_field": "quarterly_targets_context",
+                "display_label": "Quarterly Targets"
+            }, {
+                "source_tool": "performance",
+                "source_field": "performance.accountability.execution_dashboard",
+                "target_field": "execution_dashboard_context",
+                "display_label": "Execution Dashboard"
+            }, {
+                "source_tool": "cash",
+                "source_field": "performance.cash.top_priority",
+                "target_field": "top_cash_priority_context",
+                "display_label": "Top Cash Priority"
             }]
         }
     };
