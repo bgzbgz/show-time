@@ -32,35 +32,70 @@ const DependencyInjection = (function() {
             "fields": [{
                 "source_tool": "know-thyself",
                 "source_field": "identity.personal_dream",
-                "target_field": "founder_vision"
+                "target_field": "personal_dream_context",
+                "display_label": "Personal Dream"
             }, {
                 "source_tool": "know-thyself",
-                "source_field": "identity.purpose",
-                "target_field": "company_purpose_foundation"
+                "source_field": "identity.personal_values",
+                "target_field": "personal_values_context",
+                "display_label": "Personal Values"
             }]
         },
         "values": {
-            "depends_on": ["dream"],
+            "depends_on": ["dream", "know-thyself"],
             "fields": [{
                 "source_tool": "dream",
-                "source_field": "company_dream",
-                "target_field": "dream_reference"
+                "source_field": "identity.dream.one_sentence",
+                "target_field": "dream_reference",
+                "display_label": "One-Sentence Dream"
+            }, {
+                "source_tool": "know-thyself",
+                "source_field": "identity.personal_values",
+                "target_field": "personal_values_context",
+                "display_label": "Personal Values"
             }]
         },
         "team": {
-            "depends_on": ["values"],
+            "depends_on": ["values", "dream"],
             "fields": [{
                 "source_tool": "values",
-                "source_field": "core_values",
-                "target_field": "hiring_values"
+                "source_field": "identity.values.cool_not_cool",
+                "target_field": "values_behaviors_context",
+                "display_label": "Cool/Not-Cool Behaviors"
+            }, {
+                "source_tool": "dream",
+                "source_field": "identity.dream.one_sentence",
+                "target_field": "dream_context",
+                "display_label": "One-Sentence Dream"
             }]
         },
         "fit": {
-            "depends_on": ["team"],
+            "depends_on": ["know-thyself", "values", "team", "dream"],
             "fields": [{
+                "source_tool": "know-thyself",
+                "source_field": "identity.strengths.matrix",
+                "target_field": "strengths_context",
+                "display_label": "Individual Strength Matrix"
+            }, {
+                "source_tool": "values",
+                "source_field": "identity.values.core_list",
+                "target_field": "core_values_context",
+                "display_label": "Core Company Values"
+            }, {
+                "source_tool": "values",
+                "source_field": "identity.values.cool_not_cool",
+                "target_field": "behaviors_context",
+                "display_label": "Cool/Not-Cool Behaviors"
+            }, {
                 "source_tool": "team",
-                "source_field": "team_members",
-                "target_field": "assessment_subjects"
+                "source_field": "identity.team.dysfunction_scorecard",
+                "target_field": "dysfunction_context",
+                "display_label": "Team Dysfunction Scorecard"
+            }, {
+                "source_tool": "dream",
+                "source_field": "identity.dream.one_sentence",
+                "target_field": "dream_context",
+                "display_label": "Company Dream"
             }]
         },
         "goals": {
