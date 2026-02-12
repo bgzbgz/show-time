@@ -209,6 +209,58 @@ const DependencyInjection = (function() {
                 "target_field": "driving_forces_context",
                 "display_label": "Driving Forces"
             }]
+        },
+        "target-segment-deep-dive": {
+            "depends_on": ["segmentation-target-market", "market-size"],
+            "fields": [{
+                "source_tool": "segmentation-target-market",
+                "source_field": "market.segments.primary_target",
+                "target_field": "primary_target_context",
+                "display_label": "Primary Target Segment"
+            }, {
+                "source_tool": "market-size",
+                "source_field": "market.size.profit_pool",
+                "target_field": "profit_pool_context",
+                "display_label": "Profit Pool Analysis"
+            }]
+        },
+        "value-proposition": {
+            "depends_on": ["target-segment-deep-dive", "dream"],
+            "fields": [{
+                "source_tool": "target-segment-deep-dive",
+                "source_field": "strategy.target.pains_matrix",
+                "target_field": "pains_matrix_context",
+                "display_label": "Prioritized Pains Matrix"
+            }, {
+                "source_tool": "target-segment-deep-dive",
+                "source_field": "strategy.target.needs_gains",
+                "target_field": "needs_gains_context",
+                "display_label": "Needs & Gains Inventory"
+            }, {
+                "source_tool": "dream",
+                "source_field": "identity.dream.one_sentence",
+                "target_field": "dream_context",
+                "display_label": "One-Sentence Dream"
+            }]
+        },
+        "value-proposition-testing": {
+            "depends_on": ["value-proposition", "target-segment-deep-dive"],
+            "fields": [{
+                "source_tool": "value-proposition",
+                "source_field": "strategy.vp.statement",
+                "target_field": "vp_statement_context",
+                "display_label": "Value Proposition Statement"
+            }, {
+                "source_tool": "target-segment-deep-dive",
+                "source_field": "strategy.target.interview_summary",
+                "target_field": "interview_summary_context",
+                "display_label": "Interview Summary"
+            }, {
+                "source_tool": "target-segment-deep-dive",
+                "source_field": "strategy.target.needs_gains",
+                "target_field": "needs_gains_context",
+                "display_label": "Target Customer Pains and Needs"
+            }]
         }
     };
 
