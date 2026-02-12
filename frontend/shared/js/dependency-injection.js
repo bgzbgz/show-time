@@ -261,6 +261,146 @@ const DependencyInjection = (function() {
                 "target_field": "needs_gains_context",
                 "display_label": "Target Customer Pains and Needs"
             }]
+        },
+        "product-development": {
+            "depends_on": ["segmentation-target-market", "target-segment-deep-dive", "value-proposition"],
+            "fields": [{
+                "source_tool": "segmentation-target-market",
+                "source_field": "market.segments.primary_target",
+                "target_field": "primary_target_context",
+                "display_label": "Primary Target Segment"
+            }, {
+                "source_tool": "target-segment-deep-dive",
+                "source_field": "strategy.target.pains_matrix",
+                "target_field": "pains_matrix_context",
+                "display_label": "Prioritized Pains Matrix"
+            }, {
+                "source_tool": "target-segment-deep-dive",
+                "source_field": "strategy.target.needs_gains",
+                "target_field": "needs_gains_context",
+                "display_label": "Needs & Gains Inventory"
+            }, {
+                "source_tool": "value-proposition",
+                "source_field": "strategy.vp.statement",
+                "target_field": "vp_statement_context",
+                "display_label": "Value Proposition Statement"
+            }, {
+                "source_tool": "target-segment-deep-dive",
+                "source_field": "strategy.target.interview_summary",
+                "target_field": "interview_summary_context",
+                "display_label": "Interview Summary"
+            }]
+        },
+        "pricing": {
+            "depends_on": ["segmentation-target-market", "target-segment-deep-dive", "value-proposition", "product-development"],
+            "fields": [{
+                "source_tool": "segmentation-target-market",
+                "source_field": "market.segments.primary_target",
+                "target_field": "primary_target_context",
+                "display_label": "Primary Target Segment"
+            }, {
+                "source_tool": "target-segment-deep-dive",
+                "source_field": "strategy.target.pains_matrix",
+                "target_field": "pains_matrix_context",
+                "display_label": "Prioritized Pains Matrix"
+            }, {
+                "source_tool": "target-segment-deep-dive",
+                "source_field": "strategy.target.needs_gains",
+                "target_field": "needs_gains_context",
+                "display_label": "Needs & Gains Inventory"
+            }, {
+                "source_tool": "value-proposition",
+                "source_field": "strategy.vp.statement",
+                "target_field": "vp_statement_context",
+                "display_label": "Value Proposition Statement"
+            }, {
+                "source_tool": "product-development",
+                "source_field": "execution.product.feature_list",
+                "target_field": "feature_list_context",
+                "display_label": "Feature List"
+            }, {
+                "source_tool": "product-development",
+                "source_field": "execution.product.portfolio",
+                "target_field": "product_portfolio_context",
+                "display_label": "Product Portfolio"
+            }]
+        },
+        "brand-marketing": {
+            "depends_on": ["segmentation-target-market", "value-proposition", "product-development", "pricing"],
+            "fields": [{
+                "source_tool": "segmentation-target-market",
+                "source_field": "market.segments.primary_target",
+                "target_field": "primary_target_context",
+                "display_label": "Primary Target Segment"
+            }, {
+                "source_tool": "value-proposition",
+                "source_field": "strategy.vp.statement",
+                "target_field": "vp_statement_context",
+                "display_label": "Value Proposition Statement"
+            }, {
+                "source_tool": "product-development",
+                "source_field": "execution.product.portfolio",
+                "target_field": "product_portfolio_context",
+                "display_label": "Product Portfolio"
+            }, {
+                "source_tool": "pricing",
+                "source_field": "execution.pricing.tiers",
+                "target_field": "pricing_tiers_context",
+                "display_label": "Price Tiers"
+            }]
+        },
+        "customer-service": {
+            "depends_on": ["segmentation-target-market", "value-proposition", "product-development", "brand-marketing"],
+            "fields": [{
+                "source_tool": "segmentation-target-market",
+                "source_field": "market.segments.primary_target",
+                "target_field": "primary_target_context",
+                "display_label": "Primary Target Segment"
+            }, {
+                "source_tool": "value-proposition",
+                "source_field": "strategy.vp.statement",
+                "target_field": "vp_statement_context",
+                "display_label": "Value Proposition Statement"
+            }, {
+                "source_tool": "product-development",
+                "source_field": "execution.product.portfolio",
+                "target_field": "product_portfolio_context",
+                "display_label": "Product Portfolio"
+            }, {
+                "source_tool": "brand-marketing",
+                "source_field": "execution.brand.cult_model",
+                "target_field": "cult_model_context",
+                "display_label": "Cult Brand Model"
+            }]
+        },
+        "route-to-market": {
+            "depends_on": ["segmentation-target-market", "value-proposition", "product-development", "pricing", "brand-marketing"],
+            "fields": [{
+                "source_tool": "segmentation-target-market",
+                "source_field": "market.segments.primary_target",
+                "target_field": "primary_target_context",
+                "display_label": "Primary Target Segment"
+            }, {
+                "source_tool": "value-proposition",
+                "source_field": "strategy.vp.statement",
+                "target_field": "vp_statement_context",
+                "display_label": "Value Proposition Statement"
+            }, {
+                "source_tool": "product-development",
+                "source_field": "execution.product.portfolio",
+                "target_field": "product_portfolio_context",
+                "display_label": "Product Portfolio"
+            }, {
+                "source_tool": "pricing",
+                "source_field": "execution.pricing.tiers",
+                "target_field": "pricing_tiers_context",
+                "display_label": "Price Tiers"
+            }, {
+                "source_tool": "brand-marketing",
+                "source_field": "execution.brand.roadmap",
+                "target_field": "marketing_roadmap_context",
+                "display_label": "Marketing Roadmap"
+            }]
         }
     };
 
