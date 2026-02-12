@@ -401,6 +401,92 @@ const DependencyInjection = (function() {
                 "target_field": "marketing_roadmap_context",
                 "display_label": "Marketing Roadmap"
             }]
+        },
+        "core-activities": {
+            "depends_on": ["value-proposition", "route-to-market"],
+            "fields": [{
+                "source_tool": "value-proposition",
+                "source_field": "strategy.vp.statement",
+                "target_field": "vp_statement_context",
+                "display_label": "Value Proposition Statement"
+            }, {
+                "source_tool": "route-to-market",
+                "source_field": "execution.rtm.channels",
+                "target_field": "rtm_channels_context",
+                "display_label": "RTM Channels"
+            }]
+        },
+        "processes-decisions": {
+            "depends_on": ["value-proposition", "core-activities"],
+            "fields": [{
+                "source_tool": "value-proposition",
+                "source_field": "strategy.vp.statement",
+                "target_field": "vp_statement_context",
+                "display_label": "Value Proposition Statement"
+            }, {
+                "source_tool": "core-activities",
+                "source_field": "org.activities.top5",
+                "target_field": "top5_activities_context",
+                "display_label": "Top 5 Core Activities"
+            }, {
+                "source_tool": "core-activities",
+                "source_field": "org.activities.owners",
+                "target_field": "activity_owners_context",
+                "display_label": "Core Activity Owners"
+            }]
+        },
+        "fit-abc-analysis": {
+            "depends_on": ["value-proposition", "core-activities", "processes-decisions", "values"],
+            "fields": [{
+                "source_tool": "value-proposition",
+                "source_field": "strategy.vp.statement",
+                "target_field": "vp_statement_context",
+                "display_label": "Value Proposition Statement"
+            }, {
+                "source_tool": "core-activities",
+                "source_field": "org.activities.top5",
+                "target_field": "top5_activities_context",
+                "display_label": "Top 5 Core Activities"
+            }, {
+                "source_tool": "processes-decisions",
+                "source_field": "org.processes.decision_rights",
+                "target_field": "decision_rights_context",
+                "display_label": "Decision Rights"
+            }, {
+                "source_tool": "values",
+                "source_field": "identity.values.cool_not_cool",
+                "target_field": "behaviors_context",
+                "display_label": "Cool/Not-Cool Behaviors"
+            }]
+        },
+        "org-redesign": {
+            "depends_on": ["value-proposition", "core-activities", "processes-decisions", "fit-abc-analysis"],
+            "fields": [{
+                "source_tool": "value-proposition",
+                "source_field": "strategy.vp.statement",
+                "target_field": "vp_statement_context",
+                "display_label": "Value Proposition Statement"
+            }, {
+                "source_tool": "core-activities",
+                "source_field": "org.activities.top5",
+                "target_field": "top5_activities_context",
+                "display_label": "Top 5 Core Activities"
+            }, {
+                "source_tool": "processes-decisions",
+                "source_field": "org.processes.decision_rights",
+                "target_field": "decision_rights_context",
+                "display_label": "Decision Rights"
+            }, {
+                "source_tool": "fit-abc-analysis",
+                "source_field": "org.abc.classification",
+                "target_field": "abc_classification_context",
+                "display_label": "ABC Classification"
+            }, {
+                "source_tool": "fit-abc-analysis",
+                "source_field": "org.abc.talent_gaps",
+                "target_field": "talent_gaps_context",
+                "display_label": "Talent Gaps"
+            }]
         }
     };
 
