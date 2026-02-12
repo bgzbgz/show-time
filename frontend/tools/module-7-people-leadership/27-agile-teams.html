@@ -1,0 +1,2060 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Set Agile Teams | Fast Track Program</title>
+
+  <!-- React & ReactDOM from CDN -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+  <!-- Babel Standalone for JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- jsPDF + html2canvas for PDF export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <style>
+    /* Font Face Declarations */
+    @font-face {
+      font-family: 'Plaak';
+      src: url('Plaak3Trial-43-Bold.woff2') format('woff2');
+      font-weight: bold;
+      font-style: normal;
+    }
+
+    @font-face {
+      font-family: 'Riforma';
+      src: url('RiformaLL-Regular.woff2') format('woff2');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    @font-face {
+      font-family: 'Monument';
+      src: url('MonumentGrotesk-Mono.woff2') format('woff2');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    /* Global Styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Riforma', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .plaak {
+      font-family: 'Plaak', sans-serif;
+      text-transform: uppercase;
+      font-weight: bold;
+      letter-spacing: -0.02em;
+    }
+
+    .riforma-bold {
+      font-family: 'Riforma', sans-serif;
+      font-weight: bold;
+    }
+
+    .monument {
+      font-family: 'Monument', monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Animations */
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .animate-in {
+      animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .fade-in {
+      animation: fadeIn 0.4s ease-out;
+    }
+
+    .transition-animate-in {
+      animation: slideIn 0.6s ease-out;
+    }
+
+    /* Button Styles */
+    .btn-primary {
+      background: #000000;
+      color: #FFFFFF;
+      padding: 16px 32px;
+      border: 2px solid #000000;
+      font-size: 18px;
+      font-family: 'Riforma', sans-serif;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: normal;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      transform: scale(1.02);
+    }
+
+    .btn-primary:disabled {
+      background: #E0E0E0;
+      border-color: #E0E0E0;
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #FFFFFF;
+      color: #000000;
+      padding: 12px 24px;
+      border: 2px solid #000000;
+      font-size: 16px;
+      font-family: 'Riforma', sans-serif;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-secondary:hover {
+      background: #F8F8F8;
+    }
+
+    .btn-small {
+      background: #FFFFFF;
+      color: #000000;
+      padding: 8px 16px;
+      border: 1px solid #000000;
+      font-size: 14px;
+      font-family: 'Riforma', sans-serif;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-small:hover {
+      background: #F8F8F8;
+    }
+
+    .btn-remove {
+      background: #FFFFFF;
+      color: #000000;
+      padding: 8px 16px;
+      border: 1px solid #E0E0E0;
+      font-size: 14px;
+      font-family: 'Riforma', sans-serif;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-remove:hover {
+      border-color: #EF4444;
+      color: #EF4444;
+    }
+
+    /* Radio Button Styles */
+    .radio-group {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .radio-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+
+    .radio-option input[type="radio"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+
+    /* Rating Button Styles */
+    .rating-buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    .rating-btn {
+      padding: 8px 16px;
+      border: 2px solid #E0E0E0;
+      background: #FFFFFF;
+      cursor: pointer;
+      font-family: 'Riforma', sans-serif;
+      font-size: 16px;
+      transition: all 0.2s ease;
+      min-width: 60px;
+    }
+
+    .rating-btn:hover {
+      border-color: #000000;
+    }
+
+    .rating-btn.active {
+      background: #000000;
+      color: #FFFFFF;
+      border-color: #000000;
+    }
+
+    /* Form Styles */
+    input[type="text"],
+    input[type="number"],
+    input[type="email"],
+    input[type="date"],
+    textarea,
+    select {
+      border: 1px solid #E0E0E0;
+      padding: 12px 16px;
+      font-size: 18px;
+      font-family: 'Riforma', sans-serif;
+      width: 100%;
+      transition: border-color 0.2s ease;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      outline: none;
+      border-color: #000000;
+    }
+
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    textarea::placeholder {
+      white-space: pre-line;
+    }
+
+    /* Numbered Section Badge */
+    .numbered-section {
+      background: #000000;
+      color: #FFFFFF;
+      padding: 10px 16px;
+      font-family: 'Plaak', sans-serif;
+      font-size: 26px;
+      display: inline-block;
+      text-transform: uppercase;
+      letter-spacing: -0.02em;
+    }
+
+    /* Help Button */
+    .help-button {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: #000000;
+      color: #FFFFFF;
+      font-size: 28px;
+      border: none;
+      cursor: pointer;
+      z-index: 40;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Riforma', sans-serif;
+    }
+
+    .help-button:hover {
+      background: #FFF469;
+      color: #000000;
+      transform: scale(1.1);
+    }
+
+    /* Progress Indicator */
+    .progress-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #E0E0E0;
+      transition: all 0.3s ease;
+    }
+
+    .progress-dot.active {
+      background: #000000;
+      transform: scale(1.3);
+    }
+
+    .progress-dot.completed {
+      background: #000000;
+    }
+
+    .progress-line {
+      height: 2px;
+      background: #E0E0E0;
+      flex: 1;
+    }
+
+    /* Character Counter */
+    .char-counter {
+      font-size: 14px;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    .char-counter.invalid {
+      color: #EF4444;
+    }
+
+    /* Score Badge */
+    .score-badge {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Monument', monospace;
+      font-size: 20px;
+      font-weight: bold;
+      border: 2px solid #000000;
+    }
+
+    .score-badge.score-6 {
+      background: #10B981;
+      color: #FFFFFF;
+      border-color: #10B981;
+    }
+
+    .score-badge.score-5 {
+      background: #34D399;
+      color: #FFFFFF;
+      border-color: #34D399;
+    }
+
+    .score-badge.score-4 {
+      background: #FFF469;
+      color: #000000;
+      border-color: #000000;
+    }
+
+    .score-badge.score-3 {
+      background: #FBBF24;
+      color: #000000;
+      border-color: #000000;
+    }
+
+    .score-badge.score-2 {
+      background: #EF4444;
+      color: #FFFFFF;
+      border-color: #EF4444;
+    }
+
+    /* Item Card */
+    .item-card {
+      border: 2px solid #E0E0E0;
+      padding: 20px;
+      margin-bottom: 16px;
+      transition: all 0.2s ease;
+      background: #FFFFFF;
+    }
+
+    .item-card:hover {
+      border-color: #000000;
+    }
+
+    .item-card.top-item {
+      border-color: #FFF469;
+      background: #FFFEF0;
+      border-width: 3px;
+    }
+
+    /* Matrix Grid */
+    .matrix-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 24px;
+    }
+
+    .matrix-cell {
+      border: 2px solid #000000;
+      padding: 20px;
+      min-height: 200px;
+    }
+
+    .matrix-cell.green {
+      background: #D1FAE5;
+      border-color: #10B981;
+    }
+
+    .matrix-cell.yellow {
+      background: #FEF9C3;
+      border-color: #FBBF24;
+    }
+
+    .matrix-cell.red {
+      background: #FEE2E2;
+      border-color: #EF4444;
+    }
+
+    /* Charter Tabs */
+    .charter-tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 24px;
+      border-bottom: 2px solid #E0E0E0;
+    }
+
+    .charter-tab {
+      padding: 12px 24px;
+      background: #FFFFFF;
+      border: 2px solid #E0E0E0;
+      border-bottom: none;
+      cursor: pointer;
+      font-family: 'Monument', monospace;
+      font-size: 12px;
+      transition: all 0.2s ease;
+    }
+
+    .charter-tab:hover {
+      background: #F8F8F8;
+    }
+
+    .charter-tab.active {
+      background: #000000;
+      color: #FFFFFF;
+      border-color: #000000;
+    }
+
+    /* Modal Styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      padding: 24px;
+    }
+
+    .modal-content {
+      background: #FFFFFF;
+      max-width: 600px;
+      max-height: 80vh;
+      overflow-y: auto;
+      padding: 32px;
+      position: relative;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #000000;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-close:hover {
+      color: #EF4444;
+    }
+
+    /* Canvas Styles */
+    .canvas-section {
+      border: 2px solid #000000;
+      padding: 24px;
+      margin-bottom: 24px;
+      background: #FFFFFF;
+    }
+
+    .canvas-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+    }
+
+    /* Highlight Styles */
+    .highlight-box {
+      background: #FFF469;
+      border: 2px solid #000000;
+      padding: 24px;
+      margin: 16px 0;
+    }
+
+    .info-box {
+      background: #F8F8F8;
+      border-left: 4px solid #000000;
+      padding: 16px;
+      margin: 16px 0;
+    }
+
+    .warning-box {
+      background: #FEF2F2;
+      border-left: 4px solid #EF4444;
+      padding: 16px;
+      margin: 16px 0;
+    }
+
+    /* Top Item Badge */
+    .top-badge {
+      display: inline-block;
+      background: #FFF469;
+      color: #000000;
+      padding: 4px 12px;
+      font-family: 'Monument', monospace;
+      font-size: 10px;
+      border: 1px solid #000000;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, Fragment } = React;
+
+    const CONFIG = {
+        SUPABASE_URL: 'https://vpfayzzjnegdefjrnyoc.supabase.co',
+        SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZwZmF5enpqbmVnZGVmanJueW9jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMzAwODUsImV4cCI6MjA4NTcwNjA4NX0.7qwzd9kwyRG0Wx9DDSc8F9a1SRD0CoC6CGS-9M1sxIs',
+        TOOL_SLUG: 'agile-teams',
+        SPRINT_NUMBER: 27,
+        SCHEMA_NAME: 'sprint_27_agile_teams',
+        AUTOSAVE_DELAY: 2000
+    };
+
+    const { createClient } = supabase;
+    const supabaseClient = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+
+    // Main App Component
+    function AgileTeamsApp() {
+      const [step, setStep] = useState(0);
+      const [showHelp, setShowHelp] = useState(false);
+
+      const [data, setData] = useState({
+        items: [
+          { id: 1, description: '', type: '', impact: 0, ease: 0, score: 0 }
+        ],
+        charters: []
+      });
+
+      // Load from localStorage
+      useEffect(() => {
+        const saved = localStorage.getItem('agile-teams-data');
+        if (saved) {
+          try {
+            const savedData = JSON.parse(saved);
+            setData(savedData);
+          } catch (e) {
+            console.error('Error loading saved data:', e);
+          }
+        }
+      }, []);
+
+      // Auto-save every 2 seconds
+      useEffect(() => {
+        const interval = setInterval(() => {
+          localStorage.setItem('agile-teams-data', JSON.stringify(data));
+        }, 2000);
+        return () => clearInterval(interval);
+      }, [data]);
+
+      const updateData = (field, value) => {
+        setData({ ...data, [field]: value });
+      };
+
+      // Item Functions
+      const addItem = () => {
+        const newItem = { id: Date.now(), description: '', type: '', impact: 0, ease: 0, score: 0 };
+        updateData('items', [...(data.items || []), newItem]);
+      };
+
+      const removeItem = (id) => {
+        if ((data.items || []).length > 1) {
+          updateData('items', (data.items || []).filter(item => item.id !== id));
+        }
+      };
+
+      const updateItem = (id, field, value) => {
+        const updated = (data.items || []).map(item => {
+          if (item.id === id) {
+            const newItem = { ...item, [field]: value };
+            // Auto-calculate score
+            if (field === 'impact' || field === 'ease') {
+              newItem.score = (newItem.impact || 0) + (newItem.ease || 0);
+            }
+            return newItem;
+          }
+          return item;
+        });
+        updateData('items', updated);
+      };
+
+      // Charter Functions
+      const initializeCharters = () => {
+        const sortedItems = [...(data.items || [])].sort((a, b) => b.score - a.score);
+        const top3 = sortedItems.slice(0, 3);
+
+        const charters = top3.map((item, index) => ({
+          itemId: item.id,
+          itemDescription: item.description,
+          projectGoal: '',
+          specificMetric: '',
+          timeline: '',
+          budgetLimit: '',
+          decisionRights: '',
+          scopeLimits: '',
+          teamRoles: [
+            { id: 1, role: '', responsibility: '' }
+          ],
+          kpis: [
+            { id: 1, metric: '', target: '', trackingFrequency: 'Weekly' }
+          ],
+          sprintLength: '2 weeks',
+          reviewCadence: 'Weekly',
+          teamLead: '',
+          startDate: ''
+        }));
+
+        updateData('charters', charters);
+      };
+
+      const updateCharter = (itemId, field, value) => {
+        const updated = (data.charters || []).map(charter =>
+          charter.itemId === itemId ? { ...charter, [field]: value } : charter
+        );
+        updateData('charters', updated);
+      };
+
+      const addTeamRole = (itemId) => {
+        const updated = (data.charters || []).map(charter => {
+          if (charter.itemId === itemId) {
+            return {
+              ...charter,
+              teamRoles: [...(charter.teamRoles || []), { id: Date.now(), role: '', responsibility: '' }]
+            };
+          }
+          return charter;
+        });
+        updateData('charters', updated);
+      };
+
+      const removeTeamRole = (itemId, roleId) => {
+        const updated = (data.charters || []).map(charter => {
+          if (charter.itemId === itemId && (charter.teamRoles || []).length > 1) {
+            return {
+              ...charter,
+              teamRoles: (charter.teamRoles || []).filter(r => r.id !== roleId)
+            };
+          }
+          return charter;
+        });
+        updateData('charters', updated);
+      };
+
+      const updateTeamRole = (itemId, roleId, field, value) => {
+        const updated = (data.charters || []).map(charter => {
+          if (charter.itemId === itemId) {
+            return {
+              ...charter,
+              teamRoles: (charter.teamRoles || []).map(r =>
+                r.id === roleId ? { ...r, [field]: value } : r
+              )
+            };
+          }
+          return charter;
+        });
+        updateData('charters', updated);
+      };
+
+      const addKPI = (itemId) => {
+        const updated = (data.charters || []).map(charter => {
+          if (charter.itemId === itemId) {
+            return {
+              ...charter,
+              kpis: [...(charter.kpis || []), { id: Date.now(), metric: '', target: '', trackingFrequency: 'Weekly' }]
+            };
+          }
+          return charter;
+        });
+        updateData('charters', updated);
+      };
+
+      const removeKPI = (itemId, kpiId) => {
+        const updated = (data.charters || []).map(charter => {
+          if (charter.itemId === itemId && (charter.kpis || []).length > 1) {
+            return {
+              ...charter,
+              kpis: (charter.kpis || []).filter(k => k.id !== kpiId)
+            };
+          }
+          return charter;
+        });
+        updateData('charters', updated);
+      };
+
+      const updateKPI = (itemId, kpiId, field, value) => {
+        const updated = (data.charters || []).map(charter => {
+          if (charter.itemId === itemId) {
+            return {
+              ...charter,
+              kpis: (charter.kpis || []).map(k =>
+                k.id === kpiId ? { ...k, [field]: value } : k
+              )
+            };
+          }
+          return charter;
+        });
+        updateData('charters', updated);
+      };
+
+      // Validation Functions
+      const isStep1Valid = () => {
+        const items = data.items || [];
+        const validItems = items.filter(item =>
+          (item.description || '').length >= 100 &&
+          (item.type || '').length > 0
+        );
+        return validItems.length >= 8;
+      };
+
+      const isStep2Valid = () => {
+        const items = data.items || [];
+        return items.every(item =>
+          item.impact >= 1 && item.impact <= 3 &&
+          item.ease >= 1 && item.ease <= 3
+        );
+      };
+
+      const isStep3Valid = () => {
+        const charters = data.charters || [];
+        if (charters.length !== 3) return false;
+
+        return charters.every(charter => {
+          const validRoles = (charter.teamRoles || []).filter(r =>
+            (r.role || '').length > 0 && (r.responsibility || '').length > 0
+          ).length >= 4;
+
+          const validKPIs = (charter.kpis || []).filter(k =>
+            (k.metric || '').length > 0 &&
+            (k.target || '').length > 0
+          ).length >= 2;
+
+          return (
+            (charter.projectGoal || '').length >= 50 &&
+            (charter.budgetLimit || '').length >= 20 &&
+            validRoles &&
+            validKPIs &&
+            (charter.teamLead || '').length > 0 &&
+            (charter.startDate || '').length > 0
+          );
+        });
+      };
+
+      const canProceed = () => {
+        switch (step) {
+          case 1: return isStep1Valid();
+          case 2: return isStep2Valid();
+          case 3: return isStep3Valid();
+          default: return true;
+        }
+      };
+
+      // Supabase submission
+      const handleSubmit = async () => {
+        // Get user ID from localStorage
+        const userId = localStorage.getItem('ft_user_id');
+        if (!userId) {
+          alert('User not authenticated. Please return to the dashboard.');
+          return false;
+        }
+
+        try {
+          // Submit using RPC function
+          const { data: result, error } = await supabaseClient
+            .rpc('submit_tool_data', {
+              p_schema_name: CONFIG.SCHEMA_NAME,
+              p_user_id: userId,
+              p_data: data,
+              p_tool_slug: CONFIG.TOOL_SLUG
+            });
+
+          if (error) throw error;
+
+          if (!result || !result.success) {
+            throw new Error(result?.message || 'Submission failed');
+          }
+
+          console.log('Submission ID:', result.submission_id);
+          localStorage.setItem('lastSubmissionId', result.submission_id);
+          alert('✅ Agile Teams strategy submitted successfully!');
+          return true;
+        } catch (error) {
+          console.error('Supabase submission error:', error);
+          alert('❌ Submission failed. Please try again.');
+          return false;
+        }
+      };
+
+      // PDF Export
+      const exportToPDF = async () => {
+        const canvas = document.getElementById('canvas-view');
+        if (!canvas) return;
+
+        try {
+          const canvasElement = await html2canvas(canvas, {
+            scale: 2,
+            backgroundColor: '#FFFFFF'
+          });
+
+          const { jsPDF } = window.jspdf;
+          const pdf = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4'
+          });
+
+          const imgWidth = 210;
+          const imgHeight = (canvasElement.height * imgWidth) / canvasElement.width;
+          const imgData = canvasElement.toDataURL('image/png');
+
+          pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+          pdf.save('agile-teams-strategy.pdf');
+        } catch (error) {
+          console.error('Error generating PDF:', error);
+          alert('Error generating PDF. Please try again.');
+        }
+      };
+
+      // Render Functions
+      const renderCoverPage = () => (
+        <div className="relative min-h-screen flex items-center justify-center bg-black">
+          <div
+            className="absolute inset-0 w-full h-full"
+            style={{
+              backgroundImage: 'url("goh-rhy-yan-eo7_DWzUxgw-unsplash.jpg")',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center'
+            }}
+          ></div>
+          <div className="absolute inset-0" style={{background: 'linear-gradient(to bottom, rgba(0,0,0,0.6), rgba(0,0,0,0.85))'}}></div>
+
+          <div className="relative z-10 text-center text-white px-8 max-w-5xl mx-auto">
+            <h1 className="plaak animate-in" style={{fontSize: '100px', lineHeight: '1', marginBottom: '32px'}}>
+              SET AGILE
+            </h1>
+            <h2 className="plaak animate-in" style={{fontSize: '80px', lineHeight: '1', marginBottom: '32px', color: '#FFF469', animationDelay: '0.1s'}}>
+              TEAMS
+            </h2>
+            <p className="text-4xl mb-12 animate-in" style={{animationDelay: '0.2s'}}>
+              Break through speed killers with rapid-response agile squads.
+            </p>
+            <button
+              onClick={() => setStep(0.5)}
+              className="bg-white text-black plaak px-16 py-6 border-4 border-white hover:bg-black hover:text-white transition-all text-3xl animate-in"
+              style={{animationDelay: '0.3s'}}
+            >
+              LET'S GO →
+            </button>
+          </div>
+        </div>
+      );
+
+      const renderIntroduction = () => (
+        <div className="min-h-screen bg-white p-8 animate-in">
+          <div className="max-w-4xl mx-auto">
+            <div className="numbered-section mb-8">INTRODUCTION</div>
+
+            <h2 className="plaak text-5xl mb-6">
+              Why Agile Teams Matter
+            </h2>
+
+            <div className="text-xl leading-relaxed mb-8">
+              <p className="mb-6">
+                Traditional hierarchies and long approval chains kill speed and focus. In most organizations, up to 80% of project time is consumed not by doing work, but by waiting on approvals, budgets, legal sign-offs, resource allocations, and planning cycles.
+              </p>
+            </div>
+
+            <div className="highlight-box mb-8">
+              <h3 className="plaak text-2xl mb-4">THE KILLERS OF SPEED</h3>
+              <div className="space-y-4 text-lg">
+                <div>
+                  <strong>1. The Illusion of Control</strong>
+                  <p>Annual planning takes 3-4 months to predict the unpredictable. By the time the plan is done, market conditions have shifted.</p>
+                </div>
+                <div>
+                  <strong>2. Endless Waiting</strong>
+                  <p>Frontline teams sit idle waiting for budgets, headcount, or legal review. Context switching destroys morale and quality.</p>
+                </div>
+                <div>
+                  <strong>3. Sequential Decision Chains</strong>
+                  <p>Each handoff from frontline to supervisor to manager to executive adds days or weeks of delay.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="info-box mb-8">
+              <h3 className="plaak text-xl mb-4">WHAT IS AN AGILE TEAM?</h3>
+              <p className="mb-4">An Agile Team is a small, cross-functional squad empowered to:</p>
+              <ul className="space-y-2 text-lg">
+                <li>• Spot the biggest bottleneck or opportunity</li>
+                <li>• Prioritize by impact and feasibility</li>
+                <li>• Define clear goals, rules, structure, and success metrics</li>
+                <li>• Execute fast experiments and learn in weeks, not months</li>
+              </ul>
+            </div>
+
+            <div className="info-box mb-8">
+              <h3 className="plaak text-xl mb-4">THE 3-STEP METHOD</h3>
+              <ol className="space-y-3 text-lg">
+                <li>
+                  <strong>1. Brainstorm Problems & Opportunities</strong>
+                  <p>Surface everything slowing you down or holding untapped potential. List 8+ items.</p>
+                </li>
+                <li>
+                  <strong>2. Prioritize with Impact/Ease Matrix</strong>
+                  <p>Rate each item on Impact (1-3) and Ease (1-3). Score = Impact + Ease. Focus on top 3 highest scores.</p>
+                </li>
+                <li>
+                  <strong>3. Define Team Charters</strong>
+                  <p>For top 3 items: define project goal, rules, team structure (4-6 roles), and KPIs (2-4 metrics).</p>
+                </li>
+              </ol>
+            </div>
+
+            <div className="warning-box mb-8">
+              <strong>Key Principle:</strong> Treat each Agile Team like a micro-startup. Focus on one bold mission, move quickly, learn daily, and scale the winners.
+            </div>
+
+            <div className="flex gap-4 mt-12">
+              <button onClick={() => setStep(0)} className="btn-secondary">
+                Back
+              </button>
+              <button onClick={() => setStep(1)} className="btn-primary">
+                Start Brainstorming
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+
+      const renderStep1 = () => {
+        const items = data.items || [];
+
+        return (
+          <div className="min-h-screen bg-white p-8 animate-in">
+            <div className="max-w-4xl mx-auto">
+              <ProgressIndicator currentStep={1} />
+              <div className="numbered-section mb-8">01</div>
+
+              <h2 className="plaak text-5xl mb-6">
+                BRAINSTORM PROBLEMS & OPPORTUNITIES
+              </h2>
+
+              <p className="text-xl mb-8 leading-relaxed">
+                Surface everything slowing you down or holding untapped potential. List organizational pain-points and growth ideas. Minimum 8 items required.
+              </p>
+
+              <div className="space-y-6">
+                {items.map((item, index) => (
+                  <div key={item.id} className="item-card">
+                    <div className="flex justify-between items-start mb-4">
+                      <h3 className="monument text-sm">ITEM #{index + 1}</h3>
+                      {items.length > 1 && (
+                        <button
+                          onClick={() => removeItem(item.id)}
+                          className="btn-remove"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="monument text-sm mb-2 block">
+                          DESCRIPTION
+                        </label>
+                        <textarea
+                          value={item.description || ''}
+                          onChange={(e) => updateItem(item.id, 'description', e.target.value)}
+                          placeholder="Describe the problem or opportunity in detail&#10;e.g., Slow customer onboarding process takes 4 weeks - delays revenue and frustrates customers&#10;e.g., Untested new market segment showing high interest through inbound inquiries"
+                          className="w-full min-h-[100px]"
+                        />
+                        <div className={`char-counter ${(item.description || '').length < 100 ? 'invalid' : ''}`}>
+                          {(item.description || '').length} / 100 minimum
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="monument text-sm mb-2 block">
+                          TYPE
+                        </label>
+                        <div className="radio-group">
+                          <label className="radio-option">
+                            <input
+                              type="radio"
+                              name={`type-${item.id}`}
+                              value="problem"
+                              checked={item.type === 'problem'}
+                              onChange={(e) => updateItem(item.id, 'type', e.target.value)}
+                            />
+                            <span>Problem</span>
+                          </label>
+                          <label className="radio-option">
+                            <input
+                              type="radio"
+                              name={`type-${item.id}`}
+                              value="opportunity"
+                              checked={item.type === 'opportunity'}
+                              onChange={(e) => updateItem(item.id, 'type', e.target.value)}
+                            />
+                            <span>Opportunity</span>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={addItem}
+                className="btn-secondary mt-4"
+              >
+                Add Item
+              </button>
+
+              <div className="info-box mt-8">
+                <strong>Examples:</strong>
+                <ul className="mt-2 space-y-2">
+                  <li>• Problem: Slow customer onboarding takes 4 weeks</li>
+                  <li>• Problem: High return rates due to unclear product specs</li>
+                  <li>• Opportunity: Untested new market segment showing interest</li>
+                  <li>• Opportunity: Automation could cut manual data entry by 60%</li>
+                </ul>
+              </div>
+
+              <div className="warning-box mt-4">
+                <strong>Validation:</strong> You need at least 8 items, each with 100+ characters and type selected.
+                <p className="mt-2">Valid items: {items.filter(i => (i.description || '').length >= 100 && i.type).length} / 8</p>
+              </div>
+
+              <div className="flex gap-4 mt-12">
+                <button onClick={() => setStep(0.5)} className="btn-secondary">
+                  Back
+                </button>
+                <button
+                  onClick={() => setStep(2)}
+                  className="btn-primary"
+                  disabled={!isStep1Valid()}
+                >
+                  Continue to Prioritization
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      const renderStep2 = () => {
+        const items = data.items || [];
+        const sortedItems = [...items].sort((a, b) => b.score - a.score);
+        const top3 = sortedItems.slice(0, 3);
+
+        // Matrix distribution
+        const highImpactEasy = items.filter(i => i.impact === 3 && i.ease === 3);
+        const highImpactMedium = items.filter(i => i.impact === 3 && i.ease === 2);
+        const highImpactHard = items.filter(i => i.impact === 3 && i.ease === 1);
+        const mediumImpactEasy = items.filter(i => i.impact === 2 && i.ease === 3);
+
+        return (
+          <div className="min-h-screen bg-white p-8 animate-in">
+            <div className="max-w-5xl mx-auto">
+              <ProgressIndicator currentStep={2} />
+              <div className="numbered-section mb-8">02</div>
+
+              <h2 className="plaak text-5xl mb-6">
+                IMPACT / EASE MATRIX
+              </h2>
+
+              <p className="text-xl mb-8 leading-relaxed">
+                Rate each item on Impact (business value) and Ease (speed/cost to execute). Score = Impact + Ease. Top 3 scores will get agile teams.
+              </p>
+
+              <div className="space-y-6">
+                {items.map((item, index) => {
+                  const isTop3 = top3.some(t => t.id === item.id);
+
+                  return (
+                    <div key={item.id} className={`item-card ${isTop3 ? 'top-item' : ''}`}>
+                      <div className="flex gap-6">
+                        <div className="flex-shrink-0">
+                          <div className={`score-badge score-${item.score || 0}`}>
+                            {item.score || 0}
+                          </div>
+                        </div>
+
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <h3 className="monument text-sm">ITEM #{index + 1}</h3>
+                                {isTop3 && <span className="top-badge">TOP 3</span>}
+                              </div>
+                              <p className="text-lg">{item.description}</p>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-6 mt-4">
+                            <div>
+                              <label className="monument text-xs mb-2 block">
+                                IMPACT (1=Low, 2=Medium, 3=High)
+                              </label>
+                              <div className="rating-buttons">
+                                {[1, 2, 3].map(value => (
+                                  <button
+                                    key={value}
+                                    onClick={() => updateItem(item.id, 'impact', value)}
+                                    className={`rating-btn ${item.impact === value ? 'active' : ''}`}
+                                  >
+                                    {value}
+                                  </button>
+                                ))}
+                              </div>
+                              <p className="text-sm text-gray-600 mt-2">
+                                {item.impact === 3 && 'High: Major business value'}
+                                {item.impact === 2 && 'Medium: Moderate business value'}
+                                {item.impact === 1 && 'Low: Minor business value'}
+                              </p>
+                            </div>
+
+                            <div>
+                              <label className="monument text-xs mb-2 block">
+                                EASE (1=Hard, 2=Medium, 3=Easy)
+                              </label>
+                              <div className="rating-buttons">
+                                {[1, 2, 3].map(value => (
+                                  <button
+                                    key={value}
+                                    onClick={() => updateItem(item.id, 'ease', value)}
+                                    className={`rating-btn ${item.ease === value ? 'active' : ''}`}
+                                  >
+                                    {value}
+                                  </button>
+                                ))}
+                              </div>
+                              <p className="text-sm text-gray-600 mt-2">
+                                {item.ease === 3 && 'Easy: Quick, low-cost'}
+                                {item.ease === 2 && 'Medium: Moderate effort'}
+                                {item.ease === 1 && 'Hard: Slow, expensive'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Matrix Visualization */}
+              {items.every(i => i.impact > 0 && i.ease > 0) && (
+                <div className="mt-12">
+                  <h3 className="plaak text-3xl mb-6">PRIORITY MATRIX</h3>
+                  <div className="matrix-grid">
+                    <div className="matrix-cell green">
+                      <h4 className="plaak text-xl mb-3">HIGH IMPACT + EASY</h4>
+                      <p className="text-sm mb-3">Score 5-6: DO FIRST</p>
+                      {[...highImpactEasy, ...highImpactMedium].map(item => (
+                        <div key={item.id} className="text-sm mb-2 font-bold">
+                          • Score {item.score}: {(item.description || '').substring(0, 50)}...
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="matrix-cell yellow">
+                      <h4 className="plaak text-xl mb-3">HIGH IMPACT + HARD</h4>
+                      <p className="text-sm mb-3">Score 4: PLAN CAREFULLY</p>
+                      {highImpactHard.map(item => (
+                        <div key={item.id} className="text-sm mb-2">
+                          • Score {item.score}: {(item.description || '').substring(0, 50)}...
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="matrix-cell yellow">
+                      <h4 className="plaak text-xl mb-3">LOW IMPACT + EASY</h4>
+                      <p className="text-sm mb-3">Score 3: QUICK WINS</p>
+                      {mediumImpactEasy.map(item => (
+                        <div key={item.id} className="text-sm mb-2">
+                          • Score {item.score}: {(item.description || '').substring(0, 50)}...
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="matrix-cell red">
+                      <h4 className="plaak text-xl mb-3">LOW IMPACT + HARD</h4>
+                      <p className="text-sm mb-3">Score 2: AVOID</p>
+                      {items.filter(i => i.impact <= 2 && i.ease <= 2 && i.score === 2).map(item => (
+                        <div key={item.id} className="text-sm mb-2">
+                          • Score {item.score}: {(item.description || '').substring(0, 50)}...
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Top 3 Summary */}
+              {sortedItems.length >= 3 && sortedItems[0].score > 0 && (
+                <div className="highlight-box mt-8">
+                  <h3 className="plaak text-2xl mb-4">TOP 3 ITEMS (WILL GET AGILE TEAMS)</h3>
+                  <div className="space-y-3">
+                    {top3.map((item, index) => (
+                      <div key={item.id} className="flex items-start gap-4">
+                        <div className={`score-badge score-${item.score}`}>
+                          {item.score}
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-bold text-lg">#{index + 1}: {(item.description || '').substring(0, 80)}</h4>
+                          <p className="text-sm">Impact: {item.impact} | Ease: {item.ease}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="info-box mt-8">
+                <strong>Rating Guide:</strong>
+                <p className="mt-2"><strong>Impact:</strong> Consider business value, customer impact, revenue potential, strategic importance</p>
+                <p className="mt-2"><strong>Ease:</strong> Consider time needed, cost, resources available, technical complexity</p>
+              </div>
+
+              <div className="flex gap-4 mt-12">
+                <button onClick={() => setStep(1)} className="btn-secondary">
+                  Back
+                </button>
+                <button
+                  onClick={() => {
+                    initializeCharters();
+                    setStep(3);
+                  }}
+                  className="btn-primary"
+                  disabled={!isStep2Valid()}
+                >
+                  Create Team Charters
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      const renderStep3 = () => {
+        const charters = data.charters || [];
+        const [activeCharterIndex, setActiveCharterIndex] = useState(0);
+        const [activeTab, setActiveTab] = useState('goal');
+
+        if (charters.length === 0) return null;
+
+        const charter = charters[activeCharterIndex];
+
+        return (
+          <div className="min-h-screen bg-white p-8 animate-in">
+            <div className="max-w-5xl mx-auto">
+              <ProgressIndicator currentStep={3} />
+              <div className="numbered-section mb-8">03</div>
+
+              <h2 className="plaak text-5xl mb-6">
+                TEAM CHARTERS FOR TOP 3
+              </h2>
+
+              <p className="text-xl mb-8 leading-relaxed">
+                Define complete team charters for your top 3 prioritized items. Each charter includes project goals, rules, team structure, and KPIs.
+              </p>
+
+              {/* Charter Selection */}
+              <div className="flex gap-4 mb-8">
+                {charters.map((c, index) => (
+                  <button
+                    key={c.itemId}
+                    onClick={() => setActiveCharterIndex(index)}
+                    className={`btn-secondary ${activeCharterIndex === index ? 'bg-black text-white' : ''}`}
+                  >
+                    Charter #{index + 1}
+                  </button>
+                ))}
+              </div>
+
+              {/* Current Item */}
+              <div className="highlight-box mb-8">
+                <h3 className="plaak text-xl mb-2">CHARTER FOR ITEM #{activeCharterIndex + 1}</h3>
+                <p className="text-lg">{charter.itemDescription}</p>
+              </div>
+
+              {/* Charter Tabs */}
+              <div className="charter-tabs">
+                <button
+                  onClick={() => setActiveTab('goal')}
+                  className={`charter-tab ${activeTab === 'goal' ? 'active' : ''}`}
+                >
+                  PROJECT GOAL
+                </button>
+                <button
+                  onClick={() => setActiveTab('rules')}
+                  className={`charter-tab ${activeTab === 'rules' ? 'active' : ''}`}
+                >
+                  RULES
+                </button>
+                <button
+                  onClick={() => setActiveTab('team')}
+                  className={`charter-tab ${activeTab === 'team' ? 'active' : ''}`}
+                >
+                  TEAM
+                </button>
+                <button
+                  onClick={() => setActiveTab('kpis')}
+                  className={`charter-tab ${activeTab === 'kpis' ? 'active' : ''}`}
+                >
+                  KPIs
+                </button>
+                <button
+                  onClick={() => setActiveTab('sprint')}
+                  className={`charter-tab ${activeTab === 'sprint' ? 'active' : ''}`}
+                >
+                  SPRINT
+                </button>
+              </div>
+
+              {/* Tab Content */}
+              <div className="border-2 border-black p-8 mb-8">
+                {activeTab === 'goal' && (
+                  <div className="space-y-6">
+                    <h3 className="plaak text-2xl mb-4">PROJECT END-GAME</h3>
+
+                    <div>
+                      <label className="monument text-sm mb-2 block">
+                        PROJECT GOAL (SPECIFIC & MEASURABLE)
+                      </label>
+                      <textarea
+                        value={charter.projectGoal || ''}
+                        onChange={(e) => updateCharter(charter.itemId, 'projectGoal', e.target.value)}
+                        placeholder="Be laser-specific about what you want to achieve&#10;e.g., Reduce customer onboarding time from 4 weeks to 10 days by eliminating manual document processing"
+                        className="w-full"
+                      />
+                      <div className={`char-counter ${(charter.projectGoal || '').length < 50 ? 'invalid' : ''}`}>
+                        {(charter.projectGoal || '').length} / 50 minimum
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="monument text-sm mb-2 block">
+                        SPECIFIC METRIC CHANGE
+                      </label>
+                      <input
+                        type="text"
+                        value={charter.specificMetric || ''}
+                        onChange={(e) => updateCharter(charter.itemId, 'specificMetric', e.target.value)}
+                        placeholder="e.g., From 28 days to 10 days average onboarding time"
+                        className="w-full"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="monument text-sm mb-2 block">
+                        TIMELINE
+                      </label>
+                      <input
+                        type="text"
+                        value={charter.timeline || ''}
+                        onChange={(e) => updateCharter(charter.itemId, 'timeline', e.target.value)}
+                        placeholder="e.g., 90 days (6 two-week sprints)"
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'rules' && (
+                  <div className="space-y-6">
+                    <h3 className="plaak text-2xl mb-4">PLAYING-FIELD RULES</h3>
+
+                    <div>
+                      <label className="monument text-sm mb-2 block">
+                        BUDGET LIMIT
+                      </label>
+                      <textarea
+                        value={charter.budgetLimit || ''}
+                        onChange={(e) => updateCharter(charter.itemId, 'budgetLimit', e.target.value)}
+                        placeholder="What can the team spend without approval?&#10;e.g., $50,000 total budget, up to $5,000 per experiment without approval"
+                        className="w-full"
+                      />
+                      <div className={`char-counter ${(charter.budgetLimit || '').length < 20 ? 'invalid' : ''}`}>
+                        {(charter.budgetLimit || '').length} / 20 minimum
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="monument text-sm mb-2 block">
+                        DECISION RIGHTS
+                      </label>
+                      <textarea
+                        value={charter.decisionRights || ''}
+                        onChange={(e) => updateCharter(charter.itemId, 'decisionRights', e.target.value)}
+                        placeholder="What can the team decide without asking permission?&#10;e.g., Can change process steps, test new software tools, interview customers, pilot new approaches"
+                        className="w-full"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="monument text-sm mb-2 block">
+                        SCOPE LIMITS
+                      </label>
+                      <textarea
+                        value={charter.scopeLimits || ''}
+                        onChange={(e) => updateCharter(charter.itemId, 'scopeLimits', e.target.value)}
+                        placeholder="What boundaries constrain the team?&#10;e.g., Limited to North American customers, must comply with existing legal framework, cannot change core product"
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'team' && (
+                  <div className="space-y-6">
+                    <h3 className="plaak text-2xl mb-4">AGILE TEAM STRUCTURE</h3>
+                    <p className="text-lg mb-4">Define 4-6 roles tailored to this challenge. No handoffs - team is self-sufficient.</p>
+
+                    <div className="space-y-4">
+                      {(charter.teamRoles || []).map((role, index) => (
+                        <div key={role.id} className="border-2 border-gray-200 p-6">
+                          <div className="flex justify-between items-start mb-4">
+                            <h4 className="monument text-sm">ROLE #{index + 1}</h4>
+                            {(charter.teamRoles || []).length > 1 && (
+                              <button
+                                onClick={() => removeTeamRole(charter.itemId, role.id)}
+                                className="btn-remove"
+                              >
+                                Remove
+                              </button>
+                            )}
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="text-sm font-bold mb-2 block">Role Title</label>
+                              <input
+                                type="text"
+                                value={role.role || ''}
+                                onChange={(e) => updateTeamRole(charter.itemId, role.id, 'role', e.target.value)}
+                                placeholder="e.g., Process Lead"
+                                className="w-full"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-sm font-bold mb-2 block">Responsibility</label>
+                              <input
+                                type="text"
+                                value={role.responsibility || ''}
+                                onChange={(e) => updateTeamRole(charter.itemId, role.id, 'responsibility', e.target.value)}
+                                placeholder="e.g., Map current workflow, identify bottlenecks"
+                                className="w-full"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <button
+                      onClick={() => addTeamRole(charter.itemId)}
+                      className="btn-secondary"
+                    >
+                      Add Team Role
+                    </button>
+
+                    <div className="info-box mt-6">
+                      <strong>Example Roles:</strong> Process Lead, Customer Advocate, Metrics Champion, Tech Lead, Designer, Operations Rep, Data Analyst
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'kpis' && (
+                  <div className="space-y-6">
+                    <h3 className="plaak text-2xl mb-4">KEY PERFORMANCE INDICATORS</h3>
+                    <p className="text-lg mb-4">Define 2-4 metrics to track both output (what you do) and outcome (what it delivers).</p>
+
+                    <div className="space-y-4">
+                      {(charter.kpis || []).map((kpi, index) => (
+                        <div key={kpi.id} className="border-2 border-gray-200 p-6">
+                          <div className="flex justify-between items-start mb-4">
+                            <h4 className="monument text-sm">KPI #{index + 1}</h4>
+                            {(charter.kpis || []).length > 1 && (
+                              <button
+                                onClick={() => removeKPI(charter.itemId, kpi.id)}
+                                className="btn-remove"
+                              >
+                                Remove
+                              </button>
+                            )}
+                          </div>
+
+                          <div className="space-y-4">
+                            <div>
+                              <label className="text-sm font-bold mb-2 block">Metric Name</label>
+                              <input
+                                type="text"
+                                value={kpi.metric || ''}
+                                onChange={(e) => updateKPI(charter.itemId, kpi.id, 'metric', e.target.value)}
+                                placeholder="e.g., Average onboarding time"
+                                className="w-full"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="text-sm font-bold mb-2 block">Target</label>
+                              <input
+                                type="text"
+                                value={kpi.target || ''}
+                                onChange={(e) => updateKPI(charter.itemId, kpi.id, 'target', e.target.value)}
+                                placeholder="e.g., Reduce from 28 days to 10 days"
+                                className="w-full"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="text-sm font-bold mb-2 block">Tracking Frequency</label>
+                              <select
+                                value={kpi.trackingFrequency || 'Weekly'}
+                                onChange={(e) => updateKPI(charter.itemId, kpi.id, 'trackingFrequency', e.target.value)}
+                                className="w-full"
+                              >
+                                <option value="Daily">Daily</option>
+                                <option value="Weekly">Weekly</option>
+                                <option value="Monthly">Monthly</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <button
+                      onClick={() => addKPI(charter.itemId)}
+                      className="btn-secondary"
+                    >
+                      Add KPI
+                    </button>
+
+                    <div className="info-box mt-6">
+                      <strong>KPI Types:</strong>
+                      <p className="mt-2"><strong>Output metrics:</strong> Activities and deliverables (e.g., experiments run, process steps tested)</p>
+                      <p className="mt-2"><strong>Outcome metrics:</strong> Business results (e.g., time savings, cost reduction, customer satisfaction)</p>
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'sprint' && (
+                  <div className="space-y-6">
+                    <h3 className="plaak text-2xl mb-4">SPRINT DETAILS</h3>
+
+                    <div className="grid grid-cols-2 gap-6">
+                      <div>
+                        <label className="monument text-sm mb-2 block">
+                          SPRINT LENGTH
+                        </label>
+                        <select
+                          value={charter.sprintLength || '2 weeks'}
+                          onChange={(e) => updateCharter(charter.itemId, 'sprintLength', e.target.value)}
+                          className="w-full"
+                        >
+                          <option value="1 week">1 week</option>
+                          <option value="2 weeks">2 weeks</option>
+                          <option value="3 weeks">3 weeks</option>
+                          <option value="4 weeks">4 weeks</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="monument text-sm mb-2 block">
+                          REVIEW CADENCE
+                        </label>
+                        <select
+                          value={charter.reviewCadence || 'Weekly'}
+                          onChange={(e) => updateCharter(charter.itemId, 'reviewCadence', e.target.value)}
+                          className="w-full"
+                        >
+                          <option value="Daily">Daily</option>
+                          <option value="Weekly">Weekly</option>
+                          <option value="Bi-weekly">Bi-weekly</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="monument text-sm mb-2 block">
+                        TEAM LEAD
+                      </label>
+                      <input
+                        type="text"
+                        value={charter.teamLead || ''}
+                        onChange={(e) => updateCharter(charter.itemId, 'teamLead', e.target.value)}
+                        placeholder="Name of person leading this agile team"
+                        className="w-full"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="monument text-sm mb-2 block">
+                        START DATE
+                      </label>
+                      <input
+                        type="date"
+                        value={charter.startDate || ''}
+                        onChange={(e) => updateCharter(charter.itemId, 'startDate', e.target.value)}
+                        className="w-full"
+                      />
+                    </div>
+
+                    <div className="info-box">
+                      <strong>Sprint Best Practices:</strong>
+                      <ul className="mt-2 space-y-2">
+                        <li>• Kick off with 1-hour sprint-zero to align on mission</li>
+                        <li>• Run 2-week iterations: build minimal test → measure → adjust</li>
+                        <li>• Report weekly with 1-page dashboard</li>
+                        <li>• Rotate or disband teams once goal is met</li>
+                      </ul>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Validation Summary */}
+              <div className="warning-box">
+                <strong>Validation Summary for Charter #{activeCharterIndex + 1}:</strong>
+                <ul className="mt-2 space-y-1">
+                  <li className={(charter.projectGoal || '').length >= 50 ? 'text-black' : 'text-red-600'}>
+                    {(charter.projectGoal || '').length >= 50 ? '✓' : '✗'} Project goal (50+ chars): {(charter.projectGoal || '').length}/50
+                  </li>
+                  <li className={(charter.budgetLimit || '').length >= 20 ? 'text-black' : 'text-red-600'}>
+                    {(charter.budgetLimit || '').length >= 20 ? '✓' : '✗'} Budget limit (20+ chars): {(charter.budgetLimit || '').length}/20
+                  </li>
+                  <li className={(charter.teamRoles || []).filter(r => r.role && r.responsibility).length >= 4 ? 'text-black' : 'text-red-600'}>
+                    {(charter.teamRoles || []).filter(r => r.role && r.responsibility).length >= 4 ? '✓' : '✗'} Team roles (min 4): {(charter.teamRoles || []).filter(r => r.role && r.responsibility).length}/4
+                  </li>
+                  <li className={(charter.kpis || []).filter(k => k.metric && k.target).length >= 2 ? 'text-black' : 'text-red-600'}>
+                    {(charter.kpis || []).filter(k => k.metric && k.target).length >= 2 ? '✓' : '✗'} KPIs (min 2): {(charter.kpis || []).filter(k => k.metric && k.target).length}/2
+                  </li>
+                  <li className={(charter.teamLead || '').length > 0 ? 'text-black' : 'text-red-600'}>
+                    {(charter.teamLead || '').length > 0 ? '✓' : '✗'} Team lead assigned
+                  </li>
+                  <li className={(charter.startDate || '').length > 0 ? 'text-black' : 'text-red-600'}>
+                    {(charter.startDate || '').length > 0 ? '✓' : '✗'} Start date set
+                  </li>
+                </ul>
+              </div>
+
+              <div className="flex gap-4 mt-12">
+                <button onClick={() => setStep(2)} className="btn-secondary">
+                  Back to Matrix
+                </button>
+                <button
+                  onClick={() => setStep(4)}
+                  className="btn-primary"
+                  disabled={!isStep3Valid()}
+                >
+                  View Canvas
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      const renderStep4 = () => {
+        const items = data.items || [];
+        const charters = data.charters || [];
+        const sortedItems = [...items].sort((a, b) => b.score - a.score);
+
+        return (
+          <div className="min-h-screen bg-white p-8 animate-in">
+            <div className="max-w-6xl mx-auto">
+              <div id="canvas-view">
+                <div className="text-center mb-12">
+                  <h1 className="plaak text-6xl mb-4">
+                    AGILE TEAMS STRATEGY
+                  </h1>
+                  <p className="text-xl text-gray-600">Strategic Canvas</p>
+                </div>
+
+                {/* Priority Matrix Summary */}
+                <div className="canvas-section">
+                  <h2 className="plaak text-2xl mb-4">PRIORITIZATION OVERVIEW</h2>
+                  <div className="space-y-3">
+                    <p className="text-lg">Total items analyzed: {items.length}</p>
+                    <p className="text-lg">Items rated: {items.filter(i => i.impact > 0 && i.ease > 0).length}</p>
+                    <p className="text-lg">Average score: {(items.reduce((sum, i) => sum + i.score, 0) / items.length).toFixed(1)}</p>
+                  </div>
+                </div>
+
+                {/* Top 3 Items with Scores */}
+                <div className="highlight-box mb-6">
+                  <h2 className="plaak text-2xl mb-4">TOP 3 PRIORITIZED ITEMS</h2>
+                  <div className="space-y-4">
+                    {sortedItems.slice(0, 3).map((item, index) => (
+                      <div key={item.id} className="flex items-start gap-4 border-b border-gray-300 pb-4 last:border-b-0">
+                        <div className={`score-badge score-${item.score}`}>
+                          {item.score}
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="plaak text-xl mb-2">#{index + 1}</h3>
+                          <p className="text-lg mb-2">{item.description}</p>
+                          <div className="flex gap-4 text-sm text-gray-600">
+                            <span>Type: {item.type}</span>
+                            <span>Impact: {item.impact}/3</span>
+                            <span>Ease: {item.ease}/3</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Team Charters */}
+                {charters.map((charter, index) => (
+                  <div key={charter.itemId} className="canvas-section mb-8">
+                    <h2 className="plaak text-3xl mb-6">CHARTER #{index + 1}</h2>
+
+                    <div className="mb-6">
+                      <h3 className="plaak text-xl mb-2">CHALLENGE</h3>
+                      <p className="text-lg">{charter.itemDescription}</p>
+                    </div>
+
+                    <div className="canvas-grid mb-6">
+                      <div>
+                        <h3 className="plaak text-lg mb-2">PROJECT GOAL</h3>
+                        <p className="text-base">{charter.projectGoal || '-'}</p>
+                        {charter.specificMetric && (
+                          <p className="text-sm text-gray-600 mt-2">Target: {charter.specificMetric}</p>
+                        )}
+                        {charter.timeline && (
+                          <p className="text-sm text-gray-600 mt-1">Timeline: {charter.timeline}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <h3 className="plaak text-lg mb-2">BUDGET & SCOPE</h3>
+                        <p className="text-sm mb-2"><strong>Budget:</strong> {charter.budgetLimit || '-'}</p>
+                        <p className="text-sm mb-2"><strong>Decision Rights:</strong> {charter.decisionRights || '-'}</p>
+                        {charter.scopeLimits && (
+                          <p className="text-sm"><strong>Scope Limits:</strong> {charter.scopeLimits}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="mb-6">
+                      <h3 className="plaak text-lg mb-3">TEAM STRUCTURE</h3>
+                      <div className="grid grid-cols-2 gap-3">
+                        {(charter.teamRoles || []).filter(r => r.role).map(role => (
+                          <div key={role.id} className="border border-gray-300 p-3">
+                            <h4 className="font-bold text-sm">{role.role}</h4>
+                            <p className="text-sm text-gray-600">{role.responsibility}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="mb-6">
+                      <h3 className="plaak text-lg mb-3">KEY PERFORMANCE INDICATORS</h3>
+                      <div className="space-y-2">
+                        {(charter.kpis || []).filter(k => k.metric).map((kpi, kpiIndex) => (
+                          <div key={kpi.id} className="flex items-start gap-3">
+                            <span className="font-bold">{kpiIndex + 1}.</span>
+                            <div className="flex-1">
+                              <p className="font-bold">{kpi.metric}</p>
+                              <p className="text-sm text-gray-600">Target: {kpi.target} | Tracked: {kpi.trackingFrequency}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-4 bg-gray-100 p-4">
+                      <div>
+                        <h4 className="monument text-xs mb-1">TEAM LEAD</h4>
+                        <p className="text-sm">{charter.teamLead || '-'}</p>
+                      </div>
+                      <div>
+                        <h4 className="monument text-xs mb-1">SPRINT LENGTH</h4>
+                        <p className="text-sm">{charter.sprintLength}</p>
+                      </div>
+                      <div>
+                        <h4 className="monument text-xs mb-1">START DATE</h4>
+                        <p className="text-sm">{charter.startDate || '-'}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Implementation Timeline */}
+                <div className="canvas-section">
+                  <h2 className="plaak text-2xl mb-4">90-DAY IMPLEMENTATION TIMELINE</h2>
+                  <div className="space-y-3">
+                    <div className="border-l-4 border-black pl-4">
+                      <h4 className="font-bold">Week 1-2: Sprint Zero</h4>
+                      <p className="text-sm">Kick off all 3 teams, align on mission, rules, and KPIs</p>
+                    </div>
+                    <div className="border-l-4 border-black pl-4">
+                      <h4 className="font-bold">Week 3-8: Experimentation Phase</h4>
+                      <p className="text-sm">Run 3 two-week sprints, test solutions, measure results</p>
+                    </div>
+                    <div className="border-l-4 border-black pl-4">
+                      <h4 className="font-bold">Week 9-12: Scale or Pivot</h4>
+                      <p className="text-sm">Scale winning approaches, pivot or close underperformers</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Next Steps */}
+                <div className="canvas-section">
+                  <h2 className="plaak text-2xl mb-4">NEXT STEPS</h2>
+                  <ol className="space-y-3 text-lg">
+                    <li>1. Schedule sprint-zero meetings for all 3 teams</li>
+                    <li>2. Set up weekly review cadence with stakeholders</li>
+                    <li>3. Create 1-page dashboard template for progress tracking</li>
+                    <li>4. Lock in standing calendar invites for sprint reviews</li>
+                    <li>5. Pre-agree simplified 48-hour turnarounds for critical requests</li>
+                  </ol>
+                </div>
+
+                {/* Success Metrics */}
+                <div className="highlight-box">
+                  <h2 className="plaak text-2xl mb-4">SUCCESS METRICS</h2>
+                  <ul className="space-y-2 text-lg">
+                    <li>• Teams make decisions in days, not weeks</li>
+                    <li>• 80% reduction in approval wait time</li>
+                    <li>• All 3 teams complete at least 2 meaningful experiments</li>
+                    <li>• At least 1 team achieves target KPIs within 90 days</li>
+                    <li>• Team satisfaction scores above 4/5</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="flex gap-4 mt-12 no-print">
+                <button onClick={() => setStep(3)} className="btn-secondary">
+                  Back to Edit
+                </button>
+                <button onClick={exportToPDF} className="btn-primary">
+                  Export to PDF
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      const renderHelpModal = () => {
+        const helpContent = {
+          1: {
+            title: 'Brainstorm Problems & Opportunities',
+            content: (
+              <>
+                <p className="mb-4">
+                  Surface everything slowing you down or holding untapped potential. List organizational pain-points and growth ideas.
+                </p>
+                <h4 className="font-bold mb-2">What to Include:</h4>
+                <ul className="list-disc ml-6 mb-4 space-y-1">
+                  <li>Process bottlenecks and delays</li>
+                  <li>Customer pain points</li>
+                  <li>Untested market opportunities</li>
+                  <li>Resource inefficiencies</li>
+                  <li>Quality or delivery issues</li>
+                  <li>Growth opportunities being missed</li>
+                </ul>
+                <h4 className="font-bold mb-2">Problem vs Opportunity:</h4>
+                <p className="mb-2"><strong>Problem:</strong> Something broken or inefficient that needs fixing</p>
+                <p className="mb-4"><strong>Opportunity:</strong> Untapped potential that could drive growth</p>
+                <div className="bg-gray-100 p-4 mt-4">
+                  <strong>Examples:</strong>
+                  <p className="mt-2">
+                    <strong>Problem:</strong> "Customer onboarding takes 4 weeks due to manual document processing, causing frustration and delays"
+                  </p>
+                  <p className="mt-2">
+                    <strong>Opportunity:</strong> "New market segment showing 40% interest rate in pilot tests but we haven't launched there yet"
+                  </p>
+                </div>
+              </>
+            )
+          },
+          2: {
+            title: 'Impact / Ease Matrix',
+            content: (
+              <>
+                <p className="mb-4">
+                  Rate each item on two dimensions to calculate priority score.
+                </p>
+                <h4 className="font-bold mb-2">Impact Rating (1-3):</h4>
+                <ul className="list-disc ml-6 mb-4">
+                  <li><strong>3 - High:</strong> Major business value, significant customer impact, high revenue potential</li>
+                  <li><strong>2 - Medium:</strong> Moderate business value, some customer impact</li>
+                  <li><strong>1 - Low:</strong> Minor business value, limited impact</li>
+                </ul>
+                <h4 className="font-bold mb-2">Ease Rating (1-3):</h4>
+                <ul className="list-disc ml-6 mb-4">
+                  <li><strong>3 - Easy:</strong> Quick to execute, low cost, resources available</li>
+                  <li><strong>2 - Medium:</strong> Moderate time and resources needed</li>
+                  <li><strong>1 - Hard:</strong> Slow, expensive, complex, resource-intensive</li>
+                </ul>
+                <div className="bg-yellow-100 p-4 mt-4">
+                  <strong>Score = Impact + Ease (range: 2-6)</strong>
+                  <p className="mt-2">Top 3 highest scores get agile teams. Focus on score 5-6 (high impact + easy/medium) for quick wins.</p>
+                </div>
+              </>
+            )
+          },
+          3: {
+            title: 'Team Charters',
+            content: (
+              <>
+                <p className="mb-4">
+                  Define complete charters for your top 3 prioritized items. Each charter turns a problem/opportunity into an actionable agile team mission.
+                </p>
+                <h4 className="font-bold mb-2">Charter Components:</h4>
+                <ul className="list-disc ml-6 mb-4 space-y-1">
+                  <li><strong>Project Goal:</strong> Laser-specific about what success looks like</li>
+                  <li><strong>Budget & Rules:</strong> What team can spend and decide without approval</li>
+                  <li><strong>Team Structure:</strong> 4-6 cross-functional roles (no handoffs)</li>
+                  <li><strong>KPIs:</strong> 2-4 metrics tracking both output and outcome</li>
+                  <li><strong>Sprint Details:</strong> Length, cadence, lead, start date</li>
+                </ul>
+                <h4 className="font-bold mb-2">Agile Team Principles:</h4>
+                <ul className="list-disc ml-6 mb-4">
+                  <li>One squad, one mission - avoid bundling objectives</li>
+                  <li>Team is self-sufficient - all skills needed are on the team</li>
+                  <li>Clear boundaries - budget, decision rights, scope limits</li>
+                  <li>Fast feedback - 2-week sprints, weekly reviews</li>
+                </ul>
+                <div className="bg-gray-100 p-4">
+                  <strong>Example Team Roles:</strong>
+                  <p className="mt-2">Process Lead (map workflow), Customer Advocate (voice of customer), Metrics Champion (track KPIs), Tech Lead (build solutions), Operations Rep (ensure feasibility)</p>
+                </div>
+              </>
+            )
+          }
+        };
+
+        const content = helpContent[step] || { title: 'Help', content: <p>No help available for this step.</p> };
+
+        return (
+          <div className="modal-overlay" onClick={() => setShowHelp(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <button className="modal-close" onClick={() => setShowHelp(false)}>
+                ×
+              </button>
+              <h2 className="plaak text-3xl mb-6">{content.title}</h2>
+              <div className="text-lg leading-relaxed">
+                {content.content}
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      // Progress Indicator Component
+      const ProgressIndicator = ({ currentStep }) => {
+        const steps = [
+          { number: 1, label: 'Brainstorm' },
+          { number: 2, label: 'Prioritize' },
+          { number: 3, label: 'Charters' }
+        ];
+
+        return (
+          <div className="flex items-center justify-center mb-12 animate-in">
+            {steps.map((s, index) => (
+              <Fragment key={s.number}>
+                <div className="flex flex-col items-center">
+                  <div
+                    className={`progress-dot mb-2 ${
+                      s.number === currentStep
+                        ? 'active'
+                        : s.number < currentStep
+                        ? 'completed'
+                        : ''
+                    }`}
+                  ></div>
+                  <span
+                    className={`monument text-xs ${
+                      s.number <= currentStep ? 'text-black' : 'text-gray-400'
+                    }`}
+                  >
+                    {s.label}
+                  </span>
+                </div>
+                {index < steps.length - 1 && (
+                  <div className="progress-line mx-4" style={{ width: '80px' }}></div>
+                )}
+              </Fragment>
+            ))}
+          </div>
+        );
+      };
+
+      return (
+        <div>
+          {step === 0 && renderCoverPage()}
+          {step === 0.5 && renderIntroduction()}
+          {step === 1 && renderStep1()}
+          {step === 2 && renderStep2()}
+          {step === 3 && renderStep3()}
+          {step === 4 && renderStep4()}
+
+          {step >= 1 && step <= 3 && (
+            <button className="help-button" onClick={() => setShowHelp(true)}>
+              ?
+            </button>
+          )}
+
+          {showHelp && renderHelpModal()}
+        </div>
+      );
+    }
+
+    // Render App
+    ReactDOM.render(<AgileTeamsApp />, document.getElementById('root'));
+  </script>
+</body>
+</html>

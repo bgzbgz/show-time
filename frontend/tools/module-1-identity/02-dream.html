@@ -1,0 +1,1717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Company Dream Tool | Fast Track</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../../shared/js/dependency-injection.js"></script>
+    <style>
+        @font-face {
+            font-family: 'Plaak';
+            src: url('Plaak3Trial-43-Bold.woff2') format('woff2');
+            font-weight: bold;
+        }
+
+        @font-face {
+            font-family: 'Riforma';
+            src: url('RiformaLL-Regular.woff2') format('woff2');
+            font-weight: normal;
+        }
+
+        @font-face {
+            font-family: 'Monument';
+            src: url('MonumentGrotesk-Mono.woff2') format('woff2');
+            font-weight: normal;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Riforma', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 16px;
+            color: #000000;
+            background: #FFFFFF;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .plaak {
+            font-family: 'Plaak', sans-serif;
+            font-weight: bold;
+            letter-spacing: -0.01em;
+            line-height: 1.2;
+        }
+
+        .smooth {
+            transition: all 0.2s ease;
+        }
+
+        .worksheet-input {
+            border: 1px solid #E0E0E0;
+            padding: 12px 16px;
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
+            transition: border-color 0.2s ease;
+            background: #FFFFFF;
+            width: 100%;
+        }
+
+        .worksheet-input:focus {
+            outline: none;
+            border-color: #000000;
+        }
+
+        .worksheet-input.strong {
+            border-color: #10B981;
+            border-width: 2px;
+        }
+
+        .worksheet-input.weak {
+            border-color: #EF4444;
+        }
+
+        .worksheet-input::placeholder {
+            color: #9CA3AF;
+        }
+
+        textarea.worksheet-input {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .numbered-section {
+            background: #000000;
+            color: #FFFFFF;
+            padding: 10px 16px;
+            font-size: 18px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: #000000;
+            color: #FFFFFF;
+            padding: 12px 24px;
+            border: 2px solid #000000;
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: scale(1.02);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .btn-primary:disabled {
+            background: #E0E0E0;
+            border-color: #E0E0E0;
+            color: #9CA3AF;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .btn-secondary {
+            background: #FFFFFF;
+            color: #000000;
+            padding: 12px 24px;
+            border: 2px solid #000000;
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-secondary:hover {
+            background: #F8F8F8;
+        }
+
+        .help-button {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: #000000;
+            color: #FFFFFF;
+            border: 2px solid #000000;
+            font-size: 28px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 40;
+            transition: all 0.2s ease;
+        }
+
+        .help-button:hover {
+            transform: scale(1.1);
+            background: #fff469;
+            color: #000000;
+        }
+
+        .progress-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #E0E0E0;
+            transition: all 0.2s ease;
+        }
+
+        .progress-dot.active {
+            background: #000000;
+            transform: scale(1.3);
+        }
+
+        .progress-dot.completed {
+            background: #000000;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        .animate-in {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .animate-in-right {
+            animation: slideInRight 0.4s ease-out;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @media print {
+            .no-print {
+                display: none;
+            }
+        }
+
+        .cover-overlay {
+            background: linear-gradient(to bottom, rgba(0,0,0,0.4), rgba(0,0,0,0.7));
+        }
+
+        .word-tag {
+            display: inline-block;
+            padding: 8px 16px;
+            background: #000000;
+            color: #FFFFFF;
+            border-radius: 4px;
+            margin: 4px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .dream-preview-sidebar {
+            position: fixed;
+            top: 120px;
+            right: 24px;
+            width: 280px;
+            background: #000000;
+            color: #FFFFFF;
+            border: 4px solid #000000;
+            padding: 16px;
+            z-index: 30;
+            max-height: calc(100vh - 150px);
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+        }
+
+        .dream-preview-sidebar.collapsed {
+            transform: translateX(calc(100% + 24px));
+        }
+
+        .sidebar-toggle {
+            position: fixed;
+            top: 120px;
+            right: 24px;
+            width: 48px;
+            height: 48px;
+            background: #000000;
+            color: #FFF469;
+            border: 3px solid #000000;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 35;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-toggle:hover {
+            background: #FFF469;
+            color: #000000;
+        }
+
+        .sidebar-toggle.with-sidebar {
+            right: 328px;
+        }
+
+        @media (max-width: 1400px) {
+            .dream-preview-sidebar {
+                transform: translateX(calc(100% + 24px));
+            }
+            .sidebar-toggle {
+                right: 24px;
+            }
+        }
+
+        .strength-bar {
+            height: 8px;
+            background: #E0E0E0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .strength-fill {
+            height: 100%;
+            background: linear-gradient(to right, #EF4444, #F59E0B, #10B981);
+            transition: width 0.3s ease;
+        }
+
+        .ai-option {
+            border: 2px solid #E0E0E0;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .ai-option:hover {
+            border-color: #000000;
+            background: #F8F8F8;
+        }
+
+        .ai-option.selected {
+            border-color: #000000;
+            border-width: 3px;
+            background: #FFF469;
+        }
+
+        .checkmark {
+            display: inline-block;
+            color: #10B981;
+            font-size: 20px;
+            font-weight: bold;
+            animation: fadeIn 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // Configuration
+        const CONFIG = {
+            SUPABASE_URL: 'https://vpfayzzjnegdefjrnyoc.supabase.co',
+            SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZwZmF5enpqbmVnZGVmanJueW9jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMzAwODUsImV4cCI6MjA4NTcwNjA4NX0.7qwzd9kwyRG0Wx9DDSc8F9a1SRD0CoC6CGS-9M1sxIs',
+            TOOL_SLUG: 'dream',
+            SPRINT_NUMBER: 2,
+            SCHEMA_NAME: 'sprint_02_dream',
+            AUTOSAVE_DELAY: 2000
+        };
+
+        // Initialize Supabase client
+        const { createClient } = supabase;
+        const supabaseClient = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+
+        // Make Supabase client globally available for dependency injection
+        window.supabaseClient = supabaseClient;
+
+        // Initialize dependency injection
+        DependencyInjection.init(CONFIG.TOOL_SLUG, CONFIG.SCHEMA_NAME);
+
+        const WORD_SUGGESTIONS = [
+            'Innovation', 'Excellence', 'Global', 'Trusted', 
+            'Disruptive', 'Sustainable', 'Bold', 'Agile',
+            'Market-Leader', 'Category-Defining', 'Unstoppable',
+            'Transformative', 'Pioneering', 'Resilient', 'Visionary'
+        ];
+
+        // Helper functions
+        const analyzeText = (text, minLength = 20) => {
+            if (!text) return { strength: 0, label: 'Empty', color: '#9CA3AF' };
+            
+            const length = text.length;
+            const hasNumbers = /\d/.test(text);
+            const hasSpecifics = /\$|€|%|#/.test(text);
+            const genericWords = ['leading', 'best', 'top', 'premier', 'world-class'];
+            const hasGeneric = genericWords.some(word => text.toLowerCase().includes(word));
+            
+            let score = 0;
+            if (length > minLength) score += 25;
+            if (length > minLength * 2) score += 25;
+            if (hasNumbers || hasSpecifics) score += 25;
+            if (!hasGeneric) score += 25;
+            
+            if (score >= 75) return { strength: score, label: '🔥 BOLD', color: '#10B981' };
+            if (score >= 50) return { strength: score, label: '✓ Good', color: '#F59E0B' };
+            if (score >= 25) return { strength: score, label: '⚠️ Weak', color: '#EF4444' };
+            return { strength: score, label: '❌ Too Generic', color: '#EF4444' };
+        };
+
+        const calculateOverallProgress = (data) => {
+            let completed = 0;
+            let total = 12;
+            
+            // Basic Info (2 fields)
+            if (data.companyName) completed++;
+            if (data.userEmail) completed++;
+            
+            // Corporate Killer (3 fields)
+            if (data.corporateKiller.whatLost) completed++;
+            if (data.corporateKiller.whatsAtStake) completed++;
+            if (data.corporateKiller.whyImportant) completed++;
+            
+            // Dream Answers (6 fields)
+            if (data.dreamAnswers.achievement) completed++;
+            if (data.dreamAnswers.customersSay) completed++;
+            if (data.dreamAnswers.employeesSay) completed++;
+            if (data.dreamAnswers.marketPosition) completed++;
+            if (data.dreamAnswers.officeFeelsLike) completed++;
+            if (data.dreamAnswers.personalAchievement) completed++;
+            
+            // One Sentence (1 field)
+            if (data.oneSentence && data.oneSentence.length > 50) completed++;
+            
+            return Math.round((completed / total) * 100);
+        };
+
+        // Dream Preview Sidebar Component
+        function DreamPreviewSidebar({ data, currentStep, isCollapsed, onToggle }) {
+            const progress = calculateOverallProgress(data);
+            
+            if (currentStep < 1 || currentStep >= 5) return null;
+            
+            return (
+                <>
+                    <button 
+                        className={`sidebar-toggle no-print ${!isCollapsed ? 'with-sidebar' : ''}`}
+                        onClick={onToggle}
+                        title={isCollapsed ? 'Show Dream Preview' : 'Hide Dream Preview'}
+                    >
+                        {isCollapsed ? '◀' : '▶'}
+                    </button>
+                    <div className={`dream-preview-sidebar no-print ${isCollapsed ? 'collapsed' : 'animate-in-right'}`}>
+                        <h3 className="plaak text-xl mb-4" style={{color: '#FFF469'}}>YOUR DREAM</h3>
+                    
+                    <div className="mb-4">
+                        <div className="flex justify-between mb-2">
+                            <span className="text-sm">Progress</span>
+                            <span className="text-sm font-bold">{progress}%</span>
+                        </div>
+                        <div className="strength-bar">
+                            <div className="strength-fill" style={{width: `${progress}%`}}></div>
+                        </div>
+                    </div>
+                    
+                    {data.oneSentence && (
+                        <div className="mb-4 pb-4 border-b border-gray-600">
+                            <div className="text-xs text-gray-400 mb-2">ONE SENTENCE</div>
+                            <div className="text-sm italic leading-relaxed">"{data.oneSentence.substring(0, 120)}{data.oneSentence.length > 120 ? '...' : ''}"</div>
+                        </div>
+                    )}
+                    
+                    <div className="space-y-3 text-sm">
+                        <div>
+                            <div className="text-xs text-gray-400">Achievement</div>
+                            <div className="font-bold">{data.dreamAnswers.achievement || '—'}</div>
+                        </div>
+                        <div>
+                            <div className="text-xs text-gray-400">Market Position</div>
+                            <div className="font-bold">{data.dreamAnswers.marketPosition || '—'}</div>
+                        </div>
+                        {data.moodBoard.words.length > 0 && (
+                            <div>
+                                <div className="text-xs text-gray-400 mb-1">Essence</div>
+                                <div className="flex flex-wrap gap-1">
+                                    {data.moodBoard.words.map((word, i) => (
+                                        <span key={i} className="text-xs bg-white text-black px-2 py-1 rounded">
+                                            {word}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                    </div>
+                </>
+            );
+        }
+
+        // Help Modal Component
+        function HelpModal({ isOpen, onClose, content }) {
+            if (!isOpen) return null;
+
+            return (
+                <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 fade-in">
+                    <div className="bg-white max-w-3xl p-12 border-8 border-black max-h-[80vh] overflow-y-auto">
+                        <div className="flex justify-between items-start mb-6">
+                            <h2 className="plaak text-5xl">INSTRUCTIONS</h2>
+                            <button onClick={onClose} className="text-4xl font-bold hover:text-gray-600">×</button>
+                        </div>
+                        {content}
+                        <button className="btn-primary w-full text-xl py-4 mt-8" onClick={onClose}>
+                            GOT IT
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        // Main App Component
+        function CompanyDreamTool() {
+            const [step, setStep] = useState(0);
+            const [showHelp, setShowHelp] = useState(false);
+            const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+            const [submissionStatus, setSubmissionStatus] = useState(null); // null, 'loading', 'success', 'error'
+            
+            const [data, setData] = useState({
+                companyName: '',
+                userEmail: '',
+                corporateKiller: {
+                    whatLost: '',
+                    whatsAtStake: '',
+                    whyImportant: ''
+                },
+                dreamAnswers: {
+                    achievement: '',
+                    customersSay: '',
+                    employeesSay: '',
+                    marketPosition: '',
+                    officeFeelsLike: '',
+                    personalAchievement: ''
+                },
+                oneSentence: '',
+                moodBoard: {
+                    words: [],
+                    people: []
+                }
+            });
+
+            // Auto-save to localStorage
+            useEffect(() => {
+                const saved = localStorage.getItem('ftDreamTool');
+                if (saved) {
+                    try {
+                        setData(JSON.parse(saved));
+                    } catch (e) {}
+                }
+            }, []);
+
+            useEffect(() => {
+                localStorage.setItem('ftDreamTool', JSON.stringify(data));
+            }, [data]);
+
+            const updateData = (path, value) => {
+                setData(prev => {
+                    const newData = { ...prev };
+                    const keys = path.split('.');
+                    let current = newData;
+                    for (let i = 0; i < keys.length - 1; i++) {
+                        current = current[keys[i]];
+                    }
+                    current[keys[keys.length - 1]] = value;
+                    return newData;
+                });
+            };
+
+            // Clear Cache/Reset Function
+            const clearCache = () => {
+                if (confirm('⚠️ This will delete all saved data and reset the form. Are you sure?')) {
+                    localStorage.removeItem('ftDreamTool');
+                    window.location.reload();
+                }
+            };
+
+            // Webhook Submission Function
+            const submitToWebhook = async () => {
+                setSubmissionStatus('loading');
+
+                try {
+                    // Get user ID from localStorage
+                    const userId = localStorage.getItem('ft_user_id');
+                    if (!userId) {
+                        alert('User not authenticated. Please return to the dashboard.');
+                        setSubmissionStatus('error');
+                        return;
+                    }
+
+                    // Submit using RPC function (handles schema-specific tables)
+                    const { data: result, error: submitError } = await supabaseClient
+                        .rpc('submit_tool_data', {
+                            p_schema_name: CONFIG.SCHEMA_NAME,
+                            p_user_id: userId,
+                            p_data: data,
+                            p_tool_slug: CONFIG.TOOL_SLUG
+                        });
+
+                    if (submitError) throw submitError;
+
+                    if (!result || !result.success) {
+                        throw new Error(result?.message || 'Submission failed');
+                    }
+
+                    setSubmissionStatus('success');
+                    console.log('Submission ID:', result.submission_id);
+                    localStorage.setItem('lastSubmissionId', result.submission_id);
+                        setTimeout(() => setSubmissionStatus(null), 5000);
+                    } else {
+                        setSubmissionStatus('error');
+                        setTimeout(() => setSubmissionStatus(null), 5000);
+                    }
+                } catch (error) {
+                    console.error('Webhook submission error:', error);
+                    setSubmissionStatus('error');
+                    setTimeout(() => setSubmissionStatus(null), 5000);
+                }
+            };
+
+            const generate3Sentences = () => {
+                const { achievement, customersSay, employeesSay, marketPosition } = data.dreamAnswers;
+                
+                return [
+                    {
+                        type: 'Conservative',
+                        text: `In 10 years, we're ${marketPosition.toLowerCase() || 'a respected industry player'}, with ${achievement.toLowerCase() || 'steady growth'}, earning recognition from customers and employees alike.`,
+                        desc: 'Safe, achievable, conventional'
+                    },
+                    {
+                        type: 'Bold',
+                        text: `In 10 years, we're ${marketPosition.toLowerCase() || 'the category leader'}, where ${employeesSay.toLowerCase() || 'our team feels inspired'}, serving customers who say "${customersSay || 'they changed everything'}", and we've achieved ${achievement.toLowerCase() || 'what seemed impossible'}.`,
+                        desc: 'Ambitious, vivid, inspirational'
+                    },
+                    {
+                        type: 'Audacious',
+                        text: `In 10 years, we've redefined the industry as ${marketPosition.toLowerCase() || 'the undisputed category king'}, ${achievement.toLowerCase() || 'dominating every key metric'}, where ${employeesSay.toLowerCase() || 'people fight to work here'} and customers ${customersSay.toLowerCase() || 'can\'t imagine life without us'}.`,
+                        desc: 'Aggressive, moonshot, game-changing'
+                    }
+                ];
+            };
+
+            // Help content based on current step
+            const getHelpContent = () => {
+                if (step === 1) {
+                    return (
+                        <div>
+                            <h3 className="plaak text-3xl mb-4">WHY</h3>
+                            <p className="mb-6 text-lg">The Dream is your North Star. It aligns your team, energizes your workforce, and drives long-term success. Without it, you're adrift.</p>
+                            
+                            <h3 className="plaak text-3xl mb-4">WHAT</h3>
+                            <p className="mb-6 text-lg">A vivid, bold, and inspiring vision of where your company will be in 10 years - written as if it's already happening.</p>
+                            
+                            <h3 className="plaak text-3xl mb-4">HOW</h3>
+                            <ol className="text-lg space-y-2">
+                                <li>1. Answer questions about your future state</li>
+                                <li>2. Synthesize into one powerful sentence</li>
+                                <li>3. Create a visual Dream Board</li>
+                                <li>4. Share with your team for accountability</li>
+                            </ol>
+                        </div>
+                    );
+                }
+                return null;
+            };
+
+            return (
+                <div className="min-h-screen bg-white">
+                    {/* Dream Preview Sidebar */}
+                    <DreamPreviewSidebar 
+                        data={data} 
+                        currentStep={step} 
+                        isCollapsed={sidebarCollapsed}
+                        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+                    />
+
+                    {/* Help & Reset Buttons */}
+                    {step >= 1 && step <= 4 && (
+                        <>
+                            <button className="help-button no-print" onClick={() => setShowHelp(true)}>
+                                ?
+                            </button>
+                            <button 
+                                className="help-button no-print" 
+                                onClick={clearCache}
+                                style={{right: '90px'}}
+                                title="Clear all data and start over"
+                            >
+                                ⟲
+                            </button>
+                        </>
+                    )}
+
+                    {/* Help Modal */}
+                    <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} content={getHelpContent()} />
+
+                    {/* Cover Page */}
+                    {step === 0 && (
+                        <div className="relative min-h-screen flex items-center justify-center bg-black">
+                            <div className="relative z-10 text-center text-white px-8">
+                                <h1 className="plaak text-9xl mb-6 animate-in">COMPANY DREAM TOOL</h1>
+                                <p className="text-3xl mb-12 animate-in" style={{animationDelay: '0.2s'}}>
+                                    Craft your bold, simple, energizing 10-year vision
+                                </p>
+                                <button 
+                                    className="bg-white text-black plaak text-3xl px-16 py-6 border-4 border-white hover:bg-black hover:text-white hover:border-white transition-all duration-200 animate-in"
+                                    style={{animationDelay: '0.4s'}}
+                                    onClick={() => setStep(0.5)}
+                                >
+                                    START
+                                </button>
+                                <div className="mt-8 animate-in" style={{animationDelay: '0.6s'}}>
+                                    <button 
+                                        onClick={clearCache}
+                                        className="text-gray-400 hover:text-white text-sm underline transition-colors"
+                                    >
+                                        Clear Saved Data
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Intro Screen */}
+                    {step === 0.5 && (
+                        <div className="bg-black text-white min-h-screen p-16">
+                            <div className="max-w-5xl mx-auto">
+                                <h1 className="plaak text-9xl mb-16 animate-in">BEFORE WE START</h1>
+                                
+                                <div className="mb-12 animate-in" style={{animationDelay: '0.1s'}}>
+                                    <h2 className="plaak text-6xl mb-6">PURPOSE</h2>
+                                    <p className="text-3xl leading-relaxed">
+                                        The Dream is your North Star - bold, simple, energizing. In the next 15 minutes, you'll craft a vivid vision of where your company will be in 10 years.
+                                    </p>
+                                    <p className="text-2xl text-gray-400 mt-4">
+                                        This isn't another mission statement. It's a story that makes Mondays as exciting as Fridays.
+                                    </p>
+                                </div>
+
+                                <div className="mb-12 animate-in" style={{animationDelay: '0.2s'}}>
+                                    <h2 className="plaak text-6xl mb-6" style={{color: '#fff469'}}>MISTAKES TO AVOID</h2>
+                                    <ul className="text-2xl space-y-4">
+                                        <li className="flex items-start">
+                                            <span className="text-4xl mr-4">•</span>
+                                            <span>Being vague or generic ("leading company in our space")</span>
+                                        </li>
+                                        <li className="flex items-start">
+                                            <span className="text-4xl mr-4">•</span>
+                                            <span>Playing it safe (Dream should push boundaries)</span>
+                                        </li>
+                                        <li className="flex items-start">
+                                            <span className="text-4xl mr-4">•</span>
+                                            <span>Using corporate jargon instead of vivid language</span>
+                                        </li>
+                                        <li className="flex items-start">
+                                            <span className="text-4xl mr-4">•</span>
+                                            <span>Making it about numbers only (needs emotional resonance)</span>
+                                        </li>
+                                        <li className="flex items-start">
+                                            <span className="text-4xl mr-4">•</span>
+                                            <span>Letting it collect dust (must be lived daily)</span>
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                <div className="mb-16 animate-in" style={{animationDelay: '0.3s'}}>
+                                    <h2 className="plaak text-6xl mb-8">THE JOURNEY</h2>
+                                    <div className="grid grid-cols-4 gap-8 text-center">
+                                        <div className="border-2 border-white p-8">
+                                            <div className="text-9xl plaak mb-4">01</div>
+                                            <p className="text-2xl font-bold mb-2">Corporate Killer</p>
+                                            <p className="text-xl text-gray-400">3 minutes</p>
+                                        </div>
+                                        <div className="border-2 border-white p-8">
+                                            <div className="text-9xl plaak mb-4">02</div>
+                                            <p className="text-2xl font-bold mb-2">Dream Questions</p>
+                                            <p className="text-xl text-gray-400">5 minutes</p>
+                                        </div>
+                                        <div className="border-2 border-white p-8">
+                                            <div className="text-9xl plaak mb-4">03</div>
+                                            <p className="text-2xl font-bold mb-2">One Sentence</p>
+                                            <p className="text-xl text-gray-400">3 minutes</p>
+                                        </div>
+                                        <div className="border-2 border-white p-8">
+                                            <div className="text-9xl plaak mb-4">04</div>
+                                            <p className="text-2xl font-bold mb-2">Dream Board</p>
+                                            <p className="text-xl text-gray-400">4 minutes</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button 
+                                    className="btn-primary w-full text-3xl py-8 plaak animate-in" 
+                                    style={{animationDelay: '0.4s'}}
+                                    onClick={() => setStep(0.7)}
+                                >
+                                    LET'S START →
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Golden Circle Interlude */}
+                    {step === 0.7 && (
+                        <div className="bg-white min-h-screen flex items-center justify-center p-16">
+                            <div className="max-w-6xl text-center">
+                                <h1 className="plaak text-8xl mb-12 animate-in">THE GOLDEN CIRCLE</h1>
+
+                                <div className="text-xl max-w-2xl mx-auto mb-12 space-y-4 animate-in" style={{animationDelay: '0.2s'}}>
+                                    <p className="text-2xl font-bold">Most companies start with WHAT they do.</p>
+                                    <p className="text-2xl">Elite companies start with WHY they exist.</p>
+                                    <p className="text-2xl font-bold">Your Dream lives in the WHY.</p>
+                                </div>
+
+                                <button 
+                                    className="btn-primary text-2xl py-6 px-16 animate-in" 
+                                    style={{animationDelay: '0.4s'}}
+                                    onClick={() => setStep(1)}
+                                >
+                                    Continue →
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Emotional Pause after Corporate Killer */}
+                    {step === 1.5 && (
+                        <div className="bg-black text-white min-h-screen flex items-center justify-center p-16">
+                            <div className="max-w-4xl text-center">
+                                <h1 className="plaak text-7xl mb-8 animate-in" style={{color: '#FFF469'}}>
+                                    THIS MATTERS.
+                                </h1>
+                                <p className="text-3xl mb-12 animate-in" style={{animationDelay: '0.2s'}}>
+                                    You've identified what's at stake. Now let's dream about what's possible.
+                                </p>
+                                <button 
+                                    className="btn-primary text-2xl py-6 px-16 animate-in" 
+                                    style={{animationDelay: '0.4s'}}
+                                    onClick={() => setStep(2)}
+                                >
+                                    Continue to Dream Questions →
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Header (shown for steps 1-4) */}
+                    {step >= 1 && step < 5 && step !== 1.5 && step !== 2.5 && step !== 4.5 && (
+                        <>
+                            <header className="border-b-2 border-black py-6 px-8 no-print">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h1 className="plaak text-3xl">COMPANY DREAM TOOL</h1>
+                                        <p className="text-sm mt-2 text-gray-600">Craft your bold, simple, energizing 10-year vision</p>
+                                    </div>
+                                    <img src="fast track tool logo.png" alt="Fast Track" className="h-12" />
+                                </div>
+                            </header>
+
+                            {/* Progress Indicator */}
+                            <div className="border-b border-gray-200 py-6 px-8 no-print">
+                                <div className="flex items-center justify-between max-w-3xl">
+                                    <div className="flex items-center gap-2">
+                                        <div className={`progress-dot ${step >= 1 ? 'active' : ''} ${step > 1 && step !== 1.5 ? 'completed' : ''}`}></div>
+                                        <span className={`text-sm ${step === 1 ? 'font-bold' : ''}`}>Corporate Killer</span>
+                                    </div>
+                                    <div className="flex-1 h-0.5 bg-gray-200 mx-4">
+                                        <div className={`h-full bg-black transition-all ${step > 1 && step !== 1.5 ? 'w-full' : 'w-0'}`}></div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className={`progress-dot ${step >= 2 ? 'active' : ''} ${step > 2 && step !== 2.5 ? 'completed' : ''}`}></div>
+                                        <span className={`text-sm ${step === 2 ? 'font-bold' : ''}`}>Dream Questions</span>
+                                    </div>
+                                    <div className="flex-1 h-0.5 bg-gray-200 mx-4">
+                                        <div className={`h-full bg-black transition-all ${step > 2 && step !== 2.5 ? 'w-full' : 'w-0'}`}></div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className={`progress-dot ${step >= 3 ? 'active' : ''} ${step > 3 ? 'completed' : ''}`}></div>
+                                        <span className={`text-sm ${step === 3 ? 'font-bold' : ''}`}>One Sentence</span>
+                                    </div>
+                                    <div className="flex-1 h-0.5 bg-gray-200 mx-4">
+                                        <div className={`h-full bg-black transition-all ${step > 3 ? 'w-full' : 'w-0'}`}></div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className={`progress-dot ${step >= 4 ? 'active' : ''}`}></div>
+                                        <span className={`text-sm ${step === 4 ? 'font-bold' : ''}`}>Dream Board</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </>
+                    )}
+
+                    {/* Main Content */}
+                    <div>
+                        {/* Step 1: Corporate Killer */}
+                        {step === 1 && <Step1Corporate
+                            data={data}
+                            updateData={updateData}
+                            onNext={() => setStep(1.5)}
+                        />}
+
+                        {/* Step 2: Dream Questions (One-at-a-time) */}
+                        {step === 2 && <Step2DreamQuestions
+                            data={data}
+                            updateData={updateData}
+                            onBack={() => setStep(1)}
+                            onNext={() => setStep(2.5)}
+                        />}
+
+                        {/* Emotional Pause after Dream Questions */}
+                        {step === 2.5 && (
+                            <div className="bg-black text-white min-h-screen flex items-center justify-center p-16">
+                                <div className="max-w-4xl text-center">
+                                    <h1 className="plaak text-7xl mb-8 animate-in" style={{color: '#FFF469'}}>
+                                        NOW WE SYNTHESIZE.
+                                    </h1>
+                                    <p className="text-3xl mb-12 animate-in" style={{animationDelay: '0.2s'}}>
+                                        Turn your vivid vision into one powerful sentence.
+                                    </p>
+                                    <button 
+                                        className="btn-primary text-2xl py-6 px-16 animate-in" 
+                                        style={{animationDelay: '0.4s'}}
+                                        onClick={() => setStep(3)}
+                                    >
+                                        Continue →
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Step 3: One Sentence (with 3 AI versions) */}
+                        {step === 3 && <Step3OneSentence
+                            data={data}
+                            updateData={updateData}
+                            generate3Sentences={generate3Sentences}
+                            onBack={() => setStep(2)}
+                            onNext={() => setStep(4)}
+                        />}
+
+                        {/* Step 4: Dream Board */}
+                        {step === 4 && <Step4DreamBoard
+                            data={data}
+                            updateData={updateData}
+                            onBack={() => setStep(3)}
+                            onNext={() => setStep(4.5)}
+                        />}
+
+                        {/* Step 4.5: Dream Strength Analyzer */}
+                        {step === 4.5 && <DreamStrengthAnalyzer
+                            data={data}
+                            onBack={() => setStep(4)}
+                            onNext={() => setStep(5)}
+                        />}
+
+                        {/* Step 5: Final Canvas */}
+                        {step === 5 && <Step5Canvas
+                            data={data}
+                            onBack={() => setStep(4.5)}
+                            onSubmit={submitToWebhook}
+                            submissionStatus={submissionStatus}
+                        />}
+                    </div>
+                </div>
+            );
+        }
+
+        // Step 1: Corporate Killer Component (with character feedback)
+        function Step1Corporate({ data, updateData, onNext }) {
+            const canProceed = data.companyName &&
+                              data.userEmail &&
+                              data.corporateKiller.whatLost && 
+                              data.corporateKiller.whatsAtStake && 
+                              data.corporateKiller.whyImportant;
+
+            const analysis1 = analyzeText(data.corporateKiller.whatLost, 30);
+            const analysis2 = analyzeText(data.corporateKiller.whatsAtStake, 30);
+            const analysis3 = analyzeText(data.corporateKiller.whyImportant, 30);
+
+            return (
+                <main className="p-12 max-w-6xl mx-auto">
+                    <div className="animate-in">
+                        <div className="numbered-section mb-8">
+                            [01] THE CORPORATE KILLER
+                        </div>
+
+                        {/* Company Info */}
+                        <div className="grid md:grid-cols-2 gap-6 mb-8">
+                            <div>
+                                <label className="block font-bold mb-2 text-lg">Company Name *</label>
+                                <input
+                                    type="text"
+                                    className="worksheet-input text-lg"
+                                    placeholder="e.g., Acme Corp"
+                                    value={data.companyName}
+                                    onChange={(e) => updateData('companyName', e.target.value)}
+                                />
+                            </div>
+                            <div>
+                                <label className="block font-bold mb-2 text-lg">Your Email *</label>
+                                <input
+                                    type="email"
+                                    className="worksheet-input text-lg"
+                                    placeholder="e.g., ceo@company.com"
+                                    value={data.userEmail}
+                                    onChange={(e) => updateData('userEmail', e.target.value)}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="bg-black text-white border-4 border-black p-6 mb-8">
+                            <h3 className="plaak text-3xl mb-2">IMAGINE YOUR COMPANY DISAPPEARS</h3>
+                            <p className="text-xl">
+                                Someone buys your company and KILLS it. All operations shut down. The brand is shelved forever. What would the world lose?
+                            </p>
+                        </div>
+
+                        <div className="space-y-8 mb-8">
+                            <div>
+                                <label className="block font-bold mb-2 text-lg">What will be lost if your brand ceased to exist?</label>
+                                <textarea
+                                    className={`worksheet-input text-lg ${analysis1.strength > 50 ? 'strong' : ''}`}
+                                    placeholder="e.g., A sixty-year legacy of innovation and entrepreneurship"
+                                    value={data.corporateKiller.whatLost}
+                                    onChange={(e) => updateData('corporateKiller.whatLost', e.target.value)}
+                                />
+                                <div className="flex justify-between items-center mt-2">
+                                    <p className="text-sm text-gray-500">Think about your unique contribution to the world</p>
+                                    {data.corporateKiller.whatLost && (
+                                        <span className="text-sm font-bold" style={{color: analysis1.color}}>
+                                            {analysis1.label}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block font-bold mb-2 text-lg">What's at stake here?</label>
+                                <textarea
+                                    className={`worksheet-input text-lg ${analysis2.strength > 50 ? 'strong' : ''}`}
+                                    placeholder="e.g., Increased congestion, pollution and space taken up by vehicles"
+                                    value={data.corporateKiller.whatsAtStake}
+                                    onChange={(e) => updateData('corporateKiller.whatsAtStake', e.target.value)}
+                                />
+                                <div className="flex justify-between items-center mt-2">
+                                    <p className="text-sm text-gray-500">What negative impact would your absence create?</p>
+                                    {data.corporateKiller.whatsAtStake && (
+                                        <span className="text-sm font-bold" style={{color: analysis2.color}}>
+                                            {analysis2.label}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block font-bold mb-2 text-lg">Why is it important that your brand continues to exist?</label>
+                                <textarea
+                                    className={`worksheet-input text-lg ${analysis3.strength > 50 ? 'strong' : ''}`}
+                                    placeholder="e.g., Because our company will enhance people's quality of life"
+                                    value={data.corporateKiller.whyImportant}
+                                    onChange={(e) => updateData('corporateKiller.whyImportant', e.target.value)}
+                                />
+                                <div className="flex justify-between items-center mt-2">
+                                    <p className="text-sm text-gray-500">Your purpose beyond profit</p>
+                                    {data.corporateKiller.whyImportant && (
+                                        <span className="text-sm font-bold" style={{color: analysis3.color}}>
+                                            {analysis3.label}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end">
+                            <button 
+                                className="btn-primary text-xl py-4 px-8"
+                                disabled={!canProceed}
+                                onClick={onNext}
+                            >
+                                Next: Dream Questions →
+                            </button>
+                        </div>
+                    </div>
+                </main>
+            );
+        }
+
+        // Step 2: Dream Questions Component (ONE-AT-A-TIME)
+        function Step2DreamQuestions({ data, updateData, onBack, onNext }) {
+            const [currentQuestion, setCurrentQuestion] = useState(0);
+            
+            const questions = [
+                {
+                    id: 'achievement',
+                    label: 'What have you achieved?',
+                    placeholder: '€50M revenue | 500 employees | 40% market share',
+                    hint: 'One number that would make you proudest',
+                    minLength: 10
+                },
+                {
+                    id: 'customersSay',
+                    label: 'What do customers say about you?',
+                    placeholder: 'They solved a problem nobody else could solve',
+                    hint: 'The one quote from your best customer',
+                    minLength: 15
+                },
+                {
+                    id: 'employeesSay',
+                    label: 'What do your employees say?',
+                    placeholder: 'I\'m learning more here than I ever could elsewhere',
+                    hint: 'Why your best people work for you',
+                    minLength: 15
+                },
+                {
+                    id: 'marketPosition',
+                    label: 'What is your market position?',
+                    placeholder: 'The category-defining leader in sustainable retail',
+                    hint: 'How you\'re known in your industry',
+                    minLength: 15
+                },
+                {
+                    id: 'officeFeelsLike',
+                    label: 'How does your office feel?',
+                    placeholder: 'Inspired | Impressed | Energized',
+                    hint: 'One word that captures the atmosphere',
+                    minLength: 5
+                },
+                {
+                    id: 'personalAchievement',
+                    label: 'Who have YOU become?',
+                    placeholder: 'The leader I always wanted to be',
+                    hint: 'Your personal transformation',
+                    minLength: 10
+                }
+            ];
+
+            const currentQ = questions[currentQuestion];
+            const currentValue = data.dreamAnswers[currentQ.id];
+            const analysis = analyzeText(currentValue, currentQ.minLength);
+            const canProceed = currentValue && currentValue.length >= currentQ.minLength;
+
+            const handleNext = () => {
+                if (currentQuestion < questions.length - 1) {
+                    setCurrentQuestion(currentQuestion + 1);
+                } else {
+                    onNext();
+                }
+            };
+
+            const handleBack = () => {
+                if (currentQuestion > 0) {
+                    setCurrentQuestion(currentQuestion - 1);
+                } else {
+                    onBack();
+                }
+            };
+
+            return (
+                <main className="p-12 max-w-5xl mx-auto">
+                    <div className="animate-in">
+                        <div className="numbered-section mb-8">
+                            [02] THE VIVID FUTURE
+                        </div>
+
+                        <div className="bg-black text-white border-4 border-black p-6 mb-8">
+                            <h3 className="plaak text-3xl mb-2">IT'S 10 YEARS FROM TODAY</h3>
+                            <p className="text-xl">
+                                Question {currentQuestion + 1} of {questions.length} — Answer as if you're already living in that future
+                            </p>
+                        </div>
+
+                        {/* Progress bar for questions */}
+                        <div className="mb-8">
+                            <div className="flex gap-2">
+                                {questions.map((_, i) => (
+                                    <div 
+                                        key={i} 
+                                        className={`flex-1 h-2 rounded ${i <= currentQuestion ? 'bg-black' : 'bg-gray-200'}`}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="mb-12">
+                            <label className="block font-bold mb-4 text-3xl plaak">{currentQ.label}</label>
+                            <input
+                                type="text"
+                                className={`worksheet-input text-2xl ${analysis.strength > 50 ? 'strong' : ''}`}
+                                placeholder={currentQ.placeholder}
+                                value={currentValue}
+                                onChange={(e) => updateData(`dreamAnswers.${currentQ.id}`, e.target.value)}
+                                autoFocus
+                            />
+                            <div className="flex justify-between items-center mt-3">
+                                <p className="text-gray-500">{currentQ.hint}</p>
+                                {currentValue && (
+                                    <span className="text-sm font-bold" style={{color: analysis.color}}>
+                                        {analysis.label}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="flex justify-between">
+                            <button className="btn-secondary text-lg py-3 px-6" onClick={handleBack}>
+                                ← Back
+                            </button>
+                            <button 
+                                className="btn-primary text-xl py-4 px-8"
+                                disabled={!canProceed}
+                                onClick={handleNext}
+                            >
+                                {currentQuestion < questions.length - 1 ? 'Next Question →' : 'Complete Section →'}
+                            </button>
+                        </div>
+
+                        {/* Show all answered questions at bottom */}
+                        {currentQuestion > 0 && (
+                            <div className="mt-12 pt-8 border-t border-gray-200">
+                                <h4 className="font-bold mb-4 text-gray-600">YOUR ANSWERS SO FAR</h4>
+                                <div className="space-y-2 text-sm">
+                                    {questions.slice(0, currentQuestion).map((q) => (
+                                        <div key={q.id} className="flex justify-between">
+                                            <span className="text-gray-600">{q.label}</span>
+                                            <span className="font-bold">{data.dreamAnswers[q.id] || '—'} ✓</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </main>
+            );
+        }
+
+        // Step 3: One Sentence Component (with 3 AI versions)
+        function Step3OneSentence({ data, updateData, generate3Sentences, onBack, onNext }) {
+            const [selectedVersion, setSelectedVersion] = useState(null);
+            const [showOptions, setShowOptions] = useState(false);
+            const [aiSentences, setAiSentences] = useState([]);
+            
+            const canProceed = data.oneSentence && data.oneSentence.length > 50;
+            const analysis = analyzeText(data.oneSentence, 50);
+
+            const handleGenerate = () => {
+                const sentences = generate3Sentences();
+                setAiSentences(sentences);
+                setShowOptions(true);
+            };
+
+            const handleSelectVersion = (sentence, index) => {
+                updateData('oneSentence', sentence);
+                setSelectedVersion(index);
+            };
+
+            return (
+                <main className="p-12 max-w-6xl mx-auto">
+                    <div className="animate-in">
+                        <div className="numbered-section mb-8">
+                            [03] ONE SENTENCE
+                        </div>
+
+                        <div className="bg-black text-white border-4 border-black p-6 mb-8">
+                            <h3 className="plaak text-3xl mb-2">DISTILL EVERYTHING INTO ONE SENTENCE</h3>
+                            <p className="text-xl">
+                                Your Dream should be bold, simple, and vivid. Make it a sentence you'd be proud to share.
+                            </p>
+                        </div>
+
+                        {!showOptions ? (
+                            <>
+                                <div className="mb-6">
+                                    <label className="block font-bold mb-2 text-lg">Your Dream in 10 years:</label>
+                                    <textarea
+                                        className={`worksheet-input text-xl ${analysis.strength > 50 ? 'strong' : ''}`}
+                                        style={{minHeight: '160px'}}
+                                        placeholder="In 10 years, we're..."
+                                        value={data.oneSentence}
+                                        onChange={(e) => updateData('oneSentence', e.target.value)}
+                                        maxLength={300}
+                                    />
+                                    <div className="flex justify-between items-center mt-2">
+                                        <div className="text-sm text-gray-600">
+                                            {data.oneSentence.length}/300 characters
+                                        </div>
+                                        {data.oneSentence && (
+                                            <span className="text-sm font-bold" style={{color: analysis.color}}>
+                                                {analysis.label}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <button 
+                                    className="btn-secondary text-lg w-full py-4 mb-8"
+                                    onClick={handleGenerate}
+                                >
+                                    ✨ AI Assist (Generate 3 versions)
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <h3 className="font-bold text-2xl mb-6">CHOOSE YOUR DREAM STYLE</h3>
+                                <div className="space-y-4 mb-8">
+                                    {aiSentences.map((option, i) => (
+                                        <div
+                                            key={i}
+                                            className={`ai-option ${selectedVersion === i ? 'selected' : ''}`}
+                                            onClick={() => handleSelectVersion(option.text, i)}
+                                        >
+                                            <div className="flex justify-between items-start mb-2">
+                                                <div className="font-bold text-lg">{option.type}</div>
+                                                <div className="text-sm text-gray-600">{option.desc}</div>
+                                            </div>
+                                            <p className="text-lg leading-relaxed">{option.text}</p>
+                                            {selectedVersion === i && (
+                                                <div className="mt-2 text-sm font-bold text-black">
+                                                    ✓ Selected
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <button 
+                                    className="btn-secondary text-lg w-full py-3 mb-8"
+                                    onClick={() => setShowOptions(false)}
+                                >
+                                    ← Write my own instead
+                                </button>
+                            </>
+                        )}
+
+                        <div className="bg-gray-100 p-6 border-l-4 border-black mb-8">
+                            <p className="font-bold mb-3">VALIDATION CHECKLIST</p>
+                            <ul className="space-y-2">
+                                <li>❌ Too vague: "We will be a leading company..."</li>
+                                <li>❌ Too corporate: "We will leverage synergies..."</li>
+                                <li>✅ GOOD: Specific, emotional, vivid</li>
+                            </ul>
+                        </div>
+
+                        <div className="flex justify-between">
+                            <button className="btn-secondary text-lg py-3 px-6" onClick={onBack}>
+                                ← Back
+                            </button>
+                            <button 
+                                className="btn-primary text-xl py-4 px-8"
+                                disabled={!canProceed}
+                                onClick={onNext}
+                            >
+                                Next: Dream Board →
+                            </button>
+                        </div>
+                    </div>
+                </main>
+            );
+        }
+
+        // Step 4: Dream Board Component
+        function Step4DreamBoard({ data, updateData, onBack, onNext }) {
+            const canProceed = data.moodBoard.words.length >= 3;
+
+            const addWord = (word) => {
+                if (data.moodBoard.words.length < 7 && !data.moodBoard.words.includes(word)) {
+                    updateData('moodBoard.words', [...data.moodBoard.words, word]);
+                }
+            };
+
+            const removeWord = (index) => {
+                updateData('moodBoard.words', data.moodBoard.words.filter((_, i) => i !== index));
+            };
+
+            return (
+                <main className="p-12 max-w-6xl mx-auto">
+                    <div className="animate-in">
+                        <div className="numbered-section mb-8">
+                            [04] DREAM BOARD
+                        </div>
+
+                        <div className="bg-black text-white border-4 border-black p-6 mb-8">
+                            <h3 className="plaak text-3xl mb-2">MAKE YOUR DREAM VISUAL</h3>
+                            <p className="text-xl">
+                                Choose 7 words and inspirational figures that capture the essence of your Dream.
+                            </p>
+                        </div>
+
+                        {/* Words Section */}
+                        <div className="mb-12">
+                            <h3 className="font-bold text-2xl mb-4">7 Words That Capture Your Dream</h3>
+                            
+                            <input
+                                type="text"
+                                className="worksheet-input text-lg mb-4"
+                                placeholder="Type a word and press Enter"
+                                onKeyPress={(e) => {
+                                    if (e.key === 'Enter' && e.target.value && data.moodBoard.words.length < 7) {
+                                        addWord(e.target.value);
+                                        e.target.value = '';
+                                    }
+                                }}
+                            />
+
+                            <div className="flex flex-wrap gap-2 mb-6">
+                                {data.moodBoard.words.map((word, i) => (
+                                    <div key={i} className="word-tag">
+                                        {word}
+                                        <button 
+                                            onClick={() => removeWord(i)}
+                                            className="ml-2 font-bold"
+                                        >×</button>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <p className="text-sm font-bold mb-2">SUGGESTIONS (CLICK TO ADD)</p>
+                            <div className="flex flex-wrap gap-2">
+                                {WORD_SUGGESTIONS.map((word, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => addWord(word)}
+                                        className="px-3 py-1 text-sm border border-gray-300 hover:bg-gray-100 smooth"
+                                        disabled={data.moodBoard.words.includes(word) || data.moodBoard.words.length >= 7}
+                                    >
+                                        #{word}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <div className="text-sm text-gray-600 mt-3">
+                                {data.moodBoard.words.length}/7 words selected
+                            </div>
+                        </div>
+
+                        {/* People Section */}
+                        <div className="mb-8">
+                            <h3 className="font-bold text-2xl mb-4">Inspirational Figures</h3>
+                            <p className="text-gray-600 mb-4">Who inspires the spirit of your Dream?</p>
+                            
+                            <input
+                                type="text"
+                                className="worksheet-input text-lg mb-4"
+                                placeholder="e.g., Steve Jobs, Frida Kahlo, Elon Musk"
+                                onKeyPress={(e) => {
+                                    if (e.key === 'Enter' && e.target.value && data.moodBoard.people.length < 7) {
+                                        updateData('moodBoard.people', [...data.moodBoard.people, e.target.value]);
+                                        e.target.value = '';
+                                    }
+                                }}
+                            />
+
+                            <div className="flex flex-wrap gap-2">
+                                {data.moodBoard.people.map((person, i) => (
+                                    <div key={i} className="word-tag">
+                                        {person}
+                                        <button 
+                                            onClick={() => updateData('moodBoard.people', data.moodBoard.people.filter((_, idx) => idx !== i))}
+                                            className="ml-2 font-bold"
+                                        >×</button>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="text-sm text-gray-600 mt-3">
+                                {data.moodBoard.people.length}/7 people selected
+                            </div>
+                        </div>
+
+                        <div className="flex justify-between">
+                            <button className="btn-secondary text-lg py-3 px-6" onClick={onBack}>
+                                ← Back
+                            </button>
+                            <button 
+                                className="btn-primary text-xl py-4 px-8"
+                                disabled={!canProceed}
+                                onClick={onNext}
+                            >
+                                Analyze Dream Strength →
+                            </button>
+                        </div>
+                    </div>
+                </main>
+            );
+        }
+
+        // Dream Strength Analyzer Component
+        function DreamStrengthAnalyzer({ data, onBack, onNext }) {
+            const sentenceAnalysis = analyzeText(data.oneSentence, 50);
+            const achievementAnalysis = analyzeText(data.dreamAnswers.achievement, 10);
+            const marketAnalysis = analyzeText(data.dreamAnswers.marketPosition, 15);
+            const customerAnalysis = analyzeText(data.dreamAnswers.customersSay, 15);
+            
+            const avgStrength = Math.round((
+                sentenceAnalysis.strength + 
+                achievementAnalysis.strength + 
+                marketAnalysis.strength +
+                customerAnalysis.strength
+            ) / 4);
+
+            let overallLabel = '❌ NEEDS WORK';
+            let overallColor = '#EF4444';
+            if (avgStrength >= 75) {
+                overallLabel = '🔥 CATEGORY-DEFINING';
+                overallColor = '#10B981';
+            } else if (avgStrength >= 60) {
+                overallLabel = '✓ BOLD';
+                overallColor = '#10B981';
+            } else if (avgStrength >= 40) {
+                overallLabel = '⚠️ GETTING THERE';
+                overallColor = '#F59E0B';
+            }
+
+            const suggestions = [];
+            if (sentenceAnalysis.strength < 60) suggestions.push('Make your Dream sentence more specific and vivid');
+            if (achievementAnalysis.strength < 50) suggestions.push('Add specific numbers to your achievement goal');
+            if (marketAnalysis.strength < 50) suggestions.push('Replace generic terms like "leading" with category-defining language');
+            if (data.moodBoard.words.length < 5) suggestions.push('Add more essence words to strengthen your vision');
+
+            return (
+                <div className="bg-black text-white min-h-screen p-16">
+                    <div className="max-w-5xl mx-auto">
+                        <h1 className="plaak text-8xl mb-12 text-center animate-in" style={{color: '#FFF469'}}>
+                            DREAM STRENGTH ANALYSIS
+                        </h1>
+
+                        <div className="bg-white text-black border-8 border-white p-12 mb-12 animate-in" style={{animationDelay: '0.2s'}}>
+                            <div className="grid grid-cols-4 gap-8 mb-12">
+                                <div className="text-center">
+                                    <div className="text-sm mb-2 text-gray-600">Clarity</div>
+                                    <div className="plaak text-5xl" style={{color: sentenceAnalysis.color}}>
+                                        {sentenceAnalysis.strength}%
+                                    </div>
+                                </div>
+                                <div className="text-center">
+                                    <div className="text-sm mb-2 text-gray-600">Boldness</div>
+                                    <div className="plaak text-5xl" style={{color: marketAnalysis.color}}>
+                                        {marketAnalysis.strength}%
+                                    </div>
+                                </div>
+                                <div className="text-center">
+                                    <div className="text-sm mb-2 text-gray-600">Specificity</div>
+                                    <div className="plaak text-5xl" style={{color: achievementAnalysis.color}}>
+                                        {achievementAnalysis.strength}%
+                                    </div>
+                                </div>
+                                <div className="text-center">
+                                    <div className="text-sm mb-2 text-gray-600">Emotion</div>
+                                    <div className="plaak text-5xl" style={{color: customerAnalysis.color}}>
+                                        {customerAnalysis.strength}%
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="border-t-4 border-black pt-8 mb-8">
+                                <div className="text-center">
+                                    <div className="text-sm mb-2 text-gray-600">OVERALL DREAM STRENGTH</div>
+                                    <div className="plaak text-7xl mb-4" style={{color: overallColor}}>
+                                        {overallLabel}
+                                    </div>
+                                    <div className="strength-bar max-w-md mx-auto">
+                                        <div className="strength-fill" style={{width: `${avgStrength}%`}}></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {suggestions.length > 0 && (
+                                <div className="bg-gray-100 border-l-4 border-black p-6">
+                                    <p className="font-bold mb-3">💡 SUGGESTIONS TO STRENGTHEN YOUR DREAM</p>
+                                    <ul className="space-y-2">
+                                        {suggestions.map((s, i) => (
+                                            <li key={i}>• {s}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex justify-between animate-in" style={{animationDelay: '0.4s'}}>
+                            <button 
+                                className="btn-secondary text-lg py-3 px-6"
+                                onClick={onBack}
+                            >
+                                ← Improve Dream
+                            </button>
+                            <button 
+                                className="btn-primary text-xl py-4 px-8"
+                                onClick={onNext}
+                            >
+                                Continue to Dream Canvas →
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // Step 5: Final Canvas Component
+        function Step5Canvas({ data, onBack, onSubmit, submissionStatus }) {
+            return (
+                <div className="bg-white min-h-screen p-16">
+                    <div className="max-w-6xl mx-auto">
+                        <div className="text-center mb-12 no-print">
+                            <h1 className="plaak text-8xl mb-4">YOUR DREAM CANVAS</h1>
+                            <p className="text-2xl text-gray-600">This is your North Star for the next 10 years</p>
+                            
+                            {/* Submission Status Messages */}
+                            {submissionStatus === 'success' && (
+                                <div className="mt-4 p-4 bg-gray-50 border-2 border-black text-black text-lg font-bold animate-in-up">
+                                    ✅ Submission saved successfully!
+                                </div>
+                            )}
+                            {submissionStatus === 'error' && (
+                                <div className="mt-4 p-4 bg-red-50 border-2 border-red-500 text-red-700 text-lg font-bold animate-in-up">
+                                    ❌ Submission failed. Please try again.
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Dream Canvas */}
+                        <div className="border-8 border-black bg-white p-16 mb-8">
+                            <div className="text-center mb-12">
+                                <div className="plaak text-6xl mb-2">{data.companyName || 'YOUR COMPANY'}</div>
+                                <div className="text-lg text-gray-600">COMPANY DREAM 2035</div>
+                            </div>
+
+                            <div className="border-t-4 border-b-4 border-black py-8 mb-12">
+                                <div className="text-sm font-bold mb-3 uppercase">The Dream (10 Years)</div>
+                                <div className="text-3xl leading-relaxed font-bold">
+                                    {data.oneSentence}
+                                </div>
+                            </div>
+
+                            <div className="grid md:grid-cols-2 gap-12 mb-12">
+                                <div>
+                                    <div className="text-sm font-bold mb-4 uppercase">What Success Looks Like</div>
+                                    <div className="space-y-3 text-lg">
+                                        <div><strong>Customers:</strong> "{data.dreamAnswers.customersSay}"</div>
+                                        <div><strong>Team:</strong> "{data.dreamAnswers.employeesSay}"</div>
+                                        <div><strong>Achievement:</strong> {data.dreamAnswers.achievement}</div>
+                                        <div><strong>Market:</strong> {data.dreamAnswers.marketPosition}</div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div className="text-sm font-bold mb-4 uppercase">Why It Matters</div>
+                                    <div className="space-y-3 text-lg">
+                                        <div><strong>What would be lost:</strong> {data.corporateKiller.whatLost}</div>
+                                        <div><strong>What's at stake:</strong> {data.corporateKiller.whatsAtStake}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mb-12">
+                                <div className="text-sm font-bold mb-4 uppercase">The Essence</div>
+                                <div className="flex flex-wrap gap-2">
+                                    {data.moodBoard.words.map((word, i) => (
+                                        <span key={i} className="word-tag text-lg">#{word}</span>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div>
+                                <div className="text-sm font-bold mb-4 uppercase">Inspired By</div>
+                                <div className="flex flex-wrap gap-3 text-base">
+                                    {data.moodBoard.people.map((person, i) => (
+                                        <span key={i} className="px-4 py-2 bg-gray-100 border border-gray-300">
+                                            {person}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex gap-4 no-print">
+                            <button 
+                                className="btn-secondary text-lg py-3 px-6"
+                                onClick={onBack}
+                                disabled={submissionStatus === 'loading'}
+                            >
+                                ← Edit
+                            </button>
+                            <button 
+                                className="btn-secondary text-lg py-3 px-6 flex-1"
+                                onClick={() => window.print()}
+                                disabled={submissionStatus === 'loading'}
+                            >
+                                📄 Download PDF
+                            </button>
+                            <button 
+                                className="btn-primary text-lg py-3 px-8 flex-1"
+                                onClick={onSubmit}
+                                disabled={submissionStatus === 'loading'}
+                                style={{
+                                    opacity: submissionStatus === 'loading' ? 0.6 : 1,
+                                    cursor: submissionStatus === 'loading' ? 'not-allowed' : 'pointer'
+                                }}
+                            >
+                                {submissionStatus === 'loading' ? '⏳ Submitting...' : '📤 Share with Team'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // Render App
+        ReactDOM.render(<CompanyDreamTool />, document.getElementById('root'));
+    </script>
+</body>
+</html>

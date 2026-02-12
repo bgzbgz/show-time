@@ -1,0 +1,1662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WOOP Tool | Fast Track Program</title>
+    <!-- Updated: no login, direct access -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../../shared/js/dependency-injection.js"></script>
+
+    <style>
+        @font-face {
+            font-family: 'Plaak';
+            src: url('Plaak3Trial-43-Bold.woff2') format('woff2');
+            font-weight: bold;
+        }
+
+        @font-face {
+            font-family: 'Riforma';
+            src: url('RiformaLL-Regular.woff2') format('woff2');
+            font-weight: normal;
+        }
+
+        @font-face {
+            font-family: 'Monument';
+            src: url('MonumentGrotesk-Mono.woff2') format('woff2');
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Riforma', -apple-system, sans-serif;
+            font-size: 16px;
+            color: #000000;
+            background: #FFFFFF;
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        .plaak {
+            font-family: 'Plaak', sans-serif;
+            font-weight: bold;
+            letter-spacing: -0.01em;
+            line-height: 1.2;
+        }
+        
+        .monument {
+            font-family: 'Monument', monospace;
+            letter-spacing: 0.05em;
+        }
+        
+        .smooth {
+            transition: all 0.2s ease;
+        }
+        
+        .worksheet-input {
+            border: 1px solid #E0E0E0;
+            padding: 12px 16px;
+            font-family: 'Riforma', sans-serif;
+            font-size: 18px;
+            transition: border-color 0.2s ease;
+            width: 100%;
+        }
+        
+        .worksheet-input:focus {
+            outline: none;
+            border-color: #000000;
+        }
+        
+        .worksheet-textarea {
+            border: 1px solid #E0E0E0;
+            padding: 12px 16px;
+            font-family: 'Riforma', sans-serif;
+            font-size: 18px;
+            transition: border-color 0.2s ease;
+            width: 100%;
+            min-height: 120px;
+            resize: vertical;
+        }
+        
+        .worksheet-textarea:focus {
+            outline: none;
+            border-color: #000000;
+        }
+        
+        .btn-primary {
+            background: #000000;
+            color: #FFFFFF;
+            padding: 16px 32px;
+            border: 2px solid #000000;
+            font-family: 'Riforma', sans-serif;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            transform: scale(1.02);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .btn-primary:disabled {
+            background: #E0E0E0;
+            color: #9CA3AF;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        
+        .btn-secondary {
+            background: #FFFFFF;
+            color: #000000;
+            padding: 12px 24px;
+            border: 2px solid #000000;
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-secondary:hover {
+            background: #F8F8F8;
+        }
+        
+        .numbered-section {
+            background: #000000;
+            color: #FFFFFF;
+            padding: 10px 16px;
+            font-size: 26px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            display: inline-block;
+            font-family: 'Plaak', sans-serif;
+        }
+        
+        .help-button {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: #000000;
+            color: #FFFFFF;
+            border: 2px solid #000000;
+            font-size: 28px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 40;
+            transition: all 0.2s ease;
+        }
+        
+        .help-button:hover {
+            transform: scale(1.1);
+            background: #fff469;
+            color: #000000;
+        }
+        
+        .progress-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #E0E0E0;
+            transition: all 0.2s ease;
+        }
+        
+        .progress-dot.active {
+            background: #000000;
+            transform: scale(1.3);
+        }
+        
+        .progress-dot.completed {
+            background: #000000;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .animate-in {
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        .cover-overlay {
+            background: linear-gradient(to bottom, rgba(0,0,0,0.4), rgba(0,0,0,0.7));
+        }
+        
+        /* Enhanced box styles for better PDF visibility */
+        .canvas-wish-box {
+            background-color: #F0FDF4 !important;
+            border-left: 6px solid #22C55E !important;
+            border-right: 2px solid #E5E7EB !important;
+            border-top: 2px solid #E5E7EB !important;
+            border-bottom: 2px solid #E5E7EB !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+            padding: 20px !important;
+        }
+        
+        .canvas-step-box {
+            border-width: 3px !important;
+            border-color: #000000 !important;
+            background-color: #FAFAFA !important;
+            padding: 16px !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+        }
+        
+        .canvas-obstacle-box {
+            background-color: #FEF2F2 !important;
+            border-left: 6px solid #EF4444 !important;
+            border-right: 2px solid #E5E7EB !important;
+            border-top: 2px solid #E5E7EB !important;
+            border-bottom: 2px solid #E5E7EB !important;
+            padding: 16px !important;
+            box-shadow: 0 2px 4px rgba(239,68,68,0.15) !important;
+            margin-bottom: 16px !important;
+        }
+        
+        .canvas-plan-box {
+            border-width: 5px !important;
+            border-color: #22C55E !important;
+            background-color: #F0FDF4 !important;
+            padding: 24px !important;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
+        }
+        
+        .canvas-container {
+            border-width: 5px !important;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
+        }
+        
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .transition-animate-in {
+            animation: slideIn 0.3s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // Configuration
+        const CONFIG = {
+            SUPABASE_URL: 'https://vpfayzzjnegdefjrnyoc.supabase.co',
+            SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZwZmF5enpqbmVnZGVmanJueW9jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMzAwODUsImV4cCI6MjA4NTcwNjA4NX0.7qwzd9kwyRG0Wx9DDSc8F9a1SRD0CoC6CGS-9M1sxIs',
+            TOOL_SLUG: 'woop',
+            SPRINT_NUMBER: 0,
+            SCHEMA_NAME: 'sprint_00_woop',
+            AUTOSAVE_DELAY: 2000
+        };
+
+        // Initialize Supabase client
+        const { createClient } = supabase;
+        const supabaseClient = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+
+        // Make Supabase client globally available for dependency injection
+        window.supabaseClient = supabaseClient;
+
+        // Initialize dependency injection
+        DependencyInjection.init(CONFIG.TOOL_SLUG, CONFIG.SCHEMA_NAME);
+
+        // Help Modal Component
+        function HelpModal({ isOpen, onClose, content }) {
+            if (!isOpen) return null;
+
+            return (
+                <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
+                    <div className="bg-white max-w-3xl p-12 border-8 border-black max-h-[80vh] overflow-y-auto">
+                        <div className="flex justify-between items-start mb-6">
+                            <h2 className="plaak text-5xl">INSTRUCTIONS</h2>
+                            <button onClick={onClose} className="text-4xl font-bold hover:text-gray-600">×</button>
+                        </div>
+                        {content}
+                        <button className="btn-primary w-full text-xl py-4 mt-8" onClick={onClose}>
+                            GOT IT
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        // Transition Screen Component
+        function TransitionScreen({ title, subtitle, progress, onNext, autoAdvance = true, delay = 2000 }) {
+            React.useEffect(() => {
+                if (autoAdvance) {
+                    const timer = setTimeout(() => {
+                        onNext();
+                    }, delay);
+                    return () => clearTimeout(timer);
+                }
+            }, [onNext, autoAdvance, delay]);
+            
+            return (
+                <div className="fixed inset-0 bg-black text-white flex items-center justify-center z-50 fade-in">
+                    <div className="text-center px-8">
+                        <h1 className="plaak text-8xl md:text-9xl mb-8 transition-animate-in">
+                            {title}
+                        </h1>
+                        
+                        {subtitle && (
+                            <p className="text-2xl text-gray-400 mb-8 transition-animate-in"
+                                style={{animationDelay: '0.1s'}}>
+                                {subtitle}
+                            </p>
+                        )}
+                        
+                        {progress && (
+                            <div className="max-w-2xl mx-auto mb-8 transition-animate-in"
+                                  style={{animationDelay: '0.2s'}}>
+                                <div className="h-2 bg-gray-800 mb-4">
+                                    <div 
+                                        className="h-full bg-white transition-all duration-1000"
+                                        style={{width: `${progress}%`}}
+                                    ></div>
+                                </div>
+                                <p className="monument text-xl tracking-wider">
+                                    [{progress}% COMPLETE]
+                                </p>
+                            </div>
+                        )}
+                        
+                        {!autoAdvance && (
+                            <button 
+                                onClick={onNext}
+                                className="btn-primary text-2xl py-4 px-12 mt-8"
+                            >
+                                Continue →
+                            </button>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        function WOOPTool() {
+            const [step, setStep] = useState(0); // 0=cover, 0.5=intro, 1-4=steps, 1.5/2.5/3.5=transitions, 999=canvas
+            const [showHelp, setShowHelp] = useState(false);
+            
+            // Data state
+            const [data, setData] = useState({
+                // User Info
+                companyId: '',
+                userId: '',
+
+                // Scope Selection (CRITICAL FIX #1)
+                scopeType: '', // 'program' or 'business'
+
+                // Step 1: Wish
+                outcome: '',
+                worldChange: '',
+                feeling: '',
+
+                // Step 2: Outcome (CRITICAL FIX #3: Reduced from 5 to 3)
+                steps: ['', '', ''],
+                mentallyRehearsed: false,
+
+                // Step 3: Obstacles (CRITICAL FIX #2: If-Then structure)
+                obstacles: [{
+                    problem: '',
+                    ifTrigger: '',
+                    thenPerson: '',
+                    thenAction: '',
+                    byWhen: ''
+                }],
+
+                // Step 4: Plan
+                bigChunks: '',
+                firstAction: '',
+                deadline: ''
+            });
+            
+            const autosaveTimer = useRef(null);
+            
+            // Auto-save
+            useEffect(() => {
+                if (autosaveTimer.current) {
+                    clearTimeout(autosaveTimer.current);
+                }
+                
+                autosaveTimer.current = setTimeout(() => {
+                    localStorage.setItem('woopData', JSON.stringify({
+                        data,
+                        step,
+                        timestamp: new Date().toISOString()
+                    }));
+                }, CONFIG.AUTOSAVE_DELAY);
+                
+                return () => {
+                    if (autosaveTimer.current) {
+                        clearTimeout(autosaveTimer.current);
+                    }
+                };
+            }, [data, step]);
+            
+            // Load saved data (with migration for old structure)
+            useEffect(() => {
+                const saved = localStorage.getItem('woopData');
+                if (saved) {
+                    try {
+                        const parsed = JSON.parse(saved);
+                        if (parsed.data && Array.isArray(parsed.data.obstacles)) {
+                            // Migrate old obstacle structure to new If-Then structure
+                            const migratedObstacles = parsed.data.obstacles.map(o => {
+                                if (o.solution !== undefined && !o.ifTrigger) {
+                                    // Old structure - clear it
+                                    return {
+                                        problem: o.problem || '',
+                                        ifTrigger: '',
+                                        thenPerson: '',
+                                        thenAction: '',
+                                        byWhen: ''
+                                    };
+                                }
+                                return o;
+                            });
+
+                            setData({
+                                ...parsed.data,
+                                obstacles: migratedObstacles,
+                                scopeType: parsed.data.scopeType || '' // Ensure scopeType exists
+                            });
+                            setStep(parsed.step);
+                        }
+                    } catch (e) {
+                        console.log('Error loading saved data:', e);
+                        localStorage.removeItem('woopData');
+                    }
+                }
+            }, []);
+            
+            const updateData = (field, value) => {
+                setData(prev => ({ ...prev, [field]: value }));
+            };
+            
+            const updateStep = (index, value) => {
+                setData(prev => ({
+                    ...prev,
+                    steps: prev.steps.map((s, i) => i === index ? value : s)
+                }));
+            };
+            
+            const updateObstacle = (index, field, value) => {
+                setData(prev => ({
+                    ...prev,
+                    obstacles: prev.obstacles.map((o, i) => 
+                        i === index ? { ...o, [field]: value } : o
+                    )
+                }));
+            };
+            
+            // CRITICAL FIX #3: Hard limit of 3 obstacles
+            const addObstacle = () => {
+                if (data.obstacles.length >= 3) {
+                    alert('Maximum 3 obstacles allowed.\n\nStrategy is sacrifice.\n\nWhich of the previous 3 will you delete?');
+                    return;
+                }
+                setData(prev => ({
+                    ...prev,
+                    obstacles: [...prev.obstacles, {
+                        problem: '',
+                        ifTrigger: '',
+                        thenPerson: '',
+                        thenAction: '',
+                        byWhen: ''
+                    }]
+                }));
+            };
+            
+            const removeObstacle = (index) => {
+                if (data.obstacles.length > 1) {
+                    setData(prev => ({
+                        ...prev,
+                        obstacles: prev.obstacles.filter((_, i) => i !== index)
+                    }));
+                }
+            };
+            
+            // Validation
+            const canProceedStep1 = data.outcome.length >= 20 && 
+                                   data.worldChange.length >= 10 && 
+                                   data.feeling.length >= 3;
+            
+            const canProceedStep2 = data.steps.filter(s => s.trim().length > 5).length >= 3 &&
+                                   data.mentallyRehearsed;
+
+            // CRITICAL FIX #2: Updated validation for If-Then structure
+            const canProceedStep3 = data.obstacles.length >= 1 &&
+                                   data.obstacles.every(o =>
+                                       o && o.problem && o.problem.trim().length > 5 &&
+                                       o.ifTrigger && o.ifTrigger.trim().length > 3 &&
+                                       o.thenPerson && o.thenPerson.trim().length > 2 &&
+                                       o.thenAction && o.thenAction.trim().length > 5 &&
+                                       o.byWhen && o.byWhen.trim().length > 0
+                                   );
+            
+            const canProceedStep4 = data.bigChunks.length >= 10 && 
+                                   data.firstAction.length >= 10 && 
+                                   data.deadline !== '';
+            
+            // Help content
+            const getHelpContent = () => {
+                if (step === 1) {
+                    return (
+                        <div>
+                            <h3 className="font-bold text-3xl mb-4">WHY</h3>
+                            <p className="mb-6 text-lg">Dreams create energy. Clarity of your dream creates comfort. Your brain doesn't differentiate between what's in your head and reality.</p>
+                            
+                            <h3 className="font-bold text-3xl mb-4">WHAT</h3>
+                            <p className="mb-6 text-lg">Define your end game for the Fast Track program with brutal clarity.</p>
+                            
+                            <h3 className="font-bold text-3xl mb-4">HOW</h3>
+                            <ol className="text-lg space-y-2">
+                                <li>1. Picture the concrete outcome</li>
+                                <li>2. Describe how the world changed</li>
+                                <li>3. Feel the emotion of success</li>
+                            </ol>
+                        </div>
+                    );
+                } else if (step === 2) {
+                    return (
+                        <div>
+                            <h3 className="font-bold text-3xl mb-4">WHY</h3>
+                            <p className="mb-6 text-lg">Mental rehearsal works. Lewis Hamilton mentally drives each lap before stepping in the car.</p>
+                            
+                            <h3 className="font-bold text-3xl mb-4">WHAT</h3>
+                            <p className="mb-6 text-lg">Map the journey from where you are to your end game.</p>
+                            
+                            <h3 className="font-bold text-3xl mb-4">HOW</h3>
+                            <ol className="text-lg space-y-2">
+                                <li>1. List 3-5 key milestones</li>
+                                <li>2. Close your eyes</li>
+                                <li>3. See yourself doing each step</li>
+                                <li>4. Confirm when ready</li>
+                            </ol>
+                        </div>
+                    );
+                } else if (step === 3) {
+                    return (
+                        <div>
+                            <h3 className="font-bold text-3xl mb-4">WHY</h3>
+                            <p className="mb-6 text-lg">You need to be mentally prepared. When the problem comes, you'll recognize it and say "Nothing new to me."</p>
+                            
+                            <h3 className="font-bold text-3xl mb-4">WHAT</h3>
+                            <p className="mb-6 text-lg">Identify what will try to stop you, and decide now how you'll respond.</p>
+                            
+                            <h3 className="font-bold text-3xl mb-4">HOW</h3>
+                            <ol className="text-lg space-y-2">
+                                <li>1. List the problems you'll face</li>
+                                <li>2. For each: What will you do?</li>
+                                <li>3. Visualize handling each one</li>
+                            </ol>
+                        </div>
+                    );
+                } else if (step === 4) {
+                    return (
+                        <div>
+                            <h3 className="font-bold text-3xl mb-4">WHY</h3>
+                            <p className="mb-6 text-lg">Big steps are intimidating. Fast Track hates big steps. Cut the elephant into pieces.</p>
+                            
+                            <h3 className="font-bold text-3xl mb-4">WHAT</h3>
+                            <p className="mb-6 text-lg">Break down your journey and commit to the easiest first action.</p>
+                            
+                            <h3 className="font-bold text-3xl mb-4">HOW</h3>
+                            <ol className="text-lg space-y-2">
+                                <li>1. List the big chunks of work</li>
+                                <li>2. Pick the easiest piece</li>
+                                <li>3. Set a specific deadline</li>
+                                <li>4. Commit publicly</li>
+                            </ol>
+                        </div>
+                    );
+                }
+                return null;
+            };
+
+            return (
+                <div className="min-h-screen bg-white">
+                    {/* Help Button */}
+                    {step >= 1 && step <= 4 && step !== 1.5 && step !== 2.5 && step !== 3.5 && (
+                        <button className="help-button no-print" onClick={() => setShowHelp(true)}>
+                            ?
+                        </button>
+                    )}
+
+                    {/* Help Modal */}
+                    <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} content={getHelpContent()} />
+
+                    {/* Cover Page */}
+                    {step === 0 && (
+                        <div className="relative min-h-screen flex items-center justify-center bg-black">
+                            <div className="relative z-10 text-center text-white px-8">
+                                <h1 className="plaak text-9xl mb-6 animate-in">WOOP TOOL</h1>
+                                <p className="text-3xl mb-12 animate-in" style={{animationDelay: '0.2s'}}>
+                                    Transform your wish into an actionable plan
+                                </p>
+                                <button
+                                    className="bg-white text-black plaak text-3xl px-16 py-6 border-4 border-white hover:bg-black hover:text-white transition-all duration-200 animate-in"
+                                    style={{animationDelay: '0.4s'}}
+                                    onClick={() => setStep(0.5)}
+                                >
+                                    START
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Intro Screen */}
+                    {step === 0.5 && (
+                        <div className="bg-black text-white min-h-screen p-16">
+                            <div className="max-w-5xl mx-auto">
+                                <h1 className="plaak text-6xl mb-16 animate-in">BEFORE WE START</h1>
+
+                                {/* CRITICAL FIX #1: Scope Selection */}
+                                <div className="mb-12 animate-in" style={{animationDelay: '0.02s'}}>
+                                    <h2 className="plaak text-6xl mb-6" style={{color: '#fff469'}}>FIRST: CHOOSE YOUR FOCUS</h2>
+                                    <div className="border-4 border-black p-8 mb-6" style={{backgroundColor: '#fff469'}}>
+                                        <p className="text-2xl font-bold mb-4 text-black">CRITICAL DECISION</p>
+                                        <p className="text-xl leading-relaxed text-black">
+                                            This is THE #1 question every client gets wrong. Read carefully.
+                                        </p>
+                                    </div>
+                                    <div className="bg-white text-black p-8 rounded space-y-6">
+                                        <p className="text-2xl font-bold mb-6">What are you defining a goal for?</p>
+                                        <div className="space-y-4">
+                                            <label className={`block p-6 border-4 cursor-pointer transition-all ${data.scopeType === 'program' ? 'border-black bg-gray-50' : 'border-gray-300 hover:border-gray-400'}`}>
+                                                <input
+                                                    type="radio"
+                                                    name="scopeType"
+                                                    value="program"
+                                                    checked={data.scopeType === 'program'}
+                                                    onChange={(e) => updateData('scopeType', e.target.value)}
+                                                    className="mr-4"
+                                                    style={{transform: 'scale(1.5)'}}
+                                                />
+                                                <span className="text-2xl font-bold">Completing the Fast Track Program successfully</span>
+                                                <p className="text-lg text-gray-600 ml-10 mt-2">
+                                                    Example: "Finish all 30 sprints, implement 5 core tools, have team aligned on strategy"
+                                                </p>
+                                            </label>
+                                            <label className={`block p-6 border-4 cursor-pointer transition-all ${data.scopeType === 'business' ? 'border-black bg-gray-50' : 'border-gray-300 hover:border-gray-400'}`}>
+                                                <input
+                                                    type="radio"
+                                                    name="scopeType"
+                                                    value="business"
+                                                    checked={data.scopeType === 'business'}
+                                                    onChange={(e) => updateData('scopeType', e.target.value)}
+                                                    className="mr-4"
+                                                    style={{transform: 'scale(1.5)'}}
+                                                />
+                                                <span className="text-2xl font-bold">Your company's strategic transformation</span>
+                                                <p className="text-lg text-gray-600 ml-10 mt-2">
+                                                    Example: "Reach €10M revenue, enter 3 new markets, build A-player leadership team"
+                                                </p>
+                                            </label>
+                                        </div>
+                                        {!data.scopeType && (
+                                            <div className="bg-yellow-100 border-2 border-yellow-500 p-4 mt-4">
+                                                <p className="text-xl font-bold text-yellow-900">You must select one option to continue</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="mb-12 animate-in" style={{animationDelay: '0.05s'}}>
+                                    <h2 className="plaak text-6xl mb-6">YOUR DETAILS</h2>
+                                    <div className="space-y-6 bg-white text-black p-8 rounded">
+                                        <div>
+                                            <label className="block font-bold mb-2 text-xl">Company ID</label>
+                                            <input
+                                                type="text"
+                                                className="worksheet-input text-black"
+                                                value={data.companyId}
+                                                onChange={(e) => updateData('companyId', e.target.value)}
+                                                placeholder="Enter your company ID"
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block font-bold mb-2 text-xl">Username ID</label>
+                                            <input
+                                                type="text"
+                                                className="worksheet-input text-black"
+                                                value={data.userId}
+                                                onChange={(e) => updateData('userId', e.target.value)}
+                                                placeholder="Enter your username ID"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div className="mb-12 animate-in" style={{animationDelay: '0.08s'}}>
+                                    <h2 className="plaak text-6xl mb-6" style={{color: '#fff469'}}>SPRINT INFO</h2>
+                                    <div className="bg-white text-black p-8 rounded">
+                                        <p className="text-2xl font-bold mb-4">Program WOOP</p>
+                                        <p className="text-xl leading-relaxed">
+                                            This tool helps you translate aspirations into concrete, actionable steps. 
+                                            By integrating mental contrasting with implementation intentions, WOOP empowers 
+                                            you to move from wishful thinking to strategic action.
+                                        </p>
+                                    </div>
+                                </div>
+                                
+                                <div className="mb-12 animate-in" style={{animationDelay: '0.1s'}}>
+                                    <h2 className="plaak text-6xl mb-6">PURPOSE</h2>
+                                    <p className="text-3xl leading-relaxed">
+                                        WOOP helps you transform ambitious goals into concrete, actionable plans using mental contrasting and implementation intentions.
+                                    </p>
+                                    <p className="text-2xl text-gray-400 mt-4">
+                                        Based on research by Gabriele Oettingen. Used by elite performers worldwide.
+                                    </p>
+                                </div>
+
+                                <div className="mb-12 animate-in" style={{animationDelay: '0.2s'}}>
+                                    <h2 className="plaak text-6xl mb-6" style={{color: '#fff469'}}>MISTAKES TO AVOID</h2>
+                                    <ul className="text-2xl space-y-4">
+                                        <li className="flex items-start">
+                                            <span className="text-4xl mr-4">•</span>
+                                            <span>Being vague about your outcome (specificity creates energy)</span>
+                                        </li>
+                                        <li className="flex items-start">
+                                            <span className="text-4xl mr-4">•</span>
+                                            <span>Skipping mental rehearsal (visualization is half the work)</span>
+                                        </li>
+                                        <li className="flex items-start">
+                                            <span className="text-4xl mr-4">•</span>
+                                            <span>Only thinking positive (must anticipate obstacles)</span>
+                                        </li>
+                                        <li className="flex items-start">
+                                            <span className="text-4xl mr-4">•</span>
+                                            <span>Choosing a big first step (smallest action wins)</span>
+                                        </li>
+                                        <li className="flex items-start">
+                                            <span className="text-4xl mr-4">•</span>
+                                            <span>Not committing to a deadline (date = reality)</span>
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                <div className="mb-16 animate-in" style={{animationDelay: '0.3s'}}>
+                                    <h2 className="plaak text-6xl mb-8">THE JOURNEY</h2>
+                                    <div className="grid grid-cols-4 gap-8 text-center">
+                                        <div className="border-2 border-white p-8">
+                                            <div className="text-9xl plaak mb-4">01</div>
+                                            <p className="text-2xl font-bold mb-2">WISH</p>
+                                            <p className="text-xl text-gray-400">Your End Game</p>
+                                        </div>
+                                        <div className="border-2 border-white p-8">
+                                            <div className="text-9xl plaak mb-4">02</div>
+                                            <p className="text-2xl font-bold mb-2">OUTCOME</p>
+                                            <p className="text-xl text-gray-400">The Steps</p>
+                                        </div>
+                                        <div className="border-2 border-white p-8">
+                                            <div className="text-9xl plaak mb-4">03</div>
+                                            <p className="text-2xl font-bold mb-2">OBSTACLE</p>
+                                            <p className="text-xl text-gray-400">The Traps</p>
+                                        </div>
+                                        <div className="border-2 border-white p-8">
+                                            <div className="text-9xl plaak mb-4">04</div>
+                                            <p className="text-2xl font-bold mb-2">PLAN</p>
+                                            <p className="text-xl text-gray-400">First Bite</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button
+                                    className="btn-primary w-full text-3xl py-8 plaak animate-in"
+                                    style={{animationDelay: '0.4s'}}
+                                    onClick={() => setStep(1)}
+                                    disabled={!data.scopeType || !data.companyId || !data.userId}
+                                >
+                                    LET'S START →
+                                </button>
+                                {(!data.scopeType || !data.companyId || !data.userId) && (
+                                    <p className="text-center text-yellow-300 mt-4 text-xl">
+                                        {!data.scopeType && 'Please select your focus (Program or Business) • '}
+                                        {!data.companyId && 'Please fill in Company ID • '}
+                                        {!data.userId && 'Please fill in Username ID'}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Header (for steps 1-4, excluding transitions) */}
+                    {step >= 1 && step < 5 && step !== 1.5 && step !== 2.5 && step !== 3.5 && (
+                        <>
+                            <header className="border-b-2 border-black py-6 px-8 no-print">
+                                <h1 className="plaak text-3xl">WOOP TOOL</h1>
+                                <p className="text-sm mt-2 text-gray-600">Wish, Outcome, Obstacle, Plan</p>
+                            </header>
+
+                            {/* Progress Indicator */}
+                            <div className="border-b border-gray-200 py-6 px-8 no-print">
+                                <div className="flex items-center justify-between max-w-4xl">
+                                    <div className="flex items-center gap-2">
+                                        <div className={`progress-dot ${step >= 1 ? 'active' : ''} ${step > 1 ? 'completed' : ''}`}></div>
+                                        <span className={`text-sm ${step === 1 ? 'font-bold' : ''}`}>Wish</span>
+                                    </div>
+                                    <div className="flex-1 h-0.5 bg-gray-200 mx-4">
+                                        <div className={`h-full bg-black transition-all ${step > 1 ? 'w-full' : 'w-0'}`}></div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className={`progress-dot ${step >= 2 ? 'active' : ''} ${step > 2 ? 'completed' : ''}`}></div>
+                                        <span className={`text-sm ${step === 2 ? 'font-bold' : ''}`}>Outcome</span>
+                                    </div>
+                                    <div className="flex-1 h-0.5 bg-gray-200 mx-4">
+                                        <div className={`h-full bg-black transition-all ${step > 2 ? 'w-full' : 'w-0'}`}></div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className={`progress-dot ${step >= 3 ? 'active' : ''} ${step > 3 ? 'completed' : ''}`}></div>
+                                        <span className={`text-sm ${step === 3 ? 'font-bold' : ''}`}>Obstacle</span>
+                                    </div>
+                                    <div className="flex-1 h-0.5 bg-gray-200 mx-4">
+                                        <div className={`h-full bg-black transition-all ${step > 3 ? 'w-full' : 'w-0'}`}></div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className={`progress-dot ${step >= 4 ? 'active' : ''}`}></div>
+                                        <span className={`text-sm ${step === 4 ? 'font-bold' : ''}`}>Plan</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </>
+                    )}
+
+                    {/* Step 1: Wish */}
+                    {step === 1 && <Step1 
+                        data={data}
+                        updateData={updateData}
+                        canProceed={canProceedStep1}
+                        onNext={() => setStep(1.5)}
+                    />}
+
+                    {/* Transition after Step 1 */}
+                    {step === 1.5 && <TransitionScreen 
+                        title="SECTION COMPLETE"
+                        progress="25"
+                        onNext={() => setStep(2)}
+                    />}
+
+                    {/* Step 2: Outcome */}
+                    {step === 2 && <Step2 
+                        data={data}
+                        updateStep={updateStep}
+                        updateData={updateData}
+                        canProceed={canProceedStep2}
+                        onBack={() => setStep(1)}
+                        onNext={() => setStep(2.5)}
+                    />}
+
+                    {/* Transition after Step 2 */}
+                    {step === 2.5 && <TransitionScreen 
+                        title="SECTION COMPLETE"
+                        progress="50"
+                        onNext={() => setStep(3)}
+                    />}
+
+                    {/* Step 3: Obstacles */}
+                    {step === 3 && <Step3 
+                        data={data}
+                        updateObstacle={updateObstacle}
+                        addObstacle={addObstacle}
+                        removeObstacle={removeObstacle}
+                        canProceed={canProceedStep3}
+                        onBack={() => setStep(2)}
+                        onNext={() => setStep(3.5)}
+                    />}
+
+                    {/* Transition after Step 3 */}
+                    {step === 3.5 && <TransitionScreen 
+                        title="SECTION COMPLETE"
+                        progress="75"
+                        onNext={() => setStep(4)}
+                    />}
+
+                    {/* Step 4: Plan */}
+                    {step === 4 && <Step4 
+                        data={data}
+                        updateData={updateData}
+                        canProceed={canProceedStep4}
+                        onBack={() => setStep(3)}
+                        onNext={() => setStep(999)}
+                    />}
+
+                    {/* Canvas View */}
+                    {step === 999 && <CanvasView 
+                        data={data}
+                        onBack={() => setStep(4)}
+                    />}
+                </div>
+            );
+        }
+
+        // Step 1: Wish Component
+        function Step1({ data, updateData, canProceed, onNext }) {
+            // CRITICAL FIX #1: Dynamic placeholders based on scope
+            const placeholders = data.scopeType === 'program' ? {
+                outcome: "It's 90 days from now. The Fast Track program is complete. All 30 sprints done. Our team is aligned on 3 core values. We've implemented the ABC delegation system. Weekly metrics dashboard is running. Everyone knows their role.",
+                worldChange: "My team makes decisions without me. Leadership meetings are productive. I have 10 hours/week for strategy work. The company runs smoothly when I'm away.",
+                feeling: "Energized. Clear. In control. Proud."
+            } : {
+                outcome: "It's 12 months from now. Revenue hit €10M. We've entered 3 new markets successfully. Built an A-player leadership team of 5. Implemented automated sales process. Customer retention is 95%.",
+                worldChange: "We're the market leader in our segment. Clients seek us out. Competition is struggling to keep up. Team is self-managing. I work ON the business, not IN it.",
+                feeling: "Unstoppable. Fulfilled. Free. Excited for what's next."
+            };
+
+            return (
+                <main className="p-12 max-w-6xl mx-auto">
+                    <div className="animate-in">
+                        {/* Scope Reminder */}
+                        <div className="bg-yellow-50 border-2 border-yellow-400 p-4 mb-6">
+                            <p className="text-lg font-bold">
+                                Your Focus: <span className="text-green-600">
+                                    {data.scopeType === 'program' ? 'Fast Track Program Completion' : 'Company Strategic Transformation'}
+                                </span>
+                            </p>
+                        </div>
+
+                        <div className="numbered-section mb-8">
+                            [01] YOUR WISH
+                        </div>
+
+                        <div className="bg-black text-white border-4 border-black p-6 mb-8">
+                            <h3 className="font-bold text-3xl mb-2">DEFINE YOUR END GAME</h3>
+                            <p className="text-xl">
+                                Picture your success in vivid detail. What have you achieved? How has the world changed? How do you feel?
+                            </p>
+                        </div>
+
+                        <div className="space-y-8">
+                            <div>
+                                <label className="block font-bold mb-3 text-xl">What have you achieved? What's the concrete outcome?</label>
+                                <textarea
+                                    id="wish"
+                                    data-field="wish"
+                                    name="wish"
+                                    className="worksheet-textarea"
+                                    value={data.outcome}
+                                    onChange={(e) => updateData('outcome', e.target.value)}
+                                    placeholder={placeholders.outcome}
+                                    maxLength={300}
+                                />
+                                <div className="text-sm text-gray-600 mt-2">
+                                    {data.outcome.length}/300 characters (min 20)
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block font-bold mb-3 text-xl">How has the world changed?</label>
+                                <textarea
+                                    id="world-change"
+                                    data-field="world_change"
+                                    name="world_change"
+                                    className="worksheet-textarea"
+                                    value={data.worldChange}
+                                    onChange={(e) => updateData('worldChange', e.target.value)}
+                                    placeholder={placeholders.worldChange}
+                                    maxLength={200}
+                                />
+                                <div className="text-sm text-gray-600 mt-2">
+                                    {data.worldChange.length}/200 characters (min 10)
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block font-bold mb-3 text-xl">How do you feel about it?</label>
+                                <input
+                                    type="text"
+                                    id="feeling"
+                                    data-field="feeling"
+                                    name="feeling"
+                                    className="worksheet-input"
+                                    value={data.feeling}
+                                    onChange={(e) => updateData('feeling', e.target.value)}
+                                    placeholder={placeholders.feeling}
+                                />
+                                <div className="text-sm text-gray-600 mt-2">
+                                    One word or short phrase
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end mt-12">
+                            <button 
+                                className="btn-primary text-xl py-4 px-8"
+                                disabled={!canProceed}
+                                onClick={onNext}
+                            >
+                                Next: Define Steps →
+                            </button>
+                        </div>
+                    </div>
+                </main>
+            );
+        }
+
+        // Step 2: Outcome Component
+        function Step2({ data, updateStep, updateData, canProceed, onBack, onNext }) {
+            // CRITICAL FIX #3: Dynamic placeholders based on scope
+            const placeholders = data.scopeType === 'program' ? [
+                "Align team on core values and 3 critical moves",
+                "Implement ABC delegation system and run first delegation session",
+                "Launch weekly metrics dashboard and complete 4 review cycles"
+            ] : [
+                "Hire A-player VP of Sales and close first 3 major deals",
+                "Launch in 2 new markets with validated product-market fit",
+                "Build 5-person leadership team with clear OKRs and accountability"
+            ];
+
+            return (
+                <main className="p-12 max-w-6xl mx-auto">
+                    <div className="animate-in">
+                        {/* CRITICAL FIX #3: Constraint Warning */}
+                        <div className="bg-yellow-50 border-2 border-black p-4 mb-6">
+                            <p className="text-lg font-bold">
+                                CONSTRAINT: Maximum 3 key milestones only. Strategy is sacrifice.
+                            </p>
+                        </div>
+
+                        <div className="numbered-section mb-8">
+                            [02] THE OUTCOME
+                        </div>
+
+                        <div className="bg-black text-white border-4 border-black p-6 mb-8">
+                            <h3 className="font-bold text-3xl mb-2">MAP THE STEPS</h3>
+                            <p className="text-xl">
+                                What are the 3 key milestones to reach your end game? Then mentally rehearse each one.
+                            </p>
+                        </div>
+
+                        <div className="space-y-6 mb-8">
+                            {data.steps.map((step, index) => (
+                                <div key={index}>
+                                    <label className="block font-bold mb-2 text-lg">
+                                        Step {index + 1} <span className="text-red-500">* REQUIRED</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        className="worksheet-input"
+                                        value={step}
+                                        onChange={(e) => updateStep(index, e.target.value)}
+                                        placeholder={placeholders[index]}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="bg-gray-50 border-4 border-black p-8 mb-8">
+                            <h3 className="font-bold text-2xl mb-4">MENTAL REHEARSAL</h3>
+                            <p className="text-lg mb-6">
+                                Close your eyes. Picture yourself completing each step above. See the details. Feel the momentum.
+                            </p>
+                            <p className="text-base text-gray-600 italic mb-6">
+                                Lewis Hamilton mentally drives each lap before stepping in the car.
+                            </p>
+                            <label className="flex items-center gap-3 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    className="w-6 h-6"
+                                    checked={data.mentallyRehearsed}
+                                    onChange={(e) => updateData('mentallyRehearsed', e.target.checked)}
+                                />
+                                <span className="font-bold text-lg">
+                                    I've mentally rehearsed each step. I can see exactly what needs to happen.
+                                </span>
+                            </label>
+                        </div>
+
+                        <div className="flex justify-between">
+                            <button className="btn-secondary text-lg py-3 px-6" onClick={onBack}>
+                                ← Back
+                            </button>
+                            <button 
+                                className="btn-primary text-xl py-4 px-8"
+                                disabled={!canProceed}
+                                onClick={onNext}
+                            >
+                                Next: Identify Obstacles →
+                            </button>
+                        </div>
+                    </div>
+                </main>
+            );
+        }
+
+        // Step 3: Obstacles Component (CRITICAL FIX #2: If-Then Structure)
+        function Step3({ data, updateObstacle, addObstacle, removeObstacle, canProceed, onBack, onNext }) {
+            return (
+                <main className="p-12 max-w-6xl mx-auto">
+                    <div className="animate-in">
+                        {/* CRITICAL FIX #3: Hard Limit Warning */}
+                        <div className="bg-red-50 border-2 border-red-500 p-4 mb-6">
+                            <p className="text-lg font-bold text-red-900">
+                                CONSTRAINT: Maximum 3 obstacles. Focus on what will ACTUALLY stop you.
+                            </p>
+                        </div>
+
+                        <div className="numbered-section mb-8">
+                            [03] THE OBSTACLES
+                        </div>
+
+                        <div className="bg-black text-white border-4 border-black p-6 mb-8">
+                            <h3 className="font-bold text-3xl mb-2">IF-THEN PLANS</h3>
+                            <p className="text-xl mb-4">
+                                When problems occur, you need a SPECIFIC plan. No vague "I'll try harder."
+                            </p>
+                            <p className="text-lg text-yellow-300">
+                                Format: IF [trigger event], THEN [specific person] will [specific action] BY [date/time]
+                            </p>
+                        </div>
+
+                        <div className="space-y-8 mb-6">
+                            {data.obstacles && Array.isArray(data.obstacles) && data.obstacles.map((obstacle, index) => (
+                                <div key={index} className="border-4 border-red-500 bg-red-50 p-6">
+                                    <div className="flex justify-between items-center mb-6">
+                                        <span className="font-bold text-2xl plaak">OBSTACLE {index + 1}</span>
+                                        {data.obstacles.length > 1 && (
+                                            <button
+                                                onClick={() => removeObstacle(index)}
+                                                className="text-red-600 text-3xl font-bold hover:text-red-800"
+                                            >
+                                                ×
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {/* Problem Description */}
+                                    <div className="mb-6">
+                                        <label className="block font-bold mb-2 text-lg">What's the problem?</label>
+                                        <textarea
+                                            className="worksheet-textarea"
+                                            style={{minHeight: '80px'}}
+                                            value={obstacle.problem}
+                                            onChange={(e) => updateObstacle(index, 'problem', e.target.value)}
+                                            placeholder="Example: Team pushes back on new accountability system. Or: Client emergencies steal my strategic thinking time."
+                                        />
+                                    </div>
+
+                                    {/* If-Then Structure */}
+                                    <div className="bg-white border-2 border-black p-6">
+                                        <h4 className="font-bold text-xl mb-4">IF-THEN PLAN:</h4>
+
+                                        <div className="space-y-4">
+                                            {/* IF Trigger */}
+                                            <div>
+                                                <label className="block font-bold mb-2">
+                                                    IF <span className="text-red-500">* (Specific trigger event)</span>
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    className="worksheet-input"
+                                                    value={obstacle.ifTrigger}
+                                                    onChange={(e) => updateObstacle(index, 'ifTrigger', e.target.value)}
+                                                    placeholder="Example: A team member complains about the new system"
+                                                />
+                                            </div>
+
+                                            {/* THEN Person */}
+                                            <div>
+                                                <label className="block font-bold mb-2">
+                                                    THEN <span className="text-red-500">* (Who will act?)</span>
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    className="worksheet-input"
+                                                    value={obstacle.thenPerson}
+                                                    onChange={(e) => updateObstacle(index, 'thenPerson', e.target.value)}
+                                                    placeholder="Example: I (CEO), Sarah (VP Ops), or John (Team Lead)"
+                                                />
+                                            </div>
+
+                                            {/* THEN Action */}
+                                            <div>
+                                                <label className="block font-bold mb-2">
+                                                    WILL <span className="text-red-500">* (Specific action)</span>
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    className="worksheet-input"
+                                                    value={obstacle.thenAction}
+                                                    onChange={(e) => updateObstacle(index, 'thenAction', e.target.value)}
+                                                    placeholder="Example: Schedule 30-min 1-on-1 to understand concerns and explain benefits"
+                                                />
+                                            </div>
+
+                                            {/* BY When */}
+                                            <div>
+                                                <label className="block font-bold mb-2">
+                                                    BY WHEN <span className="text-red-500">* (Deadline)</span>
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    className="worksheet-input"
+                                                    value={obstacle.byWhen}
+                                                    onChange={(e) => updateObstacle(index, 'byWhen', e.target.value)}
+                                                    placeholder="Example: Within 24 hours, or End of week Friday 5pm"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Preview */}
+                                        {(obstacle.ifTrigger || obstacle.thenPerson || obstacle.thenAction || obstacle.byWhen) && (
+                                            <div className="mt-6 p-4 bg-green-50 border-2 border-green-500">
+                                                <p className="font-bold mb-2">Your If-Then Plan:</p>
+                                                <p className="text-lg">
+                                                    IF <strong>{obstacle.ifTrigger || '___'}</strong>,
+                                                    THEN <strong>{obstacle.thenPerson || '___'}</strong> will
+                                                    <strong> {obstacle.thenAction || '___'}</strong>
+                                                    BY <strong>{obstacle.byWhen || '___'}</strong>
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {data.obstacles.length < 3 && (
+                            <button
+                                onClick={addObstacle}
+                                className="btn-secondary w-full text-lg py-4 mb-8"
+                            >
+                                + Add Another Obstacle (Max 3)
+                            </button>
+                        )}
+
+                        <div className="bg-black text-white p-6 mb-8 text-center">
+                            <p className="text-xl">
+                                <strong>Remember:</strong> When these show up, you'll smile and say "Nothing new to me. I'm prepared."
+                            </p>
+                        </div>
+
+                        <div className="flex justify-between">
+                            <button className="btn-secondary text-lg py-3 px-6" onClick={onBack}>
+                                ← Back
+                            </button>
+                            <button 
+                                className="btn-primary text-xl py-4 px-8"
+                                disabled={!canProceed}
+                                onClick={onNext}
+                            >
+                                Next: Create Plan →
+                            </button>
+                        </div>
+                    </div>
+                </main>
+            );
+        }
+
+        // Step 4: Plan Component
+        function Step4({ data, updateData, canProceed, onBack, onNext }) {
+            return (
+                <main className="p-12 max-w-6xl mx-auto">
+                    <div className="animate-in">
+                        <div className="numbered-section mb-8">
+                            [04] THE PLAN
+                        </div>
+
+                        <div className="bg-black text-white border-4 border-black p-6 mb-8">
+                            <h3 className="font-bold text-3xl mb-2">CUT THE ELEPHANT</h3>
+                            <p className="text-xl">
+                                Big steps are intimidating. Break them down. Choose the smallest, easiest piece to start.
+                            </p>
+                        </div>
+
+                        <div className="space-y-8">
+                            <div>
+                                <label className="block font-bold mb-3 text-xl">What are the big chunks of work?</label>
+                                <textarea
+                                    className="worksheet-textarea"
+                                    style={{ minHeight: '100px' }}
+                                    value={data.bigChunks}
+                                    onChange={(e) => updateData('bigChunks', e.target.value)}
+                                    placeholder="Define and document company values&#10;Build ABC delegation framework&#10;Set up weekly metrics dashboard"
+                                />
+                            </div>
+
+                            <div className="bg-green-50 border-4 border-green-500 p-6">
+                                <h3 className="font-bold text-2xl mb-6">THE FIRST BITE</h3>
+
+                                <div className="mb-6">
+                                    <label className="block font-bold mb-3 text-lg">
+                                        Which is the smallest, easiest piece you can do first?
+                                    </label>
+                                    <textarea
+                                        className="worksheet-textarea"
+                                        value={data.firstAction}
+                                        onChange={(e) => updateData('firstAction', e.target.value)}
+                                        placeholder="Schedule 90-minute workshop with leadership team to brainstorm our 5 core values. Book the room. Send the invite. That's it."
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block font-bold mb-3 text-lg">By when?</label>
+                                    <input
+                                        type="date"
+                                        className="worksheet-input text-xl"
+                                        value={data.deadline}
+                                        onChange={(e) => updateData('deadline', e.target.value)}
+                                        min={new Date().toISOString().split('T')[0]}
+                                        style={{ padding: '16px' }}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-between mt-12">
+                            <button className="btn-secondary text-lg py-3 px-6" onClick={onBack}>
+                                ← Back
+                            </button>
+                            <button 
+                                className="btn-primary text-xl py-4 px-8"
+                                disabled={!canProceed}
+                                onClick={onNext}
+                            >
+                                View Your Canvas →
+                            </button>
+                        </div>
+                    </div>
+                </main>
+            );
+        }
+
+        // Canvas View Component
+        function CanvasView({ data, onBack }) {
+            const handleShare = () => {
+                alert('WOOP plan shared with your team. Accountability activated.');
+            };
+
+            const handleSubmit = async () => {
+                try {
+                    // Get user ID from localStorage (set by dashboard with JWT)
+                    const userId = localStorage.getItem('ft_user_id');
+                    if (!userId) {
+                        alert('User not authenticated. Please return to the dashboard.');
+                        return;
+                    }
+
+                    // Prepare the submission data (CRITICAL FIX #1: Include scopeType)
+                    const submissionData = {
+                        companyId: data.companyId,
+                        userId: data.userId,
+                        scopeType: data.scopeType, // CRITICAL FIX #1
+                        wish: {
+                            outcome: data.outcome,
+                            worldChange: data.worldChange,
+                            feeling: data.feeling
+                        },
+                        outcome: {
+                            steps: data.steps.filter(s => s.trim()),
+                            mentallyRehearsed: data.mentallyRehearsed
+                        },
+                        obstacles: data.obstacles, // CRITICAL FIX #2: Now includes If-Then structure
+                        plan: {
+                            bigChunks: data.bigChunks,
+                            firstAction: data.firstAction,
+                            deadline: data.deadline
+                        }
+                    };
+
+                    // Submit using RPC function (handles schema-specific tables)
+                    const { data: result, error: submitError } = await supabaseClient
+                        .rpc('submit_tool_data', {
+                            p_schema_name: CONFIG.SCHEMA_NAME,
+                            p_user_id: userId,
+                            p_data: submissionData,
+                            p_tool_slug: CONFIG.TOOL_SLUG
+                        });
+
+                    if (submitError) throw submitError;
+
+                    if (!result || !result.success) {
+                        throw new Error(result?.message || 'Submission failed');
+                    }
+
+                    alert('Submission saved successfully!');
+                    console.log('Submission ID:', result.submission_id);
+                    localStorage.setItem('lastSubmissionId', result.submission_id);
+
+                } catch (error) {
+                    console.error('Submission error:', error);
+                    alert('Failed to save WOOP plan: ' + error.message);
+                }
+            };
+
+            // Helper function to convert image to base64 data URL (fixes CORS issues)
+            const imageToDataURL = (img) => {
+                return new Promise((resolve, reject) => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    try {
+                        const dataURL = canvas.toDataURL('image/png');
+                        resolve(dataURL);
+                    } catch (err) {
+                        reject(err);
+                    }
+                });
+            };
+
+            const handleExport = async (e) => {
+                try {
+                    // Show loading state
+                    const exportBtn = e.target;
+                    exportBtn.disabled = true;
+                    exportBtn.textContent = 'Generating PDF...';
+
+                    // Check if libraries are loaded
+                    if (!window.jspdf || !window.html2canvas) {
+                        alert('PDF libraries are still loading. Please wait a moment and try again.');
+                        exportBtn.disabled = false;
+                        exportBtn.textContent = 'Export PDF';
+                        return;
+                    }
+
+                    const { jsPDF } = window.jspdf;
+                    const pdf = new jsPDF({
+                        orientation: 'portrait',
+                        unit: 'mm',
+                        format: 'a4'
+                    });
+
+                    // Canvas Content (single page, no cover)
+                    const canvasElement = document.querySelector('.max-w-6xl .border-4.border-black');
+                    if (!canvasElement) {
+                        throw new Error('Canvas element not found. Please ensure you are on the canvas view.');
+                    }
+
+                    const canvas = await html2canvas(canvasElement, {
+                        scale: 2,
+                        backgroundColor: '#ffffff',
+                        useCORS: false,
+                        logging: false,
+                        width: canvasElement.scrollWidth,
+                        height: canvasElement.scrollHeight
+                    });
+
+                    const imgData = canvas.toDataURL('image/png');
+                    const pageWidth = 210; // A4 width in mm
+                    const pageHeight = 297; // A4 height in mm
+                    const margin = 10; // 10mm margins
+                    const maxWidth = pageWidth - (margin * 2);
+                    const maxHeight = pageHeight - (margin * 2) - 20; // Extra space for logo
+                    
+                    // Calculate dimensions maintaining aspect ratio
+                    const imgAspectRatio = canvas.width / canvas.height;
+                    let imgWidth = maxWidth;
+                    let imgHeight = imgWidth / imgAspectRatio;
+                    
+                    if (imgHeight > maxHeight) {
+                        imgHeight = maxHeight;
+                        imgWidth = imgHeight * imgAspectRatio;
+                    }
+                    
+                    const xOffset = (pageWidth - imgWidth) / 2;
+                    const yOffset = margin;
+                    
+                    pdf.addImage(imgData, 'PNG', xOffset, yOffset, imgWidth, imgHeight);
+                    
+                    // Add logo to canvas page (white background, so use black logo)
+                    const logoImg2 = new Image();
+                    logoImg2.crossOrigin = 'anonymous';
+                    logoImg2.src = 'FastTrack_F_black (1).png';
+                    logoImg2.onload = async () => {
+                        try {
+                            const logo2DataURL = await imageToDataURL(logoImg2);
+                            pdf.addImage(logo2DataURL, 'PNG', pageWidth - 50, 10, 40, 15);
+                        } catch (err) {
+                            console.log('Logo 2 failed:', err);
+                        }
+                        const today = new Date().toISOString().split('T')[0];
+                        pdf.save(`WOOP-Canvas-${today}.pdf`);
+                        exportBtn.disabled = false;
+                        exportBtn.textContent = 'Export PDF';
+                    };
+                    logoImg2.onerror = () => {
+                        const today = new Date().toISOString().split('T')[0];
+                        pdf.save(`WOOP-Canvas-${today}.pdf`);
+                        exportBtn.disabled = false;
+                        exportBtn.textContent = 'Export PDF';
+                    };
+                } catch (error) {
+                    console.error('PDF Export Error:', error);
+                    alert('Failed to generate PDF: ' + error.message);
+                    if (e && e.target) {
+                        e.target.disabled = false;
+                        e.target.textContent = 'Export PDF';
+                    }
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-white">
+                    {/* Header */}
+                    <header className="no-print border-b-4 border-black p-6">
+                        <div className="max-w-6xl mx-auto flex justify-between items-center">
+                            <div>
+                                <h1 className="plaak text-4xl mb-2">YOUR WOOP CANVAS</h1>
+                                <p className="text-gray-600">Clarity + Energy = Action</p>
+                            </div>
+                            <button onClick={onBack} className="btn-secondary">
+                                ← Edit
+                            </button>
+                        </div>
+                    </header>
+
+                    {/* Canvas */}
+                    <div className="max-w-6xl mx-auto p-12">
+                        <div className="border-4 border-black p-8 mb-8 canvas-container">
+                            {/* Wish Section */}
+                            <div className="mb-12">
+                                <div className="numbered-section mb-4">[W] YOUR WISH</div>
+                                <div className="canvas-wish-box">
+                                    <h3 className="font-bold text-xl mb-2">ACHIEVED</h3>
+                                    <p className="mb-4">{data.outcome}</p>
+
+                                    <h3 className="font-bold text-xl mb-2">WORLD CHANGED</h3>
+                                    <p className="mb-4">{data.worldChange}</p>
+
+                                    <h3 className="font-bold text-xl mb-2">FEELING</h3>
+                                    <p className="text-2xl font-bold">{data.feeling}</p>
+                                </div>
+                            </div>
+
+                            {/* Outcomes Section */}
+                            <div className="mb-12">
+                                <div className="numbered-section mb-4">[O] THE OUTCOME</div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    {data.steps && Array.isArray(data.steps) && data.steps.filter(s => s.trim()).map((step, index) => (
+                                        <div key={index} className="border-black canvas-step-box">
+                                            <div className="monument text-xs mb-2">STEP {index + 1}</div>
+                                            <p>{step}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                                {data.mentallyRehearsed && (
+                                    <div className="bg-black text-white p-2 mt-4 text-center monument text-sm">
+                                        MENTALLY REHEARSED
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Obstacles Section - CRITICAL FIX #2: Display If-Then Structure */}
+                            <div className="mb-12">
+                                <div className="numbered-section mb-4">[O] THE OBSTACLES & IF-THEN PLANS</div>
+                                {data.obstacles && Array.isArray(data.obstacles) && data.obstacles.map((obstacle, index) => (
+                                    <div key={index} className="canvas-obstacle-box mb-4">
+                                        <div className="font-bold mb-3 text-lg border-b-2 border-red-300 pb-2">
+                                            Problem {index + 1}: {obstacle.problem}
+                                        </div>
+                                        <div className="bg-white p-4 border-2 border-black">
+                                            <p className="font-bold mb-2 text-green-700">IF-THEN PLAN:</p>
+                                            <p className="text-base leading-relaxed">
+                                                <strong>IF</strong> {obstacle.ifTrigger || '[Not specified]'},
+                                                <strong> THEN</strong> {obstacle.thenPerson || '[Not specified]'} will
+                                                <strong> {obstacle.thenAction || '[Not specified]'}</strong>
+                                                <strong> BY</strong> {obstacle.byWhen || '[Not specified]'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Plan Section */}
+                            <div>
+                                <div className="numbered-section mb-4">[P] THE PLAN</div>
+                                <div className="canvas-plan-box border-green-500">
+                                    <div className="bg-green-500 text-white px-4 py-2 inline-block mb-4 font-bold">
+                                        FIRST ACTION
+                                    </div>
+                                    <p className="text-xl mb-4">{data.firstAction}</p>
+                                    <div className="flex items-center gap-4">
+                                        <span className="monument text-sm">DEADLINE:</span>
+                                        <span className="text-2xl font-bold">
+                                            {new Date(data.deadline).toLocaleDateString('en-US', {
+                                                month: 'short',
+                                                day: 'numeric',
+                                                year: 'numeric'
+                                            })}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-4 no-print">
+                            <button onClick={handleShare} className="btn-primary flex-1 text-lg py-4">
+                                Share With Team
+                            </button>
+                            <button onClick={handleExport} className="btn-secondary flex-1 text-lg py-4">
+                                Export PDF
+                            </button>
+                            <button
+                                id="submit-button"
+                                data-testid="submit-button"
+                                onClick={handleSubmit}
+                                className="btn-primary flex-1 text-lg py-4"
+                            >
+                                Final Submit
+                            </button>
+                        </div>
+
+                        <div className="mt-6 text-center text-sm text-gray-600">
+                            <p className="monument">CLARITY AND ENERGY LOCKED IN</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // Render App
+        ReactDOM.render(<WOOPTool />, document.getElementById('root'));
+    </script>
+</body>
+</html>

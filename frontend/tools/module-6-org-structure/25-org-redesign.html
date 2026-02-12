@@ -1,0 +1,2851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Organizational Redesign | Fast Track Program</title>
+
+  <!-- React & ReactDOM from CDN -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+  <!-- Babel Standalone for JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- jsPDF + html2canvas for PDF export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <style>
+    /* Font Face Declarations */
+    @font-face {
+      font-family: 'Plaak';
+      src: url('Plaak3Trial-43-Bold.woff2') format('woff2');
+      font-weight: bold;
+      font-style: normal;
+    }
+
+    @font-face {
+      font-family: 'Riforma';
+      src: url('RiformaLL-Regular.woff2') format('woff2');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    @font-face {
+      font-family: 'Monument';
+      src: url('MonumentGrotesk-Mono.woff2') format('woff2');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    /* Global Styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Riforma', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .plaak {
+      font-family: 'Plaak', sans-serif;
+      text-transform: uppercase;
+      font-weight: bold;
+      letter-spacing: -0.02em;
+    }
+
+    .riforma-bold {
+      font-family: 'Riforma', sans-serif;
+      font-weight: bold;
+    }
+
+    .monument {
+      font-family: 'Monument', monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Animations */
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .animate-in {
+      animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .fade-in {
+      animation: fadeIn 0.4s ease-out;
+    }
+
+    .transition-animate-in {
+      animation: slideIn 0.6s ease-out;
+    }
+
+    /* Button Styles */
+    .btn-primary {
+      background: #000000;
+      color: #FFFFFF;
+      padding: 16px 32px;
+      border: 2px solid #000000;
+      font-size: 18px;
+      font-family: 'Riforma', sans-serif;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: normal;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      transform: scale(1.02);
+    }
+
+    .btn-primary:disabled {
+      background: #E0E0E0;
+      border-color: #E0E0E0;
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #FFFFFF;
+      color: #000000;
+      padding: 12px 24px;
+      border: 2px solid #000000;
+      font-size: 16px;
+      font-family: 'Riforma', sans-serif;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-secondary:hover {
+      background: #F8F8F8;
+    }
+
+    .btn-add {
+      background: #FFF469;
+      color: #000000;
+      padding: 12px 24px;
+      border: 2px solid #000000;
+      font-size: 16px;
+      font-family: 'Riforma', sans-serif;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: bold;
+    }
+
+    .btn-add:hover {
+      background: #FFE600;
+    }
+
+    .btn-remove {
+      background: #FFFFFF;
+      color: #EF4444;
+      padding: 8px 16px;
+      border: 2px solid #EF4444;
+      font-size: 14px;
+      font-family: 'Riforma', sans-serif;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-remove:hover {
+      background: #FEE2E2;
+    }
+
+    /* Form Styles */
+    input[type="text"],
+    input[type="number"],
+    input[type="email"],
+    input[type="date"],
+    textarea,
+    select {
+      border: 1px solid #E0E0E0;
+      padding: 12px 16px;
+      font-size: 18px;
+      font-family: 'Riforma', sans-serif;
+      width: 100%;
+      transition: border-color 0.2s ease;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      outline: none;
+      border-color: #000000;
+    }
+
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    textarea::placeholder {
+      white-space: pre-line;
+    }
+
+    /* Numbered Section Badge */
+    .numbered-section {
+      background: #000000;
+      color: #FFFFFF;
+      padding: 10px 16px;
+      font-family: 'Plaak', sans-serif;
+      font-size: 26px;
+      display: inline-block;
+      text-transform: uppercase;
+      letter-spacing: -0.02em;
+    }
+
+    /* Help Button */
+    .help-button {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: #000000;
+      color: #FFFFFF;
+      font-size: 28px;
+      border: none;
+      cursor: pointer;
+      z-index: 40;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Riforma', sans-serif;
+    }
+
+    .help-button:hover {
+      background: #FFF469;
+      color: #000000;
+      transform: scale(1.1);
+    }
+
+    /* Progress Indicator */
+    .progress-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #E0E0E0;
+      transition: all 0.3s ease;
+    }
+
+    .progress-dot.active {
+      background: #000000;
+      transform: scale(1.3);
+    }
+
+    .progress-dot.completed {
+      background: #000000;
+    }
+
+    .progress-line {
+      height: 2px;
+      background: #E0E0E0;
+      flex: 1;
+    }
+
+    /* FIT Score Styles */
+    .fit-indicator {
+      display: inline-block;
+      padding: 4px 12px;
+      font-family: 'Monument', monospace;
+      font-size: 14px;
+      font-weight: bold;
+      border-radius: 4px;
+    }
+
+    .fit-excellent {
+      background: #10B981;
+      color: #FFFFFF;
+    }
+
+    .fit-good {
+      background: #FFF469;
+      color: #000000;
+    }
+
+    .fit-moderate {
+      background: #F59E0B;
+      color: #FFFFFF;
+    }
+
+    .fit-poor {
+      background: #EF4444;
+      color: #FFFFFF;
+    }
+
+    /* Matrix Cell Styles */
+    .matrix-cell {
+      border: 1px solid #E0E0E0;
+      padding: 8px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .matrix-cell:hover {
+      background: #F8F8F8;
+    }
+
+    .matrix-cell.score-excellent {
+      background: #D1FAE5;
+      border-color: #10B981;
+    }
+
+    .matrix-cell.score-good {
+      background: #FEF9C3;
+      border-color: #F59E0B;
+    }
+
+    .matrix-cell.score-moderate {
+      background: #FFEDD5;
+      border-color: #F97316;
+    }
+
+    .matrix-cell.score-poor {
+      background: #FEE2E2;
+      border-color: #EF4444;
+    }
+
+    /* Category Badge */
+    .category-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      font-family: 'Monument', monospace;
+      font-size: 12px;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+
+    .category-immediate {
+      background: #10B981;
+      color: #FFFFFF;
+    }
+
+    .category-development {
+      background: #F59E0B;
+      color: #FFFFFF;
+    }
+
+    .category-transition {
+      background: #EF4444;
+      color: #FFFFFF;
+    }
+
+    /* Modal Styles */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      padding: 20px;
+    }
+
+    .modal-content {
+      background: white;
+      max-width: 600px;
+      max-height: 85vh;
+      overflow-y: auto;
+      border: 4px solid #000000;
+    }
+
+    /* Slider Styles */
+    input[type="range"] {
+      width: 100%;
+      height: 8px;
+      border-radius: 4px;
+      background: #E0E0E0;
+      outline: none;
+      -webkit-appearance: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #000000;
+      cursor: pointer;
+      border: 2px solid #FFFFFF;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #000000;
+      cursor: pointer;
+      border: 2px solid #FFFFFF;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    /* Skill Chip */
+    .skill-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      background: #F3F4F6;
+      border: 1px solid #D1D5DB;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .skill-chip button {
+      background: none;
+      border: none;
+      color: #EF4444;
+      cursor: pointer;
+      font-weight: bold;
+      padding: 0;
+      font-size: 16px;
+    }
+
+    /* Timeline Checkpoint */
+    .checkpoint-box {
+      border-left: 4px solid #000000;
+      padding-left: 16px;
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, Fragment } = React;
+
+    const CONFIG = {
+        SUPABASE_URL: 'https://vpfayzzjnegdefjrnyoc.supabase.co',
+        SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZwZmF5enpqbmVnZGVmanJueW9jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMzAwODUsImV4cCI6MjA4NTcwNjA4NX0.7qwzd9kwyRG0Wx9DDSc8F9a1SRD0CoC6CGS-9M1sxIs',
+        TOOL_SLUG: 'org-redesign',
+        SPRINT_NUMBER: 25,
+        SCHEMA_NAME: 'sprint_25_org_redesign',
+        AUTOSAVE_DELAY: 2000
+    };
+
+    const { createClient } = supabase;
+    const supabaseClient = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+
+    // Main App Component
+    function OrganizationalRedesignApp() {
+      const [step, setStep] = useState(0);
+      const [showHelp, setShowHelp] = useState(false);
+      const [showTransition, setShowTransition] = useState(false);
+      const [transitionMessage, setTransitionMessage] = useState('');
+      const [transitionProgress, setTransitionProgress] = useState(0);
+
+      const [data, setData] = useState({
+        // Sheet 1: Current Team Assessment
+        currentTeam: [
+          {
+            id: 1,
+            name: '',
+            currentPosition: '',
+            companyFit: 0,
+            jobFit: 0,
+            bossFit: 0,
+            teamFit: 0,
+            totalFit: 0
+          }
+        ],
+
+        // Sheet 2: Define New Roles
+        newRoles: [
+          {
+            id: 1,
+            roleTitle: '',
+            criticality: 5,
+            requiredSkills: ['', '', '']
+          }
+        ],
+
+        // Sheet 3: Decision Matrix
+        decisionMatrix: [],
+
+        // Sheet 4: Action Plan
+        actionPlan: {
+          immediate: [],
+          development: [],
+          transition: []
+        },
+
+        // Sheet 5: PDPs
+        pdps: []
+      });
+
+      // Load from localStorage
+      useEffect(() => {
+        const saved = localStorage.getItem('organizational-redesign-data');
+        if (saved) {
+          try {
+            const savedData = JSON.parse(saved);
+            setData(savedData);
+          } catch (e) {
+            console.error('Error loading saved data:', e);
+          }
+        }
+      }, []);
+
+      // Auto-save every 2 seconds
+      useEffect(() => {
+        const interval = setInterval(() => {
+          localStorage.setItem('organizational-redesign-data', JSON.stringify(data));
+        }, 2000);
+        return () => clearInterval(interval);
+      }, [data]);
+
+      const updateData = (field, value) => {
+        setData({ ...data, [field]: value });
+      };
+
+      // Team Member Management
+      const addTeamMember = () => {
+        const newMember = {
+          id: Date.now(),
+          name: '',
+          currentPosition: '',
+          companyFit: 0,
+          jobFit: 0,
+          bossFit: 0,
+          teamFit: 0,
+          totalFit: 0
+        };
+        updateData('currentTeam', [...(data.currentTeam || []), newMember]);
+      };
+
+      const removeTeamMember = (id) => {
+        if ((data.currentTeam || []).length > 1) {
+          updateData('currentTeam', (data.currentTeam || []).filter(m => m.id !== id));
+        }
+      };
+
+      const updateTeamMember = (id, field, value) => {
+        const updated = (data.currentTeam || []).map(m => {
+          if (m.id === id) {
+            const updatedMember = { ...m, [field]: value };
+            // Auto-calculate Total FIT
+            if (['companyFit', 'jobFit', 'bossFit', 'teamFit'].includes(field)) {
+              const total = (
+                (parseFloat(updatedMember.companyFit) || 0) +
+                (parseFloat(updatedMember.jobFit) || 0) +
+                (parseFloat(updatedMember.bossFit) || 0) +
+                (parseFloat(updatedMember.teamFit) || 0)
+              ) / 4;
+              updatedMember.totalFit = Math.round(total * 100) / 100;
+            }
+            return updatedMember;
+          }
+          return m;
+        });
+        updateData('currentTeam', updated);
+      };
+
+      // Role Management
+      const addRole = () => {
+        const newRole = {
+          id: Date.now(),
+          roleTitle: '',
+          criticality: 5,
+          requiredSkills: ['', '', '']
+        };
+        updateData('newRoles', [...(data.newRoles || []), newRole]);
+      };
+
+      const removeRole = (id) => {
+        if ((data.newRoles || []).length > 1) {
+          updateData('newRoles', (data.newRoles || []).filter(r => r.id !== id));
+        }
+      };
+
+      const updateRole = (id, field, value) => {
+        const updated = (data.newRoles || []).map(r => r.id === id ? { ...r, [field]: value } : r);
+        updateData('newRoles', updated);
+      };
+
+      const addSkill = (roleId) => {
+        const updated = (data.newRoles || []).map(r => {
+          if (r.id === roleId && (r.requiredSkills || []).length < 7) {
+            return { ...r, requiredSkills: [...(r.requiredSkills || []), ''] };
+          }
+          return r;
+        });
+        updateData('newRoles', updated);
+      };
+
+      const removeSkill = (roleId, skillIndex) => {
+        const updated = (data.newRoles || []).map(r => {
+          if (r.id === roleId && (r.requiredSkills || []).length > 3) {
+            return {
+              ...r,
+              requiredSkills: (r.requiredSkills || []).filter((_, i) => i !== skillIndex)
+            };
+          }
+          return r;
+        });
+        updateData('newRoles', updated);
+      };
+
+      const updateSkill = (roleId, skillIndex, value) => {
+        const updated = (data.newRoles || []).map(r => {
+          if (r.id === roleId) {
+            const skills = [...(r.requiredSkills || [])];
+            skills[skillIndex] = value;
+            return { ...r, requiredSkills: skills };
+          }
+          return r;
+        });
+        updateData('newRoles', updated);
+      };
+
+      // Decision Matrix Management
+      const initializeMatrix = () => {
+        const matrix = (data.currentTeam || []).map(person => ({
+          personId: person.id,
+          personName: person.name || '',
+          roleScores: {}
+        }));
+        updateData('decisionMatrix', matrix);
+      };
+
+      const updateMatrixScore = (personId, roleId, score) => {
+        const updated = (data.decisionMatrix || []).map(entry => {
+          if (entry.personId === personId) {
+            return {
+              ...entry,
+              roleScores: { ...entry.roleScores, [roleId]: parseFloat(score) || 0 }
+            };
+          }
+          return entry;
+        });
+        updateData('decisionMatrix', updated);
+      };
+
+      // Action Plan Management
+      const categorizeActionPlan = () => {
+        const immediate = [];
+        const development = [];
+        const transition = [];
+
+        (data.decisionMatrix || []).forEach(entry => {
+          const person = (data.currentTeam || []).find(p => p.id === entry.personId);
+          if (!person) return;
+
+          const scores = Object.entries(entry.roleScores || {});
+          const bestScore = Math.max(...scores.map(([_, score]) => score), 0);
+          const bestRole = scores.find(([_, score]) => score === bestScore);
+
+          if (bestScore >= 0.8 && bestRole) {
+            const roleTitle = (data.newRoles || []).find(r => r.id.toString() === bestRole[0])?.roleTitle || '';
+            immediate.push({
+              personId: person.id,
+              name: person.name,
+              assignedRole: roleTitle,
+              fitScore: bestScore,
+              startDate: '',
+              successMetrics: ''
+            });
+          } else if (bestScore >= 0.6 && bestRole) {
+            const roleTitle = (data.newRoles || []).find(r => r.id.toString() === bestRole[0])?.roleTitle || '';
+            development.push({
+              personId: person.id,
+              name: person.name,
+              targetRole: roleTitle,
+              fitScore: bestScore,
+              developmentTimeline: '',
+              mentor: ''
+            });
+          } else {
+            transition.push({
+              personId: person.id,
+              name: person.name,
+              currentRole: person.currentPosition,
+              transitionType: '',
+              timeline: '',
+              notes: ''
+            });
+          }
+        });
+
+        updateData('actionPlan', { immediate, development, transition });
+      };
+
+      const updateActionPlanItem = (category, personId, field, value) => {
+        const updated = { ...data.actionPlan };
+        updated[category] = (updated[category] || []).map(item =>
+          item.personId === personId ? { ...item, [field]: value } : item
+        );
+        updateData('actionPlan', updated);
+      };
+
+      // PDP Management
+      const initializePDPs = () => {
+        const pdps = (data.actionPlan?.development || []).map(dev => ({
+          personId: dev.personId,
+          name: dev.name,
+          targetRole: dev.targetRole,
+          coreActivity: '',
+          capabilities: [
+            {
+              id: 1,
+              capability: '',
+              currentFulfillment: 0,
+              gap: 100,
+              what: '',
+              when: '',
+              byWhom: ''
+            }
+          ],
+          checkpoint30Days: '',
+          checkpoint60Days: '',
+          checkpoint90Days: ''
+        }));
+        updateData('pdps', pdps);
+      };
+
+      const updatePDP = (personId, field, value) => {
+        const updated = (data.pdps || []).map(pdp =>
+          pdp.personId === personId ? { ...pdp, [field]: value } : pdp
+        );
+        updateData('pdps', updated);
+      };
+
+      const addCapability = (personId) => {
+        const updated = (data.pdps || []).map(pdp => {
+          if (pdp.personId === personId) {
+            return {
+              ...pdp,
+              capabilities: [...(pdp.capabilities || []), {
+                id: Date.now(),
+                capability: '',
+                currentFulfillment: 0,
+                gap: 100,
+                what: '',
+                when: '',
+                byWhom: ''
+              }]
+            };
+          }
+          return pdp;
+        });
+        updateData('pdps', updated);
+      };
+
+      const removeCapability = (personId, capabilityId) => {
+        const updated = (data.pdps || []).map(pdp => {
+          if (pdp.personId === personId && (pdp.capabilities || []).length > 1) {
+            return {
+              ...pdp,
+              capabilities: (pdp.capabilities || []).filter(c => c.id !== capabilityId)
+            };
+          }
+          return pdp;
+        });
+        updateData('pdps', updated);
+      };
+
+      const updateCapability = (personId, capabilityId, field, value) => {
+        const updated = (data.pdps || []).map(pdp => {
+          if (pdp.personId === personId) {
+            return {
+              ...pdp,
+              capabilities: (pdp.capabilities || []).map(cap => {
+                if (cap.id === capabilityId) {
+                  const updatedCap = { ...cap, [field]: value };
+                  if (field === 'currentFulfillment') {
+                    updatedCap.gap = 100 - (parseFloat(value) || 0);
+                  }
+                  return updatedCap;
+                }
+                return cap;
+              })
+            };
+          }
+          return pdp;
+        });
+        updateData('pdps', updated);
+      };
+
+      const goNext = () => {
+        if (step === 0.5) {
+          setStep(1);
+        } else if (step === 1) {
+          const messages = ['STEP 1 COMPLETE - 20%', 'STEP 2 COMPLETE - 40%', 'STEP 3 COMPLETE - 60%', 'STEP 4 COMPLETE - 80%', 'STEP 5 COMPLETE - 100%'];
+          const progressValues = [20, 40, 60, 80, 100];
+
+          setTransitionMessage(messages[0]);
+          setTransitionProgress(progressValues[0]);
+          setShowTransition(true);
+
+          setTimeout(() => {
+            setShowTransition(false);
+            setStep(2);
+          }, 2000);
+        } else if (step === 2) {
+          setTransitionMessage('STEP 2 COMPLETE - 40%');
+          setTransitionProgress(40);
+          setShowTransition(true);
+
+          setTimeout(() => {
+            setShowTransition(false);
+            initializeMatrix();
+            setStep(3);
+          }, 2000);
+        } else if (step === 3) {
+          setTransitionMessage('STEP 3 COMPLETE - 60%');
+          setTransitionProgress(60);
+          setShowTransition(true);
+
+          setTimeout(() => {
+            setShowTransition(false);
+            categorizeActionPlan();
+            setStep(4);
+          }, 2000);
+        } else if (step === 4) {
+          setTransitionMessage('STEP 4 COMPLETE - 80%');
+          setTransitionProgress(80);
+          setShowTransition(true);
+
+          setTimeout(() => {
+            setShowTransition(false);
+            initializePDPs();
+            setStep(5);
+          }, 2000);
+        } else if (step === 5) {
+          setTransitionMessage('STEP 5 COMPLETE - 100%');
+          setTransitionProgress(100);
+          setShowTransition(true);
+
+          setTimeout(() => {
+            setShowTransition(false);
+            setStep(6);
+          }, 2000);
+        } else if (step === 0) {
+          setStep(0.5);
+        }
+      };
+
+      const goBack = () => {
+        if (step === 6) {
+          setStep(5);
+        } else if (step > 1) {
+          setStep(step - 1);
+        } else if (step === 1) {
+          setStep(0.5);
+        }
+      };
+
+      // Validation functions
+      const isStep1Valid = () => {
+        return (data.currentTeam || []).length >= 1 &&
+               (data.currentTeam || []).every(m =>
+                 (m.name || '').trim().length >= 2 &&
+                 (m.currentPosition || '').trim().length >= 2 &&
+                 m.companyFit >= 0 && m.companyFit <= 1 &&
+                 m.jobFit >= 0 && m.jobFit <= 1 &&
+                 m.bossFit >= 0 && m.bossFit <= 1 &&
+                 m.teamFit >= 0 && m.teamFit <= 1
+               );
+      };
+
+      const isStep2Valid = () => {
+        return (data.newRoles || []).length >= 1 &&
+               (data.newRoles || []).every(r =>
+                 (r.roleTitle || '').trim().length >= 2 &&
+                 r.criticality >= 1 && r.criticality <= 10 &&
+                 (r.requiredSkills || []).length >= 3 &&
+                 (r.requiredSkills || []).filter(s => (s || '').trim().length > 0).length >= 3
+               );
+      };
+
+      const isStep3Valid = () => {
+        return (data.decisionMatrix || []).length > 0 &&
+               (data.decisionMatrix || []).every(entry => {
+                 const scores = Object.values(entry.roleScores || {});
+                 return scores.length === (data.newRoles || []).length;
+               });
+      };
+
+      const isStep4Valid = () => {
+        const immediate = data.actionPlan?.immediate || [];
+        const development = data.actionPlan?.development || [];
+        const transition = data.actionPlan?.transition || [];
+        return (immediate.length + development.length + transition.length) > 0;
+      };
+
+      const isStep5Valid = () => {
+        const devCount = (data.actionPlan?.development || []).length;
+        if (devCount === 0) return true;
+
+        return (data.pdps || []).every(pdp =>
+          (pdp.coreActivity || '').length >= 2 &&
+          (pdp.capabilities || []).length >= 1 &&
+          (pdp.capabilities || []).every(cap =>
+            (cap.capability || '').length >= 2 &&
+            cap.currentFulfillment >= 0 && cap.currentFulfillment <= 100
+          )
+        );
+      };
+
+      const exportPDF = async () => {
+        try {
+          const canvas = document.getElementById('canvas-content');
+          if (!canvas) {
+            alert('Canvas not found');
+            return;
+          }
+
+          const canvasImage = await html2canvas(canvas, {
+            scale: 2,
+            logging: false,
+            backgroundColor: '#ffffff'
+          });
+
+          const imgWidth = 190;
+          const imgHeight = (canvasImage.height * imgWidth) / canvasImage.width;
+
+          const { jsPDF } = window.jspdf;
+          const pdf = new jsPDF('p', 'mm', 'a4');
+          const imgData = canvasImage.toDataURL('image/png');
+
+          pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+          pdf.save('organizational-redesign.pdf');
+        } catch (error) {
+          console.error('PDF export error:', error);
+          alert('Failed to export PDF: ' + error.message);
+        }
+      };
+
+      const handleSubmit = async () => {
+        // Get user ID from localStorage
+        const userId = localStorage.getItem('ft_user_id');
+        if (!userId) {
+          alert('User not authenticated. Please return to the dashboard.');
+          return false;
+        }
+
+        try {
+          // Submit using RPC function
+          const { data: result, error } = await supabaseClient
+            .rpc('submit_tool_data', {
+              p_schema_name: CONFIG.SCHEMA_NAME,
+              p_user_id: userId,
+              p_data: data,
+              p_tool_slug: CONFIG.TOOL_SLUG
+            });
+
+          if (error) throw error;
+
+          if (!result || !result.success) {
+            throw new Error(result?.message || 'Submission failed');
+          }
+
+          console.log('Submission ID:', result.submission_id);
+          localStorage.setItem('lastSubmissionId', result.submission_id);
+          alert('✅ Organizational Redesign submitted successfully!');
+          return true;
+        } catch (error) {
+          console.error('Supabase submission error:', error);
+          alert('❌ Submission failed. Please try again.');
+          return false;
+        }
+      };
+
+      // Render different pages based on step
+      if (showTransition) {
+        return <TransitionScreen message={transitionMessage} progress={transitionProgress} />;
+      }
+
+      if (step === 0) {
+        return <CoverPage onStart={goNext} />;
+      }
+
+      if (step === 0.5) {
+        return <IntroPage onNext={goNext} />;
+      }
+
+      if (step === 1) {
+        return (
+          <Step1Page
+            data={data}
+            updateTeamMember={updateTeamMember}
+            addTeamMember={addTeamMember}
+            removeTeamMember={removeTeamMember}
+            onNext={goNext}
+            onBack={goBack}
+            canProceed={isStep1Valid()}
+            setShowHelp={setShowHelp}
+          />
+        );
+      }
+
+      if (step === 2) {
+        return (
+          <Step2Page
+            data={data}
+            updateRole={updateRole}
+            addRole={addRole}
+            removeRole={removeRole}
+            addSkill={addSkill}
+            removeSkill={removeSkill}
+            updateSkill={updateSkill}
+            onNext={goNext}
+            onBack={goBack}
+            canProceed={isStep2Valid()}
+            setShowHelp={setShowHelp}
+          />
+        );
+      }
+
+      if (step === 3) {
+        return (
+          <Step3Page
+            data={data}
+            updateMatrixScore={updateMatrixScore}
+            onNext={goNext}
+            onBack={goBack}
+            canProceed={isStep3Valid()}
+            setShowHelp={setShowHelp}
+          />
+        );
+      }
+
+      if (step === 4) {
+        return (
+          <Step4Page
+            data={data}
+            updateActionPlanItem={updateActionPlanItem}
+            onNext={goNext}
+            onBack={goBack}
+            canProceed={isStep4Valid()}
+            setShowHelp={setShowHelp}
+          />
+        );
+      }
+
+      if (step === 5) {
+        return (
+          <Step5Page
+            data={data}
+            updatePDP={updatePDP}
+            addCapability={addCapability}
+            removeCapability={removeCapability}
+            updateCapability={updateCapability}
+            onNext={goNext}
+            onBack={goBack}
+            canProceed={isStep5Valid()}
+            setShowHelp={setShowHelp}
+          />
+        );
+      }
+
+      if (step === 6) {
+        return (
+          <CanvasPage
+            data={data}
+            onExport={exportPDF}
+            onSubmit={handleSubmit}
+          />
+        );
+      }
+
+      return null;
+    }
+
+    // Cover Page Component
+    function CoverPage({ onStart }) {
+      return (
+        <div className="relative min-h-screen flex items-center justify-center bg-black">
+          <div
+            className="absolute inset-0 w-full h-full"
+            style={{
+              backgroundImage: 'url("asoggetti-sXPbIgVcmW4-unsplash.jpg")',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center'
+            }}
+          ></div>
+          <div className="absolute inset-0" style={{background: 'linear-gradient(to bottom, rgba(0,0,0,0.6), rgba(0,0,0,0.85))'}}></div>
+
+          <div className="relative z-10 text-center text-white px-8 max-w-5xl mx-auto">
+            <h1 className="plaak animate-in" style={{fontSize: '100px', lineHeight: '1', marginBottom: '32px'}}>
+              ORGANIZATIONAL
+            </h1>
+            <h2 className="plaak animate-in" style={{fontSize: '80px', lineHeight: '1', marginBottom: '32px', color: '#FFF469', animationDelay: '0.1s'}}>
+              REDESIGN
+            </h2>
+            <p className="text-4xl mb-12 animate-in" style={{animationDelay: '0.2s'}}>
+              Transform structure into reality. Match people to roles with precision and create a 90-day implementation roadmap.
+            </p>
+            <button
+              onClick={onStart}
+              className="bg-white text-black plaak px-16 py-6 border-4 border-white hover:bg-black hover:text-white transition-all text-3xl animate-in"
+              style={{animationDelay: '0.4s'}}
+            >
+              START
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // Intro Page Component
+    function IntroPage({ onNext }) {
+      return (
+        <div className="bg-black text-white min-h-screen p-16">
+          <div className="max-w-5xl mx-auto">
+            <h1 className="plaak mb-16 animate-in" style={{fontSize: '100px'}}>
+              BEFORE WE START
+            </h1>
+
+            {/* Sprint Info */}
+            <div className="mb-12 animate-in" style={{animationDelay: '0.05s'}}>
+              <h2 className="plaak text-6xl mb-6" style={{color: '#FFF469'}}>SPRINT INFO</h2>
+              <div className="bg-white text-black p-8">
+                <p className="text-2xl font-bold mb-4">Sprint 25: Organizational Redesign & Personal Development Plans</p>
+                <p className="text-xl leading-relaxed mb-4">
+                  Only 12% of organizational transformations achieve their full potential, primarily due to failures in managing the people side of change. A-players are 400% more productive than average performers in complex roles - meaning one wrong person in a key position can derail your entire organizational structure.
+                </p>
+                <p className="text-xl leading-relaxed mb-4">
+                  This sprint is where strategy meets reality: your ideal structure becomes operational through the right human capital decisions.
+                </p>
+                <div className="border-l-4 border-black pl-4 italic text-lg">
+                  This tool integrates Sprint 22 (structure), Sprint 23 (capabilities), and Sprint 24 (people assessment) into an actionable 90-day implementation roadmap.
+                </div>
+              </div>
+            </div>
+
+            {/* Integration Logic */}
+            <div className="mb-12 animate-in" style={{animationDelay: '0.1s'}}>
+              <h2 className="plaak text-6xl mb-6">INTEGRATION LOGIC</h2>
+              <div className="grid grid-cols-3 gap-6">
+                <div className="border-4 border-white p-6">
+                  <h3 className="plaak text-3xl mb-4" style={{color: '#FFF469'}}>SPRINT 22</h3>
+                  <p className="text-lg mb-2 font-bold">Structure Foundation</p>
+                  <ul className="text-base space-y-2">
+                    <li>5 core activities</li>
+                    <li>3 critical processes</li>
+                    <li>9 KPIs</li>
+                    <li>Org chart</li>
+                  </ul>
+                </div>
+
+                <div className="border-4 border-white p-6">
+                  <h3 className="plaak text-3xl mb-4" style={{color: '#FFF469'}}>SPRINT 23</h3>
+                  <p className="text-lg mb-2 font-bold">Capabilities Framework</p>
+                  <ul className="text-base space-y-2">
+                    <li>Key decisions</li>
+                    <li>Required capabilities</li>
+                    <li>Gap analysis</li>
+                    <li>Data requirements</li>
+                  </ul>
+                </div>
+
+                <div className="border-4 border-white p-6">
+                  <h3 className="plaak text-3xl mb-4" style={{color: '#FFF469'}}>SPRINT 24</h3>
+                  <p className="text-lg mb-2 font-bold">People Assessment</p>
+                  <ul className="text-base space-y-2">
+                    <li>FIT scores (4 dimensions)</li>
+                    <li>ABC player ratings</li>
+                    <li>Honest evaluation</li>
+                    <li>Development potential</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Tool Structure */}
+            <div className="mb-12 animate-in" style={{animationDelay: '0.15s'}}>
+              <h2 className="plaak text-6xl mb-6" style={{color: '#FFF469'}}>5-SHEET TOOLKIT</h2>
+              <div className="space-y-4">
+                <div className="border-2 border-white p-6 flex items-start gap-6">
+                  <div className="text-6xl plaak">01</div>
+                  <div>
+                    <h3 className="text-2xl font-bold mb-2">CURRENT TEAM ASSESSMENT</h3>
+                    <p className="text-lg">Import FIT scores from Sprint 24. Calculate Total FIT. Identify at-risk placements.</p>
+                  </div>
+                </div>
+                <div className="border-2 border-white p-6 flex items-start gap-6">
+                  <div className="text-6xl plaak">02</div>
+                  <div>
+                    <h3 className="text-2xl font-bold mb-2">DEFINE NEW ROLES</h3>
+                    <p className="text-lg">Document roles from Sprint 22 structure. Score criticality (1-10). List required skills from Sprint 23.</p>
+                  </div>
+                </div>
+                <div className="border-2 border-white p-6 flex items-start gap-6">
+                  <div className="text-6xl plaak">03</div>
+                  <div>
+                    <h3 className="text-2xl font-bold mb-2">DECISION MATRIX</h3>
+                    <p className="text-lg">Match people to roles with FIT scoring. Identify gaps, conflicts, and optimal placements.</p>
+                  </div>
+                </div>
+                <div className="border-2 border-white p-6 flex items-start gap-6">
+                  <div className="text-6xl plaak">04</div>
+                  <div>
+                    <h3 className="text-2xl font-bold mb-2">ACTION PLAN</h3>
+                    <p className="text-lg">Categorize: Immediate (0.8+ FIT), Development (0.6-0.79), Transition (below 0.6). Set timelines.</p>
+                  </div>
+                </div>
+                <div className="border-2 border-white p-6 flex items-start gap-6">
+                  <div className="text-6xl plaak">05</div>
+                  <div>
+                    <h3 className="text-2xl font-bold mb-2">PERSONAL DEVELOPMENT PLANS</h3>
+                    <p className="text-lg">Create PDPs for development category. Define capability gaps, what/when/by whom, 30-60-90 checkpoints.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Critical Success Factors */}
+            <div className="mb-12 animate-in" style={{animationDelay: '0.2s'}}>
+              <h2 className="plaak text-6xl mb-6">CRITICAL SUCCESS FACTORS</h2>
+              <div className="bg-white text-black p-6 space-y-4">
+                <div className="flex items-start gap-4">
+                  <span className="text-3xl font-bold">1.</span>
+                  <div>
+                    <p className="text-xl font-bold">Brutal Honesty in Assessment</p>
+                    <p className="text-lg">Sugar-coating FIT scores leads to wrong placements. Model honest self-assessment from CEO down.</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <span className="text-3xl font-bold">2.</span>
+                  <div>
+                    <p className="text-xl font-bold">Speed Over Perfection</p>
+                    <p className="text-lg">Better to make good decision in 4 hours than perfect decision in 4 weeks. Market won't wait.</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <span className="text-3xl font-bold">3.</span>
+                  <div>
+                    <p className="text-xl font-bold">Clear Communication</p>
+                    <p className="text-lg">People can handle hard truths if delivered with respect and clarity. Ambiguity creates fear.</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <span className="text-3xl font-bold">4.</span>
+                  <div>
+                    <p className="text-xl font-bold">Follow-Through on PDPs</p>
+                    <p className="text-lg">60% of development plans fail due to lack of accountability. Weekly check-ins are essential.</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <span className="text-3xl font-bold">5.</span>
+                  <div>
+                    <p className="text-xl font-bold">Compassionate Exits</p>
+                    <p className="text-lg">How you treat people on the way out determines whether A-players trust you going forward.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Next Button */}
+            <button
+              onClick={onNext}
+              className="btn-primary w-full text-3xl py-8 plaak"
+            >
+              LET'S START →
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // Transition Screen Component
+    function TransitionScreen({ message, progress }) {
+      return (
+        <div className="fixed inset-0 bg-black text-white flex items-center justify-center z-50 fade-in">
+          <div className="text-center px-8">
+            <h1 className="plaak transition-animate-in" style={{fontSize: '120px', marginBottom: '32px'}}>
+              SECTION COMPLETE
+            </h1>
+
+            <div className="max-w-2xl mx-auto mb-8 transition-animate-in" style={{animationDelay: '0.2s'}}>
+              <div className="h-2 bg-gray-800 mb-4">
+                <div
+                  className="h-full bg-white transition-all duration-1000"
+                  style={{width: `${progress}%`}}
+                ></div>
+              </div>
+              <p className="monument text-xl tracking-wider">{message}</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Helper function to get FIT interpretation
+    function getFitInterpretation(fitScore) {
+      if (fitScore >= 0.8) return { label: 'EXCELLENT FIT', class: 'fit-excellent', text: 'A-player in right seat' };
+      if (fitScore >= 0.6) return { label: 'GOOD FIT', class: 'fit-good', text: 'B+ player with development potential' };
+      if (fitScore >= 0.4) return { label: 'MODERATE FIT', class: 'fit-moderate', text: 'Needs significant development or role change' };
+      return { label: 'POOR FIT', class: 'fit-poor', text: 'Likely wrong seat or wrong bus' };
+    }
+
+    // Helper function to get criticality label
+    function getCriticalityLabel(score) {
+      if (score === 10) return 'MISSION-CRITICAL';
+      if (score >= 7) return 'HIGHLY IMPORTANT';
+      if (score >= 4) return 'IMPORTANT';
+      return 'NICE TO HAVE';
+    }
+
+    // Helper function to get matrix cell class
+    function getMatrixCellClass(score) {
+      if (score >= 0.8) return 'score-excellent';
+      if (score >= 0.6) return 'score-good';
+      if (score >= 0.4) return 'score-moderate';
+      return 'score-poor';
+    }
+
+    // Step 1: Current Team Assessment Component
+    function Step1Page({ data, updateTeamMember, addTeamMember, removeTeamMember, onNext, onBack, canProceed, setShowHelp }) {
+      const [helpOpen, setHelpOpen] = useState(false);
+
+      return (
+        <div className="min-h-screen bg-white p-8">
+          <div className="max-w-7xl mx-auto">
+            {/* Header */}
+            <div className="mb-8 animate-in">
+              <div className="numbered-section mb-4">STEP 01</div>
+              <h1 className="plaak text-6xl mb-4">CURRENT TEAM ASSESSMENT</h1>
+              <p className="text-2xl text-gray-600 mb-4">
+                Import FIT scores from Sprint 24. Total FIT auto-calculates as average of all 4 dimensions.
+              </p>
+              <div className="bg-yellow-100 border-l-4 border-yellow-600 p-4">
+                <p className="text-lg"><strong>Remember:</strong> Use 0-1 scale (e.g., 0.85, 0.70, 0.45). Total FIT = (Company + Job + Boss + Team) / 4</p>
+              </div>
+            </div>
+
+            {/* Help Button */}
+            <button
+              className="help-button"
+              onClick={() => setHelpOpen(!helpOpen)}
+            >
+              ?
+            </button>
+
+            {/* Help Modal */}
+            {helpOpen && (
+              <div className="modal-overlay" onClick={() => setHelpOpen(false)}>
+                <div className="modal-content p-8" onClick={(e) => e.stopPropagation()}>
+                  <h2 className="plaak text-4xl mb-6">HOW TO USE SPRINT 24 FIT SCORES</h2>
+
+                  <div className="space-y-6 text-lg">
+                    <div>
+                      <h3 className="riforma-bold text-2xl mb-2">FIT Score Scale (0-1)</h3>
+                      <ul className="space-y-2 ml-4">
+                        <li><strong>0.8-1.0:</strong> Excellent fit (A-player in right seat)</li>
+                        <li><strong>0.6-0.79:</strong> Good fit with development potential (B+ player)</li>
+                        <li><strong>0.4-0.59:</strong> Moderate fit, needs significant development</li>
+                        <li><strong>Below 0.4:</strong> Poor fit, likely wrong seat or wrong bus</li>
+                      </ul>
+                    </div>
+
+                    <div>
+                      <h3 className="riforma-bold text-2xl mb-2">Four FIT Dimensions</h3>
+                      <ul className="space-y-2 ml-4">
+                        <li><strong>Company Fit:</strong> Alignment with values and culture</li>
+                        <li><strong>Job Fit:</strong> Skills match for current role</li>
+                        <li><strong>Boss Fit:</strong> Relationship with direct manager</li>
+                        <li><strong>Team Fit:</strong> Collaboration with peers</li>
+                      </ul>
+                    </div>
+
+                    <div>
+                      <h3 className="riforma-bold text-2xl mb-2">Total FIT Calculation</h3>
+                      <p>Total FIT = AVERAGE of all 4 dimensions. This auto-calculates as you enter scores.</p>
+                    </div>
+
+                    <div className="bg-gray-100 p-4">
+                      <p className="riforma-bold mb-2">Example:</p>
+                      <p>Company Fit: 0.8, Job Fit: 0.7, Boss Fit: 0.9, Team Fit: 0.8</p>
+                      <p className="font-bold mt-2">Total FIT = (0.8 + 0.7 + 0.9 + 0.8) / 4 = 0.8 (Excellent Fit)</p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => setHelpOpen(false)}
+                    className="btn-primary w-full mt-6"
+                  >
+                    GOT IT
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Team Members */}
+            <div className="space-y-6 mb-8">
+              {(data.currentTeam || []).map((member, index) => {
+                const fitInterpretation = getFitInterpretation(member.totalFit || 0);
+
+                return (
+                  <div key={member.id} className="border-4 border-black p-6 animate-in" style={{animationDelay: `${index * 0.1}s`}}>
+                    <div className="flex justify-between items-start mb-4">
+                      <h3 className="plaak text-3xl">TEAM MEMBER {index + 1}</h3>
+                      {(data.currentTeam || []).length > 1 && (
+                        <button
+                          onClick={() => removeTeamMember(member.id)}
+                          className="btn-remove"
+                        >
+                          REMOVE
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-6 mb-6">
+                      <div>
+                        <label className="monument text-sm block mb-2">NAME</label>
+                        <input
+                          type="text"
+                          value={member.name || ''}
+                          onChange={(e) => updateTeamMember(member.id, 'name', e.target.value)}
+                          placeholder="Full name"
+                          className="w-full"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="monument text-sm block mb-2">CURRENT POSITION</label>
+                        <input
+                          type="text"
+                          value={member.currentPosition || ''}
+                          onChange={(e) => updateTeamMember(member.id, 'currentPosition', e.target.value)}
+                          placeholder="Current role"
+                          className="w-full"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-4 gap-4 mb-6">
+                      <div>
+                        <label className="monument text-sm block mb-2">COMPANY FIT (0-1)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="1"
+                          step="0.01"
+                          value={member.companyFit || 0}
+                          onChange={(e) => updateTeamMember(member.id, 'companyFit', parseFloat(e.target.value) || 0)}
+                          className="w-full"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="monument text-sm block mb-2">JOB FIT (0-1)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="1"
+                          step="0.01"
+                          value={member.jobFit || 0}
+                          onChange={(e) => updateTeamMember(member.id, 'jobFit', parseFloat(e.target.value) || 0)}
+                          className="w-full"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="monument text-sm block mb-2">BOSS FIT (0-1)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="1"
+                          step="0.01"
+                          value={member.bossFit || 0}
+                          onChange={(e) => updateTeamMember(member.id, 'bossFit', parseFloat(e.target.value) || 0)}
+                          className="w-full"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="monument text-sm block mb-2">TEAM FIT (0-1)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="1"
+                          step="0.01"
+                          value={member.teamFit || 0}
+                          onChange={(e) => updateTeamMember(member.id, 'teamFit', parseFloat(e.target.value) || 0)}
+                          className="w-full"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Total FIT Display */}
+                    <div className="bg-gray-100 p-4 border-l-4 border-black">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="monument text-sm mb-1">TOTAL FIT SCORE</p>
+                          <p className="text-4xl font-bold">{(member.totalFit || 0).toFixed(2)}</p>
+                        </div>
+                        <div className="text-right">
+                          <span className={`fit-indicator ${fitInterpretation.class}`}>
+                            {fitInterpretation.label}
+                          </span>
+                          <p className="text-sm text-gray-600 mt-2">{fitInterpretation.text}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Add Team Member Button */}
+            <button
+              onClick={addTeamMember}
+              className="btn-add w-full mb-8 py-4 text-xl"
+            >
+              + ADD TEAM MEMBER
+            </button>
+
+            {/* Navigation */}
+            <div className="flex justify-between items-center">
+              <button onClick={onBack} className="btn-secondary">
+                ← BACK
+              </button>
+              <button
+                onClick={onNext}
+                disabled={!canProceed}
+                className="btn-primary"
+              >
+                NEXT: DEFINE NEW ROLES →
+              </button>
+            </div>
+
+            {!canProceed && (
+              <p className="text-red-600 text-center mt-4">
+                Please complete all fields with valid FIT scores (0-1 scale) before proceeding.
+              </p>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // Step 2: Define New Roles Component
+    function Step2Page({ data, updateRole, addRole, removeRole, addSkill, removeSkill, updateSkill, onNext, onBack, canProceed, setShowHelp }) {
+      const [helpOpen, setHelpOpen] = useState(false);
+
+      return (
+        <div className="min-h-screen bg-white p-8">
+          <div className="max-w-7xl mx-auto">
+            {/* Header */}
+            <div className="mb-8 animate-in">
+              <div className="numbered-section mb-4">STEP 02</div>
+              <h1 className="plaak text-6xl mb-4">DEFINE NEW ROLES</h1>
+              <p className="text-2xl text-gray-600 mb-4">
+                Document roles needed in your redesigned organization based on Sprint 22 structure.
+              </p>
+              <div className="bg-yellow-100 border-l-4 border-yellow-600 p-4">
+                <p className="text-lg"><strong>Criticality Scale:</strong> 10 = Mission-Critical, 7-9 = Highly Important, 4-6 = Important, 1-3 = Nice to Have</p>
+              </div>
+            </div>
+
+            {/* Help Button */}
+            <button
+              className="help-button"
+              onClick={() => setHelpOpen(!helpOpen)}
+            >
+              ?
+            </button>
+
+            {/* Help Modal */}
+            {helpOpen && (
+              <div className="modal-overlay" onClick={() => setHelpOpen(false)}>
+                <div className="modal-content p-8" onClick={(e) => e.stopPropagation()}>
+                  <h2 className="plaak text-4xl mb-6">ROLE CRITICALITY GUIDE</h2>
+
+                  <div className="space-y-6 text-lg">
+                    <div>
+                      <h3 className="riforma-bold text-2xl mb-2">10 = MISSION-CRITICAL</h3>
+                      <ul className="space-y-1 ml-4">
+                        <li>Revenue generation directly depends on this role</li>
+                        <li>Customer relationships owned by this person</li>
+                        <li>Failure creates immediate business crisis</li>
+                        <li>Example: Head of Sales in B2B company</li>
+                      </ul>
+                    </div>
+
+                    <div>
+                      <h3 className="riforma-bold text-2xl mb-2">7-9 = HIGHLY IMPORTANT</h3>
+                      <ul className="space-y-1 ml-4">
+                        <li>Supports core activities directly</li>
+                        <li>Performance significantly impacts results</li>
+                        <li>Hard to replace quickly</li>
+                        <li>Example: CFO, Head of Operations</li>
+                      </ul>
+                    </div>
+
+                    <div>
+                      <h3 className="riforma-bold text-2xl mb-2">4-6 = IMPORTANT</h3>
+                      <ul className="space-y-1 ml-4">
+                        <li>Supporting functions</li>
+                        <li>Performance matters but not make-or-break</li>
+                        <li>Can be hired/trained relatively easily</li>
+                        <li>Example: Marketing Coordinator, HR Manager</li>
+                      </ul>
+                    </div>
+
+                    <div>
+                      <h3 className="riforma-bold text-2xl mb-2">1-3 = NICE TO HAVE</h3>
+                      <ul className="space-y-1 ml-4">
+                        <li>Administrative or low-impact roles</li>
+                        <li>Can be outsourced or delayed</li>
+                        <li>Example: Office Manager, Junior roles</li>
+                      </ul>
+                    </div>
+
+                    <div className="bg-gray-100 p-4">
+                      <p className="riforma-bold mb-2">How to Define Skills from Sprint 23:</p>
+                      <p>Review your Sprint 23 capability analysis. List 3-7 key skills that map to the capabilities needed for this role's core activities.</p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => setHelpOpen(false)}
+                    className="btn-primary w-full mt-6"
+                  >
+                    GOT IT
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Roles */}
+            <div className="space-y-6 mb-8">
+              {(data.newRoles || []).map((role, index) => {
+                const criticalityLabel = getCriticalityLabel(role.criticality || 5);
+
+                return (
+                  <div key={role.id} className="border-4 border-black p-6 animate-in" style={{animationDelay: `${index * 0.1}s`}}>
+                    <div className="flex justify-between items-start mb-4">
+                      <h3 className="plaak text-3xl">ROLE {index + 1}</h3>
+                      {(data.newRoles || []).length > 1 && (
+                        <button
+                          onClick={() => removeRole(role.id)}
+                          className="btn-remove"
+                        >
+                          REMOVE
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="mb-6">
+                      <label className="monument text-sm block mb-2">ROLE TITLE</label>
+                      <input
+                        type="text"
+                        value={role.roleTitle || ''}
+                        onChange={(e) => updateRole(role.id, 'roleTitle', e.target.value)}
+                        placeholder="E.g., Head of Operations"
+                        className="w-full"
+                      />
+                    </div>
+
+                    <div className="mb-6">
+                      <label className="monument text-sm block mb-2">CRITICALITY (1-10): {role.criticality || 5}</label>
+                      <div className="flex items-center gap-4">
+                        <span className="text-sm">1</span>
+                        <input
+                          type="range"
+                          min="1"
+                          max="10"
+                          step="1"
+                          value={role.criticality || 5}
+                          onChange={(e) => updateRole(role.id, 'criticality', parseInt(e.target.value))}
+                          className="flex-1"
+                        />
+                        <span className="text-sm">10</span>
+                      </div>
+                      <div className="mt-2 text-center">
+                        <span className="inline-block px-4 py-2 bg-black text-white monument text-sm">
+                          {criticalityLabel}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="mb-4">
+                      <label className="monument text-sm block mb-2">REQUIRED SKILLS (3-7)</label>
+                      <div className="space-y-3">
+                        {(role.requiredSkills || []).map((skill, skillIndex) => (
+                          <div key={skillIndex} className="flex gap-2">
+                            <input
+                              type="text"
+                              value={skill || ''}
+                              onChange={(e) => updateSkill(role.id, skillIndex, e.target.value)}
+                              placeholder={`Skill ${skillIndex + 1}`}
+                              className="flex-1"
+                            />
+                            {(role.requiredSkills || []).length > 3 && (
+                              <button
+                                onClick={() => removeSkill(role.id, skillIndex)}
+                                className="btn-remove"
+                              >
+                                X
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      {(role.requiredSkills || []).length < 7 && (
+                        <button
+                          onClick={() => addSkill(role.id)}
+                          className="btn-secondary mt-3 w-full"
+                        >
+                          + ADD SKILL
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Add Role Button */}
+            <button
+              onClick={addRole}
+              className="btn-add w-full mb-8 py-4 text-xl"
+            >
+              + ADD ROLE
+            </button>
+
+            {/* Navigation */}
+            <div className="flex justify-between items-center">
+              <button onClick={onBack} className="btn-secondary">
+                ← BACK
+              </button>
+              <button
+                onClick={onNext}
+                disabled={!canProceed}
+                className="btn-primary"
+              >
+                NEXT: DECISION MATRIX →
+              </button>
+            </div>
+
+            {!canProceed && (
+              <p className="text-red-600 text-center mt-4">
+                Please complete all role titles, set criticality (1-10), and define at least 3 skills per role.
+              </p>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // Step 3: Decision Matrix Component
+    function Step3Page({ data, updateMatrixScore, onNext, onBack, canProceed, setShowHelp }) {
+      const [helpOpen, setHelpOpen] = useState(false);
+
+      return (
+        <div className="min-h-screen bg-white p-8">
+          <div className="max-w-7xl mx-auto">
+            {/* Header */}
+            <div className="mb-8 animate-in">
+              <div className="numbered-section mb-4">STEP 03</div>
+              <h1 className="plaak text-6xl mb-4">DECISION MATRIX</h1>
+              <p className="text-2xl text-gray-600 mb-4">
+                Match current people against new roles. Score person-role FIT (0-1 scale) for each combination.
+              </p>
+              <div className="bg-yellow-100 border-l-4 border-yellow-600 p-4">
+                <p className="text-lg"><strong>Scoring:</strong> 0.8+ (Excellent), 0.6-0.79 (Good), 0.4-0.59 (Moderate), Below 0.4 (Poor)</p>
+              </div>
+            </div>
+
+            {/* Help Button */}
+            <button
+              className="help-button"
+              onClick={() => setHelpOpen(!helpOpen)}
+            >
+              ?
+            </button>
+
+            {/* Help Modal */}
+            {helpOpen && (
+              <div className="modal-overlay" onClick={() => setHelpOpen(false)}>
+                <div className="modal-content p-8" onClick={(e) => e.stopPropagation()}>
+                  <h2 className="plaak text-4xl mb-6">PERSON-ROLE FIT SCORING</h2>
+
+                  <div className="space-y-6 text-lg">
+                    <div>
+                      <h3 className="riforma-bold text-2xl mb-2">Scoring Methodology</h3>
+                      <p className="mb-4">For each person-role combination, assess fit based on:</p>
+                      <ul className="space-y-2 ml-4">
+                        <li><strong>Skill Alignment (40%):</strong> Does person have required technical skills?</li>
+                        <li><strong>Company Fit (20%):</strong> Cultural alignment from Step 1</li>
+                        <li><strong>Job Interest (20%):</strong> Does person want this role?</li>
+                        <li><strong>Leadership Assessment (20%):</strong> Team's view of capability</li>
+                      </ul>
+                    </div>
+
+                    <div>
+                      <h3 className="riforma-bold text-2xl mb-2">Decision Rules</h3>
+                      <ul className="space-y-2 ml-4">
+                        <li><strong>0.8-1.0:</strong> Excellent match, immediate placement</li>
+                        <li><strong>0.6-0.79:</strong> Good match with 1-3 months development</li>
+                        <li><strong>0.4-0.59:</strong> Moderate match, needs 3-6 months significant development</li>
+                        <li><strong>0.2-0.39:</strong> Poor match, not recommended</li>
+                        <li><strong>0-0.19:</strong> Completely wrong fit, do not place</li>
+                      </ul>
+                    </div>
+
+                    <div className="bg-gray-100 p-4">
+                      <p className="riforma-bold mb-2">Key Insights to Extract:</p>
+                      <ul className="space-y-1 ml-4">
+                        <li><strong>Gaps:</strong> Roles with no 0.6+ candidates need external hire</li>
+                        <li><strong>Conflicts:</strong> Multiple people fit one role - choose best</li>
+                        <li><strong>Mismatches:</strong> Person with no scores above 0.6 = wrong bus</li>
+                        <li><strong>Stars:</strong> Person with multiple high scores = retention risk</li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => setHelpOpen(false)}
+                    className="btn-primary w-full mt-6"
+                  >
+                    GOT IT
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Matrix Table */}
+            <div className="overflow-x-auto mb-8 animate-in" style={{animationDelay: '0.1s'}}>
+              <table className="w-full border-4 border-black">
+                <thead>
+                  <tr className="bg-black text-white">
+                    <th className="p-4 text-left monument text-sm">PERSON</th>
+                    {(data.newRoles || []).map((role) => (
+                      <th key={role.id} className="p-4 text-center monument text-sm">
+                        {(role.roleTitle || 'Role').substring(0, 20)}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {(data.decisionMatrix || []).map((entry, index) => {
+                    const person = (data.currentTeam || []).find(p => p.id === entry.personId);
+
+                    return (
+                      <tr key={entry.personId} className="border-b-2 border-black">
+                        <td className="p-4 font-bold bg-gray-100">
+                          {person?.name || 'Person'}
+                        </td>
+                        {(data.newRoles || []).map((role) => {
+                          const score = entry.roleScores?.[role.id] || 0;
+                          const cellClass = getMatrixCellClass(score);
+
+                          return (
+                            <td key={role.id} className={`matrix-cell ${cellClass}`}>
+                              <input
+                                type="number"
+                                min="0"
+                                max="1"
+                                step="0.1"
+                                value={score}
+                                onChange={(e) => updateMatrixScore(entry.personId, role.id, e.target.value)}
+                                className="w-20 text-center p-2 border-2 border-black"
+                              />
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Legend */}
+            <div className="grid grid-cols-4 gap-4 mb-8 animate-in" style={{animationDelay: '0.2s'}}>
+              <div className="score-excellent p-4 text-center">
+                <p className="font-bold mb-1">0.8 - 1.0</p>
+                <p className="text-sm">EXCELLENT</p>
+                <p className="text-xs">Immediate placement</p>
+              </div>
+              <div className="score-good p-4 text-center">
+                <p className="font-bold mb-1">0.6 - 0.79</p>
+                <p className="text-sm">GOOD</p>
+                <p className="text-xs">Development needed</p>
+              </div>
+              <div className="score-moderate p-4 text-center">
+                <p className="font-bold mb-1">0.4 - 0.59</p>
+                <p className="text-sm">MODERATE</p>
+                <p className="text-xs">High risk</p>
+              </div>
+              <div className="score-poor p-4 text-center">
+                <p className="font-bold mb-1">Below 0.4</p>
+                <p className="text-sm">POOR</p>
+                <p className="text-xs">Not recommended</p>
+              </div>
+            </div>
+
+            {/* Navigation */}
+            <div className="flex justify-between items-center">
+              <button onClick={onBack} className="btn-secondary">
+                ← BACK
+              </button>
+              <button
+                onClick={onNext}
+                disabled={!canProceed}
+                className="btn-primary"
+              >
+                NEXT: ACTION PLAN →
+              </button>
+            </div>
+
+            {!canProceed && (
+              <p className="text-red-600 text-center mt-4">
+                Please score all person-role combinations before proceeding.
+              </p>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // Step 4: Action Plan Component
+    function Step4Page({ data, updateActionPlanItem, onNext, onBack, canProceed, setShowHelp }) {
+      const [helpOpen, setHelpOpen] = useState(false);
+
+      return (
+        <div className="min-h-screen bg-white p-8">
+          <div className="max-w-7xl mx-auto">
+            {/* Header */}
+            <div className="mb-8 animate-in">
+              <div className="numbered-section mb-4">STEP 04</div>
+              <h1 className="plaak text-6xl mb-4">ACTION PLAN</h1>
+              <p className="text-2xl text-gray-600 mb-4">
+                Auto-categorized based on Decision Matrix scores. Add timelines and details for each category.
+              </p>
+              <div className="bg-yellow-100 border-l-4 border-yellow-600 p-4">
+                <p className="text-lg"><strong>Categories:</strong> Immediate (0.8+), Development (0.6-0.79), Transition (below 0.6)</p>
+              </div>
+            </div>
+
+            {/* Help Button */}
+            <button
+              className="help-button"
+              onClick={() => setHelpOpen(!helpOpen)}
+            >
+              ?
+            </button>
+
+            {/* Help Modal */}
+            {helpOpen && (
+              <div className="modal-overlay" onClick={() => setHelpOpen(false)}>
+                <div className="modal-content p-8" onClick={(e) => e.stopPropagation()}>
+                  <h2 className="plaak text-4xl mb-6">ACTION PLAN CATEGORIES</h2>
+
+                  <div className="space-y-6 text-lg">
+                    <div>
+                      <h3 className="riforma-bold text-2xl mb-2">IMMEDIATE PLACEMENT (0.8+ FIT)</h3>
+                      <p className="mb-2"><strong>Action Required:</strong></p>
+                      <ul className="space-y-1 ml-4">
+                        <li>Announce placement decision</li>
+                        <li>Define success metrics for first 90 days</li>
+                        <li>Set start date</li>
+                        <li>Communicate to organization</li>
+                      </ul>
+                      <p className="mt-2"><strong>Timeline:</strong> Within 2 weeks of sprint completion</p>
+                    </div>
+
+                    <div>
+                      <h3 className="riforma-bold text-2xl mb-2">DEVELOPMENT REQUIRED (0.6-0.79 FIT)</h3>
+                      <p className="mb-2"><strong>Action Required:</strong></p>
+                      <ul className="space-y-1 ml-4">
+                        <li>Complete Personal Development Plan (Step 5)</li>
+                        <li>Assign mentor/coach</li>
+                        <li>Set 30-60-90 day milestones</li>
+                        <li>Define success criteria for role transition</li>
+                        <li>Provide resources (training, courses, shadowing)</li>
+                      </ul>
+                      <p className="mt-2"><strong>Timeline:</strong> PDP created within 4 weeks, development 1-6 months</p>
+                    </div>
+
+                    <div>
+                      <h3 className="riforma-bold text-2xl mb-2">TRANSITION (Below 0.6 FIT)</h3>
+                      <p className="mb-2"><strong>Action Types:</strong></p>
+                      <ul className="space-y-1 ml-4">
+                        <li><strong>Reassignment:</strong> Find different role in company</li>
+                        <li><strong>Exit:</strong> Performance improvement plan then exit</li>
+                        <li><strong>Role Elimination:</strong> If old role no longer exists</li>
+                      </ul>
+                      <p className="mt-2"><strong>Timeline:</strong> Decision communication within 1 week, execution 30-90 days</p>
+                    </div>
+
+                    <div className="bg-gray-100 p-4">
+                      <p className="riforma-bold mb-2">Communication Tips:</p>
+                      <p>Handle with brutal honesty but human compassion. Wrong seat does not equal bad person. Frame as finding right fit for everyone's success.</p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => setHelpOpen(false)}
+                    className="btn-primary w-full mt-6"
+                  >
+                    GOT IT
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Immediate Placement */}
+            <div className="mb-8 animate-in" style={{animationDelay: '0.05s'}}>
+              <div className="flex items-center gap-4 mb-4">
+                <span className="category-badge category-immediate">IMMEDIATE PLACEMENT</span>
+                <span className="text-xl">FIT Score 0.8+ - Ready for immediate placement</span>
+              </div>
+
+              {(data.actionPlan?.immediate || []).length === 0 ? (
+                <div className="border-2 border-dashed border-gray-300 p-8 text-center text-gray-500">
+                  No team members scored 0.8+ in any role. Consider external hiring for critical positions.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {(data.actionPlan?.immediate || []).map((item, index) => (
+                    <div key={item.personId} className="border-2 border-black p-6 bg-gray-50">
+                      <h3 className="text-2xl font-bold mb-4">{item.name} → {item.assignedRole}</h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="monument text-sm block mb-2">START DATE</label>
+                          <input
+                            type="date"
+                            value={item.startDate || ''}
+                            onChange={(e) => updateActionPlanItem('immediate', item.personId, 'startDate', e.target.value)}
+                            className="w-full"
+                          />
+                        </div>
+                        <div>
+                          <label className="monument text-sm block mb-2">FIT SCORE</label>
+                          <div className="text-3xl font-bold pt-2">{item.fitScore.toFixed(2)}</div>
+                        </div>
+                      </div>
+                      <div className="mt-4">
+                        <label className="monument text-sm block mb-2">SUCCESS METRICS (FIRST 90 DAYS)</label>
+                        <textarea
+                          value={item.successMetrics || ''}
+                          onChange={(e) => updateActionPlanItem('immediate', item.personId, 'successMetrics', e.target.value)}
+                          placeholder="Define measurable outcomes for first 90 days in role..."
+                          className="w-full"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Development Required */}
+            <div className="mb-8 animate-in" style={{animationDelay: '0.1s'}}>
+              <div className="flex items-center gap-4 mb-4">
+                <span className="category-badge category-development">DEVELOPMENT REQUIRED</span>
+                <span className="text-xl">FIT Score 0.6-0.79 - Needs development plan (Step 5)</span>
+              </div>
+
+              {(data.actionPlan?.development || []).length === 0 ? (
+                <div className="border-2 border-dashed border-gray-300 p-8 text-center text-gray-500">
+                  No team members in development category.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {(data.actionPlan?.development || []).map((item, index) => (
+                    <div key={item.personId} className="border-2 border-yellow-500 p-6 bg-yellow-50">
+                      <h3 className="text-2xl font-bold mb-4">{item.name} → {item.targetRole}</h3>
+                      <div className="grid grid-cols-3 gap-4">
+                        <div>
+                          <label className="monument text-sm block mb-2">FIT SCORE</label>
+                          <div className="text-3xl font-bold pt-2">{item.fitScore.toFixed(2)}</div>
+                        </div>
+                        <div>
+                          <label className="monument text-sm block mb-2">DEVELOPMENT TIMELINE</label>
+                          <select
+                            value={item.developmentTimeline || ''}
+                            onChange={(e) => updateActionPlanItem('development', item.personId, 'developmentTimeline', e.target.value)}
+                            className="w-full"
+                          >
+                            <option value="">Select...</option>
+                            <option value="1-3 months">1-3 months</option>
+                            <option value="3-6 months">3-6 months</option>
+                            <option value="6-12 months">6-12 months</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="monument text-sm block mb-2">ASSIGNED MENTOR</label>
+                          <input
+                            type="text"
+                            value={item.mentor || ''}
+                            onChange={(e) => updateActionPlanItem('development', item.personId, 'mentor', e.target.value)}
+                            placeholder="Mentor name"
+                            className="w-full"
+                          />
+                        </div>
+                      </div>
+                      <div className="mt-4 bg-white p-4 border-l-4 border-yellow-600">
+                        <p className="text-sm font-bold">Note: Personal Development Plan will be created in Step 5</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Transition Out */}
+            <div className="mb-8 animate-in" style={{animationDelay: '0.15s'}}>
+              <div className="flex items-center gap-4 mb-4">
+                <span className="category-badge category-transition">TRANSITION</span>
+                <span className="text-xl">FIT Score below 0.6 for all roles - Needs transition plan</span>
+              </div>
+
+              {(data.actionPlan?.transition || []).length === 0 ? (
+                <div className="border-2 border-dashed border-gray-300 p-8 text-center text-gray-500">
+                  No team members in transition category.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {(data.actionPlan?.transition || []).map((item, index) => (
+                    <div key={item.personId} className="border-2 border-red-500 p-6 bg-red-50">
+                      <h3 className="text-2xl font-bold mb-4">{item.name} - Current: {item.currentRole}</h3>
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <label className="monument text-sm block mb-2">TRANSITION TYPE</label>
+                          <select
+                            value={item.transitionType || ''}
+                            onChange={(e) => updateActionPlanItem('transition', item.personId, 'transitionType', e.target.value)}
+                            className="w-full"
+                          >
+                            <option value="">Select...</option>
+                            <option value="reassign">Reassignment to different role</option>
+                            <option value="exit">Exit with dignity</option>
+                            <option value="eliminate">Role elimination</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="monument text-sm block mb-2">TIMELINE</label>
+                          <select
+                            value={item.timeline || ''}
+                            onChange={(e) => updateActionPlanItem('transition', item.personId, 'timeline', e.target.value)}
+                            className="w-full"
+                          >
+                            <option value="">Select...</option>
+                            <option value="30 days">30 days</option>
+                            <option value="60 days">60 days</option>
+                            <option value="90 days">90 days</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="monument text-sm block mb-2">NOTES / TRANSITION PLAN</label>
+                        <textarea
+                          value={item.notes || ''}
+                          onChange={(e) => updateActionPlanItem('transition', item.personId, 'notes', e.target.value)}
+                          placeholder="Communication plan, severance details, transition support..."
+                          className="w-full"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Navigation */}
+            <div className="flex justify-between items-center">
+              <button onClick={onBack} className="btn-secondary">
+                ← BACK
+              </button>
+              <button
+                onClick={onNext}
+                disabled={!canProceed}
+                className="btn-primary"
+              >
+                NEXT: PERSONAL DEVELOPMENT PLANS →
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Step 5: Personal Development Plans Component
+    function Step5Page({ data, updatePDP, addCapability, removeCapability, updateCapability, onNext, onBack, canProceed, setShowHelp }) {
+      const [helpOpen, setHelpOpen] = useState(false);
+
+      return (
+        <div className="min-h-screen bg-white p-8">
+          <div className="max-w-7xl mx-auto">
+            {/* Header */}
+            <div className="mb-8 animate-in">
+              <div className="numbered-section mb-4">STEP 05</div>
+              <h1 className="plaak text-6xl mb-4">PERSONAL DEVELOPMENT PLANS</h1>
+              <p className="text-2xl text-gray-600 mb-4">
+                Create development roadmaps for everyone in the "Development Required" category.
+              </p>
+              <div className="bg-yellow-100 border-l-4 border-yellow-600 p-4">
+                <p className="text-lg"><strong>Structure:</strong> Core activity → Capabilities → Gap analysis → What/When/ByWhom → 30-60-90 checkpoints</p>
+              </div>
+            </div>
+
+            {/* Help Button */}
+            <button
+              className="help-button"
+              onClick={() => setHelpOpen(!helpOpen)}
+            >
+              ?
+            </button>
+
+            {/* Help Modal */}
+            {helpOpen && (
+              <div className="modal-overlay" onClick={() => setHelpOpen(false)}>
+                <div className="modal-content p-8" onClick={(e) => e.stopPropagation()}>
+                  <h2 className="plaak text-4xl mb-6">PDP STRUCTURE GUIDE</h2>
+
+                  <div className="space-y-6 text-lg">
+                    <div>
+                      <h3 className="riforma-bold text-2xl mb-2">PDP Components</h3>
+                      <ul className="space-y-2 ml-4">
+                        <li><strong>Core Activity:</strong> From Sprint 22, what does this role support?</li>
+                        <li><strong>Capabilities:</strong> From Sprint 23, what skills are needed?</li>
+                        <li><strong>Current Fulfillment:</strong> 0-100% - where is person now?</li>
+                        <li><strong>Gap:</strong> Auto-calculated (100% - Current)</li>
+                        <li><strong>What:</strong> Specific action (training, mentorship, project)</li>
+                        <li><strong>When:</strong> Deadline or milestone date</li>
+                        <li><strong>By Whom:</strong> Owner (manager, HR, external trainer)</li>
+                      </ul>
+                    </div>
+
+                    <div>
+                      <h3 className="riforma-bold text-2xl mb-2">Development Timeframes</h3>
+                      <ul className="space-y-2 ml-4">
+                        <li><strong>30-60 days:</strong> 0.7-0.79 FIT → 0.8+ (minor skill gaps)</li>
+                        <li><strong>3-6 months:</strong> 0.6-0.69 FIT → 0.8+ (moderate gaps)</li>
+                        <li><strong>6-12 months:</strong> Below 0.6 FIT (high risk, consider external hire)</li>
+                      </ul>
+                    </div>
+
+                    <div>
+                      <h3 className="riforma-bold text-2xl mb-2">30-60-90 Day Checkpoints</h3>
+                      <p className="mb-2"><strong>After 30 Days:</strong></p>
+                      <ul className="space-y-1 ml-4">
+                        <li>Initial training started</li>
+                        <li>Mentor assigned and first sessions completed</li>
+                        <li>Baseline skill assessment documented</li>
+                      </ul>
+                      <p className="mt-3 mb-2"><strong>After 60 Days:</strong></p>
+                      <ul className="space-y-1 ml-4">
+                        <li>50% of development activities completed</li>
+                        <li>Demonstrable skill improvement</li>
+                        <li>First project milestone achieved</li>
+                      </ul>
+                      <p className="mt-3 mb-2"><strong>After 90 Days:</strong></p>
+                      <ul className="space-y-1 ml-4">
+                        <li>Ready for role transition OR</li>
+                        <li>Clear decision made: promote, continue development, or exit</li>
+                      </ul>
+                    </div>
+
+                    <div className="bg-gray-100 p-4">
+                      <p className="riforma-bold mb-2">Success Criteria:</p>
+                      <p>Person must show consistent progress across all capability gaps. No progress after 30 days = reconsider placement. Resistance to development = capability or willingness issue.</p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => setHelpOpen(false)}
+                    className="btn-primary w-full mt-6"
+                  >
+                    GOT IT
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* PDPs */}
+            {(data.pdps || []).length === 0 ? (
+              <div className="border-4 border-dashed border-gray-300 p-12 text-center text-gray-500 mb-8">
+                <p className="text-2xl mb-4">No PDPs needed - no team members in Development Required category.</p>
+                <p className="text-xl">You can proceed to the final canvas.</p>
+              </div>
+            ) : (
+              <div className="space-y-12 mb-8">
+                {(data.pdps || []).map((pdp, index) => (
+                  <div key={pdp.personId} className="border-4 border-black p-8 animate-in" style={{animationDelay: `${index * 0.1}s`}}>
+                    <h2 className="plaak text-4xl mb-6">{pdp.name} - PDP</h2>
+
+                    <div className="grid grid-cols-2 gap-6 mb-6">
+                      <div>
+                        <label className="monument text-sm block mb-2">TARGET ROLE</label>
+                        <input
+                          type="text"
+                          value={pdp.targetRole || ''}
+                          disabled
+                          className="w-full bg-gray-100"
+                        />
+                      </div>
+                      <div>
+                        <label className="monument text-sm block mb-2">CORE ACTIVITY (FROM SPRINT 22)</label>
+                        <input
+                          type="text"
+                          value={pdp.coreActivity || ''}
+                          onChange={(e) => updatePDP(pdp.personId, 'coreActivity', e.target.value)}
+                          placeholder="E.g., Customer Acquisition"
+                          className="w-full"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Capabilities */}
+                    <div className="mb-6">
+                      <h3 className="plaak text-2xl mb-4">CAPABILITY GAPS</h3>
+                      <div className="space-y-6">
+                        {(pdp.capabilities || []).map((cap, capIndex) => (
+                          <div key={cap.id} className="border-2 border-gray-300 p-6 bg-gray-50">
+                            <div className="flex justify-between items-start mb-4">
+                              <h4 className="font-bold text-xl">Capability {capIndex + 1}</h4>
+                              {(pdp.capabilities || []).length > 1 && (
+                                <button
+                                  onClick={() => removeCapability(pdp.personId, cap.id)}
+                                  className="btn-remove"
+                                >
+                                  REMOVE
+                                </button>
+                              )}
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-4 mb-4">
+                              <div className="col-span-2">
+                                <label className="monument text-sm block mb-2">CAPABILITY NAME</label>
+                                <input
+                                  type="text"
+                                  value={cap.capability || ''}
+                                  onChange={(e) => updateCapability(pdp.personId, cap.id, 'capability', e.target.value)}
+                                  placeholder="E.g., Data analysis & forecasting"
+                                  className="w-full"
+                                />
+                              </div>
+                              <div>
+                                <label className="monument text-sm block mb-2">CURRENT FULFILLMENT (%)</label>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  value={cap.currentFulfillment || 0}
+                                  onChange={(e) => updateCapability(pdp.personId, cap.id, 'currentFulfillment', parseInt(e.target.value) || 0)}
+                                  className="w-full"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="mb-4 p-4 bg-white border-l-4 border-black">
+                              <p className="monument text-sm mb-1">GAP TO CLOSE</p>
+                              <p className="text-3xl font-bold">{cap.gap || 100}%</p>
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-4">
+                              <div>
+                                <label className="monument text-sm block mb-2">WHAT (ACTION)</label>
+                                <textarea
+                                  value={cap.what || ''}
+                                  onChange={(e) => updateCapability(pdp.personId, cap.id, 'what', e.target.value)}
+                                  placeholder="Specific training, course, mentorship..."
+                                  className="w-full"
+                                />
+                              </div>
+                              <div>
+                                <label className="monument text-sm block mb-2">WHEN (DEADLINE)</label>
+                                <input
+                                  type="date"
+                                  value={cap.when || ''}
+                                  onChange={(e) => updateCapability(pdp.personId, cap.id, 'when', e.target.value)}
+                                  className="w-full"
+                                />
+                              </div>
+                              <div>
+                                <label className="monument text-sm block mb-2">BY WHOM (OWNER)</label>
+                                <input
+                                  type="text"
+                                  value={cap.byWhom || ''}
+                                  onChange={(e) => updateCapability(pdp.personId, cap.id, 'byWhom', e.target.value)}
+                                  placeholder="Manager, HR, Trainer..."
+                                  className="w-full"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <button
+                        onClick={() => addCapability(pdp.personId)}
+                        className="btn-secondary w-full mt-4"
+                      >
+                        + ADD CAPABILITY
+                      </button>
+                    </div>
+
+                    {/* Checkpoints */}
+                    <div className="space-y-4">
+                      <h3 className="plaak text-2xl mb-4">30-60-90 DAY CHECKPOINTS</h3>
+
+                      <div className="checkpoint-box">
+                        <label className="monument text-sm block mb-2">30-DAY CHECKPOINT</label>
+                        <textarea
+                          value={pdp.checkpoint30Days || ''}
+                          onChange={(e) => updatePDP(pdp.personId, 'checkpoint30Days', e.target.value)}
+                          placeholder="What should be achieved after 30 days? Initial training started, mentor assigned..."
+                          className="w-full"
+                        />
+                      </div>
+
+                      <div className="checkpoint-box">
+                        <label className="monument text-sm block mb-2">60-DAY CHECKPOINT</label>
+                        <textarea
+                          value={pdp.checkpoint60Days || ''}
+                          onChange={(e) => updatePDP(pdp.personId, 'checkpoint60Days', e.target.value)}
+                          placeholder="What should be achieved after 60 days? 50% of development activities completed..."
+                          className="w-full"
+                        />
+                      </div>
+
+                      <div className="checkpoint-box">
+                        <label className="monument text-sm block mb-2">90-DAY CHECKPOINT</label>
+                        <textarea
+                          value={pdp.checkpoint90Days || ''}
+                          onChange={(e) => updatePDP(pdp.personId, 'checkpoint90Days', e.target.value)}
+                          placeholder="What should be achieved after 90 days? Ready for role transition or decision made..."
+                          className="w-full"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Navigation */}
+            <div className="flex justify-between items-center">
+              <button onClick={onBack} className="btn-secondary">
+                ← BACK
+              </button>
+              <button
+                onClick={onNext}
+                disabled={!canProceed}
+                className="btn-primary"
+              >
+                NEXT: CANVAS SUMMARY →
+              </button>
+            </div>
+
+            {!canProceed && (
+              <p className="text-red-600 text-center mt-4">
+                Please complete core activity and at least one capability with fulfillment % for each PDP.
+              </p>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // Canvas Page Component
+    function CanvasPage({ data, onExport, onSubmit }) {
+      const totalTeam = (data.currentTeam || []).length;
+      const immediatePlacements = (data.actionPlan?.immediate || []).length;
+      const developmentNeeded = (data.actionPlan?.development || []).length;
+      const transitions = (data.actionPlan?.transition || []).length;
+      const externalHires = (data.newRoles || []).length - immediatePlacements - developmentNeeded;
+
+      return (
+        <div className="min-h-screen bg-white p-8">
+          <div className="max-w-7xl mx-auto">
+            <div id="canvas-content">
+              {/* Header */}
+              <div className="mb-12 text-center animate-in">
+                <h1 className="plaak mb-6" style={{fontSize: '80px'}}>
+                  ORGANIZATIONAL REDESIGN
+                </h1>
+                <h2 className="plaak text-5xl mb-4" style={{color: '#000000'}}>
+                  90-DAY IMPLEMENTATION CANVAS
+                </h2>
+                <p className="text-2xl text-gray-600">
+                  Your complete roadmap from current structure to optimized organization
+                </p>
+              </div>
+
+              {/* Summary Stats */}
+              <div className="grid grid-cols-5 gap-4 mb-12 animate-in" style={{animationDelay: '0.1s'}}>
+                <div className="border-4 border-black p-6 text-center">
+                  <div className="text-6xl plaak mb-2">{totalTeam}</div>
+                  <p className="monument text-sm">CURRENT TEAM</p>
+                </div>
+                <div className="border-4 border-black p-6 text-center bg-gray-50">
+                  <div className="text-6xl plaak mb-2">{immediatePlacements}</div>
+                  <p className="monument text-sm">IMMEDIATE</p>
+                </div>
+                <div className="border-4 border-yellow-500 p-6 text-center bg-yellow-50">
+                  <div className="text-6xl plaak mb-2">{developmentNeeded}</div>
+                  <p className="monument text-sm">DEVELOPMENT</p>
+                </div>
+                <div className="border-4 border-red-500 p-6 text-center bg-red-50">
+                  <div className="text-6xl plaak mb-2">{transitions}</div>
+                  <p className="monument text-sm">TRANSITIONS</p>
+                </div>
+                <div className="border-4 border-black p-6 text-center bg-gray-50">
+                  <div className="text-6xl plaak mb-2">{Math.max(0, externalHires)}</div>
+                  <p className="monument text-sm">EXTERNAL HIRES</p>
+                </div>
+              </div>
+
+              {/* FIT Score Distribution */}
+              <div className="mb-12 animate-in" style={{animationDelay: '0.15s'}}>
+                <h2 className="plaak text-4xl mb-6">CURRENT TEAM FIT DISTRIBUTION</h2>
+                <div className="border-4 border-black p-6">
+                  {(data.currentTeam || []).map((member) => {
+                    const fitInterpretation = getFitInterpretation(member.totalFit || 0);
+                    return (
+                      <div key={member.id} className="flex items-center justify-between py-3 border-b-2 border-gray-200 last:border-b-0">
+                        <div className="flex-1">
+                          <p className="font-bold text-xl">{member.name || 'Team Member'}</p>
+                          <p className="text-gray-600">{member.currentPosition || 'Position'}</p>
+                        </div>
+                        <div className="text-center px-6">
+                          <p className="text-3xl font-bold">{(member.totalFit || 0).toFixed(2)}</p>
+                          <span className={`fit-indicator ${fitInterpretation.class} mt-2`}>
+                            {fitInterpretation.label}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Role Criticality */}
+              <div className="mb-12 animate-in" style={{animationDelay: '0.2s'}}>
+                <h2 className="plaak text-4xl mb-6">NEW ROLES BY CRITICALITY</h2>
+                <div className="border-4 border-black p-6">
+                  {(data.newRoles || [])
+                    .sort((a, b) => (b.criticality || 0) - (a.criticality || 0))
+                    .map((role) => (
+                      <div key={role.id} className="py-4 border-b-2 border-gray-200 last:border-b-0">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="font-bold text-2xl">{role.roleTitle || 'Role'}</p>
+                          <div className="flex items-center gap-4">
+                            <span className="text-3xl font-bold">{role.criticality || 5}</span>
+                            <span className="px-4 py-2 bg-black text-white monument text-sm">
+                              {getCriticalityLabel(role.criticality || 5)}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          {(role.requiredSkills || []).filter(s => (s || '').trim().length > 0).map((skill, index) => (
+                            <span key={index} className="skill-chip">
+                              {skill}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+
+              {/* Action Plan Breakdown */}
+              <div className="mb-12 animate-in" style={{animationDelay: '0.25s'}}>
+                <h2 className="plaak text-4xl mb-6">ACTION PLAN BREAKDOWN</h2>
+
+                {/* Immediate */}
+                <div className="mb-6">
+                  <div className="bg-black text-white p-4 plaak text-2xl">
+                    IMMEDIATE PLACEMENT ({immediatePlacements})
+                  </div>
+                  <div className="border-4 border-black p-6 bg-gray-50">
+                    {(data.actionPlan?.immediate || []).map((item) => (
+                      <div key={item.personId} className="mb-4 pb-4 border-b-2 border-gray-200 last:border-b-0">
+                        <p className="text-xl font-bold">{item.name} → {item.assignedRole}</p>
+                        <p className="text-lg">FIT Score: {item.fitScore.toFixed(2)} | Start: {item.startDate || 'TBD'}</p>
+                        {item.successMetrics && (
+                          <p className="text-base text-gray-700 mt-2">Success: {item.successMetrics}</p>
+                        )}
+                      </div>
+                    ))}
+                    {immediatePlacements === 0 && (
+                      <p className="text-gray-600">No immediate placements. Consider external hiring.</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Development */}
+                <div className="mb-6">
+                  <div className="bg-yellow-600 text-white p-4 plaak text-2xl">
+                    DEVELOPMENT REQUIRED ({developmentNeeded})
+                  </div>
+                  <div className="border-4 border-yellow-600 p-6 bg-yellow-50">
+                    {(data.actionPlan?.development || []).map((item) => (
+                      <div key={item.personId} className="mb-4 pb-4 border-b-2 border-yellow-200 last:border-b-0">
+                        <p className="text-xl font-bold">{item.name} → {item.targetRole}</p>
+                        <p className="text-lg">FIT Score: {item.fitScore.toFixed(2)} | Timeline: {item.developmentTimeline || 'TBD'}</p>
+                        {item.mentor && (
+                          <p className="text-base text-gray-700 mt-2">Mentor: {item.mentor}</p>
+                        )}
+                      </div>
+                    ))}
+                    {developmentNeeded === 0 && (
+                      <p className="text-gray-600">No development candidates.</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Transitions */}
+                <div className="mb-6">
+                  <div className="bg-red-600 text-white p-4 plaak text-2xl">
+                    TRANSITIONS ({transitions})
+                  </div>
+                  <div className="border-4 border-red-600 p-6 bg-red-50">
+                    {(data.actionPlan?.transition || []).map((item) => (
+                      <div key={item.personId} className="mb-4 pb-4 border-b-2 border-red-200 last:border-b-0">
+                        <p className="text-xl font-bold">{item.name} - {item.currentRole}</p>
+                        <p className="text-lg">Type: {item.transitionType || 'TBD'} | Timeline: {item.timeline || 'TBD'}</p>
+                        {item.notes && (
+                          <p className="text-base text-gray-700 mt-2">{item.notes}</p>
+                        )}
+                      </div>
+                    ))}
+                    {transitions === 0 && (
+                      <p className="text-gray-600">No transitions needed.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* PDP Summary */}
+              {(data.pdps || []).length > 0 && (
+                <div className="mb-12 animate-in" style={{animationDelay: '0.3s'}}>
+                  <h2 className="plaak text-4xl mb-6">PERSONAL DEVELOPMENT PLANS</h2>
+                  {(data.pdps || []).map((pdp) => (
+                    <div key={pdp.personId} className="border-4 border-black p-6 mb-6">
+                      <h3 className="plaak text-3xl mb-4">{pdp.name} - {pdp.targetRole}</h3>
+                      <p className="text-xl mb-4"><strong>Core Activity:</strong> {pdp.coreActivity || 'TBD'}</p>
+
+                      <div className="mb-4">
+                        <p className="monument text-sm mb-2">CAPABILITY GAPS ({(pdp.capabilities || []).length})</p>
+                        {(pdp.capabilities || []).map((cap, index) => (
+                          <div key={cap.id} className="bg-gray-100 p-4 mb-2">
+                            <p className="font-bold text-lg">{cap.capability || `Capability ${index + 1}`}</p>
+                            <div className="grid grid-cols-4 gap-4 mt-2 text-sm">
+                              <div>
+                                <span className="monument text-xs">CURRENT:</span>
+                                <p className="font-bold">{cap.currentFulfillment || 0}%</p>
+                              </div>
+                              <div>
+                                <span className="monument text-xs">GAP:</span>
+                                <p className="font-bold">{cap.gap || 100}%</p>
+                              </div>
+                              <div>
+                                <span className="monument text-xs">WHAT:</span>
+                                <p>{cap.what || 'TBD'}</p>
+                              </div>
+                              <div>
+                                <span className="monument text-xs">WHEN:</span>
+                                <p>{cap.when || 'TBD'}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="checkpoint-box">
+                          <p className="monument text-xs mb-1">30 DAYS</p>
+                          <p className="text-sm">{pdp.checkpoint30Days || 'TBD'}</p>
+                        </div>
+                        <div className="checkpoint-box">
+                          <p className="monument text-xs mb-1">60 DAYS</p>
+                          <p className="text-sm">{pdp.checkpoint60Days || 'TBD'}</p>
+                        </div>
+                        <div className="checkpoint-box">
+                          <p className="monument text-xs mb-1">90 DAYS</p>
+                          <p className="text-sm">{pdp.checkpoint90Days || 'TBD'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* 90-Day Timeline */}
+              <div className="mb-12 animate-in" style={{animationDelay: '0.35s'}}>
+                <h2 className="plaak text-4xl mb-6">90-DAY IMPLEMENTATION TIMELINE</h2>
+                <div className="border-4 border-black p-8 space-y-8">
+                  <div>
+                    <div className="bg-black text-white p-4 plaak text-2xl mb-4">WEEK 1-2</div>
+                    <ul className="text-lg space-y-2 ml-6">
+                      <li>Announce organizational changes to full company</li>
+                      <li>Confirm immediate placements ({immediatePlacements} people)</li>
+                      <li>Start exit conversations for transitions ({transitions} people)</li>
+                      <li>Launch PDPs for development candidates ({developmentNeeded} people)</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <div className="bg-black text-white p-4 plaak text-2xl mb-4">WEEK 3-4</div>
+                    <ul className="text-lg space-y-2 ml-6">
+                      <li>Begin recruitment for external hire roles ({Math.max(0, externalHires)} positions)</li>
+                      <li>Execute first wave of transitions</li>
+                      <li>30-day PDP checkpoints completed</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <div className="bg-black text-white p-4 plaak text-2xl mb-4">MONTH 2</div>
+                    <ul className="text-lg space-y-2 ml-6">
+                      <li>Continue development programs</li>
+                      <li>Interview external candidates</li>
+                      <li>Second wave of internal transitions</li>
+                      <li>60-day PDP checkpoints completed</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <div className="bg-black text-white p-4 plaak text-2xl mb-4">MONTH 3</div>
+                    <ul className="text-lg space-y-2 ml-6">
+                      <li>Complete development assessments (90-day checkpoints)</li>
+                      <li>Make final promote/exit decisions</li>
+                      <li>External hires start onboarding</li>
+                      <li>New structure fully operational</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Critical Success Factors */}
+              <div className="mb-12 animate-in" style={{animationDelay: '0.4s'}}>
+                <h2 className="plaak text-4xl mb-6">CRITICAL SUCCESS FACTORS</h2>
+                <div className="border-4 border-black p-8 bg-yellow-50">
+                  <ul className="text-lg space-y-4">
+                    <li className="flex items-start gap-4">
+                      <span className="text-3xl font-bold">1.</span>
+                      <div>
+                        <p className="font-bold text-xl">Brutal Honesty in Assessment</p>
+                        <p>Sugar-coating FIT scores leads to wrong placements. Model honest self-assessment from CEO down.</p>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-4">
+                      <span className="text-3xl font-bold">2.</span>
+                      <div>
+                        <p className="font-bold text-xl">Speed Over Perfection</p>
+                        <p>Better to make good decision in 4 hours than perfect decision in 4 weeks. Market won't wait.</p>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-4">
+                      <span className="text-3xl font-bold">3.</span>
+                      <div>
+                        <p className="font-bold text-xl">Clear Communication</p>
+                        <p>People can handle hard truths if delivered with respect and clarity. Ambiguity creates fear.</p>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-4">
+                      <span className="text-3xl font-bold">4.</span>
+                      <div>
+                        <p className="font-bold text-xl">Follow-Through on PDPs</p>
+                        <p>60% of development plans fail due to lack of accountability. Weekly check-ins are essential.</p>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-4">
+                      <span className="text-3xl font-bold">5.</span>
+                      <div>
+                        <p className="font-bold text-xl">Compassionate Exits</p>
+                        <p>How you treat people on the way out determines whether A-players trust you going forward.</p>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Next Steps */}
+              <div className="mb-12 animate-in" style={{animationDelay: '0.45s'}}>
+                <h2 className="plaak text-4xl mb-6">IMMEDIATE NEXT STEPS</h2>
+                <div className="border-4 border-black p-8 space-y-6">
+                  <div className="checkpoint-box">
+                    <p className="monument text-sm mb-2">THIS WEEK</p>
+                    <ul className="text-lg space-y-2">
+                      <li>Schedule all-hands meeting to announce organizational changes</li>
+                      <li>Prepare individual conversation scripts for all affected team members</li>
+                      <li>Confirm start dates for immediate placements</li>
+                    </ul>
+                  </div>
+
+                  <div className="checkpoint-box">
+                    <p className="monument text-sm mb-2">NEXT 2 WEEKS</p>
+                    <ul className="text-lg space-y-2">
+                      <li>Complete all one-on-one placement conversations</li>
+                      <li>Launch job postings for external hire positions</li>
+                      <li>Assign mentors and initiate PDP kick-off meetings</li>
+                    </ul>
+                  </div>
+
+                  <div className="checkpoint-box">
+                    <p className="monument text-sm mb-2">MONTH 1</p>
+                    <ul className="text-lg space-y-2">
+                      <li>Track immediate placement performance against 90-day metrics</li>
+                      <li>Conduct 30-day PDP checkpoint reviews</li>
+                      <li>Begin candidate interviews for external hires</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-4 justify-center mt-12">
+              <button
+                onClick={onExport}
+                className="btn-secondary text-xl px-12 py-6"
+              >
+                EXPORT PDF
+              </button>
+              <button
+                onClick={onSubmit}
+                className="btn-primary text-xl px-12 py-6"
+              >
+                SUBMIT ORGANIZATIONAL REDESIGN
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Render the app
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<OrganizationalRedesignApp />);
+  </script>
+</body>
+</html>

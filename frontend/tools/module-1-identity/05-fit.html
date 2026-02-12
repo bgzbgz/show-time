@@ -1,0 +1,1756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FIT Assessment | Fast Track Program</title>
+
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <style>
+        @font-face {
+            font-family: 'Plaak';
+            src: url('Plaak3Trial-43-Bold.woff2') format('woff2');
+            font-weight: bold;
+        }
+
+        @font-face {
+            font-family: 'Riforma';
+            src: url('RiformaLL-Regular.woff2') format('woff2');
+            font-weight: normal;
+        }
+
+        @font-face {
+            font-family: 'Monument';
+            src: url('MonumentGrotesk-Mono.woff2') format('woff2');
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Riforma', -apple-system, sans-serif;
+            font-size: 16px;
+            color: #000000;
+            background: #FFFFFF;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .plaak {
+            font-family: 'Plaak', sans-serif;
+            font-weight: bold;
+            letter-spacing: -0.01em;
+            line-height: 1.2;
+        }
+
+        .monument {
+            font-family: 'Monument', monospace;
+            letter-spacing: 0.05em;
+        }
+
+        .smooth {
+            transition: all 0.2s ease;
+        }
+
+        .worksheet-input {
+            border: 1px solid #E0E0E0;
+            padding: 12px 16px;
+            font-family: 'Riforma', sans-serif;
+            font-size: 18px;
+            transition: border-color 0.2s ease;
+            width: 100%;
+        }
+
+        .worksheet-input:focus {
+            outline: none;
+            border-color: #000000;
+        }
+
+        .worksheet-textarea {
+            border: 1px solid #E0E0E0;
+            padding: 12px 16px;
+            font-family: 'Riforma', sans-serif;
+            font-size: 18px;
+            transition: border-color 0.2s ease;
+            width: 100%;
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .worksheet-textarea:focus {
+            outline: none;
+            border-color: #000000;
+        }
+
+        .btn-primary {
+            background: #000000;
+            color: #FFFFFF;
+            padding: 16px 32px;
+            border: 2px solid #000000;
+            font-family: 'Riforma', sans-serif;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: scale(1.02);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .btn-primary:disabled {
+            background: #E0E0E0;
+            color: #9CA3AF;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .btn-secondary {
+            background: #FFFFFF;
+            color: #000000;
+            padding: 12px 24px;
+            border: 2px solid #000000;
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-secondary:hover {
+            background: #F8F8F8;
+        }
+
+        .numbered-section {
+            background: #000000;
+            color: #FFFFFF;
+            padding: 10px 16px;
+            font-size: 26px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            display: inline-block;
+            font-family: 'Plaak', sans-serif;
+        }
+
+        .help-button {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: #000000;
+            color: #FFFFFF;
+            border: 2px solid #000000;
+            font-size: 28px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 40;
+            transition: all 0.2s ease;
+        }
+
+        .help-button:hover {
+            transform: scale(1.1);
+            background: #fff469;
+            color: #000000;
+        }
+
+        .progress-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #E0E0E0;
+            transition: all 0.2s ease;
+        }
+
+        .progress-dot.active {
+            background: #000000;
+            transform: scale(1.3);
+        }
+
+        .progress-dot.completed {
+            background: #000000;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-in {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .cover-overlay {
+            background: linear-gradient(to bottom, rgba(0,0,0,0.4), rgba(0,0,0,0.7));
+        }
+
+        /* Slider styles */
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: #E0E0E0;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #000000;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #000000;
+            cursor: pointer;
+            border: none;
+        }
+
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .transition-animate-in {
+            animation: slideIn 0.3s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // Configuration
+        const CONFIG = {
+            SUPABASE_URL: 'https://vpfayzzjnegdefjrnyoc.supabase.co',
+            SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZwZmF5enpqbmVnZGVmanJueW9jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMzAwODUsImV4cCI6MjA4NTcwNjA4NX0.7qwzd9kwyRG0Wx9DDSc8F9a1SRD0CoC6CGS-9M1sxIs',
+            TOOL_SLUG: 'fit',
+            SPRINT_NUMBER: 5,
+            SCHEMA_NAME: 'sprint_05_fit',
+            AUTOSAVE_DELAY: 2000
+        };
+
+        // Initialize Supabase client
+        const { createClient } = supabase;
+        const supabaseClient = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+
+        // Help Modal Component
+        function HelpModal({ isOpen, onClose, content }) {
+            if (!isOpen) return null;
+
+            return (
+                <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
+                    <div className="bg-white max-w-3xl p-12 border-8 border-black max-h-[80vh] overflow-y-auto">
+                        <div className="flex justify-between items-start mb-6">
+                            <h2 className="plaak text-5xl">INSTRUCTIONS</h2>
+                            <button onClick={onClose} className="text-4xl font-bold hover:text-gray-600">×</button>
+                        </div>
+                        {content}
+                        <button className="btn-primary w-full text-xl py-4 mt-8" onClick={onClose}>
+                            GOT IT
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        // Transition Screen
+        function TransitionScreen({ title, subtitle, onNext, autoAdvance = true, delay = 2000 }) {
+            React.useEffect(() => {
+                if (autoAdvance) {
+                    const timer = setTimeout(() => {
+                        onNext();
+                    }, delay);
+                    return () => clearTimeout(timer);
+                }
+            }, [onNext, autoAdvance, delay]);
+
+            return (
+                <div className="fixed inset-0 bg-black text-white flex items-center justify-center z-50 fade-in">
+                    <div className="text-center px-8">
+                        <h1 className="plaak text-8xl md:text-9xl mb-8 transition-animate-in">
+                            {title}
+                        </h1>
+                        {subtitle && (
+                            <p className="text-2xl text-gray-400 mb-8 transition-animate-in"
+                                style={{animationDelay: '0.1s'}}>
+                                {subtitle}
+                            </p>
+                        )}
+                        {!autoAdvance && (
+                            <button
+                                onClick={onNext}
+                                className="btn-primary text-2xl py-4 px-12 mt-8"
+                            >
+                                Continue →
+                            </button>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        function FITTool() {
+            const [step, setStep] = useState(0); // 0=intro, 0.5=choice, 1-N=steps, 999=canvas
+            const [showHelp, setShowHelp] = useState(false);
+            const [toolType, setToolType] = useState(''); // 'individual' or 'team'
+
+            // Data state
+            const [data, setData] = useState({
+                // User Info
+                companyId: '',
+                userId: '',
+                toolType: '',
+
+                // Individual Tool Data
+                individual: {
+                    name: '',
+                    role: '',
+                    teamContext: '',
+                    valuesFit: 50,
+                    valuesEvidence: '',
+                    jobFit: 50,
+                    jobEvidence: '',
+                    teamFit: 50,
+                    teamEvidence: '',
+                    bossFit: 50,
+                    bossEvidence: '',
+                    strengths: '',
+                    improvementAreas: '',
+                    actionPlan: ''
+                },
+
+                // Team Tool Data
+                team: {
+                    assessorName: '',
+                    teamContext: '',
+                    teamMembers: [
+                        {
+                            id: Date.now(),
+                            name: '',
+                            role: '',
+                            valuesFit: 50,
+                            jobFit: 50,
+                            teamFit: 50,
+                            bossFit: 50,
+                            performance: 50,
+                            notes: ''
+                        }
+                    ]
+                }
+            });
+
+            const autosaveTimer = useRef(null);
+
+            // Auto-save
+            useEffect(() => {
+                if (autosaveTimer.current) {
+                    clearTimeout(autosaveTimer.current);
+                }
+
+                autosaveTimer.current = setTimeout(() => {
+                    localStorage.setItem('fitData', JSON.stringify(data));
+                }, 2000);
+
+                return () => {
+                    if (autosaveTimer.current) {
+                        clearTimeout(autosaveTimer.current);
+                    }
+                };
+            }, [data]);
+
+            // Load from localStorage
+            useEffect(() => {
+                const saved = localStorage.getItem('fitData');
+                if (saved) {
+                    try {
+                        const parsed = JSON.parse(saved);
+                        setData(parsed);
+                        if (parsed.toolType) {
+                            setToolType(parsed.toolType);
+                        }
+                    } catch (e) {
+                        console.error('Failed to load saved data:', e);
+                    }
+                }
+            }, []);
+
+            const updateData = (key, value) => {
+                setData(prev => ({ ...prev, [key]: value }));
+            };
+
+            const updateIndividual = (key, value) => {
+                setData(prev => ({
+                    ...prev,
+                    individual: { ...prev.individual, [key]: value }
+                }));
+            };
+
+            const updateTeam = (key, value) => {
+                setData(prev => ({
+                    ...prev,
+                    team: { ...prev.team, [key]: value }
+                }));
+            };
+
+            const addTeamMember = () => {
+                setData(prev => ({
+                    ...prev,
+                    team: {
+                        ...prev.team,
+                        teamMembers: [
+                            ...prev.team.teamMembers,
+                            {
+                                id: Date.now(),
+                                name: '',
+                                role: '',
+                                valuesFit: 50,
+                                jobFit: 50,
+                                teamFit: 50,
+                                bossFit: 50,
+                                performance: 50,
+                                notes: ''
+                            }
+                        ]
+                    }
+                }));
+            };
+
+            const removeTeamMember = (id) => {
+                setData(prev => ({
+                    ...prev,
+                    team: {
+                        ...prev.team,
+                        teamMembers: prev.team.teamMembers.filter(m => m.id !== id)
+                    }
+                }));
+            };
+
+            const updateTeamMember = (id, key, value) => {
+                setData(prev => ({
+                    ...prev,
+                    team: {
+                        ...prev.team,
+                        teamMembers: prev.team.teamMembers.map(m =>
+                            m.id === id ? { ...m, [key]: value } : m
+                        )
+                    }
+                }));
+            };
+
+            const exportPDF = async () => {
+                try {
+                    const element = document.getElementById('canvas-content');
+                    if (!element) return;
+
+                    const canvas = await html2canvas(element, {
+                        scale: 2,
+                        logging: false,
+                        useCORS: true
+                    });
+
+                    const imgData = canvas.toDataURL('image/png');
+                    const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
+                    const pdfWidth = pdf.internal.pageSize.getWidth();
+                    const pdfHeight = pdf.internal.pageSize.getHeight();
+                    const imgWidth = canvas.width;
+                    const imgHeight = canvas.height;
+                    const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+                    const imgX = (pdfWidth - imgWidth * ratio) / 2;
+                    const imgY = 10;
+
+                    pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+                    pdf.save('fit-assessment.pdf');
+                } catch (error) {
+                    console.error('PDF export error:', error);
+                    alert('Failed to export PDF');
+                }
+            };
+
+            const handleSubmit = async () => {
+                try {
+                    // Get user ID from localStorage
+                    const userId = localStorage.getItem('ft_user_id');
+                    if (!userId) {
+                        alert('User not authenticated. Please return to the dashboard.');
+                        return;
+                    }
+
+                    // Submit using RPC function (handles schema-specific tables)
+                    const { data: result, error: submitError } = await supabaseClient
+                        .rpc('submit_tool_data', {
+                            p_schema_name: CONFIG.SCHEMA_NAME,
+                            p_user_id: userId,
+                            p_data: data,
+                            p_tool_slug: CONFIG.TOOL_SLUG
+                        });
+
+                    if (submitError) throw submitError;
+
+                    if (!result || !result.success) {
+                        throw new Error(result?.message || 'Submission failed');
+                    }
+
+                    alert('Assessment submitted successfully!');
+                    console.log('Submission ID:', result.submission_id);
+                    localStorage.setItem('lastSubmissionId', result.submission_id);
+
+                } catch (error) {
+                    console.error('Submit error:', error);
+                    alert('Failed to submit: ' + error.message);
+                }
+            };
+
+            // Get help content based on step
+            const getHelpContent = () => {
+                if (toolType === 'individual') {
+                    if (step === 1) return (
+                        <div className="text-xl space-y-6">
+                            <p><strong>What:</strong> Define your context - who you are and which team you're assessing your fit for.</p>
+                            <p><strong>How:</strong> Be specific about the team context. Your fit with "Executive Team" may differ from your fit with "My Department".</p>
+                        </div>
+                    );
+                    if (step === 2) return (
+                        <div className="text-xl space-y-6">
+                            <p><strong>What:</strong> Rate your alignment with company values and how well the job fits your strengths.</p>
+                            <p><strong>How:</strong> Use sliders to rate 0-100. Scores above 70 = strong fit. Provide specific evidence. High scores without proof suggest grade inflation.</p>
+                        </div>
+                    );
+                    if (step === 3) return (
+                        <div className="text-xl space-y-6">
+                            <p><strong>What:</strong> Evaluate how well you work with your team and boss.</p>
+                            <p><strong>How:</strong> Rate your fit and provide concrete examples. High scores should be backed by evidence of strong collaboration.</p>
+                        </div>
+                    );
+                    if (step === 4) return (
+                        <div className="text-xl space-y-6">
+                            <p><strong>What:</strong> Identify strengths and create an improvement plan.</p>
+                            <p><strong>How:</strong> List where you excel and areas needing improvement. Create specific, actionable steps to enhance your FIT.</p>
+                        </div>
+                    );
+                } else if (toolType === 'team') {
+                    if (step === 1) return (
+                        <div className="text-xl space-y-6">
+                            <p><strong>What:</strong> Define which team you're assessing.</p>
+                            <p><strong>How:</strong> Be specific about the team context to ensure consistent evaluation of all members.</p>
+                        </div>
+                    );
+                    if (step === 2) return (
+                        <div className="text-xl space-y-6">
+                            <p><strong>What:</strong> Rate each team member across FIT dimensions and performance.</p>
+                            <p><strong>How:</strong> Use sliders for Values, Job, Team, Boss FIT (0-100) and Performance (0-100). System auto-plots them on ABC Matrix.</p>
+                            <p><strong>Categories:</strong></p>
+                            <ul className="list-disc ml-6 space-y-2">
+                                <li>A-Player: High FIT + High Performance</li>
+                                <li>B-Player: High FIT + Low Performance (Warning!)</li>
+                                <li>C-Player: Low FIT + Low Performance</li>
+                                <li>D-Player: Low FIT + High Performance</li>
+                            </ul>
+                        </div>
+                    );
+                }
+                return <p className="text-xl">No help available for this step.</p>;
+            };
+
+            // Render logic
+            return (
+                <>
+                    {/* Intro Page */}
+                    {step === 0 && (
+                        <div className="min-h-screen bg-black text-white flex items-center justify-center px-8">
+                            <div className="max-w-6xl w-full">
+                                <h1 className="plaak text-9xl mb-16 animate-in">BEFORE WE START</h1>
+
+                                <div className="mb-12 animate-in" style={{animationDelay: '0.05s'}}>
+                                    <h2 className="plaak text-6xl mb-6">YOUR DETAILS</h2>
+                                    <div className="space-y-6 bg-white text-black p-8 rounded">
+                                        <div>
+                                            <label className="block font-bold mb-2 text-xl">Company ID</label>
+                                            <input
+                                                type="text"
+                                                className="worksheet-input text-black"
+                                                value={data.companyId}
+                                                onChange={(e) => updateData('companyId', e.target.value)}
+                                                placeholder="Enter your company ID"
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block font-bold mb-2 text-xl">Username ID</label>
+                                            <input
+                                                type="text"
+                                                className="worksheet-input text-black"
+                                                value={data.userId}
+                                                onChange={(e) => updateData('userId', e.target.value)}
+                                                placeholder="Enter your username ID"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="mb-12 animate-in" style={{animationDelay: '0.08s'}}>
+                                    <h2 className="plaak text-6xl mb-6" style={{color: '#fff469'}}>SPRINT INFO</h2>
+                                    <div className="bg-white text-black p-8 rounded">
+                                        <p className="text-2xl font-bold mb-4">FIT Assessment</p>
+                                        <p className="text-xl leading-relaxed">
+                                            Ensure every team member fits perfectly in their role, with the team, and with company values.
+                                            Use the 4-dimension FIT framework and ABC Matrix to identify A, B, C, and D players.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="mb-12 animate-in" style={{animationDelay: '0.1s'}}>
+                                    <h2 className="plaak text-6xl mb-6">PURPOSE</h2>
+                                    <p className="text-3xl leading-relaxed">
+                                        Assess team fit across Values, Job, Team, and Boss dimensions. Plot team members on ABC Matrix to identify performance gaps.
+                                    </p>
+                                </div>
+
+                                <div className="mb-12 animate-in" style={{animationDelay: '0.2s'}}>
+                                    <h2 className="plaak text-6xl mb-6" style={{color: '#fff469'}}>MISTAKES TO AVOID</h2>
+                                    <ul className="text-2xl space-y-4">
+                                        <li className="flex items-start">
+                                            <span className="text-4xl mr-4">•</span>
+                                            <span>Grade inflation - rating everyone 10/10 without evidence</span>
+                                        </li>
+                                        <li className="flex items-start">
+                                            <span className="text-4xl mr-4">•</span>
+                                            <span>Confusing personality with performance</span>
+                                        </li>
+                                        <li className="flex items-start">
+                                            <span className="text-4xl mr-4">•</span>
+                                            <span>Ignoring B-Players (high fit, low performance)</span>
+                                        </li>
+                                        <li className="flex items-start">
+                                            <span className="text-4xl mr-4">•</span>
+                                            <span>Avoiding hard conversations about C-Players</span>
+                                        </li>
+                                        <li className="flex items-start">
+                                            <span className="text-4xl mr-4">•</span>
+                                            <span>Not defining clear team context</span>
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                <button
+                                    className="btn-primary w-full text-3xl py-8 plaak animate-in"
+                                    style={{animationDelay: '0.4s'}}
+                                    onClick={() => setStep(0.5)}
+                                    disabled={!data.companyId || !data.userId}
+                                >
+                                    LET'S START →
+                                </button>
+                                {(!data.companyId || !data.userId) && (
+                                    <p className="text-center text-yellow-300 mt-4 text-xl">
+                                        Please fill in your Company ID and Username ID to continue
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Choice Page */}
+                    {step === 0.5 && (
+                        <div className="min-h-screen bg-black text-white flex items-center justify-center p-8">
+                            <div className="max-w-5xl mx-auto w-full">
+                                <h1 className="plaak text-6xl md:text-7xl mb-8 text-center">
+                                    CHOOSE YOUR PATH
+                                </h1>
+
+                                <p className="text-2xl mb-16 text-center text-gray-300">
+                                    Select whether you want to assess your own FIT or evaluate your team members
+                                </p>
+
+                                <div className="grid md:grid-cols-2 gap-8 mb-12">
+                                    <button
+                                        onClick={() => {
+                                            setToolType('individual');
+                                            updateData('toolType', 'individual');
+                                            setStep(1);
+                                        }}
+                                        className="bg-white text-black p-12 hover:bg-yellow-300 transition-all border-4 border-white"
+                                    >
+                                        <div className="plaak text-4xl mb-6">INDIVIDUAL TOOL</div>
+                                        <div className="text-xl mb-6 text-left">
+                                            <strong>Self-Assessment</strong>
+                                            <br/>Evaluate your own fit across 4 dimensions
+                                        </div>
+                                        <ul className="text-left text-lg space-y-2">
+                                            <li>• Values Alignment</li>
+                                            <li>• Job Fit</li>
+                                            <li>• Team Fit</li>
+                                            <li>• Boss Fit</li>
+                                        </ul>
+                                    </button>
+
+                                    <button
+                                        onClick={() => {
+                                            setToolType('team');
+                                            updateData('toolType', 'team');
+                                            setStep(1);
+                                        }}
+                                        className="bg-white text-black p-12 hover:bg-yellow-300 transition-all border-4 border-white"
+                                    >
+                                        <div className="plaak text-4xl mb-6">TEAM TOOL</div>
+                                        <div className="text-xl mb-6 text-left">
+                                            <strong>Team Assessment</strong>
+                                            <br/>Evaluate multiple team members
+                                        </div>
+                                        <ul className="text-left text-lg space-y-2">
+                                            <li>• Assess team FIT scores</li>
+                                            <li>• Rate performance</li>
+                                            <li>• Identify A/B/C players</li>
+                                            <li>• Create action plans</li>
+                                        </ul>
+                                    </button>
+                                </div>
+
+                                <div className="text-center">
+                                    <button onClick={() => setStep(0)} className="bg-gray-700 text-white px-8 py-4 text-xl hover:bg-gray-600">
+                                        ← Back
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Header (for steps 1+) */}
+                    {step >= 1 && step < 999 && (
+                        <>
+                            <header className="border-b-2 border-black py-6 px-8 no-print">
+                                <h1 className="plaak text-3xl">FIT ASSESSMENT</h1>
+                                <p className="text-sm mt-2 text-gray-600">
+                                    {toolType === 'individual' ? 'Individual FIT Analysis' : 'Team ABC Matrix Assessment'}
+                                </p>
+                            </header>
+
+                            {/* Progress Indicator */}
+                            {toolType === 'individual' && (
+                                <div className="border-b border-gray-200 py-6 px-8 no-print">
+                                    <div className="flex items-center justify-between max-w-5xl">
+                                        <div className="flex items-center gap-2">
+                                            <div className={`progress-dot ${step >= 1 ? 'active' : ''} ${step > 1 ? 'completed' : ''}`}></div>
+                                            <span className={`text-sm ${step === 1 ? 'font-bold' : ''}`}>Context</span>
+                                        </div>
+                                        <div className="flex-1 h-0.5 bg-gray-200 mx-4">
+                                            <div className={`h-full bg-black transition-all ${step > 1 ? 'w-full' : 'w-0'}`}></div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <div className={`progress-dot ${step >= 2 ? 'active' : ''} ${step > 2 ? 'completed' : ''}`}></div>
+                                            <span className={`text-sm ${step === 2 ? 'font-bold' : ''}`}>Values & Job</span>
+                                        </div>
+                                        <div className="flex-1 h-0.5 bg-gray-200 mx-4">
+                                            <div className={`h-full bg-black transition-all ${step > 2 ? 'w-full' : 'w-0'}`}></div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <div className={`progress-dot ${step >= 3 ? 'active' : ''} ${step > 3 ? 'completed' : ''}`}></div>
+                                            <span className={`text-sm ${step === 3 ? 'font-bold' : ''}`}>Team & Boss</span>
+                                        </div>
+                                        <div className="flex-1 h-0.5 bg-gray-200 mx-4">
+                                            <div className={`h-full bg-black transition-all ${step > 3 ? 'w-full' : 'w-0'}`}></div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <div className={`progress-dot ${step >= 4 ? 'active' : ''} ${step > 4 ? 'completed' : ''}`}></div>
+                                            <span className={`text-sm ${step === 4 ? 'font-bold' : ''}`}>Action Plan</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {toolType === 'team' && (
+                                <div className="border-b border-gray-200 py-6 px-8 no-print">
+                                    <div className="flex items-center justify-between max-w-3xl">
+                                        <div className="flex items-center gap-2">
+                                            <div className={`progress-dot ${step >= 1 ? 'active' : ''} ${step > 1 ? 'completed' : ''}`}></div>
+                                            <span className={`text-sm ${step === 1 ? 'font-bold' : ''}`}>Setup</span>
+                                        </div>
+                                        <div className="flex-1 h-0.5 bg-gray-200 mx-4">
+                                            <div className={`h-full bg-black transition-all ${step > 1 ? 'w-full' : 'w-0'}`}></div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <div className={`progress-dot ${step >= 2 ? 'active' : ''} ${step > 2 ? 'completed' : ''}`}></div>
+                                            <span className={`text-sm ${step === 2 ? 'font-bold' : ''}`}>Assessment</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            <button
+                                className="help-button no-print"
+                                onClick={() => setShowHelp(true)}
+                            >
+                                ?
+                            </button>
+                        </>
+                    )}
+
+                    {/* Help Modal */}
+                    <HelpModal
+                        isOpen={showHelp}
+                        onClose={() => setShowHelp(false)}
+                        content={getHelpContent()}
+                    />
+
+                    {/* Individual Steps */}
+                    {toolType === 'individual' && step === 1 && (
+                        <IndividualStep1
+                            data={data}
+                            updateIndividual={updateIndividual}
+                            onNext={() => setStep(2)}
+                            onBack={() => setStep(0.5)}
+                        />
+                    )}
+
+                    {toolType === 'individual' && step === 2 && (
+                        <IndividualStep2
+                            data={data}
+                            updateIndividual={updateIndividual}
+                            onNext={() => setStep(3)}
+                            onBack={() => setStep(1)}
+                        />
+                    )}
+
+                    {toolType === 'individual' && step === 3 && (
+                        <IndividualStep3
+                            data={data}
+                            updateIndividual={updateIndividual}
+                            onNext={() => setStep(4)}
+                            onBack={() => setStep(2)}
+                        />
+                    )}
+
+                    {toolType === 'individual' && step === 4 && (
+                        <IndividualStep4
+                            data={data}
+                            updateIndividual={updateIndividual}
+                            onNext={() => setStep(999)}
+                            onBack={() => setStep(3)}
+                        />
+                    )}
+
+                    {/* Team Steps */}
+                    {toolType === 'team' && step === 1 && (
+                        <TeamStep1
+                            data={data}
+                            updateTeam={updateTeam}
+                            onNext={() => setStep(2)}
+                            onBack={() => setStep(0.5)}
+                        />
+                    )}
+
+                    {toolType === 'team' && step === 2 && (
+                        <TeamStep2
+                            data={data}
+                            updateTeamMember={updateTeamMember}
+                            addTeamMember={addTeamMember}
+                            removeTeamMember={removeTeamMember}
+                            onNext={() => setStep(999)}
+                            onBack={() => setStep(1)}
+                        />
+                    )}
+
+                    {/* Canvas */}
+                    {step === 999 && (
+                        <CanvasPage
+                            data={data}
+                            toolType={toolType}
+                            exportPDF={exportPDF}
+                            handleSubmit={handleSubmit}
+                            onBack={() => setStep(toolType === 'individual' ? 4 : 2)}
+                        />
+                    )}
+                </>
+            );
+        }
+
+        // Individual Step 1: Context
+        function IndividualStep1({ data, updateIndividual, onNext, onBack }) {
+            const ind = data.individual || {};
+
+            const canProceed = ind.name?.trim() && ind.role?.trim() && ind.teamContext?.trim();
+
+            return (
+                <div className="p-8 md:p-16 max-w-5xl mx-auto animate-in">
+                    <div className="numbered-section mb-8">[01] YOUR CONTEXT</div>
+
+                    <div className="mb-12">
+                        <p className="text-2xl mb-8 leading-relaxed">
+                            Define who you are and which team you're assessing your fit for. Being specific about the team helps ensure accurate self-assessment.
+                        </p>
+                    </div>
+
+                    <div className="space-y-8 mb-12">
+                        <div>
+                            <label className="block font-bold text-xl mb-3">Your Full Name *</label>
+                            <input
+                                type="text"
+                                className="worksheet-input"
+                                value={ind.name || ''}
+                                onChange={(e) => updateIndividual('name', e.target.value)}
+                                placeholder="Enter your name"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block font-bold text-xl mb-3">Your Role *</label>
+                            <input
+                                type="text"
+                                className="worksheet-input"
+                                value={ind.role || ''}
+                                onChange={(e) => updateIndividual('role', e.target.value)}
+                                placeholder="e.g., Head of Marketing, Sales Manager, Developer"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block font-bold text-xl mb-3">Team Context *</label>
+                            <select
+                                className="worksheet-input"
+                                value={ind.teamContext || ''}
+                                onChange={(e) => updateIndividual('teamContext', e.target.value)}
+                            >
+                                <option value="">Select the team you're assessing fit for</option>
+                                <option value="executive_team">Executive Team / Leadership Team</option>
+                                <option value="my_department">My Department / Functional Team</option>
+                                <option value="direct_reports">My Direct Reports Team</option>
+                                <option value="cross_functional">Cross-Functional Project Team</option>
+                                <option value="entire_company">Entire Company</option>
+                            </select>
+                            <p className="text-sm text-gray-600 mt-2">
+                                This helps frame your assessment. For example, your fit with the "Executive Team" may differ from your fit with "My Department".
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex gap-6">
+                        <button onClick={onBack} className="btn-secondary flex-1">
+                            ← BACK
+                        </button>
+                        <button
+                            onClick={onNext}
+                            disabled={!canProceed}
+                            className="btn-primary flex-1"
+                        >
+                            NEXT: VALUES & JOB →
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        // Individual Step 2: Values & Job FIT
+        function IndividualStep2({ data, updateIndividual, onNext, onBack }) {
+            const ind = data.individual || {};
+
+            const canProceed = (ind.valuesEvidence?.length || 0) >= 50 && (ind.jobEvidence?.length || 0) >= 50;
+
+            return (
+                <div className="p-8 md:p-16 max-w-5xl mx-auto animate-in">
+                    <div className="numbered-section mb-8">[02] VALUES & JOB FIT</div>
+
+                    <div className="mb-12">
+                        <p className="text-2xl mb-4 leading-relaxed">
+                            Rate your fit honestly. Scores above 70 indicate strong fit. Be specific with evidence.
+                        </p>
+                    </div>
+
+                    <div className="space-y-12 mb-12">
+                        {/* Values FIT */}
+                        <div className="border-2 border-gray-200 p-6">
+                            <h2 className="font-bold text-2xl mb-4">VALUES ALIGNMENT</h2>
+                            <p className="text-lg mb-6">
+                                How well do you align with the company's core values? Do you embody and live these values daily?
+                            </p>
+
+                            <div className="mb-6">
+                                <div className="flex justify-between items-center mb-3">
+                                    <label className="font-bold text-xl">Values FIT Score</label>
+                                    <span className="text-4xl font-bold">{ind.valuesFit || 50}%</span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="100"
+                                    value={ind.valuesFit || 50}
+                                    onChange={(e) => updateIndividual('valuesFit', parseInt(e.target.value))}
+                                    className="w-full"
+                                />
+                                <div className="flex justify-between text-sm text-gray-600 mt-2">
+                                    <span>No Alignment</span>
+                                    <span>Perfect Alignment</span>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block font-bold text-lg mb-2">Evidence & Examples *</label>
+                                <textarea
+                                    className="worksheet-textarea"
+                                    value={ind.valuesEvidence || ''}
+                                    onChange={(e) => updateIndividual('valuesEvidence', e.target.value)}
+                                    placeholder="Provide specific examples of how you demonstrate company values. What behaviors show your alignment? What feedback have you received?"
+                                    rows="4"
+                                />
+                                <div className={`text-sm mt-2 ${(ind.valuesEvidence?.length || 0) < 50 ? 'text-red-600' : 'text-gray-600'}`}>
+                                    {(ind.valuesEvidence?.length || 0)}/500 characters (minimum 50)
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Job FIT */}
+                        <div className="border-2 border-gray-200 p-6">
+                            <h2 className="font-bold text-2xl mb-4">JOB FIT</h2>
+                            <p className="text-lg mb-6">
+                                Does your role energize you? Do you have the natural talents and skills for this position?
+                            </p>
+
+                            <div className="mb-6">
+                                <div className="flex justify-between items-center mb-3">
+                                    <label className="font-bold text-xl">Job FIT Score</label>
+                                    <span className="text-4xl font-bold">{ind.jobFit || 50}%</span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="100"
+                                    value={ind.jobFit || 50}
+                                    onChange={(e) => updateIndividual('jobFit', parseInt(e.target.value))}
+                                    className="w-full"
+                                />
+                                <div className="flex justify-between text-sm text-gray-600 mt-2">
+                                    <span>Terrible Fit</span>
+                                    <span>Perfect Fit</span>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block font-bold text-lg mb-2">Evidence & Examples *</label>
+                                <textarea
+                                    className="worksheet-textarea"
+                                    value={ind.jobEvidence || ''}
+                                    onChange={(e) => updateIndividual('jobEvidence', e.target.value)}
+                                    placeholder="What aspects of the job energize you? Where do you excel? What results have you achieved? Be specific with metrics or feedback."
+                                    rows="4"
+                                />
+                                <div className={`text-sm mt-2 ${(ind.jobEvidence?.length || 0) < 50 ? 'text-red-600' : 'text-gray-600'}`}>
+                                    {(ind.jobEvidence?.length || 0)}/500 characters (minimum 50)
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex gap-6">
+                        <button onClick={onBack} className="btn-secondary flex-1">
+                            ← BACK
+                        </button>
+                        <button
+                            onClick={onNext}
+                            disabled={!canProceed}
+                            className="btn-primary flex-1"
+                        >
+                            NEXT: TEAM & BOSS →
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        // Individual Step 3: Team & Boss FIT
+        function IndividualStep3({ data, updateIndividual, onNext, onBack }) {
+            const ind = data.individual || {};
+
+            const canProceed = (ind.teamEvidence?.length || 0) >= 50 && (ind.bossEvidence?.length || 0) >= 50;
+
+            return (
+                <div className="p-8 md:p-16 max-w-5xl mx-auto animate-in">
+                    <div className="numbered-section mb-8">[03] TEAM & BOSS FIT</div>
+
+                    <div className="mb-12">
+                        <p className="text-2xl mb-4 leading-relaxed">
+                            Evaluate relationships. How well do you work with your team and boss?
+                        </p>
+                    </div>
+
+                    <div className="space-y-12 mb-12">
+                        {/* Team FIT */}
+                        <div className="border-2 border-gray-200 p-6">
+                            <h2 className="font-bold text-2xl mb-4">TEAM FIT</h2>
+                            <p className="text-lg mb-6">
+                                How well do you collaborate with your team? Do you share information effectively? Is there trust?
+                            </p>
+
+                            <div className="mb-6">
+                                <div className="flex justify-between items-center mb-3">
+                                    <label className="font-bold text-xl">Team FIT Score</label>
+                                    <span className="text-4xl font-bold">{ind.teamFit || 50}%</span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="100"
+                                    value={ind.teamFit || 50}
+                                    onChange={(e) => updateIndividual('teamFit', parseInt(e.target.value))}
+                                    className="w-full"
+                                />
+                                <div className="flex justify-between text-sm text-gray-600 mt-2">
+                                    <span>Poor Team Fit</span>
+                                    <span>Excellent Team Fit</span>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block font-bold text-lg mb-2">Evidence & Examples *</label>
+                                <textarea
+                                    className="worksheet-textarea"
+                                    value={ind.teamEvidence || ''}
+                                    onChange={(e) => updateIndividual('teamEvidence', e.target.value)}
+                                    placeholder="Describe your team interactions. How do you collaborate? What feedback have you received from teammates?"
+                                    rows="4"
+                                />
+                                <div className={`text-sm mt-2 ${(ind.teamEvidence?.length || 0) < 50 ? 'text-red-600' : 'text-gray-600'}`}>
+                                    {(ind.teamEvidence?.length || 0)}/500 characters (minimum 50)
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Boss FIT */}
+                        <div className="border-2 border-gray-200 p-6">
+                            <h2 className="font-bold text-2xl mb-4">BOSS FIT</h2>
+                            <p className="text-lg mb-6">
+                                How well do you work with your direct manager? Is there clear communication and mutual respect?
+                            </p>
+
+                            <div className="mb-6">
+                                <div className="flex justify-between items-center mb-3">
+                                    <label className="font-bold text-xl">Boss FIT Score</label>
+                                    <span className="text-4xl font-bold">{ind.bossFit || 50}%</span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="100"
+                                    value={ind.bossFit || 50}
+                                    onChange={(e) => updateIndividual('bossFit', parseInt(e.target.value))}
+                                    className="w-full"
+                                />
+                                <div className="flex justify-between text-sm text-gray-600 mt-2">
+                                    <span>Poor Relationship</span>
+                                    <span>Excellent Relationship</span>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block font-bold text-lg mb-2">Evidence & Examples *</label>
+                                <textarea
+                                    className="worksheet-textarea"
+                                    value={ind.bossEvidence || ''}
+                                    onChange={(e) => updateIndividual('bossEvidence', e.target.value)}
+                                    placeholder="How does your boss support you? Do you receive regular feedback? Can you communicate openly?"
+                                    rows="4"
+                                />
+                                <div className={`text-sm mt-2 ${(ind.bossEvidence?.length || 0) < 50 ? 'text-red-600' : 'text-gray-600'}`}>
+                                    {(ind.bossEvidence?.length || 0)}/500 characters (minimum 50)
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex gap-6">
+                        <button onClick={onBack} className="btn-secondary flex-1">
+                            ← BACK
+                        </button>
+                        <button
+                            onClick={onNext}
+                            disabled={!canProceed}
+                            className="btn-primary flex-1"
+                        >
+                            NEXT: ACTION PLAN →
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        // Individual Step 4: Action Plan
+        function IndividualStep4({ data, updateIndividual, onNext, onBack }) {
+            const ind = data.individual || {};
+
+            const avgFit = Math.round((
+                (ind.valuesFit || 0) + (ind.jobFit || 0) + (ind.teamFit || 0) + (ind.bossFit || 0)
+            ) / 4);
+
+            const canProceed = (ind.strengths?.length || 0) >= 100 && (ind.actionPlan?.length || 0) >= 100;
+
+            return (
+                <div className="p-8 md:p-16 max-w-5xl mx-auto animate-in">
+                    <div className="numbered-section mb-8">[04] REFLECTION & ACTION</div>
+
+                    <div className="mb-8 bg-gray-100 p-6 border-l-4 border-black">
+                        <p className="text-2xl font-bold mb-2">
+                            Your Average FIT Score: {avgFit}%
+                        </p>
+                        <p className="text-lg">
+                            {avgFit >= 80 && 'Excellent fit! Focus on maintaining and enhancing your strengths.'}
+                            {avgFit >= 60 && avgFit < 80 && 'Good fit with room for improvement. Identify specific areas to strengthen.'}
+                            {avgFit < 60 && 'Significant misalignment detected. Create a concrete improvement plan.'}
+                        </p>
+                    </div>
+
+                    <div className="mb-8 bg-gray-50 p-6 border-2 border-gray-200">
+                        <h3 className="font-bold text-2xl mb-4">YOUR FIT BREAKDOWN</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="text-center">
+                                <div className="text-5xl font-bold mb-1">{ind.valuesFit || 0}%</div>
+                                <div className="text-sm">Values</div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-5xl font-bold mb-1">{ind.jobFit || 0}%</div>
+                                <div className="text-sm">Job</div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-5xl font-bold mb-1">{ind.teamFit || 0}%</div>
+                                <div className="text-sm">Team</div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-5xl font-bold mb-1">{ind.bossFit || 0}%</div>
+                                <div className="text-sm">Boss</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-8 mb-12">
+                        <div>
+                            <label className="block font-bold text-xl mb-3">Your Strengths *</label>
+                            <textarea
+                                className="worksheet-textarea"
+                                value={ind.strengths || ''}
+                                onChange={(e) => updateIndividual('strengths', e.target.value)}
+                                placeholder="What are your key strengths based on this assessment? Where do you excel? What should you continue doing?"
+                                rows="5"
+                            />
+                            <div className={`text-sm mt-2 ${(ind.strengths?.length || 0) < 100 ? 'text-red-600' : 'text-gray-600'}`}>
+                                {(ind.strengths?.length || 0)}/1000 characters (minimum 100)
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block font-bold text-xl mb-3">Areas for Improvement</label>
+                            <textarea
+                                className="worksheet-textarea"
+                                value={ind.improvementAreas || ''}
+                                onChange={(e) => updateIndividual('improvementAreas', e.target.value)}
+                                placeholder="Which FIT dimensions scored lowest? What specific aspects need improvement?"
+                                rows="4"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block font-bold text-xl mb-3">Action Plan *</label>
+                            <textarea
+                                className="worksheet-textarea"
+                                value={ind.actionPlan || ''}
+                                onChange={(e) => updateIndividual('actionPlan', e.target.value)}
+                                placeholder="Create specific, actionable steps to improve your FIT. What will you do differently? What support do you need?"
+                                rows="6"
+                            />
+                            <div className={`text-sm mt-2 ${(ind.actionPlan?.length || 0) < 100 ? 'text-red-600' : 'text-gray-600'}`}>
+                                {(ind.actionPlan?.length || 0)}/2000 characters (minimum 100)
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex gap-6">
+                        <button onClick={onBack} className="btn-secondary flex-1">
+                            ← BACK
+                        </button>
+                        <button
+                            onClick={onNext}
+                            disabled={!canProceed}
+                            className="btn-primary flex-1"
+                        >
+                            VIEW RESULTS →
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        // Team Step 1: Setup
+        function TeamStep1({ data, updateTeam, onNext, onBack }) {
+            const team = data.team || {};
+
+            const canProceed = team.assessorName?.trim() && team.teamContext?.trim();
+
+            return (
+                <div className="p-8 md:p-16 max-w-5xl mx-auto animate-in">
+                    <div className="numbered-section mb-8">[01] TEAM SETUP</div>
+
+                    <div className="mb-12">
+                        <p className="text-2xl mb-4 leading-relaxed">
+                            Define which team you're assessing. Be specific about the team scope to ensure consistent evaluation.
+                        </p>
+                    </div>
+
+                    <div className="space-y-8 mb-12">
+                        <div>
+                            <label className="block font-bold text-xl mb-3">Your Name (Assessor) *</label>
+                            <input
+                                type="text"
+                                className="worksheet-input"
+                                value={team.assessorName || ''}
+                                onChange={(e) => updateTeam('assessorName', e.target.value)}
+                                placeholder="Enter your name"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block font-bold text-xl mb-3">Which Team Are You Assessing? *</label>
+                            <select
+                                className="worksheet-input"
+                                value={team.teamContext || ''}
+                                onChange={(e) => updateTeam('teamContext', e.target.value)}
+                            >
+                                <option value="">Select team context</option>
+                                <option value="executive_team">Executive Team / Leadership Team</option>
+                                <option value="direct_reports">My Direct Reports</option>
+                                <option value="department">My Department / Functional Team</option>
+                                <option value="cross_functional">Cross-Functional Project Team</option>
+                            </select>
+                            <p className="text-sm text-gray-600 mt-2">
+                                This context will frame how you assess each team member's FIT and performance.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex gap-6">
+                        <button onClick={onBack} className="btn-secondary flex-1">
+                            ← BACK
+                        </button>
+                        <button
+                            onClick={onNext}
+                            disabled={!canProceed}
+                            className="btn-primary flex-1"
+                        >
+                            NEXT: ASSESS TEAM →
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        // Team Step 2: Assessment
+        function TeamStep2({ data, updateTeamMember, addTeamMember, removeTeamMember, onNext, onBack }) {
+            const team = data.team || {};
+            const members = team.teamMembers || [];
+
+            const canProceed = members.length >= 1 && members.every(m => m.name?.trim() && m.role?.trim());
+
+            return (
+                <div className="p-8 md:p-16 max-w-6xl mx-auto animate-in">
+                    <div className="numbered-section mb-8">[02] TEAM ASSESSMENT</div>
+
+                    <div className="mb-8">
+                        <p className="text-2xl mb-4 leading-relaxed">
+                            Rate each team member honestly across FIT dimensions and performance. System auto-plots on ABC Matrix.
+                        </p>
+                    </div>
+
+                    <div className="space-y-8 mb-8">
+                        {members.map((member, index) => {
+                            const avgFit = Math.round((
+                                (member.valuesFit || 0) + (member.jobFit || 0) +
+                                (member.teamFit || 0) + (member.bossFit || 0)
+                            ) / 4);
+
+                            const abc = (() => {
+                                const highFit = avgFit >= 70;
+                                const highPerf = (member.performance || 0) >= 70;
+                                if (highFit && highPerf) return { label: 'A-Player', color: '#22C55E' };
+                                if (highFit && !highPerf) return { label: 'B-Player', color: '#F59E0B' };
+                                if (!highFit && !highPerf) return { label: 'C-Player', color: '#EF4444' };
+                                return { label: 'D-Player', color: '#3B82F6' };
+                            })();
+
+                            return (
+                                <div key={member.id} className="border-4 p-6" style={{borderLeftColor: abc.color, borderLeftWidth: '8px'}}>
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className="font-bold text-2xl">TEAM MEMBER {index + 1}</div>
+                                        <div className="flex items-center gap-4">
+                                            <div className="text-right">
+                                                <div className="text-sm text-gray-600">Category</div>
+                                                <div className="font-bold text-xl" style={{color: abc.color}}>
+                                                    {abc.label}
+                                                </div>
+                                                <div className="text-xs text-gray-600">FIT: {avgFit}% | Perf: {member.performance || 0}%</div>
+                                            </div>
+                                            {members.length > 1 && (
+                                                <button
+                                                    onClick={() => removeTeamMember(member.id)}
+                                                    className="text-red-600 hover:text-red-800 text-3xl font-bold"
+                                                >
+                                                    ×
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="grid md:grid-cols-2 gap-6 mb-6">
+                                        <div>
+                                            <label className="block font-bold mb-2">Name *</label>
+                                            <input
+                                                type="text"
+                                                className="worksheet-input"
+                                                value={member.name || ''}
+                                                onChange={(e) => updateTeamMember(member.id, 'name', e.target.value)}
+                                                placeholder="Team member name"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block font-bold mb-2">Role *</label>
+                                            <input
+                                                type="text"
+                                                className="worksheet-input"
+                                                value={member.role || ''}
+                                                onChange={(e) => updateTeamMember(member.id, 'role', e.target.value)}
+                                                placeholder="Their role"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid md:grid-cols-2 gap-6 mb-6">
+                                        <div>
+                                            <div className="flex justify-between mb-2">
+                                                <label className="font-bold">Values FIT</label>
+                                                <span className="font-bold">{member.valuesFit || 50}%</span>
+                                            </div>
+                                            <input
+                                                type="range"
+                                                min="0"
+                                                max="100"
+                                                value={member.valuesFit || 50}
+                                                onChange={(e) => updateTeamMember(member.id, 'valuesFit', parseInt(e.target.value))}
+                                                className="w-full"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <div className="flex justify-between mb-2">
+                                                <label className="font-bold">Job FIT</label>
+                                                <span className="font-bold">{member.jobFit || 50}%</span>
+                                            </div>
+                                            <input
+                                                type="range"
+                                                min="0"
+                                                max="100"
+                                                value={member.jobFit || 50}
+                                                onChange={(e) => updateTeamMember(member.id, 'jobFit', parseInt(e.target.value))}
+                                                className="w-full"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <div className="flex justify-between mb-2">
+                                                <label className="font-bold">Team FIT</label>
+                                                <span className="font-bold">{member.teamFit || 50}%</span>
+                                            </div>
+                                            <input
+                                                type="range"
+                                                min="0"
+                                                max="100"
+                                                value={member.teamFit || 50}
+                                                onChange={(e) => updateTeamMember(member.id, 'teamFit', parseInt(e.target.value))}
+                                                className="w-full"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <div className="flex justify-between mb-2">
+                                                <label className="font-bold">Boss FIT</label>
+                                                <span className="font-bold">{member.bossFit || 50}%</span>
+                                            </div>
+                                            <input
+                                                type="range"
+                                                min="0"
+                                                max="100"
+                                                value={member.bossFit || 50}
+                                                onChange={(e) => updateTeamMember(member.id, 'bossFit', parseInt(e.target.value))}
+                                                className="w-full"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="mb-4 bg-gray-50 p-4 border-2 border-gray-200">
+                                        <div className="flex justify-between mb-2">
+                                            <label className="font-bold text-lg">KPI Performance</label>
+                                            <span className="font-bold text-2xl">{member.performance || 50}%</span>
+                                        </div>
+                                        <input
+                                            type="range"
+                                            min="0"
+                                            max="100"
+                                            value={member.performance || 50}
+                                            onChange={(e) => updateTeamMember(member.id, 'performance', parseInt(e.target.value))}
+                                            className="w-full"
+                                        />
+                                        <p className="text-sm text-gray-600 mt-2">
+                                            Based on KPIs and measurable results, not personality or effort
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <label className="block font-bold mb-2">Notes</label>
+                                        <textarea
+                                            className="worksheet-textarea"
+                                            value={member.notes || ''}
+                                            onChange={(e) => updateTeamMember(member.id, 'notes', e.target.value)}
+                                            placeholder="Additional observations or action items..."
+                                            rows="2"
+                                        />
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    <button onClick={addTeamMember} className="btn-secondary w-full mb-8">
+                        + ADD ANOTHER TEAM MEMBER
+                    </button>
+
+                    <div className="flex gap-6">
+                        <button onClick={onBack} className="btn-secondary flex-1">
+                            ← BACK
+                        </button>
+                        <button
+                            onClick={onNext}
+                            disabled={!canProceed}
+                            className="btn-primary flex-1"
+                        >
+                            VIEW ABC MATRIX →
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        // Canvas Page
+        function CanvasPage({ data, toolType, exportPDF, handleSubmit, onBack }) {
+            if (toolType === 'individual') {
+                const ind = data.individual || {};
+                const avgFit = Math.round((
+                    (ind.valuesFit || 0) + (ind.jobFit || 0) + (ind.teamFit || 0) + (ind.bossFit || 0)
+                ) / 4);
+
+                return (
+                    <div className="min-h-screen bg-gray-100 p-8">
+                        <div className="max-w-5xl mx-auto">
+                            <div className="flex justify-between items-center mb-8 no-print">
+                                <h1 className="plaak text-4xl">FIT RESULTS</h1>
+                                <div className="flex gap-4">
+                                    <button onClick={exportPDF} className="btn-secondary">
+                                        EXPORT PDF
+                                    </button>
+                                    <button onClick={handleSubmit} className="btn-primary">
+                                        SUBMIT
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div id="canvas-content" className="bg-white p-12 border-4 border-black">
+                                <h2 className="plaak text-5xl mb-2">{ind.name || 'YOUR NAME'}</h2>
+                                <p className="text-2xl text-gray-600 mb-8">{ind.role || 'Role'}</p>
+
+                                <div className="mb-12 p-8 border-l-4 border-black" style={{background: avgFit >= 70 ? '#E8F5E9' : avgFit >= 50 ? '#FFF9C4' : '#FFEBEE'}}>
+                                    <div className="numbered-section mb-4">OVERALL FIT</div>
+                                    <div className="text-7xl font-bold mb-2">{avgFit}%</div>
+                                </div>
+
+                                <div className="grid grid-cols-4 gap-6 mb-12">
+                                    <div className="border-2 border-gray-300 p-6 text-center">
+                                        <div className="text-5xl font-bold mb-2">{ind.valuesFit || 0}%</div>
+                                        <div className="font-bold">VALUES</div>
+                                    </div>
+                                    <div className="border-2 border-gray-300 p-6 text-center">
+                                        <div className="text-5xl font-bold mb-2">{ind.jobFit || 0}%</div>
+                                        <div className="font-bold">JOB</div>
+                                    </div>
+                                    <div className="border-2 border-gray-300 p-6 text-center">
+                                        <div className="text-5xl font-bold mb-2">{ind.teamFit || 0}%</div>
+                                        <div className="font-bold">TEAM</div>
+                                    </div>
+                                    <div className="border-2 border-gray-300 p-6 text-center">
+                                        <div className="text-5xl font-bold mb-2">{ind.bossFit || 0}%</div>
+                                        <div className="font-bold">BOSS</div>
+                                    </div>
+                                </div>
+
+                                <div className="mb-8">
+                                    <div className="numbered-section mb-4">STRENGTHS</div>
+                                    <p className="text-lg whitespace-pre-wrap">{ind.strengths || 'N/A'}</p>
+                                </div>
+
+                                <div className="mb-8">
+                                    <div className="numbered-section mb-4">ACTION PLAN</div>
+                                    <p className="text-lg whitespace-pre-wrap">{ind.actionPlan || 'N/A'}</p>
+                                </div>
+
+                                <div className="mt-12 pt-8 border-t-2 border-gray-200 text-center text-sm text-gray-500">
+                                    <p>Generated: {new Date().toLocaleDateString()}</p>
+                                    <p className="mt-1">Fast Track Sprint 05 - FIT Assessment</p>
+                                </div>
+                            </div>
+
+                            <div className="mt-8 no-print">
+                                <button onClick={onBack} className="btn-secondary">← Back to Edit</button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            } else {
+                // Team Canvas with ABC Matrix
+                const team = data.team || {};
+                const members = team.teamMembers || [];
+
+                const categorize = (member) => {
+                    const avgFit = Math.round((
+                        (member.valuesFit || 0) + (member.jobFit || 0) +
+                        (member.teamFit || 0) + (member.bossFit || 0)
+                    ) / 4);
+                    const perf = member.performance || 0;
+                    const highFit = avgFit >= 70;
+                    const highPerf = perf >= 70;
+
+                    if (highFit && highPerf) return 'A';
+                    if (highFit && !highPerf) return 'B';
+                    if (!highFit && !highPerf) return 'C';
+                    return 'D';
+                };
+
+                const aPlayers = members.filter(m => categorize(m) === 'A');
+                const bPlayers = members.filter(m => categorize(m) === 'B');
+                const cPlayers = members.filter(m => categorize(m) === 'C');
+                const dPlayers = members.filter(m => categorize(m) === 'D');
+
+                return (
+                    <div className="min-h-screen bg-gray-100 p-8">
+                        <div className="max-w-7xl mx-auto">
+                            <div className="flex justify-between items-center mb-8 no-print">
+                                <h1 className="plaak text-4xl">ABC MATRIX</h1>
+                                <div className="flex gap-4">
+                                    <button onClick={exportPDF} className="btn-secondary">EXPORT PDF</button>
+                                    <button onClick={handleSubmit} className="btn-primary">SUBMIT</button>
+                                </div>
+                            </div>
+
+                            <div id="canvas-content" className="bg-white p-12 border-4 border-black">
+                                <h2 className="plaak text-5xl mb-2">TEAM ASSESSMENT</h2>
+                                <p className="text-2xl text-gray-600 mb-8">{team.assessorName || 'Assessor'} | {team.teamContext || 'Team'}</p>
+
+                                <div className="numbered-section mb-6">ABC MATRIX</div>
+
+                                <div className="grid grid-cols-2 gap-6 mb-8">
+                                    <div className="border-4 p-6" style={{backgroundColor: '#E8F5E9', borderColor: '#22C55E'}}>
+                                        <h3 className="font-bold text-2xl mb-4" style={{color: '#22C55E'}}>A-PLAYERS ({aPlayers.length})</h3>
+                                        <p className="text-sm mb-3">High FIT + High Performance</p>
+                                        {aPlayers.map(m => (
+                                            <div key={m.id} className="mb-2 p-2 bg-white rounded">
+                                                <div className="font-bold">{m.name}</div>
+                                                <div className="text-sm text-gray-600">{m.role}</div>
+                                            </div>
+                                        ))}
+                                        {aPlayers.length === 0 && <p className="text-gray-500 italic">None</p>}
+                                    </div>
+
+                                    <div className="border-4 p-6" style={{backgroundColor: '#FFF9C4', borderColor: '#F59E0B'}}>
+                                        <h3 className="font-bold text-2xl mb-4" style={{color: '#F59E0B'}}>B-PLAYERS ({bPlayers.length})</h3>
+                                        <p className="text-sm mb-3">High FIT + Low Performance ⚠️</p>
+                                        {bPlayers.map(m => (
+                                            <div key={m.id} className="mb-2 p-2 bg-white rounded">
+                                                <div className="font-bold">{m.name}</div>
+                                                <div className="text-sm text-gray-600">{m.role}</div>
+                                            </div>
+                                        ))}
+                                        {bPlayers.length === 0 && <p className="text-gray-500 italic">None</p>}
+                                    </div>
+
+                                    <div className="border-4 p-6" style={{backgroundColor: '#FFEBEE', borderColor: '#EF4444'}}>
+                                        <h3 className="font-bold text-2xl mb-4" style={{color: '#EF4444'}}>C-PLAYERS ({cPlayers.length})</h3>
+                                        <p className="text-sm mb-3">Low FIT + Low Performance ❌</p>
+                                        {cPlayers.map(m => (
+                                            <div key={m.id} className="mb-2 p-2 bg-white rounded">
+                                                <div className="font-bold">{m.name}</div>
+                                                <div className="text-sm text-gray-600">{m.role}</div>
+                                            </div>
+                                        ))}
+                                        {cPlayers.length === 0 && <p className="text-gray-500 italic">None</p>}
+                                    </div>
+
+                                    <div className="border-4 p-6" style={{backgroundColor: '#E3F2FD', borderColor: '#3B82F6'}}>
+                                        <h3 className="font-bold text-2xl mb-4" style={{color: '#3B82F6'}}>D-PLAYERS ({dPlayers.length})</h3>
+                                        <p className="text-sm mb-3">Low FIT + High Performance 💡</p>
+                                        {dPlayers.map(m => (
+                                            <div key={m.id} className="mb-2 p-2 bg-white rounded">
+                                                <div className="font-bold">{m.name}</div>
+                                                <div className="text-sm text-gray-600">{m.role}</div>
+                                            </div>
+                                        ))}
+                                        {dPlayers.length === 0 && <p className="text-gray-500 italic">None</p>}
+                                    </div>
+                                </div>
+
+                                <div className="mt-12 pt-8 border-t-2 border-gray-200 text-center text-sm text-gray-500">
+                                    <p>Generated: {new Date().toLocaleDateString()}</p>
+                                    <p className="mt-1">Fast Track Sprint 05 - FIT & ABC Team Assessment</p>
+                                </div>
+                            </div>
+
+                            <div className="mt-8 no-print">
+                                <button onClick={onBack} className="btn-secondary">← Back to Edit</button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+        }
+
+        // Render
+        ReactDOM.render(<FITTool />, document.getElementById('root'));
+    </script>
+</body>
+</html>

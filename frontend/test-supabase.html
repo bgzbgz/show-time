@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Supabase Integration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-black text-white min-h-screen p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-4xl font-bold mb-8">🧪 Test Supabase Integration</h1>
+
+        <!-- Step 1: Set User ID -->
+        <div class="bg-gray-900 p-6 rounded-lg mb-6">
+            <h2 class="text-2xl font-bold mb-4">Step 1: Set Test User ID</h2>
+            <p class="mb-4">Your test user ID: <code class="bg-yellow-400 text-black px-2 py-1">5dc6b5ac-b69d-432f-a4b3-f5cd445fc4ad</code></p>
+            <button onclick="setUserId()" class="bg-yellow-400 text-black px-6 py-2 rounded font-bold hover:bg-yellow-300">
+                SET USER ID IN LOCALSTORAGE
+            </button>
+            <p class="mt-2 text-sm text-gray-400" id="userStatus"></p>
+        </div>
+
+        <!-- Step 2: Test Tools -->
+        <div class="bg-gray-900 p-6 rounded-lg mb-6">
+            <h2 class="text-2xl font-bold mb-4">Step 2: Test a Tool</h2>
+            <p class="mb-4">Click to open a tool and try submitting data:</p>
+            <div class="grid grid-cols-3 gap-4">
+                <a href="tools/00-woop.html" target="_blank" class="bg-green-600 text-white px-4 py-3 rounded text-center hover:bg-green-500">
+                    Tool 00: WOOP
+                </a>
+                <a href="tools/01-know-thyself.html" target="_blank" class="bg-green-600 text-white px-4 py-3 rounded text-center hover:bg-green-500">
+                    Tool 01: Know Thyself
+                </a>
+                <a href="tools/02-dream.html" target="_blank" class="bg-green-600 text-white px-4 py-3 rounded text-center hover:bg-green-500">
+                    Tool 02: Dream
+                </a>
+            </div>
+        </div>
+
+        <!-- Step 3: Check Database -->
+        <div class="bg-gray-900 p-6 rounded-lg mb-6">
+            <h2 class="text-2xl font-bold mb-4">Step 3: Verify in Database</h2>
+            <p class="mb-4">After submitting a tool, check if data was saved:</p>
+            <button onclick="checkSubmissions()" class="bg-blue-500 text-white px-6 py-2 rounded font-bold hover:bg-blue-400">
+                CHECK SUBMISSIONS
+            </button>
+            <button onclick="checkProgress()" class="bg-purple-500 text-white px-6 py-2 rounded font-bold hover:bg-purple-400 ml-2">
+                CHECK USER PROGRESS
+            </button>
+            <pre id="results" class="mt-4 bg-black p-4 rounded text-sm overflow-auto max-h-96"></pre>
+        </div>
+
+        <!-- Instructions -->
+        <div class="bg-gray-900 p-6 rounded-lg">
+            <h2 class="text-2xl font-bold mb-4">📋 Testing Instructions</h2>
+            <ol class="list-decimal list-inside space-y-2">
+                <li>Click "SET USER ID IN LOCALSTORAGE" button above</li>
+                <li>Open one of the tools (e.g., WOOP)</li>
+                <li>Fill out the form and click Submit</li>
+                <li>Return here and click "CHECK SUBMISSIONS" to see if data was saved</li>
+                <li>Click "CHECK USER PROGRESS" to see if progress was updated</li>
+            </ol>
+
+            <h3 class="text-xl font-bold mt-6 mb-2">Expected Results:</h3>
+            <ul class="list-disc list-inside space-y-2 text-gray-300">
+                <li>Tool should save data to <code>sprint_XX_[name].submissions</code> table</li>
+                <li>User progress should update in <code>shared.user_progress</code> table</li>
+                <li>Status should change to "completed" with 100% progress</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://vpfayzzjnegdefjrnyoc.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZwZmF5enpqbmVnZGVmanJueW9jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMzAwODUsImV4cCI6MjA4NTcwNjA4NX0.7qwzd9kwyRG0Wx9DDSc8F9a1SRD0CoC6CGS-9M1sxIs';
+        const TEST_USER_ID = '5dc6b5ac-b69d-432f-a4b3-f5cd445fc4ad';
+
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        function setUserId() {
+            localStorage.setItem('ft_user_id', TEST_USER_ID);
+            document.getElementById('userStatus').textContent = '✅ User ID set! You can now test the tools.';
+            document.getElementById('userStatus').className = 'mt-2 text-sm text-green-400';
+        }
+
+        async function checkSubmissions() {
+            const results = document.getElementById('results');
+            results.textContent = 'Loading...';
+
+            try {
+                // Check all sprint schemas for submissions
+                const queries = [
+                    supabaseClient.from('sprint_00_woop.submissions').select('*').eq('user_id', TEST_USER_ID),
+                    supabaseClient.from('sprint_01_know_thyself.submissions').select('*').eq('user_id', TEST_USER_ID),
+                    supabaseClient.from('sprint_02_dream.submissions').select('*').eq('user_id', TEST_USER_ID)
+                ];
+
+                const responses = await Promise.all(queries);
+
+                let output = '=== SUBMISSIONS FOUND ===\n\n';
+                responses.forEach((response, index) => {
+                    const schemas = ['sprint_00_woop', 'sprint_01_know_thyself', 'sprint_02_dream'];
+                    if (response.data && response.data.length > 0) {
+                        output += `${schemas[index]}.submissions: ${response.data.length} submission(s)\n`;
+                        output += JSON.stringify(response.data, null, 2) + '\n\n';
+                    }
+                });
+
+                if (output === '=== SUBMISSIONS FOUND ===\n\n') {
+                    output = '❌ No submissions found yet. Try submitting a tool first.';
+                }
+
+                results.textContent = output;
+            } catch (error) {
+                results.textContent = '❌ Error: ' + error.message;
+            }
+        }
+
+        async function checkProgress() {
+            const results = document.getElementById('results');
+            results.textContent = 'Loading...';
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('shared.user_progress')
+                    .select('*')
+                    .eq('user_id', TEST_USER_ID);
+
+                if (error) throw error;
+
+                let output = '=== USER PROGRESS ===\n\n';
+                output += `Total tools tracked: ${data.length}\n\n`;
+
+                const completed = data.filter(t => t.status === 'completed');
+                const inProgress = data.filter(t => t.status === 'in_progress');
+                const unlocked = data.filter(t => t.status === 'unlocked');
+                const locked = data.filter(t => t.status === 'locked');
+
+                output += `Completed: ${completed.length}\n`;
+                output += `In Progress: ${inProgress.length}\n`;
+                output += `Unlocked: ${unlocked.length}\n`;
+                output += `Locked: ${locked.length}\n\n`;
+
+                if (completed.length > 0) {
+                    output += 'Completed tools:\n';
+                    completed.forEach(t => {
+                        output += `  - ${t.tool_slug} (${t.progress_percentage}%) at ${t.completed_at}\n`;
+                    });
+                }
+
+                results.textContent = output;
+            } catch (error) {
+                results.textContent = '❌ Error: ' + error.message;
+            }
+        }
+
+        // Check on load
+        window.onload = () => {
+            const userId = localStorage.getItem('ft_user_id');
+            if (userId === TEST_USER_ID) {
+                document.getElementById('userStatus').textContent = '✅ User ID already set!';
+                document.getElementById('userStatus').className = 'mt-2 text-sm text-green-400';
+            } else {
+                document.getElementById('userStatus').textContent = '⚠️ User ID not set. Click button above.';
+                document.getElementById('userStatus').className = 'mt-2 text-sm text-yellow-400';
+            }
+        };
+    </script>
+</body>
+</html>

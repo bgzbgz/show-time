@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Energy Team Meeting - Fast Track Tool</title>
+    <link rel="icon" type="image/png" href="favicon/favicon-16x16.png">
+    
+    <!-- Fonts -->
+    <style>
+        @font-face {
+            font-family: 'Plaak';
+            src: url('fonts/Plaak3Trial-43-Bold.otf') format('opentype');
+            font-weight: bold;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'Riforma';
+            src: url('fonts/RiformaLL-Regular.otf') format('opentype');
+            font-weight: normal;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'Monument';
+            src: url('fonts/MonumentGrotesk-Mono.otf') format('opentype');
+            font-weight: normal;
+            font-style: normal;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Riforma', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #FFFFFF;
+            color: #000000;
+            line-height: 1.6;
+        }
+        
+        .plaak {
+            font-family: 'Plaak', sans-serif;
+            line-height: 1.2;
+            letter-spacing: -0.01em;
+        }
+        
+        .monument {
+            font-family: 'Monument', monospace;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        
+        .numbered-section {
+            background: #000000;
+            color: #FFFFFF;
+            padding: 10px 16px;
+            font-family: 'Plaak', sans-serif;
+            font-size: 18px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            margin-bottom: 16px;
+            display: inline-block;
+        }
+        
+        .worksheet-input {
+            width: 100%;
+            border: 1px solid #E0E0E0;
+            padding: 12px 16px;
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
+            transition: border-color 0.2s ease;
+            background: #FFFFFF;
+            color: #000000;
+        }
+        
+        .worksheet-input:focus {
+            outline: none;
+            border-color: #000000;
+            border-width: 2px;
+        }
+        
+        .worksheet-textarea {
+            width: 100%;
+            border: 1px solid #E0E0E0;
+            padding: 12px 16px;
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
+            min-height: 120px;
+            resize: vertical;
+            transition: border-color 0.2s ease;
+        }
+        
+        .worksheet-textarea:focus {
+            outline: none;
+            border-color: #000000;
+            border-width: 2px;
+        }
+        
+        .btn-primary {
+            background: #000000;
+            color: #FFFFFF;
+            padding: 12px 24px;
+            border: 2px solid #000000;
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .btn-primary:disabled {
+            background: #E0E0E0;
+            color: #9CA3AF;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        
+        .btn-secondary {
+            background: #FFFFFF;
+            color: #000000;
+            padding: 12px 24px;
+            border: 2px solid #000000;
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-secondary:hover {
+            background: #000000;
+            color: #FFFFFF;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .animate-in {
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+    </style>
+    
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        
+        const CONFIG = {
+            TEAM_AGGREGATE_WEBHOOK: 'https://n8n-edge.fasttrack-diagnostic.com/webhook/energy-team-aggregate',
+            TEAM_SUBMIT_WEBHOOK: 'https://n8n-edge.fasttrack-diagnostic.com/webhook/energy-team-submit',
+            STORAGE_KEY: 'fasttrack_energy_team_meeting',
+        };
+        
+        function EnergyTeamMeetingTool() {
+            const [step, setStep] = useState('cover');
+            const [companyId, setCompanyId] = useState('');
+            const [teamData, setTeamData] = useState(null);
+            const [loading, setLoading] = useState(false);
+            const [error, setError] = useState('');
+            const [formData, setFormData] = useState({
+                companyName: '',
+                facilitator: '',
+                meetingDate: new Date().toISOString().split('T')[0],
+                discussionNotes: '',
+                commonChallenges: ['', '', ''],
+                teamRituals: ['', '', ''],
+                teamStrategies: [{description: '', owner: '', deadline: ''}],
+                accountabilityPlan: {
+                    trackingMethod: '',
+                    reportBackDate: '',
+                    partnerships: '',
+                    consequences: ''
+                }
+            });
+            
+            const loadTeamData = async () => {
+                if (!companyId.trim()) {
+                    setError('Please enter a company ID');
+                    return;
+                }
+                
+                setLoading(true);
+                setError('');
+                
+                try {
+                    const response = await fetch(`${CONFIG.TEAM_AGGREGATE_WEBHOOK}?companyId=${encodeURIComponent(companyId)}`);
+                    const data = await response.json();
+                    
+                    if (data.success && data.submissionCount > 0) {
+                        setTeamData(data);
+                        setFormData(prev => ({
+                            ...prev,
+                            companyName: data.companyName
+                        }));
+                        setStep('review');
+                    } else {
+                        setError(`No submissions found for company ID: ${companyId}`);
+                    }
+                } catch (err) {
+                    setError('Failed to load team data. Please check the company ID and try again.');
+                    console.error('Load error:', err);
+                } finally {
+                    setLoading(false);
+                }
+            };
+            
+            const handleSubmit = async () => {
+                setLoading(true);
+                setError('');
+                
+                try {
+                    const payload = {
+                        companyId: companyId,
+                        companyName: formData.companyName,
+                        meetingDate: formData.meetingDate,
+                        facilitator: formData.facilitator,
+                        discussionNotes: formData.discussionNotes,
+                        commonChallenges: formData.commonChallenges.filter(c => c.trim()),
+                        teamRituals: formData.teamRituals.filter(r => r.trim()),
+                        teamStrategies: formData.teamStrategies.filter(s => s.description.trim()),
+                        accountabilityPlan: formData.accountabilityPlan
+                    };
+                    
+                    const response = await fetch(CONFIG.TEAM_SUBMIT_WEBHOOK, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(payload)
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        setStep('success');
+                        localStorage.removeItem(CONFIG.STORAGE_KEY);
+                    } else {
+                        setError('Failed to save team meeting results. Please try again.');
+                    }
+                } catch (err) {
+                    setError('Failed to submit. Please try again.');
+                    console.error('Submit error:', err);
+                } finally {
+                    setLoading(false);
+                }
+            };
+            
+            const updateFormData = (field, value) => {
+                setFormData(prev => ({...prev, [field]: value}));
+            };
+            
+            const updateArrayField = (field, index, value) => {
+                setFormData(prev => ({
+                    ...prev,
+                    [field]: prev[field].map((item, i) => i === index ? value : item)
+                }));
+            };
+            
+            const addStrategy = () => {
+                setFormData(prev => ({
+                    ...prev,
+                    teamStrategies: [...prev.teamStrategies, {description: '', owner: '', deadline: ''}]
+                }));
+            };
+            
+            const updateStrategy = (index, field, value) => {
+                setFormData(prev => ({
+                    ...prev,
+                    teamStrategies: prev.teamStrategies.map((s, i) => 
+                        i === index ? {...s, [field]: value} : s
+                    )
+                }));
+            };
+            
+            const removeStrategy = (index) => {
+                setFormData(prev => ({
+                    ...prev,
+                    teamStrategies: prev.teamStrategies.filter((_, i) => i !== index)
+                }));
+            };
+            
+            // Cover Page
+            if (step === 'cover') {
+                return (
+                    <div className="min-h-screen bg-black text-white flex items-center justify-center p-8" style={{
+                        backgroundImage: 'linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url("cover image for energy tool.jpg")',
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center'
+                    }}>
+                        <div className="max-w-4xl w-full text-center">
+                            <div className="mb-8">
+                                <img src="logo/FastTrack_F_White.png" alt="Fast Track" className="h-16 mx-auto mb-8" />
+                            </div>
+                            <h1 className="plaak text-7xl mb-8 animate-in">
+                                ENERGY TEAM MEETING
+                            </h1>
+                            <p className="text-2xl mb-12 animate-in" style={{animationDelay: '0.2s'}}>
+                                Transform Individual Energy into Collective Power
+                            </p>
+                            <div className="text-left max-w-2xl mx-auto mb-12 space-y-6 animate-in" style={{animationDelay: '0.4s'}}>
+                                <p className="text-lg">
+                                    This tool facilitates the team energy meeting where individual insights 
+                                    become collective strategies.
+                                </p>
+                                <p className="text-lg">
+                                    You'll review team data, identify patterns, and create shared rituals 
+                                    that amplify everyone's energy.
+                                </p>
+                            </div>
+                            <button 
+                                onClick={() => setStep('load')}
+                                className="btn-primary text-xl px-12 py-4 animate-in"
+                                style={{animationDelay: '0.6s'}}
+                            >
+                                Begin Team Meeting
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+            
+            // Load Team Data
+            if (step === 'load') {
+                return (
+                    <div className="min-h-screen bg-white p-8">
+                        <div className="max-w-3xl mx-auto">
+                            <div className="mb-8">
+                                <img src="logo/FastTrack_F_White.png" alt="Fast Track" className="h-12 mb-8" style={{filter: 'invert(1)'}} />
+                            </div>
+                            
+                            <div className="numbered-section">[01] LOAD TEAM DATA</div>
+                            
+                            <div className="mb-8">
+                                <h2 className="plaak text-4xl mb-4">Enter Company ID</h2>
+                                <p className="text-lg mb-6">
+                                    This will load all individual energy submissions for the team.
+                                </p>
+                                
+                                <div className="mb-4">
+                                    <label className="block mb-2 font-bold">Company ID:</label>
+                                    <input 
+                                        type="text"
+                                        className="worksheet-input"
+                                        value={companyId}
+                                        onChange={(e) => setCompanyId(e.target.value)}
+                                        placeholder="e.g., acme_corp, test_company_inc"
+                                    />
+                                    <p className="text-sm text-gray-600 mt-2">
+                                        Hint: This is usually the company name in lowercase with underscores
+                                    </p>
+                                </div>
+                                
+                                {error && (
+                                    <div className="bg-red-50 border-2 border-red-500 p-4 mb-4">
+                                        <p className="text-red-700">{error}</p>
+                                    </div>
+                                )}
+                                
+                                <button 
+                                    onClick={() => setStep('cover')}
+                                    className="btn-secondary mr-4"
+                                >
+                                    ← Back
+                                </button>
+                                
+                                <button 
+                                    onClick={loadTeamData}
+                                    disabled={loading}
+                                    className="btn-primary"
+                                >
+                                    {loading ? 'Loading...' : 'Load Team Data'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+            
+            // Review Team Data
+            if (step === 'review' && teamData) {
+                return (
+                    <div className="min-h-screen bg-white p-8">
+                        <div className="max-w-5xl mx-auto">
+                            <div className="mb-8">
+                                <img src="logo/FastTrack_F_White.png" alt="Fast Track" className="h-12 mb-8" style={{filter: 'invert(1)'}} />
+                            </div>
+                            
+                            <div className="numbered-section">[02] TEAM ENERGY OVERVIEW</div>
+                            
+                            <h2 className="plaak text-5xl mb-8">{teamData.companyName}</h2>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                                <div className="border-2 border-black p-6">
+                                    <h3 className="plaak text-2xl mb-4">Team Size</h3>
+                                    <p className="text-6xl plaak">{teamData.submissionCount}</p>
+                                    <p className="text-gray-600">team members submitted</p>
+                                </div>
+                                
+                                <div className="border-2 border-black p-6">
+                                    <h3 className="plaak text-2xl mb-4">Overall Energy</h3>
+                                    <p className="text-6xl plaak">{teamData.averageRatings.overall}/10</p>
+                                    <p className="text-gray-600">average team rating</p>
+                                </div>
+                            </div>
+                            
+                            <div className="border-2 border-black p-6 mb-8">
+                                <h3 className="plaak text-3xl mb-4">Energy Pillars - Team Averages</h3>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <div>
+                                        <p className="monument text-xs mb-2">SLEEP</p>
+                                        <p className="text-4xl plaak">{teamData.averageRatings.sleep}</p>
+                                    </div>
+                                    <div>
+                                        <p className="monument text-xs mb-2">FOOD</p>
+                                        <p className="text-4xl plaak">{teamData.averageRatings.food}</p>
+                                    </div>
+                                    <div>
+                                        <p className="monument text-xs mb-2">MOVEMENT</p>
+                                        <p className="text-4xl plaak">{teamData.averageRatings.movement}</p>
+                                    </div>
+                                    <div>
+                                        <p className="monument text-xs mb-2">BRAIN</p>
+                                        <p className="text-4xl plaak">{teamData.averageRatings.brain}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {teamData.commonEnergyDrains.length > 0 && (
+                                <div className="border-2 border-black p-6 mb-8 bg-gray-50">
+                                    <h3 className="plaak text-3xl mb-4">Common Energy Drains</h3>
+                                    <ul className="space-y-3">
+                                        {teamData.commonEnergyDrains.map((drain, i) => (
+                                            <li key={i} className="flex justify-between items-center border-b border-gray-300 pb-2">
+                                                <span className="text-lg">{drain.drain}</span>
+                                                <span className="monument text-sm">{drain.percentage}% of team</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                            
+                            <div className="mb-8">
+                                <h3 className="plaak text-3xl mb-4">Individual Protocols Summary</h3>
+                                <div className="space-y-4">
+                                    {teamData.individualProtocols.map((protocol, i) => (
+                                        <div key={i} className="border-2 border-gray-300 p-4">
+                                            <h4 className="font-bold text-lg mb-2">{protocol.userName}</h4>
+                                            <div className="grid grid-cols-2 gap-4 text-sm">
+                                                <div>
+                                                    <span className="monument text-xs">AVG RATING:</span> {protocol.averageRating}/10
+                                                </div>
+                                                <div>
+                                                    <span className="monument text-xs">FOCUS AREA:</span> {protocol.lowestPillar}
+                                                </div>
+                                            </div>
+                                            {protocol.firstAction && (
+                                                <div className="mt-2 pt-2 border-t border-gray-200">
+                                                    <span className="monument text-xs">FIRST ACTION:</span> {protocol.firstAction}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            
+                            <button 
+                                onClick={() => setStep('load')}
+                                className="btn-secondary mr-4"
+                            >
+                                ← Back
+                            </button>
+                            
+                            <button 
+                                onClick={() => setStep('facilitate')}
+                                className="btn-primary"
+                            >
+                                Continue to Meeting Facilitation →
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+            
+            // Facilitate Meeting
+            if (step === 'facilitate') {
+                return (
+                    <div className="min-h-screen bg-white p-8">
+                        <div className="max-w-4xl mx-auto">
+                            <div className="mb-8">
+                                <img src="logo/FastTrack_F_White.png" alt="Fast Track" className="h-12 mb-8" style={{filter: 'invert(1)'}} />
+                            </div>
+                            
+                            <div className="numbered-section">[03] FACILITATE TEAM DISCUSSION</div>
+                            
+                            <h2 className="plaak text-5xl mb-8">Capture Meeting Insights</h2>
+                            
+                            {/* Meeting Details */}
+                            <div className="border-2 border-black p-6 mb-8">
+                                <h3 className="plaak text-2xl mb-4">Meeting Details</h3>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block mb-2 font-bold">Facilitator Name:</label>
+                                        <input 
+                                            type="text"
+                                            className="worksheet-input"
+                                            value={formData.facilitator}
+                                            onChange={(e) => updateFormData('facilitator', e.target.value)}
+                                            placeholder="Your name"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block mb-2 font-bold">Meeting Date:</label>
+                                        <input 
+                                            type="date"
+                                            className="worksheet-input"
+                                            value={formData.meetingDate}
+                                            onChange={(e) => updateFormData('meetingDate', e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {/* Discussion Notes */}
+                            <div className="border-2 border-black p-6 mb-8">
+                                <h3 className="plaak text-2xl mb-4">Discussion Notes</h3>
+                                <p className="text-gray-600 mb-4">Capture key points from the team discussion</p>
+                                <textarea 
+                                    className="worksheet-textarea"
+                                    value={formData.discussionNotes}
+                                    onChange={(e) => updateFormData('discussionNotes', e.target.value)}
+                                    placeholder="e.g., Team identified sleep as biggest challenge. Everyone struggles with late-night emails. Discussed need for team-wide boundaries..."
+                                />
+                            </div>
+                            
+                            {/* Common Challenges */}
+                            <div className="border-2 border-black p-6 mb-8">
+                                <h3 className="plaak text-2xl mb-4">Common Challenges (Top 3)</h3>
+                                <p className="text-gray-600 mb-4">What energy challenges affect multiple team members?</p>
+                                {formData.commonChallenges.map((challenge, i) => (
+                                    <div key={i} className="mb-3">
+                                        <label className="block mb-1 font-bold">{i + 1}.</label>
+                                        <input 
+                                            type="text"
+                                            className="worksheet-input"
+                                            value={challenge}
+                                            onChange={(e) => updateArrayField('commonChallenges', i, e.target.value)}
+                                            placeholder={`Challenge ${i + 1}`}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                            
+                            {/* Team Rituals */}
+                            <div className="border-2 border-black p-6 mb-8 bg-yellow-50">
+                                <h3 className="plaak text-2xl mb-4">Team Energy Rituals</h3>
+                                <p className="text-gray-600 mb-4">What team-wide practices will you implement?</p>
+                                {formData.teamRituals.map((ritual, i) => (
+                                    <div key={i} className="mb-3">
+                                        <label className="block mb-1 font-bold">{i + 1}.</label>
+                                        <input 
+                                            type="text"
+                                            className="worksheet-input"
+                                            value={ritual}
+                                            onChange={(e) => updateArrayField('teamRituals', i, e.target.value)}
+                                            placeholder={`e.g., No meetings before 9am, Team walking break at noon`}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                            
+                            <button 
+                                onClick={() => setStep('review')}
+                                className="btn-secondary mr-4"
+                            >
+                                ← Back
+                            </button>
+                            
+                            <button 
+                                onClick={() => setStep('strategies')}
+                                className="btn-primary"
+                            >
+                                Continue to Action Planning →
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+            
+            // Define Strategies
+            if (step === 'strategies') {
+                return (
+                    <div className="min-h-screen bg-white p-8">
+                        <div className="max-w-4xl mx-auto">
+                            <div className="mb-8">
+                                <img src="logo/FastTrack_F_White.png" alt="Fast Track" className="h-12 mb-8" style={{filter: 'invert(1)'}} />
+                            </div>
+                            
+                            <div className="numbered-section">[04] ACTION PLANNING</div>
+                            
+                            <h2 className="plaak text-5xl mb-8">Team Strategies & Accountability</h2>
+                            
+                            {/* Team Strategies */}
+                            <div className="border-2 border-black p-6 mb-8">
+                                <h3 className="plaak text-2xl mb-4">Team Strategies</h3>
+                                <p className="text-gray-600 mb-4">Specific actions with owners and deadlines</p>
+                                
+                                {formData.teamStrategies.map((strategy, i) => (
+                                    <div key={i} className="border-2 border-gray-300 p-4 mb-4">
+                                        <div className="flex justify-between items-center mb-3">
+                                            <span className="monument text-sm">STRATEGY {i + 1}</span>
+                                            {formData.teamStrategies.length > 1 && (
+                                                <button 
+                                                    onClick={() => removeStrategy(i)}
+                                                    className="text-red-600 text-sm"
+                                                >
+                                                    Remove
+                                                </button>
+                                            )}
+                                        </div>
+                                        <div className="space-y-3">
+                                            <div>
+                                                <label className="block mb-1 font-bold">Description:</label>
+                                                <input 
+                                                    type="text"
+                                                    className="worksheet-input"
+                                                    value={strategy.description}
+                                                    onChange={(e) => updateStrategy(i, 'description', e.target.value)}
+                                                    placeholder="e.g., Implement team-wide 10am walking break"
+                                                />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block mb-1 font-bold">Owner:</label>
+                                                    <input 
+                                                        type="text"
+                                                        className="worksheet-input"
+                                                        value={strategy.owner}
+                                                        onChange={(e) => updateStrategy(i, 'owner', e.target.value)}
+                                                        placeholder="Who owns this?"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block mb-1 font-bold">Deadline:</label>
+                                                    <input 
+                                                        type="date"
+                                                        className="worksheet-input"
+                                                        value={strategy.deadline}
+                                                        onChange={(e) => updateStrategy(i, 'deadline', e.target.value)}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                                
+                                <button 
+                                    onClick={addStrategy}
+                                    className="btn-secondary"
+                                >
+                                    + Add Strategy
+                                </button>
+                            </div>
+                            
+                            {/* Accountability Plan */}
+                            <div className="border-2 border-black p-6 mb-8 bg-yellow-50">
+                                <h3 className="plaak text-2xl mb-4">Accountability Plan</h3>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block mb-2 font-bold">Tracking Method:</label>
+                                        <input 
+                                            type="text"
+                                            className="worksheet-input"
+                                            value={formData.accountabilityPlan.trackingMethod}
+                                            onChange={(e) => updateFormData('accountabilityPlan', {
+                                                ...formData.accountabilityPlan,
+                                                trackingMethod: e.target.value
+                                            })}
+                                            placeholder="e.g., Weekly check-ins every Monday 9am"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block mb-2 font-bold">Report Back Date:</label>
+                                        <input 
+                                            type="date"
+                                            className="worksheet-input"
+                                            value={formData.accountabilityPlan.reportBackDate}
+                                            onChange={(e) => updateFormData('accountabilityPlan', {
+                                                ...formData.accountabilityPlan,
+                                                reportBackDate: e.target.value
+                                            })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block mb-2 font-bold">Partnerships & Buddy System:</label>
+                                        <textarea 
+                                            className="worksheet-textarea"
+                                            value={formData.accountabilityPlan.partnerships}
+                                            onChange={(e) => updateFormData('accountabilityPlan', {
+                                                ...formData.accountabilityPlan,
+                                                partnerships: e.target.value
+                                            })}
+                                            placeholder="e.g., Buddy pairs check in via Slack daily"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block mb-2 font-bold">Consequences & Rewards:</label>
+                                        <input 
+                                            type="text"
+                                            className="worksheet-input"
+                                            value={formData.accountabilityPlan.consequences}
+                                            onChange={(e) => updateFormData('accountabilityPlan', {
+                                                ...formData.accountabilityPlan,
+                                                consequences: e.target.value
+                                            })}
+                                            placeholder="e.g., Team dinner if we hit 80% compliance"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {error && (
+                                <div className="bg-red-50 border-2 border-red-500 p-4 mb-4">
+                                    <p className="text-red-700">{error}</p>
+                                </div>
+                            )}
+                            
+                            <button 
+                                onClick={() => setStep('facilitate')}
+                                className="btn-secondary mr-4"
+                            >
+                                ← Back
+                            </button>
+                            
+                            <button 
+                                onClick={handleSubmit}
+                                disabled={loading}
+                                className="btn-primary"
+                            >
+                                {loading ? 'Submitting...' : 'Submit Team Meeting Results'}
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+            
+            // Success
+            if (step === 'success') {
+                return (
+                    <div className="min-h-screen bg-black text-white flex items-center justify-center p-8">
+                        <div className="max-w-4xl w-full text-center">
+                            <div className="mb-12">
+                                <div className="text-8xl mb-8">✓</div>
+                                <h1 className="plaak text-6xl mb-8 animate-in">
+                                    TEAM MEETING COMPLETE
+                                </h1>
+                                <p className="text-2xl mb-12 animate-in" style={{animationDelay: '0.2s'}}>
+                                    Team strategies and accountability plan saved successfully
+                                </p>
+                            </div>
+                            
+                            <div className="text-left max-w-2xl mx-auto mb-12 space-y-6 animate-in" style={{animationDelay: '0.4s'}}>
+                                <div className="border-2 border-white p-6">
+                                    <h3 className="plaak text-2xl mb-4">Next Steps:</h3>
+                                    <ul className="space-y-3 text-lg">
+                                        <li>→ Share meeting notes with the team</li>
+                                        <li>→ Strategy owners begin implementation</li>
+                                        <li>→ Activate buddy partnerships</li>
+                                        <li>→ Schedule check-in on report back date</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <button 
+                                onClick={() => {
+                                    setStep('cover');
+                                    setCompanyId('');
+                                    setTeamData(null);
+                                    setFormData({
+                                        companyName: '',
+                                        facilitator: '',
+                                        meetingDate: new Date().toISOString().split('T')[0],
+                                        discussionNotes: '',
+                                        commonChallenges: ['', '', ''],
+                                        teamRituals: ['', '', ''],
+                                        teamStrategies: [{description: '', owner: '', deadline: ''}],
+                                        accountabilityPlan: {
+                                            trackingMethod: '',
+                                            reportBackDate: '',
+                                            partnerships: '',
+                                            consequences: ''
+                                        }
+                                    });
+                                }}
+                                className="btn-primary text-xl px-12 py-4 animate-in"
+                                style={{animationDelay: '0.6s'}}
+                            >
+                                Facilitate Another Meeting
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+            
+            return null;
+        }
+        
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<EnergyTeamMeetingTool />);
+    </script>
+</body>
+</html>
+

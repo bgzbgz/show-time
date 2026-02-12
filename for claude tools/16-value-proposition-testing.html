@@ -1,0 +1,2051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Value Proposition Testing | Fast Track Program</title>
+
+  <!-- React & ReactDOM from CDN -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+  <!-- Babel Standalone for JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- jsPDF + html2canvas for PDF export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <style>
+    /* Font Face Declarations */
+    @font-face {
+      font-family: 'Plaak';
+      src: url('Plaak3Trial-43-Bold.otf') format('opentype');
+      font-weight: bold;
+      font-style: normal;
+    }
+
+    @font-face {
+      font-family: 'Riforma';
+      src: url('RiformaLL-Regular.otf') format('opentype');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    @font-face {
+      font-family: 'Monument';
+      src: url('MonumentGrotesk-Mono.otf') format('opentype');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    /* Global Styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Riforma', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .plaak {
+      font-family: 'Plaak', sans-serif;
+      text-transform: uppercase;
+      font-weight: bold;
+      letter-spacing: -0.02em;
+    }
+
+    .riforma-bold {
+      font-family: 'Riforma', sans-serif;
+      font-weight: bold;
+    }
+
+    .monument {
+      font-family: 'Monument', monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Animations */
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .animate-in {
+      animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .fade-in {
+      animation: fadeIn 0.4s ease-out;
+    }
+
+    .transition-animate-in {
+      animation: slideIn 0.6s ease-out;
+    }
+
+    /* Button Styles */
+    .btn-primary {
+      background: #000000;
+      color: #FFFFFF;
+      padding: 16px 32px;
+      border: 2px solid #000000;
+      font-size: 18px;
+      font-family: 'Riforma', sans-serif;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: normal;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      transform: scale(1.02);
+    }
+
+    .btn-primary:disabled {
+      background: #E0E0E0;
+      border-color: #E0E0E0;
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #FFFFFF;
+      color: #000000;
+      padding: 12px 24px;
+      border: 2px solid #000000;
+      font-size: 16px;
+      font-family: 'Riforma', sans-serif;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-secondary:hover {
+      background: #F8F8F8;
+    }
+
+    /* Form Styles */
+    input[type="text"],
+    input[type="number"],
+    input[type="email"],
+    input[type="date"],
+    textarea,
+    select {
+      border: 1px solid #E0E0E0;
+      padding: 12px 16px;
+      font-size: 18px;
+      font-family: 'Riforma', sans-serif;
+      width: 100%;
+      transition: border-color 0.2s ease;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      outline: none;
+      border-color: #000000;
+    }
+
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    textarea::placeholder {
+      white-space: pre-line;
+    }
+
+    /* Numbered Section Badge */
+    .numbered-section {
+      background: #000000;
+      color: #FFFFFF;
+      padding: 10px 16px;
+      font-family: 'Plaak', sans-serif;
+      font-size: 26px;
+      display: inline-block;
+      text-transform: uppercase;
+      letter-spacing: -0.02em;
+    }
+
+    /* Help Button */
+    .help-button {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: #000000;
+      color: #FFFFFF;
+      font-size: 28px;
+      border: none;
+      cursor: pointer;
+      z-index: 40;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Riforma', sans-serif;
+    }
+
+    .help-button:hover {
+      background: #FFF469;
+      color: #000000;
+      transform: scale(1.1);
+    }
+
+    /* Progress Indicator */
+    .progress-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #E0E0E0;
+      transition: all 0.3s ease;
+    }
+
+    .progress-dot.active {
+      background: #000000;
+      transform: scale(1.3);
+    }
+
+    .progress-dot.completed {
+      background: #000000;
+    }
+
+    .progress-line {
+      height: 2px;
+      background: #E0E0E0;
+      flex: 1;
+    }
+
+    /* Print Styles */
+    @media print {
+      .no-print {
+        display: none !important;
+      }
+    }
+
+    /* Character Counter */
+    .char-counter {
+      font-size: 14px;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    .char-counter.invalid {
+      color: #EF4444;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, Fragment } = React;
+
+    // Main App Component
+    function TestingApp() {
+      const [step, setStep] = useState(0);
+      const [showHelp, setShowHelp] = useState(false);
+      const [showTransition, setShowTransition] = useState(false);
+      const [transitionMessage, setTransitionMessage] = useState('');
+      const [transitionProgress, setTransitionProgress] = useState(0);
+
+      const [data, setData] = useState({
+        // User details
+        name: '',
+        email: '',
+        company: '',
+        role: '',
+
+        // Step 1: Setup
+        valuePropBeingTested: '',
+        testingObjective: '',
+        targetCustomerProfile: '',
+        interviewPlan: '',
+
+        // Step 2: Round 1 Interviews
+        round1Interviews: [
+          {
+            customerName: '',
+            customerProfile: '',
+            date: '',
+            problemReconfirm: '',
+            valueReaction: '',
+            whatWorked: '',
+            whatUnclear: '',
+            concerns: '',
+            theirWords: '',
+            callToActionResponse: ''
+          }
+        ],
+
+        // Step 3: Refinement
+        round1Patterns: '',
+        positivePatterns: '',
+        confusionPoints: '',
+        objections: '',
+        refinedValueProp: '',
+        changesJustification: '',
+
+        // Step 4: Round 2 Interviews
+        round2Interviews: [
+          {
+            customerName: '',
+            customerProfile: '',
+            date: '',
+            problemStillValid: '',
+            valueReaction: '',
+            clarity: '',
+            enthusiasm: '',
+            differentiation: '',
+            actionability: '',
+            concerns: '',
+            recommendation: ''
+          }
+        ],
+
+        // Step 5: Final Decision
+        validation: {
+          mainNeedsSatisfied: '',
+          factsNotOpinions: '',
+          generalToSpecific: '',
+          askedWhy: '',
+          notLeading: '',
+          sharedFindings: '',
+          updatedAddressesFeedback: ''
+        },
+        finalValueProp: '',
+        consistentReactions: '',
+        strongestDifferentiator: '',
+        remainingAdjustments: '',
+        rolloutPlan: ''
+      });
+
+      // Auto-save
+      useEffect(() => {
+        const interval = setInterval(() => {
+          localStorage.setItem('testingData', JSON.stringify({
+            data,
+            timestamp: new Date().toISOString()
+          }));
+        }, 2000);
+
+        return () => clearInterval(interval);
+      }, [data]);
+
+      // Load saved data
+      useEffect(() => {
+        const saved = localStorage.getItem('testingData');
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            if (parsed.data) {
+              setData(parsed.data);
+            }
+          } catch (e) {
+            console.error('Failed to parse saved data');
+          }
+        }
+      }, []);
+
+      const updateData = (field, value) => {
+        setData(prev => ({ ...prev, [field]: value }));
+      };
+
+      const updateValidation = (field, value) => {
+        setData(prev => ({
+          ...prev,
+          validation: { ...prev.validation, [field]: value }
+        }));
+      };
+
+      // Round 1 interview management
+      const addRound1Interview = () => {
+        setData(prev => ({
+          ...prev,
+          round1Interviews: [...prev.round1Interviews, {
+            customerName: '',
+            customerProfile: '',
+            date: '',
+            problemReconfirm: '',
+            valueReaction: '',
+            whatWorked: '',
+            whatUnclear: '',
+            concerns: '',
+            theirWords: '',
+            callToActionResponse: ''
+          }]
+        }));
+      };
+
+      const removeRound1Interview = (index) => {
+        if (data.round1Interviews.length > 1) {
+          setData(prev => ({
+            ...prev,
+            round1Interviews: prev.round1Interviews.filter((_, i) => i !== index)
+          }));
+        }
+      };
+
+      const updateRound1Interview = (index, field, value) => {
+        setData(prev => ({
+          ...prev,
+          round1Interviews: prev.round1Interviews.map((interview, i) =>
+            i === index ? { ...interview, [field]: value } : interview
+          )
+        }));
+      };
+
+      // Round 2 interview management
+      const addRound2Interview = () => {
+        setData(prev => ({
+          ...prev,
+          round2Interviews: [...prev.round2Interviews, {
+            customerName: '',
+            customerProfile: '',
+            date: '',
+            problemStillValid: '',
+            valueReaction: '',
+            clarity: '',
+            enthusiasm: '',
+            differentiation: '',
+            actionability: '',
+            concerns: '',
+            recommendation: ''
+          }]
+        }));
+      };
+
+      const removeRound2Interview = (index) => {
+        if (data.round2Interviews.length > 1) {
+          setData(prev => ({
+            ...prev,
+            round2Interviews: prev.round2Interviews.filter((_, i) => i !== index)
+          }));
+        }
+      };
+
+      const updateRound2Interview = (index, field, value) => {
+        setData(prev => ({
+          ...prev,
+          round2Interviews: prev.round2Interviews.map((interview, i) =>
+            i === index ? { ...interview, [field]: value } : interview
+          )
+        }));
+      };
+
+      const goNext = () => {
+        if (step === 0.5) {
+          setStep(1);
+        } else if (step >= 1 && step < 5) {
+          const messages = ['20% COMPLETE', '40% COMPLETE', '60% COMPLETE', '80% COMPLETE', '100% COMPLETE'];
+          const progressValues = [20, 40, 60, 80, 100];
+
+          setTransitionMessage(messages[step - 1]);
+          setTransitionProgress(progressValues[step - 1]);
+          setShowTransition(true);
+
+          setTimeout(() => {
+            setShowTransition(false);
+            setStep(step + 1);
+          }, 2000);
+        } else if (step === 5) {
+          setTransitionMessage('100% COMPLETE');
+          setTransitionProgress(100);
+          setShowTransition(true);
+
+          setTimeout(() => {
+            setShowTransition(false);
+            setStep(6);
+          }, 2000);
+        } else if (step === 0) {
+          setStep(0.5);
+        }
+      };
+
+      const goBack = () => {
+        if (step === 6) {
+          setStep(5);
+        } else if (step > 1) {
+          setStep(step - 1);
+        } else if (step === 1) {
+          setStep(0.5);
+        }
+      };
+
+      // Validation functions
+      const canProceedFromIntro = () => {
+        return data.name.length > 0 && data.email.length > 0 && data.company.length > 0;
+      };
+
+      const canProceedFromStep1 = () => {
+        return data.valuePropBeingTested.length >= 30 &&
+               data.testingObjective.length >= 30;
+      };
+
+      const canProceedFromStep2 = () => {
+        return data.round1Interviews.every(i =>
+          i.customerName.length >= 3 && i.valueReaction.length >= 30 && i.whatWorked.length >= 20
+        );
+      };
+
+      const canProceedFromStep3 = () => {
+        return data.positivePatterns.length >= 50 &&
+               data.confusionPoints.length >= 30 &&
+               data.refinedValueProp.length >= 30;
+      };
+
+      const canProceedFromStep4 = () => {
+        return data.round2Interviews.every(i =>
+          i.customerName.length >= 3 && i.clarity.length > 0 && i.enthusiasm.length > 0
+        );
+      };
+
+      const canProceedFromStep5 = () => {
+        const validations = Object.values(data.validation);
+        return validations.filter(v => v === 'yes').length >= 5 &&
+               data.finalValueProp.length >= 30;
+      };
+
+      const exportPDF = async () => {
+        try {
+          console.log('Starting PDF export...');
+
+          // Check if libraries are loaded
+          if (!window.jspdf) {
+            alert('PDF library not loaded. Please refresh the page and try again.');
+            return;
+          }
+          if (!window.html2canvas) {
+            alert('Canvas library not loaded. Please refresh the page and try again.');
+            return;
+          }
+
+          const { jsPDF } = window.jspdf;
+          const pdf = new jsPDF('p', 'mm', 'a4');
+
+          const canvas = document.getElementById('canvas-content');
+          if (!canvas) {
+            alert('Canvas element not found. Please make sure you are on the summary page.');
+            return;
+          }
+
+          // Temporarily hide images to avoid CORS issues
+          const images = canvas.querySelectorAll('img');
+          const imageStates = [];
+          images.forEach(img => {
+            imageStates.push({ img, display: img.style.display });
+            img.style.display = 'none';
+          });
+
+          console.log('Generating PDF...');
+          const canvasImage = await html2canvas(canvas, {
+            scale: 2,
+            logging: false,
+            allowTaint: false,
+            useCORS: false
+          });
+
+          // Restore images
+          imageStates.forEach(({ img, display }) => {
+            img.style.display = display;
+          });
+
+          const imgData = canvasImage.toDataURL('image/png');
+          const imgWidth = 190;
+          const imgHeight = (canvasImage.height * imgWidth) / canvasImage.width;
+
+          pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+
+          const filename = `Value-Prop-Testing-${new Date().toISOString().split('T')[0]}.pdf`;
+          pdf.save(filename);
+
+          console.log('PDF exported successfully!');
+        } catch (error) {
+          console.error('PDF Export Error:', error);
+          alert('Failed to export PDF: ' + error.message);
+        }
+      };
+
+      const handleSubmit = async () => {
+        alert('Value proposition testing results submitted successfully! (Demo mode)');
+      };
+
+      // Render different pages based on step
+      if (showTransition) {
+        return <TransitionScreen message={transitionMessage} progress={transitionProgress} />;
+      }
+
+      if (step === 0) {
+        return <CoverPage onStart={goNext} />;
+      }
+
+      if (step === 0.5) {
+        return <IntroPage data={data} updateData={updateData} onNext={goNext} canProceed={canProceedFromIntro()} />;
+      }
+
+      if (step === 1) {
+        return (
+          <Fragment>
+            <Step1Page
+              data={data}
+              updateData={updateData}
+              onNext={goNext}
+              onBack={goBack}
+              canProceed={canProceedFromStep1()}
+              setShowHelp={setShowHelp}
+            />
+            {showHelp && <HelpModal onClose={() => setShowHelp(false)} stepNumber={1} />}
+          </Fragment>
+        );
+      }
+
+      if (step === 2) {
+        return (
+          <Fragment>
+            <Step2Page
+              data={data}
+              updateData={updateData}
+              onNext={goNext}
+              onBack={goBack}
+              canProceed={canProceedFromStep2()}
+              setShowHelp={setShowHelp}
+              addRound1Interview={addRound1Interview}
+              removeRound1Interview={removeRound1Interview}
+              updateRound1Interview={updateRound1Interview}
+            />
+            {showHelp && <HelpModal onClose={() => setShowHelp(false)} stepNumber={2} />}
+          </Fragment>
+        );
+      }
+
+      if (step === 3) {
+        return (
+          <Fragment>
+            <Step3Page
+              data={data}
+              updateData={updateData}
+              onNext={goNext}
+              onBack={goBack}
+              canProceed={canProceedFromStep3()}
+              setShowHelp={setShowHelp}
+            />
+            {showHelp && <HelpModal onClose={() => setShowHelp(false)} stepNumber={3} />}
+          </Fragment>
+        );
+      }
+
+      if (step === 4) {
+        return (
+          <Fragment>
+            <Step4Page
+              data={data}
+              updateData={updateData}
+              onNext={goNext}
+              onBack={goBack}
+              canProceed={canProceedFromStep4()}
+              setShowHelp={setShowHelp}
+              addRound2Interview={addRound2Interview}
+              removeRound2Interview={removeRound2Interview}
+              updateRound2Interview={updateRound2Interview}
+            />
+            {showHelp && <HelpModal onClose={() => setShowHelp(false)} stepNumber={4} />}
+          </Fragment>
+        );
+      }
+
+      if (step === 5) {
+        return (
+          <Fragment>
+            <Step5Page
+              data={data}
+              updateData={updateData}
+              updateValidation={updateValidation}
+              onNext={goNext}
+              onBack={goBack}
+              canProceed={canProceedFromStep5()}
+              setShowHelp={setShowHelp}
+            />
+            {showHelp && <HelpModal onClose={() => setShowHelp(false)} stepNumber={5} />}
+          </Fragment>
+        );
+      }
+
+      if (step === 6) {
+        return (
+          <CanvasPage
+            data={data}
+            onBack={goBack}
+            onExport={exportPDF}
+            onSubmit={handleSubmit}
+          />
+        );
+      }
+
+      return null;
+    }
+
+    // Cover Page Component
+    function CoverPage({ onStart }) {
+      return (
+        <div className="relative min-h-screen flex items-center justify-center bg-black">
+          <div
+            className="absolute inset-0 w-full h-full"
+            style={{
+              backgroundImage: 'url("https://images.unsplash.com/photo-1556761175-b413da4baf72?w=1920&q=80")',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center'
+            }}
+          ></div>
+          <div className="absolute inset-0" style={{background: 'linear-gradient(to bottom, rgba(0,0,0,0.6), rgba(0,0,0,0.85))'}}></div>
+
+          <div className="relative z-10 text-center text-white px-8 max-w-5xl mx-auto">
+            <h1 className="plaak animate-in" style={{fontSize: '100px', lineHeight: '1', marginBottom: '32px'}}>
+              VALUE PROPOSITION TESTING
+            </h1>
+            <p className="text-4xl mb-12 animate-in" style={{animationDelay: '0.2s'}}>
+              Turn customer feedback into a bulletproof message
+            </p>
+            <button
+              onClick={onStart}
+              className="bg-white text-black plaak px-16 py-6 border-4 border-white hover:bg-black hover:text-white transition-all text-3xl animate-in"
+              style={{animationDelay: '0.4s'}}
+            >
+              START
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // Intro Page Component (truncated for length - continuing in next part)
+    function IntroPage({ data, updateData, onNext, canProceed }) {
+      return (
+        <div className="bg-black text-white min-h-screen p-16">
+          <div className="max-w-5xl mx-auto">
+            <h1 className="plaak mb-16 animate-in" style={{fontSize: '100px'}}>
+              BEFORE WE START
+            </h1>
+
+            {/* User Details */}
+            <div className="mb-12 animate-in" style={{animationDelay: '0.05s'}}>
+              <h2 className="plaak text-6xl mb-6">YOUR DETAILS</h2>
+              <div className="space-y-6 bg-white text-black p-8">
+                <div>
+                  <label className="monument text-sm block mb-2">NAME <span className="text-red-500">*</span></label>
+                  <input
+                    type="text"
+                    value={data.name}
+                    onChange={(e) => updateData('name', e.target.value)}
+                    placeholder="Jennifer Kim"
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <label className="monument text-sm block mb-2">EMAIL <span className="text-red-500">*</span></label>
+                  <input
+                    type="email"
+                    value={data.email}
+                    onChange={(e) => updateData('email', e.target.value)}
+                    placeholder="jennifer.kim@company.com"
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <label className="monument text-sm block mb-2">COMPANY <span className="text-red-500">*</span></label>
+                  <input
+                    type="text"
+                    value={data.company}
+                    onChange={(e) => updateData('company', e.target.value)}
+                    placeholder="MarketLeap Solutions"
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <label className="monument text-sm block mb-2">ROLE</label>
+                  <input
+                    type="text"
+                    value={data.role}
+                    onChange={(e) => updateData('role', e.target.value)}
+                    placeholder="VP Product Marketing"
+                    className="w-full"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Sprint Info */}
+            <div className="mb-12 animate-in" style={{animationDelay: '0.08s'}}>
+              <h2 className="plaak text-6xl mb-6" style={{color: '#FFF469'}}>SPRINT INFO</h2>
+              <div className="bg-white text-black p-8">
+                <p className="text-2xl font-bold mb-4">Sprint 16: Value Proposition Testing</p>
+                <p className="text-xl leading-relaxed mb-4">
+                  This sprint cuts through assumptions and turns customer insights into a clear, powerful message your market cannot ignore. It is focused on quickly validating and locking in your value proposition with real customer reactions, not guesswork.
+                </p>
+                <div className="border-l-4 border-black pl-4 italic text-lg">
+                  "A value proposition only works if it lands the first time with customers. This process ensures predictability - if multiple customers react the same way, it&apos;s a pattern."
+                </div>
+              </div>
+            </div>
+
+            {/* Purpose */}
+            <div className="mb-12 animate-in" style={{animationDelay: '0.1s'}}>
+              <h2 className="plaak text-6xl mb-6">PURPOSE</h2>
+
+              <div className="border-l-4 border-white pl-6 mb-6">
+                <p className="text-3xl italic mb-2">&quot;The best value proposition isn&apos;t what you think sounds good - it&apos;s what customers can&apos;t ignore.&quot;</p>
+                <p className="text-xl text-gray-400">— FAST TRACK TESTING PRINCIPLE</p>
+              </div>
+
+              <p className="text-3xl leading-relaxed mb-4">
+                Test your value proposition with real customers in two rounds: Round 1 identifies confusion points, Round 2 validates your refined message. The goal is consistency - if multiple customers react the same way, you have a bulletproof value proposition.
+              </p>
+            </div>
+
+            {/* Mistakes to Avoid */}
+            <div className="mb-12 animate-in" style={{animationDelay: '0.2s'}}>
+              <h2 className="plaak text-6xl mb-6" style={{color: '#FFF469'}}>MISTAKES TO AVOID</h2>
+
+              <div className="bg-white text-black p-6 mb-6 border-4 border-yellow-400">
+                <p className="riforma-bold text-2xl mb-4">VALUE PROPOSITION TESTING PITFALLS:</p>
+                <ul className="text-xl space-y-3">
+                  <li className="flex items-start">
+                    <span className="text-3xl mr-3">1.</span>
+                    <span><strong>Accepting polite but unclear feedback:</strong> Never settle for vague responses. Push customers for specifics.</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-3xl mr-3">2.</span>
+                    <span><strong>Over-explaining during tests:</strong> If they don&apos;t get it immediately, the message still needs work</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-3xl mr-3">3.</span>
+                    <span><strong>Leading them to the answer you want:</strong> Your job is to listen, not to get validation</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-3xl mr-3">4.</span>
+                    <span><strong>Defending your original idea:</strong> The point is to improve, not justify what exists</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-3xl mr-3">5.</span>
+                    <span><strong>Jumping to conclusions too fast:</strong> One person&apos;s reaction doesn&apos;t make a pattern. Need 3+ consistent reactions.</span>
+                  </li>
+                </ul>
+              </div>
+
+              <ul className="text-2xl space-y-4">
+                <li className="flex items-start">
+                  <span className="text-4xl mr-4">•</span>
+                  <span>Dismissing hesitation. Every hesitation is a clue about where your message is weak.</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-4xl mr-4">•</span>
+                  <span>Making changes without evidence. Stick to patterns - if three or more customers say it, it&apos;s real feedback.</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-4xl mr-4">•</span>
+                  <span>Endless tweaking. After Round 2, lock it in and execute. A great value proposition isn&apos;t debated forever.</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* The Journey */}
+            <div className="mb-16 animate-in" style={{animationDelay: '0.3s'}}>
+              <h2 className="plaak text-6xl mb-8">THE JOURNEY</h2>
+              <div className="grid grid-cols-5 gap-4 text-center">
+                <div className="border-2 border-white p-4">
+                  <div className="text-6xl plaak mb-2">01</div>
+                  <p className="text-lg font-bold mb-1">SETUP</p>
+                  <p className="text-sm text-gray-400">Test plan</p>
+                </div>
+                <div className="border-2 border-white p-4">
+                  <div className="text-6xl plaak mb-2">02</div>
+                  <p className="text-lg font-bold mb-1">ROUND 1</p>
+                  <p className="text-sm text-gray-400">Find issues</p>
+                </div>
+                <div className="border-2 border-white p-4">
+                  <div className="text-6xl plaak mb-2">03</div>
+                  <p className="text-lg font-bold mb-1">REFINE</p>
+                  <p className="text-sm text-gray-400">Fix problems</p>
+                </div>
+                <div className="border-2 border-white p-4">
+                  <div className="text-6xl plaak mb-2">04</div>
+                  <p className="text-lg font-bold mb-1">ROUND 2</p>
+                  <p className="text-sm text-gray-400">Validate fix</p>
+                </div>
+                <div className="border-2 border-white p-4">
+                  <div className="text-6xl plaak mb-2">05</div>
+                  <p className="text-lg font-bold mb-1">DECIDE</p>
+                  <p className="text-sm text-gray-400">Lock it in</p>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={onNext}
+              disabled={!canProceed}
+              className="btn-primary w-full text-3xl py-8 plaak"
+            >
+              LET&apos;S START →
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // Transition Screen Component
+    function TransitionScreen({ message, progress }) {
+      return (
+        <div className="fixed inset-0 bg-black text-white flex items-center justify-center z-50 fade-in">
+          <div className="text-center px-8">
+            <h1 className="plaak transition-animate-in" style={{fontSize: '120px', marginBottom: '32px'}}>
+              SECTION COMPLETE
+            </h1>
+
+            <div className="max-w-2xl mx-auto mb-8 transition-animate-in" style={{animationDelay: '0.2s'}}>
+              <div className="h-2 bg-gray-800 mb-4">
+                <div
+                  className="h-full bg-white transition-all duration-1000"
+                  style={{width: `${progress}%`}}
+                ></div>
+              </div>
+              <p className="monument text-xl tracking-wider">{message}</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Step 1: Test Setup
+    function Step1Page({ data, updateData, onNext, onBack, canProceed, setShowHelp }) {
+      return (
+        <div className="bg-white min-h-screen p-16 pb-32">
+          <div className="max-w-5xl mx-auto">
+            <ProgressIndicator currentStep={1} />
+            <HelpButton onClick={() => setShowHelp(true)} />
+
+            <div className="numbered-section mb-8 animate-in">01. TEST SETUP</div>
+
+            <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
+              Prepare your testing plan
+            </h3>
+
+            <div className="border-l-4 border-yellow-400 pl-6 mb-12 animate-in" style={{animationDelay: '0.1s'}}>
+              <p className="text-2xl italic">
+                &quot;This second and final round of customer interviews is designed to validate the updated value proposition with high confidence. We should have a tested, bulletproof value proposition that drives predictable, strong reactions.&quot;
+              </p>
+              <p className="text-lg text-gray-600 mt-2">— Testing Objective</p>
+            </div>
+
+            <div className="mb-12 animate-in" style={{animationDelay: '0.15s'}}>
+              <label className="monument text-sm block mb-3">VALUE PROPOSITION BEING TESTED <span className="text-red-500">*</span></label>
+              <p className="text-base text-gray-600 mb-3">What is the exact value proposition you will test with customers?</p>
+              <textarea
+                value={data.valuePropBeingTested}
+                onChange={(e) => updateData('valuePropBeingTested', e.target.value)}
+                placeholder="For high-growth SaaS startups (20-100 employees) struggling with workflow inefficiency, we provide an AI-powered automation platform that eliminates 80% of manual work in 24 hours, unlike competitors who require 6-month implementations and dedicated IT teams."
+                className="w-full"
+                rows={4}
+              />
+              <div className={`char-counter ${data.valuePropBeingTested.length < 30 ? 'invalid' : ''}`}>
+                {data.valuePropBeingTested.length}/800 (min 30 characters)
+              </div>
+            </div>
+
+            <div className="mb-12 animate-in" style={{animationDelay: '0.2s'}}>
+              <label className="monument text-sm block mb-3">TESTING OBJECTIVE <span className="text-red-500">*</span></label>
+              <p className="text-base text-gray-600 mb-3">What do you want to learn from these tests?</p>
+              <textarea
+                value={data.testingObjective}
+                onChange={(e) => updateData('testingObjective', e.target.value)}
+                placeholder="Confirm message lands clearly and persuasively. Identify remaining friction points. Ensure customers see offer as compelling and action-worthy. Finalize key wording before full implementation. Validate that 24-hour promise resonates and differentiation from 6-month competitors is clear."
+                className="w-full"
+                rows={4}
+              />
+              <div className={`char-counter ${data.testingObjective.length < 30 ? 'invalid' : ''}`}>
+                {data.testingObjective.length}/500 (min 30 characters)
+              </div>
+            </div>
+
+            <div className="mb-12 animate-in" style={{animationDelay: '0.25s'}}>
+              <label className="monument text-sm block mb-3">TARGET CUSTOMER PROFILE FOR INTERVIEWS</label>
+              <p className="text-base text-gray-600 mb-3">Who exactly will you interview? Be specific.</p>
+              <textarea
+                value={data.targetCustomerProfile}
+                onChange={(e) => updateData('targetCustomerProfile', e.target.value)}
+                placeholder="COOs or VP Operations at SaaS companies with 30-80 employees, $5M-$20M ARR, currently using 8+ disconnected tools, experiencing team frustration with manual processes. Ideally have tried automation before but failed."
+                className="w-full"
+                rows={3}
+              />
+            </div>
+
+            <div className="mb-12 animate-in" style={{animationDelay: '0.3s'}}>
+              <label className="monument text-sm block mb-3">INTERVIEW PLAN</label>
+              <p className="text-base text-gray-600 mb-3">How many interviews? When? Format?</p>
+              <textarea
+                value={data.interviewPlan}
+                onChange={(e) => updateData('interviewPlan', e.target.value)}
+                placeholder="Round 1: 5 interviews over 5 days (March 10-14). 30-40 min each via Zoom. Focus on finding confusion points.&#10;Round 2: Same 5 customers + 2 new ones (March 20-22) after refinements. Validate fixes work."
+                className="w-full"
+                rows={4}
+              />
+            </div>
+
+            <div className="flex gap-6">
+              <button onClick={onBack} className="btn-secondary flex-1">
+                ← BACK
+              </button>
+              <button
+                onClick={onNext}
+                disabled={!canProceed}
+                className="btn-primary flex-1"
+              >
+                NEXT: ROUND 1 INTERVIEWS →
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Step 2: Round 1 Customer Interviews
+    function Step2Page({ data, updateData, onNext, onBack, canProceed, setShowHelp, addRound1Interview, removeRound1Interview, updateRound1Interview }) {
+      return (
+        <div className="bg-white min-h-screen p-16 pb-32">
+          <div className="max-w-6xl mx-auto">
+            <ProgressIndicator currentStep={2} />
+            <HelpButton onClick={() => setShowHelp(true)} />
+
+            <div className="numbered-section mb-8 animate-in">02. ROUND 1 CUSTOMER INTERVIEWS</div>
+
+            <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
+              Document customer reactions (Discovery Round)
+            </h3>
+
+            <div className="border-l-4 border-yellow-400 pl-6 mb-12 animate-in" style={{animationDelay: '0.1s'}}>
+              <p className="text-2xl italic">
+                &quot;Let them talk - your job is to listen. Push for real reactions, not politeness. Confirm if the message creates clarity, urgency, and action.&quot;
+              </p>
+              <p className="text-lg text-gray-600 mt-2">— Interview Do&apos;s</p>
+            </div>
+
+            <p className="text-xl mb-8 text-gray-700">
+              Conduct 3-5 interviews. Focus on identifying what works, what&apos;s unclear, and what concerns arise.
+            </p>
+
+            {data.round1Interviews.map((interview, index) => (
+              <div key={index} className="bg-gray-50 border-4 border-gray-300 p-8 mb-8 animate-in" style={{animationDelay: `${0.15 + index * 0.05}s`}}>
+                <div className="flex justify-between items-start mb-6">
+                  <h4 className="riforma-bold text-3xl">Interview {index + 1}</h4>
+                  {data.round1Interviews.length > 1 && (
+                    <button
+                      onClick={() => removeRound1Interview(index)}
+                      className="text-red-600 hover:text-red-800"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-3 gap-4 mb-6">
+                  <div>
+                    <label className="monument text-xs block mb-2">CUSTOMER NAME <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      value={interview.customerName}
+                      onChange={(e) => updateRound1Interview(index, 'customerName', e.target.value)}
+                      placeholder="Sarah Chen"
+                      className="w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="monument text-xs block mb-2">PROFILE</label>
+                    <input
+                      type="text"
+                      value={interview.customerProfile}
+                      onChange={(e) => updateRound1Interview(index, 'customerProfile', e.target.value)}
+                      placeholder="COO at TechFlow (75 employees)"
+                      className="w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="monument text-xs block mb-2">DATE</label>
+                    <input
+                      type="date"
+                      value={interview.date}
+                      onChange={(e) => updateRound1Interview(index, 'date', e.target.value)}
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <div>
+                    <label className="monument text-xs block mb-2">PROBLEM RECONFIRM</label>
+                    <p className="text-sm text-gray-600 mb-2">Is the problem still their biggest challenge? Has anything changed?</p>
+                    <textarea
+                      value={interview.problemReconfirm}
+                      onChange={(e) => updateRound1Interview(index, 'problemReconfirm', e.target.value)}
+                      placeholder="Still major issue. Team now spending 50% time on manual work, up from 40%. Lost another key hire last month due to operational chaos. More urgent than before."
+                      className="w-full"
+                      rows={3}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="monument text-xs block mb-2">VALUE PROP REACTION <span className="text-red-500">*</span></label>
+                    <p className="text-sm text-gray-600 mb-2">What was their immediate reaction when you presented the value prop?</p>
+                    <textarea
+                      value={interview.valueReaction}
+                      onChange={(e) => updateRound1Interview(index, 'valueReaction', e.target.value)}
+                      placeholder="Eyes lit up at 24 hours vs 6 months. Immediately asked if that&apos;s really possible. Skeptical but interested. Said current solution took 4 months to implement and still doesn&apos;t work well."
+                      className="w-full"
+                      rows={3}
+                    />
+                    <div className={`char-counter ${interview.valueReaction.length < 30 ? 'invalid' : ''}`}>
+                      {interview.valueReaction.length}/1000 (min 30 characters)
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="monument text-xs block mb-2">WHAT WORKED WELL <span className="text-red-500">*</span></label>
+                    <p className="text-sm text-gray-600 mb-2">What made them react positively?</p>
+                    <textarea
+                      value={interview.whatWorked}
+                      onChange={(e) => updateRound1Interview(index, 'whatWorked', e.target.value)}
+                      placeholder="Loved the 24-hour promise. No IT required resonated strongly - they don&apos;t have dedicated IT. 80% automation specific and believable. Comparison to 6-month competitors was powerful."
+                      className="w-full"
+                      rows={3}
+                    />
+                    <div className={`char-counter ${interview.whatWorked.length < 20 ? 'invalid' : ''}`}>
+                      {interview.whatWorked.length}/800 (min 20 characters)
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="monument text-xs block mb-2">WHAT WAS UNCLEAR</label>
+                    <p className="text-sm text-gray-600 mb-2">Where did they hesitate or need more explanation?</p>
+                    <textarea
+                      value={interview.whatUnclear}
+                      onChange={(e) => updateRound1Interview(index, 'whatUnclear', e.target.value)}
+                      placeholder="Not sure what AI-powered means in practice. Unclear if 80% applies to their specific workflows. Confused about pricing - is it per user or flat fee?"
+                      className="w-full"
+                      rows={3}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="monument text-xs block mb-2">CONCERNS RAISED</label>
+                    <p className="text-sm text-gray-600 mb-2">Why would they not move forward?</p>
+                    <textarea
+                      value={interview.concerns}
+                      onChange={(e) => updateRound1Interview(index, 'concerns', e.target.value)}
+                      placeholder="Worried about data security. Concerned about team adoption - have failed with tools before. Skeptical that 24 hours is realistic for their complexity. Budget approval needed."
+                      className="w-full"
+                      rows={3}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="monument text-xs block mb-2">HOW THEY DESCRIBED IT (THEIR WORDS)</label>
+                    <p className="text-sm text-gray-600 mb-2">Did they naturally rephrase the value prop? What words did they use?</p>
+                    <textarea
+                      value={interview.theirWords}
+                      onChange={(e) => updateRound1Interview(index, 'theirWords', e.target.value)}
+                      placeholder="&quot;So you basically get rid of all the busy work instantly without needing tech people?&quot; Used instant multiple times. Called it plug-and-play automation."
+                      className="w-full"
+                      rows={2}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="monument text-xs block mb-2">CALL TO ACTION RESPONSE</label>
+                    <p className="text-sm text-gray-600 mb-2">Would they act on this? What would their next step be?</p>
+                    <textarea
+                      value={interview.callToActionResponse}
+                      onChange={(e) => updateRound1Interview(index, 'callToActionResponse', e.target.value)}
+                      placeholder="Would want demo immediately to see it work. Said if it delivers on promise, would fast-track budget approval. Would recommend to 2 other companies in similar situation."
+                      className="w-full"
+                      rows={3}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            <button onClick={addRound1Interview} className="btn-secondary w-full mb-12">
+              + Add Another Round 1 Interview
+            </button>
+
+            <div className="flex gap-6">
+              <button onClick={onBack} className="btn-secondary flex-1">
+                ← BACK
+              </button>
+              <button
+                onClick={onNext}
+                disabled={!canProceed}
+                className="btn-primary flex-1"
+              >
+                NEXT: ANALYZE & REFINE →
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Step 3: Refinement Based on Round 1
+    function Step3Page({ data, updateData, onNext, onBack, canProceed, setShowHelp }) {
+      return (
+        <div className="bg-white min-h-screen p-16 pb-32">
+          <div className="max-w-5xl mx-auto">
+            <ProgressIndicator currentStep={3} />
+            <HelpButton onClick={() => setShowHelp(true)} />
+
+            <div className="numbered-section mb-8 animate-in">03. ANALYZE & REFINE</div>
+
+            <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
+              Identify patterns and fix weak spots
+            </h3>
+
+            <div className="border-l-4 border-yellow-400 pl-6 mb-12 animate-in" style={{animationDelay: '0.1s'}}>
+              <p className="text-2xl italic">
+                &quot;Stick to patterns - If three or more customers say it, it&apos;s real feedback. Use evidence, not feelings. Prioritize clarity over complexity.&quot;
+              </p>
+              <p className="text-lg text-gray-600 mt-2">— Analysis Principles</p>
+            </div>
+
+            <div className="mb-12 animate-in" style={{animationDelay: '0.15s'}}>
+              <label className="monument text-sm block mb-3">PATTERNS ACROSS ALL INTERVIEWS</label>
+              <p className="text-base text-gray-600 mb-3">What themes repeated across multiple customers?</p>
+              <textarea
+                value={data.round1Patterns}
+                onChange={(e) => updateData('round1Patterns', e.target.value)}
+                placeholder="All 5 customers reacted positively to 24-hour timeline. 4 of 5 said no IT required was critical factor. 3 mentioned skepticism about AI - term creates confusion. All asked about pricing structure."
+                className="w-full"
+                rows={4}
+              />
+            </div>
+
+            <div className="mb-12 animate-in" style={{animationDelay: '0.2s'}}>
+              <label className="monument text-sm block mb-3">POSITIVE PATTERNS (WHAT WORKED) <span className="text-red-500">*</span></label>
+              <p className="text-base text-gray-600 mb-3">What did customers consistently respond well to?</p>
+              <textarea
+                value={data.positivePatterns}
+                onChange={(e) => updateData('positivePatterns', e.target.value)}
+                placeholder="Speed promise (24 hours) was universally compelling. No IT required resonated with everyone. 80% specific number more believable than saying &quot;most&quot;. Comparison to 6-month competitors made differentiation clear. Customers used words like instant, plug-and-play, no-brainer."
+                className="w-full"
+                rows={5}
+              />
+              <div className={`char-counter ${data.positivePatterns.length < 50 ? 'invalid' : ''}`}>
+                {data.positivePatterns.length}/1000 (min 50 characters)
+              </div>
+            </div>
+
+            <div className="mb-12 animate-in" style={{animationDelay: '0.25s'}}>
+              <label className="monument text-sm block mb-3">CONFUSION POINTS (WHAT WAS UNCLEAR) <span className="text-red-500">*</span></label>
+              <p className="text-base text-gray-600 mb-3">Where did customers consistently hesitate or ask for clarification?</p>
+              <textarea
+                value={data.confusionPoints}
+                onChange={(e) => updateData('confusionPoints', e.target.value)}
+                placeholder="AI-powered confusing - 3 customers asked what it means in practice. SaaS startups too narrow? 2 customers at 110 employees worried they&apos;re too big. 80% unclear - 80% of what exactly? All workflows or specific types?"
+                className="w-full"
+                rows={5}
+              />
+              <div className={`char-counter ${data.confusionPoints.length < 30 ? 'invalid' : ''}`}>
+                {data.confusionPoints.length}/1000 (min 30 characters)
+              </div>
+            </div>
+
+            <div className="mb-12 animate-in" style={{animationDelay: '0.3s'}}>
+              <label className="monument text-sm block mb-3">OBJECTIONS RAISED</label>
+              <p className="text-base text-gray-600 mb-3">What concerns need addressing?</p>
+              <textarea
+                value={data.objections}
+                onChange={(e) => updateData('objections', e.target.value)}
+                placeholder="Data security came up in 3 interviews. Skepticism about 24-hour promise - is it really possible? Concern about team adoption after previous failed tools. Pricing uncertainty causing hesitation."
+                className="w-full"
+                rows={4}
+              />
+            </div>
+
+            <div className="mb-12 animate-in" style={{animationDelay: '0.35s'}}>
+              <label className="monument text-sm block mb-3">REFINED VALUE PROPOSITION <span className="text-red-500">*</span></label>
+              <p className="text-base text-gray-600 mb-3">Based on feedback, what is your refined version?</p>
+              <textarea
+                value={data.refinedValueProp}
+                onChange={(e) => updateData('refinedValueProp', e.target.value)}
+                placeholder="For fast-growing teams (20-150 employees) drowning in repetitive manual work, we provide zero-code workflow automation that eliminates 80% of busy work in 24 hours with zero IT required, unlike traditional tools that take 6 months to implement and require dedicated technical resources."
+                className="w-full"
+                rows={4}
+              />
+              <div className={`char-counter ${data.refinedValueProp.length < 30 ? 'invalid' : ''}`}>
+                {data.refinedValueProp.length}/800 (min 30 characters)
+              </div>
+            </div>
+
+            <div className="mb-12 animate-in" style={{animationDelay: '0.4s'}}>
+              <label className="monument text-sm block mb-3">WHAT CHANGED & WHY</label>
+              <p className="text-base text-gray-600 mb-3">Justify your changes with evidence from interviews.</p>
+              <textarea
+                value={data.changesJustification}
+                onChange={(e) => updateData('changesJustification', e.target.value)}
+                placeholder="Changed SaaS startups to fast-growing teams (20-150 employees) - 2 customers worried about being too big. Removed AI-powered - created confusion. Added zero-code which customers naturally used. Changed workflow inefficiency to drowning in repetitive manual work - their exact words. Added busy work which 4 customers mentioned."
+                className="w-full"
+                rows={5}
+              />
+            </div>
+
+            <div className="flex gap-6">
+              <button onClick={onBack} className="btn-secondary flex-1">
+                ← BACK
+              </button>
+              <button
+                onClick={onNext}
+                disabled={!canProceed}
+                className="btn-primary flex-1"
+              >
+                NEXT: ROUND 2 VALIDATION →
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Step 4: Round 2 Validation Interviews
+    function Step4Page({ data, updateData, onNext, onBack, canProceed, setShowHelp, addRound2Interview, removeRound2Interview, updateRound2Interview }) {
+      return (
+        <div className="bg-white min-h-screen p-16 pb-32">
+          <div className="max-w-6xl mx-auto">
+            <ProgressIndicator currentStep={4} />
+            <HelpButton onClick={() => setShowHelp(true)} />
+
+            <div className="numbered-section mb-8 animate-in">04. ROUND 2 VALIDATION</div>
+
+            <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
+              Confirm refinements work
+            </h3>
+
+            <div className="border-l-4 border-yellow-400 pl-6 mb-12 animate-in" style={{animationDelay: '0.1s'}}>
+              <p className="text-2xl italic">
+                &quot;We look for consistency. If customers react the same way, we&apos;ve nailed it. If reactions vary widely, there&apos;s still work to do. We want customers to either love it or have clear concerns - neutral feedback is useless.&quot;
+              </p>
+              <p className="text-lg text-gray-600 mt-2">— Round 2 Principles</p>
+            </div>
+
+            {data.refinedValueProp && (
+              <div className="mb-12 bg-black text-white p-8 animate-in" style={{animationDelay: '0.15s'}}>
+                <h3 className="riforma-bold text-2xl mb-4">Refined Value Proposition Being Tested:</h3>
+                <p className="text-2xl leading-relaxed">
+                  {data.refinedValueProp}
+                </p>
+              </div>
+            )}
+
+            <p className="text-xl mb-8 text-gray-700">
+              Test the refined message with customers. Focus on consistency - do they all react similarly?
+            </p>
+
+            {data.round2Interviews.map((interview, index) => (
+              <div key={index} className="bg-green-50 border-4 border-green-300 p-8 mb-8 animate-in" style={{animationDelay: `${0.2 + index * 0.05}s`}}>
+                <div className="flex justify-between items-start mb-6">
+                  <h4 className="riforma-bold text-3xl">Round 2 - Interview {index + 1}</h4>
+                  {data.round2Interviews.length > 1 && (
+                    <button
+                      onClick={() => removeRound2Interview(index)}
+                      className="text-red-600 hover:text-red-800"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-3 gap-4 mb-6">
+                  <div>
+                    <label className="monument text-xs block mb-2">CUSTOMER NAME <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      value={interview.customerName}
+                      onChange={(e) => updateRound2Interview(index, 'customerName', e.target.value)}
+                      placeholder="Sarah Chen (returning)"
+                      className="w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="monument text-xs block mb-2">PROFILE</label>
+                    <input
+                      type="text"
+                      value={interview.customerProfile}
+                      onChange={(e) => updateRound2Interview(index, 'customerProfile', e.target.value)}
+                      placeholder="COO at TechFlow"
+                      className="w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="monument text-xs block mb-2">DATE</label>
+                    <input
+                      type="date"
+                      value={interview.date}
+                      onChange={(e) => updateRound2Interview(index, 'date', e.target.value)}
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <div>
+                    <label className="monument text-xs block mb-2">PROBLEM STILL VALID?</label>
+                    <textarea
+                      value={interview.problemStillValid}
+                      onChange={(e) => updateRound2Interview(index, 'problemStillValid', e.target.value)}
+                      placeholder="Yes, even more urgent. Team now at breaking point with manual work."
+                      className="w-full"
+                      rows={2}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="monument text-xs block mb-2">IMMEDIATE REACTION</label>
+                    <textarea
+                      value={interview.valueReaction}
+                      onChange={(e) => updateRound2Interview(index, 'valueReaction', e.target.value)}
+                      placeholder="Much clearer now. Zero-code makes more sense than AI-powered. Loves fast-growing teams instead of just startups - feels inclusive. Drowning in manual work exactly how she describes it internally."
+                      className="w-full"
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-4 gap-4">
+                    <div>
+                      <label className="monument text-xs block mb-2">CLARITY (1-5) <span className="text-red-500">*</span></label>
+                      <select
+                        value={interview.clarity}
+                        onChange={(e) => updateRound2Interview(index, 'clarity', e.target.value)}
+                        className="w-full"
+                      >
+                        <option value="">Rate...</option>
+                        <option value="1">1 - Very Unclear</option>
+                        <option value="2">2 - Somewhat Unclear</option>
+                        <option value="3">3 - Neutral</option>
+                        <option value="4">4 - Clear</option>
+                        <option value="5">5 - Crystal Clear</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="monument text-xs block mb-2">ENTHUSIASM (1-5) <span className="text-red-500">*</span></label>
+                      <select
+                        value={interview.enthusiasm}
+                        onChange={(e) => updateRound2Interview(index, 'enthusiasm', e.target.value)}
+                        className="w-full"
+                      >
+                        <option value="">Rate...</option>
+                        <option value="1">1 - Not Interested</option>
+                        <option value="2">2 - Mildly Interested</option>
+                        <option value="3">3 - Interested</option>
+                        <option value="4">4 - Very Interested</option>
+                        <option value="5">5 - Extremely Excited</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="monument text-xs block mb-2">DIFFERENTIATION (1-5)</label>
+                      <select
+                        value={interview.differentiation}
+                        onChange={(e) => updateRound2Interview(index, 'differentiation', e.target.value)}
+                        className="w-full"
+                      >
+                        <option value="">Rate...</option>
+                        <option value="1">1 - Same as Others</option>
+                        <option value="2">2 - Slightly Different</option>
+                        <option value="3">3 - Noticeably Different</option>
+                        <option value="4">4 - Very Different</option>
+                        <option value="5">5 - Completely Unique</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="monument text-xs block mb-2">ACTIONABILITY (1-5)</label>
+                      <select
+                        value={interview.actionability}
+                        onChange={(e) => updateRound2Interview(index, 'actionability', e.target.value)}
+                        className="w-full"
+                      >
+                        <option value="">Rate...</option>
+                        <option value="1">1 - Won&apos;t Act</option>
+                        <option value="2">2 - Might Consider</option>
+                        <option value="3">3 - Will Explore</option>
+                        <option value="4">4 - Want Demo Soon</option>
+                        <option value="5">5 - Want It Now</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="monument text-xs block mb-2">REMAINING CONCERNS</label>
+                    <textarea
+                      value={interview.concerns}
+                      onChange={(e) => updateRound2Interview(index, 'concerns', e.target.value)}
+                      placeholder="Only concern is pricing. Otherwise ready to move forward."
+                      className="w-full"
+                      rows={2}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="monument text-xs block mb-2">WOULD RECOMMEND? TO WHO?</label>
+                    <textarea
+                      value={interview.recommendation}
+                      onChange={(e) => updateRound2Interview(index, 'recommendation', e.target.value)}
+                      placeholder="Absolutely. Would recommend to 3 other COOs in similar situation. Already thinking about who to share this with."
+                      className="w-full"
+                      rows={2}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            <button onClick={addRound2Interview} className="btn-secondary w-full mb-12">
+              + Add Another Round 2 Interview
+            </button>
+
+            <div className="flex gap-6">
+              <button onClick={onBack} className="btn-secondary flex-1">
+                ← BACK
+              </button>
+              <button
+                onClick={onNext}
+                disabled={!canProceed}
+                className="btn-primary flex-1"
+              >
+                NEXT: FINAL DECISION →
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Step 5: Final Decision & Validation
+    function Step5Page({ data, updateData, updateValidation, onNext, onBack, canProceed, setShowHelp }) {
+      const validationQuestions = [
+        { key: 'mainNeedsSatisfied', label: 'We have verified if the value proposition satisfies the main core segment/customer needs' },
+        { key: 'factsNotOpinions', label: 'During customer interviews, we asked for facts about their attitudes, behaviors, and real actions they are likely to take rather than their opinions' },
+        { key: 'generalToSpecific', label: 'The questions asked during customer interviews start from general to more specific' },
+        { key: 'askedWhy', label: 'We have asked our customers WHY as many times as we could to get to the root causes of their actions' },
+        { key: 'notLeading', label: 'The questions asked during customer interviews are NOT leading or close-ended' },
+        { key: 'sharedFindings', label: 'The team has prepared a summary of the main findings from the interviews and has been shared with everyone' },
+        { key: 'updatedAddressesFeedback', label: 'The initial value proposition has been updated and addresses interview feedback - it is solving the primary customer needs in a differentiated way' }
+      ];
+
+      const yesCount = Object.values(data.validation).filter(v => v === 'yes').length;
+
+      // Calculate average scores from Round 2
+      const avgClarity = data.round2Interviews.filter(i => i.clarity).reduce((sum, i) => sum + parseInt(i.clarity), 0) / data.round2Interviews.filter(i => i.clarity).length || 0;
+      const avgEnthusiasm = data.round2Interviews.filter(i => i.enthusiasm).reduce((sum, i) => sum + parseInt(i.enthusiasm), 0) / data.round2Interviews.filter(i => i.enthusiasm).length || 0;
+
+      return (
+        <div className="bg-white min-h-screen p-16 pb-32">
+          <div className="max-w-5xl mx-auto">
+            <ProgressIndicator currentStep={5} />
+            <HelpButton onClick={() => setShowHelp(true)} />
+
+            <div className="numbered-section mb-8 animate-in">05. FINAL DECISION</div>
+
+            <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
+              Lock in your value proposition
+            </h3>
+
+            <div className="border-l-4 border-yellow-400 pl-6 mb-12 animate-in" style={{animationDelay: '0.1s'}}>
+              <p className="text-2xl italic">
+                &quot;A great value proposition isn&apos;t debated forever - it&apos;s tested, refined, and executed. This is the final decision meeting. No going back after today.&quot;
+              </p>
+              <p className="text-lg text-gray-600 mt-2">— Final Decision Principle</p>
+            </div>
+
+            {/* Round 2 Score Summary */}
+            {avgClarity > 0 && (
+              <div className="mb-12 bg-gray-100 border-4 border-black p-8 animate-in" style={{animationDelay: '0.15s'}}>
+                <h3 className="riforma-bold text-3xl mb-6">Round 2 Average Scores</h3>
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="text-center">
+                    <div className="text-7xl font-bold mb-2">{avgClarity.toFixed(1)}/5</div>
+                    <p className="text-xl">Clarity</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-7xl font-bold mb-2">{avgEnthusiasm.toFixed(1)}/5</div>
+                    <p className="text-xl">Enthusiasm</p>
+                  </div>
+                </div>
+                {avgClarity >= 4 && avgEnthusiasm >= 4 ? (
+                  <div className="bg-green-100 border-2 border-green-600 p-4 mt-6">
+                    <p className="riforma-bold text-xl">✓ Strong validation! Customers understand and are excited.</p>
+                  </div>
+                ) : (
+                  <div className="bg-red-100 border-2 border-red-600 p-4 mt-6">
+                    <p className="riforma-bold text-xl">⚠️ Scores below 4.0 suggest more refinement needed.</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Final Value Proposition */}
+            <div className="mb-12 animate-in" style={{animationDelay: '0.2s'}}>
+              <label className="monument text-sm block mb-3">FINAL VALUE PROPOSITION <span className="text-red-500">*</span></label>
+              <p className="text-base text-gray-600 mb-3">This is IT. The version you&apos;re locking in for execution.</p>
+              <textarea
+                value={data.finalValueProp}
+                onChange={(e) => updateData('finalValueProp', e.target.value)}
+                placeholder="For fast-growing teams (20-150 employees) drowning in repetitive manual work, we provide zero-code workflow automation that eliminates 80% of busy work in 24 hours with zero IT required, unlike traditional tools that take 6 months to implement and require dedicated technical resources."
+                className="w-full"
+                rows={4}
+              />
+              <div className={`char-counter ${data.finalValueProp.length < 30 ? 'invalid' : ''}`}>
+                {data.finalValueProp.length}/800 (min 30 characters)
+              </div>
+            </div>
+
+            {/* Validation Checklist */}
+            <div className="mb-12 animate-in" style={{animationDelay: '0.25s'}}>
+              <h3 className="riforma-bold text-3xl mb-6">Sprint Validation Checklist</h3>
+              <p className="text-lg mb-6 text-gray-700">
+                You need at least 5 &quot;Yes&quot; answers. Current score: <strong>{yesCount}/7</strong>
+              </p>
+
+              <div className="space-y-4">
+                {validationQuestions.map((q, index) => (
+                  <div key={q.key} className="bg-gray-50 border-2 border-gray-200 p-6">
+                    <p className="text-lg mb-4 font-bold">{index + 1}. {q.label}</p>
+                    <div className="flex gap-4">
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          name={q.key}
+                          value="yes"
+                          checked={data.validation[q.key] === 'yes'}
+                          onChange={(e) => updateValidation(q.key, e.target.value)}
+                          className="mr-2 w-5 h-5"
+                        />
+                        <span className="text-lg">Yes</span>
+                      </label>
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          name={q.key}
+                          value="no"
+                          checked={data.validation[q.key] === 'no'}
+                          onChange={(e) => updateValidation(q.key, e.target.value)}
+                          className="mr-2 w-5 h-5"
+                        />
+                        <span className="text-lg">No</span>
+                      </label>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Analysis */}
+            <div className="mb-12 animate-in" style={{animationDelay: '0.3s'}}>
+              <label className="monument text-sm block mb-3">CONSISTENT REACTIONS?</label>
+              <p className="text-base text-gray-600 mb-3">Did customers react the same way? What patterns emerged?</p>
+              <textarea
+                value={data.consistentReactions}
+                onChange={(e) => updateData('consistentReactions', e.target.value)}
+                placeholder="All 7 Round 2 customers understood message immediately. 6 of 7 rated clarity 4 or 5. 5 of 7 asked for demo within first 5 minutes. Universal positive response to zero-code and 24-hour promise. Reactions highly consistent."
+                className="w-full"
+                rows={4}
+              />
+            </div>
+
+            <div className="mb-12 animate-in" style={{animationDelay: '0.35s'}}>
+              <label className="monument text-sm block mb-3">STRONGEST DIFFERENTIATOR</label>
+              <p className="text-base text-gray-600 mb-3">What makes you stand out most clearly to customers?</p>
+              <textarea
+                value={data.strongestDifferentiator}
+                onChange={(e) => updateData('strongestDifferentiator', e.target.value)}
+                placeholder="24 hours vs 6 months is the killer differentiator. Every customer mentioned it unprompted. Zero IT required also powerful. Combination of speed + simplicity makes us unique."
+                className="w-full"
+                rows={3}
+              />
+            </div>
+
+            <div className="mb-12 animate-in" style={{animationDelay: '0.4s'}}>
+              <label className="monument text-sm block mb-3">REMAINING ADJUSTMENTS (IF ANY)</label>
+              <p className="text-base text-gray-600 mb-3">Any final tweaks before execution? Or are we locked in?</p>
+              <textarea
+                value={data.remainingAdjustments}
+                onChange={(e) => updateData('remainingAdjustments', e.target.value)}
+                placeholder="No changes needed. Message is clear, differentiated, and creates urgency. Ready for rollout."
+                className="w-full"
+                rows={3}
+              />
+            </div>
+
+            <div className="mb-12 animate-in" style={{animationDelay: '0.45s'}}>
+              <label className="monument text-sm block mb-3">ROLLOUT PLAN</label>
+              <p className="text-base text-gray-600 mb-3">How will you implement this across all channels?</p>
+              <textarea
+                value={data.rolloutPlan}
+                onChange={(e) => updateData('rolloutPlan', e.target.value)}
+                placeholder="Week 1: Update website homepage and all landing pages. Week 2: Train sales team on new messaging, update all decks. Week 3: Update email templates, ad copy, social media. Week 4: Internal all-hands to align entire company."
+                className="w-full"
+                rows={4}
+              />
+            </div>
+
+            <div className="flex gap-6">
+              <button onClick={onBack} className="btn-secondary flex-1">
+                ← BACK
+              </button>
+              <button
+                onClick={onNext}
+                disabled={!canProceed}
+                className="btn-primary flex-1"
+              >
+                VIEW COMPLETE SUMMARY →
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Canvas Page Component
+    function CanvasPage({ data, onBack, onExport, onSubmit }) {
+      const yesCount = Object.values(data.validation).filter(v => v === 'yes').length;
+      const avgClarity = data.round2Interviews.filter(i => i.clarity).reduce((sum, i) => sum + parseInt(i.clarity), 0) / data.round2Interviews.filter(i => i.clarity).length || 0;
+      const avgEnthusiasm = data.round2Interviews.filter(i => i.enthusiasm).reduce((sum, i) => sum + parseInt(i.enthusiasm), 0) / data.round2Interviews.filter(i => i.enthusiasm).length || 0;
+
+      return (
+        <div className="bg-white min-h-screen p-16">
+          <div className="max-w-6xl mx-auto">
+            <h1 className="plaak text-6xl mb-12 text-center animate-in">VALUE PROPOSITION TESTING RESULTS</h1>
+
+            <div id="canvas-content" className="border-8 border-black p-12 mb-12">
+              {/* Header */}
+              <div className="text-center mb-12">
+                <img src="FastTrack_F_White.png" alt="Fast Track" className="h-16 mx-auto mb-4 invert" />
+                <h2 className="plaak text-4xl mb-2">VALUE PROPOSITION TESTING</h2>
+                <p className="text-xl text-gray-600">Sprint 16: Customer Validation</p>
+                <p className="text-lg text-gray-600 mt-2">{data.name} • {data.company}</p>
+              </div>
+
+              {/* Final Value Proposition */}
+              <div className="mb-10 bg-yellow-100 border-4 border-black p-8">
+                <h3 className="riforma-bold text-2xl mb-4 text-center">FINAL VALUE PROPOSITION</h3>
+                <p className="text-3xl leading-relaxed font-bold text-center">
+                  {data.finalValueProp}
+                </p>
+              </div>
+
+              {/* Testing Summary */}
+              <div className="mb-10">
+                <h3 className="riforma-bold text-3xl mb-4 border-b-2 border-black pb-2">Testing Summary</h3>
+                <div className="grid grid-cols-3 gap-6">
+                  <div className="text-center bg-gray-100 p-6">
+                    <div className="text-5xl font-bold mb-2">{data.round1Interviews.length}</div>
+                    <p className="text-lg">Round 1 Interviews</p>
+                  </div>
+                  <div className="text-center bg-gray-100 p-6">
+                    <div className="text-5xl font-bold mb-2">{data.round2Interviews.length}</div>
+                    <p className="text-lg">Round 2 Interviews</p>
+                  </div>
+                  <div className="text-center bg-gray-100 p-6">
+                    <div className="text-5xl font-bold mb-2">{yesCount}/7</div>
+                    <p className="text-lg">Validation Score</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Round 2 Performance */}
+              {avgClarity > 0 && (
+                <div className="mb-10">
+                  <h3 className="riforma-bold text-3xl mb-4 border-b-2 border-black pb-2">Round 2 Performance</h3>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="bg-blue-50 p-6 text-center">
+                      <div className="text-6xl font-bold mb-2">{avgClarity.toFixed(1)}/5</div>
+                      <p className="text-xl">Average Clarity</p>
+                    </div>
+                    <div className="bg-green-50 p-6 text-center">
+                      <div className="text-6xl font-bold mb-2">{avgEnthusiasm.toFixed(1)}/5</div>
+                      <p className="text-xl">Average Enthusiasm</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Key Insights */}
+              <div className="mb-10">
+                <h3 className="riforma-bold text-3xl mb-4 border-b-2 border-black pb-2">Key Insights</h3>
+
+                {data.positivePatterns && (
+                  <div className="mb-4">
+                    <p className="monument text-xs mb-2 text-green-600">WHAT WORKED</p>
+                    <p className="text-lg leading-relaxed">{data.positivePatterns}</p>
+                  </div>
+                )}
+
+                {data.confusionPoints && (
+                  <div className="mb-4">
+                    <p className="monument text-xs mb-2 text-orange-600">WHAT WAS FIXED</p>
+                    <p className="text-lg leading-relaxed">{data.confusionPoints}</p>
+                  </div>
+                )}
+
+                {data.strongestDifferentiator && (
+                  <div className="mb-4">
+                    <p className="monument text-xs mb-2 text-blue-600">STRONGEST DIFFERENTIATOR</p>
+                    <p className="text-lg leading-relaxed">{data.strongestDifferentiator}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Evolution */}
+              <div className="mb-10">
+                <h3 className="riforma-bold text-3xl mb-4 border-b-2 border-black pb-2">Value Proposition Evolution</h3>
+
+                <div className="mb-4 bg-gray-100 p-4">
+                  <p className="monument text-xs mb-2">ORIGINAL (PRE-TESTING)</p>
+                  <p className="text-lg">{data.valuePropBeingTested}</p>
+                </div>
+
+                {data.refinedValueProp && data.refinedValueProp !== data.finalValueProp && (
+                  <div className="mb-4 bg-gray-100 p-4">
+                    <p className="monument text-xs mb-2">REFINED (AFTER ROUND 1)</p>
+                    <p className="text-lg">{data.refinedValueProp}</p>
+                  </div>
+                )}
+
+                <div className="bg-yellow-100 border-2 border-black p-4">
+                  <p className="monument text-xs mb-2">FINAL (LOCKED IN)</p>
+                  <p className="text-lg font-bold">{data.finalValueProp}</p>
+                </div>
+              </div>
+
+              {/* Rollout Plan */}
+              {data.rolloutPlan && (
+                <div className="mb-10">
+                  <h3 className="riforma-bold text-3xl mb-4 border-b-2 border-black pb-2">Rollout Plan</h3>
+                  <p className="text-lg leading-relaxed whitespace-pre-line">{data.rolloutPlan}</p>
+                </div>
+              )}
+
+              <div className="text-center text-sm text-gray-500 mt-12 pt-6 border-t border-gray-300">
+                Generated on {new Date().toLocaleDateString()} • Fast Track Program Sprint 16
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="grid grid-cols-3 gap-6 mb-8 no-print">
+              <button onClick={onBack} className="btn-secondary text-xl py-6">
+                ← EDIT
+              </button>
+              <button onClick={onExport} className="btn-primary text-xl py-6">
+                EXPORT PDF
+              </button>
+              <button onClick={onSubmit} className="btn-primary text-xl py-6">
+                SUBMIT
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Help Modal Component
+    function HelpModal({ onClose, stepNumber }) {
+      const helpContent = {
+        1: {
+          title: "TEST SETUP",
+          why: "Without a clear testing plan, you&apos;ll waste time on unfocused interviews that don&apos;t yield actionable insights. Setting up properly ensures you know exactly what you&apos;re testing and what success looks like.",
+          what: "Define the exact value proposition you&apos;re testing, your objectives, target customer profile, and interview plan. This creates structure and focus for all testing activities.",
+          how: [
+            "Write out the exact value proposition word-for-word that you&apos;ll present",
+            "Be specific about what you want to learn - clarity, urgency, differentiation",
+            "Identify exact target customers to interview - not just anyone",
+            "Plan two rounds: Round 1 finds issues, Round 2 validates fixes",
+            "Schedule 3-5 interviews per round with real target customers",
+            "Budget 30-40 minutes per interview - enough time to dig deep"
+          ]
+        },
+        2: {
+          title: "ROUND 1 INTERVIEWS",
+          why: "This is your discovery round. The goal is to find what works, what&apos;s confusing, and what concerns arise. If you skip this round or don&apos;t listen carefully, you&apos;ll launch with a weak message.",
+          what: "Present your value proposition to 3-5 target customers and document their immediate reactions, what worked well, what was unclear, concerns raised, and how they described it in their own words.",
+          how: [
+            "Reconfirm the problem - is it still their biggest challenge?",
+            "Present the value prop and pause - watch their reaction",
+            "Don&apos;t over-explain - if they don&apos;t get it immediately, that&apos;s feedback",
+            "Ask: What&apos;s the first thing that comes to mind?",
+            "Push for specifics - never accept vague or polite feedback",
+            "Note exact words they use - customers&apos; language is gold",
+            "Test call to action - would they actually act on this?"
+          ]
+        },
+        3: {
+          title: "ANALYZE & REFINE",
+          why: "One person&apos;s opinion is just noise. Patterns across 3+ customers are real insights. This step turns feedback into a better value proposition by identifying what to keep, fix, or remove.",
+          what: "Look for consistent patterns in what worked, what confused customers, and what concerns arose. Use evidence-based insights to refine your value proposition for Round 2.",
+          how: [
+            "Stick to patterns - if 3+ customers said it, it&apos;s real",
+            "List what worked well across all interviews",
+            "Identify confusion points that multiple customers had",
+            "Document objections that came up repeatedly",
+            "Refine the value prop based on evidence, not opinions",
+            "Justify every change with customer feedback",
+            "Keep what works, fix what&apos;s unclear, address concerns"
+          ]
+        },
+        4: {
+          title: "ROUND 2 VALIDATION",
+          why: "This round confirms your refinements worked. You&apos;re looking for consistency - if all customers react similarly and positively, you have a validated message. If reactions still vary widely, more work is needed.",
+          what: "Test the refined value proposition with customers (ideally some from Round 1 plus new ones). Focus on consistency of reactions and measure clarity, enthusiasm, differentiation, and actionability.",
+          how: [
+            "Present refined version - what&apos;s their immediate reaction?",
+            "Rate on specific dimensions: clarity, enthusiasm, differentiation",
+            "Look for consistency - do they all react the same way?",
+            "We want either strong positive reactions or clear concerns - not neutral",
+            "Ask: Would you recommend this? To who?",
+            "If scores are below 4/5, you may need more refinement",
+            "Strong validation = consistent high scores across all interviews"
+          ]
+        },
+        5: {
+          title: "FINAL DECISION",
+          why: "A great value proposition isn&apos;t debated forever. After two rounds of testing, it&apos;s time to lock it in and execute. This step ensures team alignment and creates the rollout plan.",
+          what: "Complete the sprint validation checklist, document final value proposition, analyze if reactions were consistent, identify strongest differentiator, and create rollout plan.",
+          how: [
+            "Review Round 2 scores - were clarity and enthusiasm 4+?",
+            "Complete all 7 validation questions - need 5+ yes answers",
+            "Lock in final value proposition - this is the version you&apos;ll use",
+            "Document consistent reactions across customers",
+            "Identify single strongest differentiator customers mentioned",
+            "Create rollout plan - how will you implement across all channels?",
+            "After this step, NO MORE TWEAKING - execute with conviction"
+          ]
+        }
+      };
+
+      const content = helpContent[stepNumber];
+
+      return (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-8 fade-in"
+          onClick={onClose}
+        >
+          <div
+            className="bg-white max-w-4xl max-h-[90vh] overflow-y-auto p-12 border-8 border-black"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="plaak text-5xl mb-8">{content.title}</h2>
+
+            <div className="mb-8">
+              <h3 className="riforma-bold text-2xl mb-3">WHY THIS MATTERS</h3>
+              <p className="text-xl leading-relaxed">{content.why}</p>
+            </div>
+
+            <div className="mb-8">
+              <h3 className="riforma-bold text-2xl mb-3">WHAT TO DO</h3>
+              <p className="text-xl leading-relaxed">{content.what}</p>
+            </div>
+
+            <div className="mb-12">
+              <h3 className="riforma-bold text-2xl mb-3">HOW TO DO IT</h3>
+              <ul className="space-y-3">
+                {content.how.map((item, index) => (
+                  <li key={index} className="flex items-start text-lg">
+                    <span className="text-2xl mr-3">•</span>
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <button onClick={onClose} className="btn-primary w-full text-2xl py-4">
+              GOT IT
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // Progress Indicator Component
+    function ProgressIndicator({ currentStep }) {
+      const steps = [
+        { number: 1, label: 'Setup' },
+        { number: 2, label: 'Round 1' },
+        { number: 3, label: 'Refine' },
+        { number: 4, label: 'Round 2' },
+        { number: 5, label: 'Decide' }
+      ];
+
+      return (
+        <div className="flex items-center justify-center mb-12 animate-in">
+          {steps.map((step, index) => (
+            <Fragment key={step.number}>
+              <div className="flex flex-col items-center">
+                <div
+                  className={`progress-dot mb-2 ${
+                    step.number === currentStep
+                      ? 'active'
+                      : step.number < currentStep
+                      ? 'completed'
+                      : ''
+                  }`}
+                ></div>
+                <span
+                  className={`monument text-xs ${
+                    step.number <= currentStep ? 'text-black' : 'text-gray-400'
+                  }`}
+                >
+                  {step.label}
+                </span>
+              </div>
+              {index < steps.length - 1 && (
+                <div className="progress-line mx-4" style={{ width: '60px' }}></div>
+              )}
+            </Fragment>
+          ))}
+        </div>
+      );
+    }
+
+    // Help Button Component
+    function HelpButton({ onClick }) {
+      return (
+        <button
+          onClick={onClick}
+          className="help-button no-print"
+          aria-label="Help"
+        >
+          ?
+        </button>
+      );
+    }
+
+    // Render App
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<TestingApp />);
+  </script>
+</body>
+</html>
+  </script>
+</body>
+</html>

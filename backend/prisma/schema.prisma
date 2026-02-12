@@ -1,0 +1,62 @@
+// Prisma Schema for Fast Track Tools Backend
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["shared"]
+}
+
+// Shared Schema Models
+model users {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  lms_user_id     String   @unique @db.VarChar(255)
+  email           String   @unique @db.VarChar(255)
+  full_name       String   @db.VarChar(255)
+  organization_id String?  @db.Uuid
+  role            String   @default("user") @db.VarChar(50)
+  created_at      DateTime @default(now()) @db.Timestamptz()
+  updated_at      DateTime @default(now()) @db.Timestamptz()
+  last_login      DateTime? @db.Timestamptz()
+
+  @@index([email])
+  @@index([lms_user_id])
+  @@index([organization_id])
+  @@index([role])
+  @@schema("shared")
+}
+
+model organizations {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String   @db.VarChar(255)
+  slug       String   @unique @db.VarChar(255)
+  settings   Json     @default("{}")
+  created_at DateTime @default(now()) @db.Timestamptz()
+  updated_at DateTime @default(now()) @db.Timestamptz()
+
+  @@index([slug])
+  @@schema("shared")
+}
+
+model user_progress {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id              String    @db.Uuid
+  tool_slug            String    @db.VarChar(100)
+  status               String    @default("locked") @db.VarChar(50)
+  progress_percentage  Int?      @default(0) @db.Integer
+  unlocked_at          DateTime? @db.Timestamptz()
+  started_at           DateTime? @db.Timestamptz()
+  completed_at         DateTime? @db.Timestamptz()
+  created_at           DateTime  @default(now()) @db.Timestamptz()
+  updated_at           DateTime  @default(now()) @db.Timestamptz()
+
+  @@unique([user_id, tool_slug], name: "user_id_tool_slug")
+  @@index([user_id])
+  @@index([tool_slug])
+  @@index([status])
+  @@index([user_id, tool_slug])
+  @@schema("shared")
+}

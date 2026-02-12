@@ -1,0 +1,474 @@
+openapi: 3.0.3
+info:
+  title: Fast Track Backend API
+  description: Backend orchestrator for 30 interconnected business transformation tools
+  version: 1.0.0
+  contact:
+    email: dev@fasttrack.com
+
+servers:
+  - url: http://localhost:3000/api
+    description: Development server
+  - url: https://api.fasttrack.com/api
+    description: Production server
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        full_name:
+          type: string
+        role:
+          type: string
+          enum: [user, admin, guru]
+        organization_id:
+          type: string
+          format: uuid
+          nullable: true
+
+    Tool:
+      type: object
+      properties:
+        slug:
+          type: string
+        name:
+          type: string
+        sprint_number:
+          type: integer
+        description:
+          type: string
+        user_status:
+          type: string
+          enum: [locked, unlocked, in_progress, completed]
+        user_progress:
+          type: number
+          minimum: 0
+          maximum: 100
+
+    Submission:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        data:
+          type: object
+        status:
+          type: string
+          enum: [draft, in_progress, submitted, completed]
+        version:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+
+security:
+  - BearerAuth: []
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      tags: [System]
+      security: []
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  timestamp:
+                    type: string
+                  uptime:
+                    type: number
+
+  /auth/sso:
+    post:
+      summary: LearnWorlds SSO authentication
+      tags: [Authentication]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id, email, name, timestamp, signature]
+              properties:
+                user_id:
+                  type: string
+                email:
+                  type: string
+                name:
+                  type: string
+                timestamp:
+                  type: string
+                signature:
+                  type: string
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/me:
+    get:
+      summary: Get current user
+      tags: [Authentication]
+      responses:
+        '200':
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /auth/refresh:
+    post:
+      summary: Refresh access token
+      tags: [Authentication]
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+
+  /auth/logout:
+    post:
+      summary: Logout user
+      tags: [Authentication]
+      responses:
+        '200':
+          description: Logout successful
+
+  /tools:
+    get:
+      summary: List all tools
+      tags: [Tools]
+      responses:
+        '200':
+          description: List of tools with user progress
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tool'
+
+  /tools/{slug}:
+    get:
+      summary: Get tool metadata
+      tags: [Tools]
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Tool metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tool'
+        '404':
+          description: Tool not found
+
+  /tools/{slug}/data:
+    get:
+      summary: Get user's submission
+      tags: [Tools]
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User submission
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Submission'
+        '404':
+          description: No submission found
+
+    post:
+      summary: Save/update submission
+      tags: [Tools]
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: object
+                status:
+                  type: string
+                  enum: [draft, in_progress, submitted, completed]
+      responses:
+        '200':
+          description: Submission updated
+        '201':
+          description: Submission created
+
+  /tools/{slug}/submit:
+    post:
+      summary: Submit completed tool
+      tags: [Tools]
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: object
+      responses:
+        '200':
+          description: Tool submitted successfully
+
+  /tools/{slug}/dependencies:
+    get:
+      summary: Get dependency data
+      tags: [Tools]
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Dependency data with unlock status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tool_slug:
+                    type: string
+                  unlocked:
+                    type: boolean
+                  missing_dependencies:
+                    type: array
+                    items:
+                      type: string
+                  dependencies:
+                    type: array
+                    items:
+                      type: object
+
+  /tools/{slug}/export:
+    get:
+      summary: Export submission
+      tags: [Tools]
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [json, pdf]
+            default: json
+      responses:
+        '200':
+          description: Export file
+          content:
+            application/json:
+              schema:
+                type: object
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '429':
+          description: Rate limit exceeded
+
+  /user/progress:
+    get:
+      summary: Get overall progress
+      tags: [User]
+      responses:
+        '200':
+          description: Progress summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_tools:
+                    type: integer
+                  completed_tools:
+                    type: integer
+                  in_progress_tools:
+                    type: integer
+                  unlocked_tools:
+                    type: integer
+                  locked_tools:
+                    type: integer
+                  overall_completion_percentage:
+                    type: number
+
+  /user/next-tool:
+    get:
+      summary: Get next available tool
+      tags: [User]
+      responses:
+        '200':
+          description: Next tool suggestion
+
+  /user/stats:
+    get:
+      summary: Get user statistics
+      tags: [User]
+      responses:
+        '200':
+          description: User statistics
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /data/{fieldId}:
+    get:
+      summary: Get specific field value
+      tags: [Data]
+      parameters:
+        - name: fieldId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Field value
+
+  /data/batch:
+    post:
+      summary: Batch get multiple fields
+      tags: [Data]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [field_ids]
+              properties:
+                field_ids:
+                  type: array
+                  items:
+                    type: string
+                  maxItems: 50
+      responses:
+        '200':
+          description: Field values
+
+  /ai/help:
+    post:
+      summary: Get AI assistance
+      tags: [AI]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tool_slug, question]
+              properties:
+                tool_slug:
+                  type: string
+                question:
+                  type: string
+                  maxLength: 2000
+      responses:
+        '200':
+          description: AI response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  question:
+                    type: string
+                  answer:
+                    type: string
+                  timestamp:
+                    type: string
+        '429':
+          description: Rate limit exceeded
+        '503':
+          description: AI service unavailable

@@ -1,0 +1,1498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product Development WTP Testing | Fast Track Program</title>
+
+  <!-- React & ReactDOM from CDN -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+  <!-- Babel Standalone for JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- jsPDF + html2canvas for PDF export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <style>
+    /* Font Face Declarations */
+    @font-face {
+      font-family: 'Plaak';
+      src: url('Plaak3Trial-43-Bold.woff2') format('woff2');
+      font-weight: bold;
+      font-style: normal;
+    }
+
+    @font-face {
+      font-family: 'Riforma';
+      src: url('RiformaLL-Regular.woff2') format('woff2');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    @font-face {
+      font-family: 'Monument';
+      src: url('MonumentGrotesk-Mono.woff2') format('woff2');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    /* Global Styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Riforma', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .plaak {
+      font-family: 'Plaak', sans-serif;
+      text-transform: uppercase;
+      font-weight: bold;
+      letter-spacing: -0.02em;
+    }
+
+    .riforma-bold {
+      font-family: 'Riforma', sans-serif;
+      font-weight: bold;
+    }
+
+    .monument {
+      font-family: 'Monument', monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Animations */
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .animate-in {
+      animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .fade-in {
+      animation: fadeIn 0.4s ease-out;
+    }
+
+    .transition-animate-in {
+      animation: slideIn 0.6s ease-out;
+    }
+
+    /* Button Styles */
+    .btn-primary {
+      background: #000000;
+      color: #FFFFFF;
+      padding: 16px 32px;
+      border: 2px solid #000000;
+      font-size: 18px;
+      font-family: 'Riforma', sans-serif;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: normal;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      transform: scale(1.02);
+    }
+
+    .btn-primary:disabled {
+      background: #E0E0E0;
+      border-color: #E0E0E0;
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #FFFFFF;
+      color: #000000;
+      padding: 12px 24px;
+      border: 2px solid #000000;
+      font-size: 16px;
+      font-family: 'Riforma', sans-serif;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-secondary:hover {
+      background: #F8F8F8;
+    }
+
+    /* Form Styles */
+    input[type="text"],
+    input[type="number"],
+    input[type="email"],
+    textarea,
+    select {
+      border: 1px solid #E0E0E0;
+      padding: 12px 16px;
+      font-size: 18px;
+      font-family: 'Riforma', sans-serif;
+      width: 100%;
+      transition: border-color 0.2s ease;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      outline: none;
+      border-color: #000000;
+    }
+
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    textarea::placeholder {
+      white-space: pre-line;
+    }
+
+    /* Numbered Section Badge */
+    .numbered-section {
+      background: #000000;
+      color: #FFFFFF;
+      padding: 10px 16px;
+      font-family: 'Plaak', sans-serif;
+      font-size: 26px;
+      display: inline-block;
+      text-transform: uppercase;
+      letter-spacing: -0.02em;
+    }
+
+    /* Help Button */
+    .help-button {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: #000000;
+      color: #FFFFFF;
+      font-size: 28px;
+      border: none;
+      cursor: pointer;
+      z-index: 40;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Riforma', sans-serif;
+    }
+
+    .help-button:hover {
+      background: #FFF469;
+      color: #000000;
+      transform: scale(1.1);
+    }
+
+    /* Progress Indicator */
+    .progress-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #E0E0E0;
+      transition: all 0.3s ease;
+    }
+
+    .progress-dot.active {
+      background: #000000;
+      transform: scale(1.3);
+    }
+
+    .progress-dot.completed {
+      background: #000000;
+    }
+
+    .progress-line {
+      height: 2px;
+      background: #E0E0E0;
+      flex: 1;
+    }
+
+    /* Character Counter */
+    .char-counter {
+      font-size: 14px;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    .char-counter.invalid {
+      color: #EF4444;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, Fragment } = React;
+
+    // Configuration
+    const CONFIG = {
+      SUPABASE_URL: 'https://vpfayzzjnegdefjrnyoc.supabase.co',
+      SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZwZmF5enpqbmVnZGVmanJueW9jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMzAwODUsImV4cCI6MjA4NTcwNjA4NX0.7qwzd9kwyRG0Wx9DDSc8F9a1SRD0CoC6CGS-9M1sxIs',
+      TOOL_SLUG: 'product-development',
+      SPRINT_NUMBER: 17,
+      SCHEMA_NAME: 'sprint_17_product_development',
+      AUTOSAVE_DELAY: 2000
+    };
+
+    const { createClient } = supabase;
+    const supabaseClient = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+
+    // Main App Component
+    function WTPApp() {
+      const [step, setStep] = useState(0);
+      const [showHelp, setShowHelp] = useState(false);
+      const [showTransition, setShowTransition] = useState(false);
+      const [transitionMessage, setTransitionMessage] = useState('');
+      const [transitionProgress, setTransitionProgress] = useState(0);
+
+      const [data, setData] = useState({
+        // Step 1: Feature Identification
+        features: [
+          { id: 1, name: '', description: '', currentState: '' }
+        ],
+
+        // Step 2: Interview Setup
+        targetCustomers: '',
+        numberOfInterviews: '',
+        interviewFormat: '',
+        keyQuestions: '',
+
+        // Step 3: WTP Testing Results
+        wtpResults: [],
+
+        // Step 4: Product Portfolio
+        storytellers: [{ id: 1, product: '', reason: '', targetPercentage: '' }],
+        topLineContributors: [{ id: 1, product: '', features: '', pricingStrategy: '' }],
+        profitContributors: [{ id: 1, product: '', uniqueFeatures: '', marginTarget: '' }],
+
+        // Step 5: Implementation Plan
+        quickWins: '',
+        resourceAllocation: '',
+        timeline: '',
+        successMetrics: ''
+      });
+
+      // Load from localStorage
+      useEffect(() => {
+        const saved = localStorage.getItem('wtp-tool-data');
+        if (saved) {
+          try {
+            const savedData = JSON.parse(saved);
+            setData(savedData);
+          } catch (e) {
+            console.error('Error loading saved data:', e);
+          }
+        }
+      }, []);
+
+      // Auto-save every 2 seconds
+      useEffect(() => {
+        const interval = setInterval(() => {
+          localStorage.setItem('wtp-tool-data', JSON.stringify(data));
+        }, 2000);
+        return () => clearInterval(interval);
+      }, [data]);
+
+      // Initialize WTP results when features change
+      useEffect(() => {
+        if (data.features.length > 0 && data.wtpResults.length === 0) {
+          const results = data.features.map(f => ({
+            featureId: f.id,
+            featureName: f.name,
+            customerValue: '',
+            willingnessToPay: '',
+            competitiveAdvantage: '',
+            priorityScore: ''
+          }));
+          updateData('wtpResults', results);
+        }
+      }, [data.features]);
+
+      const updateData = (field, value) => {
+        setData({ ...data, [field]: value });
+      };
+
+      const addFeature = () => {
+        const newFeature = { id: Date.now(), name: '', description: '', currentState: '' };
+        updateData('features', [...data.features, newFeature]);
+      };
+
+      const removeFeature = (id) => {
+        updateData('features', data.features.filter(f => f.id !== id));
+      };
+
+      const updateFeature = (id, field, value) => {
+        const updated = data.features.map(f => f.id === id ? { ...f, [field]: value } : f);
+        updateData('features', updated);
+      };
+
+      const addPortfolioItem = (category) => {
+        const newItem = { id: Date.now(), product: '', reason: '', targetPercentage: '' };
+        updateData(category, [...data[category], newItem]);
+      };
+
+      const removePortfolioItem = (category, id) => {
+        updateData(category, data[category].filter(item => item.id !== id));
+      };
+
+      const updatePortfolioItem = (category, id, field, value) => {
+        const updated = data[category].map(item => item.id === id ? { ...item, [field]: value } : item);
+        updateData(category, updated);
+      };
+
+      const updateWTPResult = (featureId, field, value) => {
+        const updated = data.wtpResults.map(r => r.featureId === featureId ? { ...r, [field]: value } : r);
+        updateData('wtpResults', updated);
+      };
+
+      const goNext = () => {
+        if (step === 0.5) {
+          setStep(1);
+        } else if (step >= 1 && step < 5) {
+          const messages = ['20% COMPLETE', '40% COMPLETE', '60% COMPLETE', '80% COMPLETE', '100% COMPLETE'];
+          const progressValues = [20, 40, 60, 80, 100];
+
+          setTransitionMessage(messages[step - 1]);
+          setTransitionProgress(progressValues[step - 1]);
+          setShowTransition(true);
+
+          setTimeout(() => {
+            setShowTransition(false);
+            setStep(step + 1);
+          }, 2000);
+        } else if (step === 5) {
+          setStep(6);
+        } else if (step === 0) {
+          setStep(0.5);
+        }
+      };
+
+      const goBack = () => {
+        if (step === 6) {
+          setStep(5);
+        } else if (step > 1) {
+          setStep(step - 1);
+        } else if (step === 1) {
+          setStep(0.5);
+        }
+      };
+
+      // Validation functions
+      const isStep1Valid = () => {
+        return data.features.length >= 3 &&
+               data.features.every(f => f.name.length >= 3 && f.description.length >= 20);
+      };
+
+      const isStep2Valid = () => {
+        return data.targetCustomers.length >= 30 &&
+               data.numberOfInterviews.length >= 1 &&
+               data.interviewFormat.length >= 10 &&
+               data.keyQuestions.length >= 50;
+      };
+
+      const isStep3Valid = () => {
+        return data.wtpResults.length > 0 &&
+               data.wtpResults.every(r =>
+                 r.customerValue.length >= 20 &&
+                 r.willingnessToPay.length >= 5 &&
+                 r.priorityScore.length >= 1
+               );
+      };
+
+      const isStep4Valid = () => {
+        return data.storytellers.some(s => s.product.length >= 3) &&
+               data.topLineContributors.some(t => t.product.length >= 3) &&
+               data.profitContributors.some(p => p.product.length >= 3);
+      };
+
+      const isStep5Valid = () => {
+        return data.quickWins.length >= 30 &&
+               data.resourceAllocation.length >= 30 &&
+               data.timeline.length >= 20 &&
+               data.successMetrics.length >= 30;
+      };
+
+      const exportPDF = async () => {
+        try {
+          const canvas = document.getElementById('canvas-content');
+          if (!canvas) {
+            alert('Canvas not found');
+            return;
+          }
+
+          // Hide images to avoid CORS
+          const images = canvas.querySelectorAll('img');
+          const imageStates = [];
+          images.forEach(img => {
+            imageStates.push({ img, display: img.style.display });
+            img.style.display = 'none';
+          });
+
+          const canvasImage = await html2canvas(canvas, {
+            scale: 2,
+            logging: false,
+            backgroundColor: '#ffffff'
+          });
+
+          // Restore images
+          imageStates.forEach(({ img, display }) => {
+            img.style.display = display;
+          });
+
+          const imgWidth = 190;
+          const imgHeight = (canvasImage.height * imgWidth) / canvasImage.width;
+
+          const { jsPDF } = window.jspdf;
+          const pdf = new jsPDF('p', 'mm', 'a4');
+          const imgData = canvasImage.toDataURL('image/png');
+
+          pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+          pdf.save('product-development-wtp-testing.pdf');
+        } catch (error) {
+          console.error('PDF export error:', error);
+          alert('Failed to export PDF: ' + error.message);
+        }
+      };
+
+      const handleSubmit = async () => {
+        try {
+          const userId = localStorage.getItem('ft_user_id');
+          if (!userId) {
+            alert('User not authenticated. Please return to the dashboard.');
+            return;
+          }
+
+          // Submit using RPC function (handles schema-specific tables)
+          const { data: result, error: submitError } = await supabaseClient
+            .rpc('submit_tool_data', {
+              p_schema_name: CONFIG.SCHEMA_NAME,
+              p_user_id: userId,
+              p_data: data,
+              p_tool_slug: CONFIG.TOOL_SLUG
+            });
+
+          if (submitError) throw submitError;
+
+          if (!result || !result.success) {
+            throw new Error(result?.message || 'Submission failed');
+          }
+
+          console.log('Submission ID:', result.submission_id);
+          localStorage.setItem('lastSubmissionId', result.submission_id);
+          alert('Product Development WTP Testing submitted successfully!');
+        } catch (error) {
+          console.error('Submit error:', error);
+          alert('Submission failed: ' + error.message);
+        }
+      };
+
+      // Render different pages based on step
+      if (showTransition) {
+        return <TransitionScreen message={transitionMessage} progress={transitionProgress} />;
+      }
+
+      if (step === 0) {
+        return <CoverPage onStart={goNext} />;
+      }
+
+      if (step === 0.5) {
+        return <IntroPage onNext={goNext} />;
+      }
+
+      if (step === 1) {
+        return (
+          <Step1Page
+            data={data}
+            updateFeature={updateFeature}
+            addFeature={addFeature}
+            removeFeature={removeFeature}
+            onNext={goNext}
+            onBack={goBack}
+            canProceed={isStep1Valid()}
+            setShowHelp={setShowHelp}
+          />
+        );
+      }
+
+      if (step === 2) {
+        return (
+          <Step2Page
+            data={data}
+            updateData={updateData}
+            onNext={goNext}
+            onBack={goBack}
+            canProceed={isStep2Valid()}
+            setShowHelp={setShowHelp}
+          />
+        );
+      }
+
+      if (step === 3) {
+        return (
+          <Step3Page
+            data={data}
+            updateWTPResult={updateWTPResult}
+            onNext={goNext}
+            onBack={goBack}
+            canProceed={isStep3Valid()}
+            setShowHelp={setShowHelp}
+          />
+        );
+      }
+
+      if (step === 4) {
+        return (
+          <Step4Page
+            data={data}
+            updatePortfolioItem={updatePortfolioItem}
+            addPortfolioItem={addPortfolioItem}
+            removePortfolioItem={removePortfolioItem}
+            onNext={goNext}
+            onBack={goBack}
+            canProceed={isStep4Valid()}
+            setShowHelp={setShowHelp}
+          />
+        );
+      }
+
+      if (step === 5) {
+        return (
+          <Step5Page
+            data={data}
+            updateData={updateData}
+            onNext={goNext}
+            onBack={goBack}
+            canProceed={isStep5Valid()}
+            setShowHelp={setShowHelp}
+          />
+        );
+      }
+
+      if (step === 6) {
+        return (
+          <CanvasPage
+            data={data}
+            onExport={exportPDF}
+            onSubmit={handleSubmit}
+          />
+        );
+      }
+
+      return null;
+    }
+
+    // Cover Page Component
+    function CoverPage({ onStart }) {
+      return (
+        <div className="relative min-h-screen flex items-center justify-center bg-black">
+          <div
+            className="absolute inset-0 w-full h-full"
+            style={{
+              backgroundImage: 'url("https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1920&q=80")',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center'
+            }}
+          ></div>
+          <div className="absolute inset-0" style={{background: 'linear-gradient(to bottom, rgba(0,0,0,0.6), rgba(0,0,0,0.85))'}}></div>
+
+          <div className="relative z-10 text-center text-white px-8 max-w-5xl mx-auto">
+            <h1 className="plaak animate-in" style={{fontSize: '100px', lineHeight: '1', marginBottom: '32px'}}>
+              PRODUCT DEVELOPMENT
+            </h1>
+            <h2 className="plaak animate-in" style={{fontSize: '80px', lineHeight: '1', marginBottom: '32px', color: '#FFF469', animationDelay: '0.1s'}}>
+              WTP TESTING
+            </h2>
+            <p className="text-4xl mb-12 animate-in" style={{animationDelay: '0.2s'}}>
+              Discover what features customers value and will pay for
+            </p>
+            <button
+              onClick={onStart}
+              className="bg-white text-black plaak px-16 py-6 border-4 border-white hover:bg-black hover:text-white transition-all text-3xl animate-in"
+              style={{animationDelay: '0.4s'}}
+            >
+              START
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // Intro Page Component
+    function IntroPage({ onNext }) {
+      return (
+        <div className="bg-black text-white min-h-screen p-16">
+          <div className="max-w-5xl mx-auto">
+            <h1 className="plaak mb-16 animate-in" style={{fontSize: '100px'}}>
+              BEFORE WE START
+            </h1>
+
+            {/* Sprint Info */}
+            <div className="mb-12 animate-in" style={{animationDelay: '0.05s'}}>
+              <h2 className="plaak text-6xl mb-6" style={{color: '#FFF469'}}>SPRINT INFO</h2>
+              <div className="bg-white text-black p-8">
+                <p className="text-2xl font-bold mb-4">Sprint 17: Product Development - WTP Testing</p>
+                <p className="text-xl leading-relaxed mb-4">
+                  70% of new products fail because they don&apos;t align with actual customer needs and willingness to pay. This sprint helps you test what features customers value BEFORE you build.
+                </p>
+                <div className="border-l-4 border-black pl-4 italic text-lg">
+                  &quot;Products are made in the factory, but brands are created in the mind.&quot; — Walter Landor
+                </div>
+              </div>
+            </div>
+
+            {/* Purpose */}
+            <div className="mb-12 animate-in" style={{animationDelay: '0.1s'}}>
+              <h2 className="plaak text-6xl mb-6">PURPOSE</h2>
+
+              <div className="border-l-4 border-white pl-6 mb-6">
+                <p className="text-3xl italic mb-2">&quot;A strategic product portfolio has storytellers for differentiation, top line contributors for volume, and profit contributors for margin.&quot;</p>
+                <p className="text-xl text-gray-400">— GARDENER&apos;S STRATEGY METAPHOR</p>
+              </div>
+
+              <p className="text-3xl leading-relaxed mb-4">
+                Most companies build products based on internal ideas, then wonder why customers don&apos;t buy. This tool helps you understand customer willingness to pay and design a strategic product portfolio.
+              </p>
+            </div>
+
+            {/* Mistakes to Avoid */}
+            <div className="mb-12 animate-in" style={{animationDelay: '0.2s'}}>
+              <h2 className="plaak text-6xl mb-6" style={{color: '#FFF469'}}>MISTAKES TO AVOID</h2>
+
+              <div className="bg-white text-black p-6 mb-6 border-4 border-yellow-400">
+                <p className="riforma-bold text-2xl mb-4">COMMON PRODUCT DEVELOPMENT FAILURES:</p>
+                <ul className="text-xl space-y-3">
+                  <li className="flex items-start">
+                    <span className="text-3xl mr-3">1.</span>
+                    <span><strong>Developing products from internal ideas only:</strong> Not testing customer demand before building leads to wasted resources</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-3xl mr-3">2.</span>
+                    <span><strong>Deciding price after product development:</strong> You should determine willingness to pay FIRST, then build</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-3xl mr-3">3.</span>
+                    <span><strong>Not testing market fit before full launch:</strong> 70% of products fail due to misalignment with customer needs</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-3xl mr-3">4.</span>
+                    <span><strong>Being slow to kill underperforming products:</strong> Drains resources from winners and confuses your market position</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-3xl mr-3">5.</span>
+                    <span><strong>Sending conflicting messages:</strong> Portfolio should tell a coherent strategy story to customers</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            {/* The Journey */}
+            <div className="mb-16 animate-in" style={{animationDelay: '0.3s'}}>
+              <h2 className="plaak text-6xl mb-8">THE JOURNEY</h2>
+              <div className="grid grid-cols-5 gap-4 text-center">
+                <div className="border-2 border-white p-6">
+                  <div className="text-8xl plaak mb-4">01</div>
+                  <p className="text-xl font-bold mb-2">FEATURES</p>
+                  <p className="text-base text-gray-400">Identify 10-15 features</p>
+                </div>
+                <div className="border-2 border-white p-6">
+                  <div className="text-8xl plaak mb-4">02</div>
+                  <p className="text-xl font-bold mb-2">INTERVIEWS</p>
+                  <p className="text-base text-gray-400">Setup customer interviews</p>
+                </div>
+                <div className="border-2 border-white p-6">
+                  <div className="text-8xl plaak mb-4">03</div>
+                  <p className="text-xl font-bold mb-2">WTP RESULTS</p>
+                  <p className="text-base text-gray-400">Document customer value</p>
+                </div>
+                <div className="border-2 border-white p-6">
+                  <div className="text-8xl plaak mb-4">04</div>
+                  <p className="text-xl font-bold mb-2">PORTFOLIO</p>
+                  <p className="text-base text-gray-400">Design strategic mix</p>
+                </div>
+                <div className="border-2 border-white p-6">
+                  <div className="text-8xl plaak mb-4">05</div>
+                  <p className="text-xl font-bold mb-2">IMPLEMENT</p>
+                  <p className="text-base text-gray-400">Action plan</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Next Button */}
+            <button
+              onClick={onNext}
+              className="btn-primary w-full text-3xl py-8 plaak"
+            >
+              LET&apos;S START →
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // Transition Screen Component
+    function TransitionScreen({ message, progress }) {
+      return (
+        <div className="fixed inset-0 bg-black text-white flex items-center justify-center z-50 fade-in">
+          <div className="text-center px-8">
+            <h1 className="plaak transition-animate-in" style={{fontSize: '120px', marginBottom: '32px'}}>
+              SECTION COMPLETE
+            </h1>
+
+            <div className="max-w-2xl mx-auto mb-8 transition-animate-in" style={{animationDelay: '0.2s'}}>
+              <div className="h-2 bg-gray-800 mb-4">
+                <div
+                  className="h-full bg-white transition-all duration-1000"
+                  style={{width: `${progress}%`}}
+                ></div>
+              </div>
+              <p className="monument text-xl tracking-wider">{message}</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Step 1: Feature Identification
+    function Step1Page({ data, updateFeature, addFeature, removeFeature, onNext, onBack, canProceed, setShowHelp }) {
+      return (
+        <div className="bg-white min-h-screen p-16 pb-32">
+          <div className="max-w-5xl mx-auto">
+            <ProgressIndicator currentStep={1} />
+            <HelpButton onClick={() => setShowHelp(true)} />
+
+            <div className="numbered-section mb-8 animate-in">01. FEATURE IDENTIFICATION</div>
+
+            <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
+              List 10-15 features or products to test with customers
+            </h3>
+
+            <div className="border-l-4 border-yellow-400 pl-6 mb-12 animate-in" style={{animationDelay: '0.1s'}}>
+              <p className="text-2xl italic">
+                &quot;Products are made in the factory, but brands are created in the mind. Start with what customers value, not what your factory can make.&quot;
+              </p>
+              <p className="text-lg text-gray-600 mt-2">— Walter Landor</p>
+            </div>
+
+            <p className="text-xl mb-8 text-gray-700">
+              Identify features that could differentiate your offering. Focus on what customers might value and pay for, not just what&apos;s technically possible.
+            </p>
+
+            {/* Features List */}
+            <div className="mb-12">
+              {data.features.map((feature, index) => (
+                <div key={feature.id} className="bg-gray-50 border-2 border-gray-200 p-6 mb-6 animate-in" style={{animationDelay: `${0.15 + index * 0.05}s`}}>
+                  <div className="flex justify-between items-start mb-4">
+                    <h4 className="riforma-bold text-2xl">Feature {index + 1}</h4>
+                    {data.features.length > 1 && (
+                      <button
+                        onClick={() => removeFeature(feature.id)}
+                        className="text-red-600 hover:text-red-800 text-sm"
+                      >
+                        REMOVE
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="monument text-sm block mb-2">FEATURE NAME <span className="text-red-500">*</span></label>
+                      <input
+                        type="text"
+                        value={feature.name}
+                        onChange={(e) => updateFeature(feature.id, 'name', e.target.value)}
+                        placeholder="Real-time inventory synchronization"
+                        className="w-full"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="monument text-sm block mb-2">DESCRIPTION & VALUE <span className="text-red-500">*</span></label>
+                      <p className="text-sm text-gray-600 mb-2">What does this feature do? What customer pain does it solve?</p>
+                      <textarea
+                        value={feature.description}
+                        onChange={(e) => updateFeature(feature.id, 'description', e.target.value)}
+                        placeholder="Automatically syncs inventory across 3 warehouses and 2 retail locations. Reduces stockouts by showing real-time availability to sales team. Currently customers wait 24-48 hours for inventory confirmation, losing deals."
+                        rows={4}
+                        className="w-full"
+                      />
+                      <div className={`char-counter ${feature.description.length < 20 ? 'invalid' : ''}`}>
+                        {feature.description.length}/500 (min 20 characters)
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="monument text-sm block mb-2">CURRENT STATE</label>
+                      <input
+                        type="text"
+                        value={feature.currentState}
+                        onChange={(e) => updateFeature(feature.id, 'currentState', e.target.value)}
+                        placeholder="Manual inventory checks, 24-hour lag, 15% stockout rate"
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              <button
+                onClick={addFeature}
+                className="btn-secondary"
+              >
+                + ADD ANOTHER FEATURE
+              </button>
+            </div>
+
+            {/* Navigation */}
+            <div className="flex gap-6">
+              <button onClick={onBack} className="btn-secondary flex-1">
+                ← BACK
+              </button>
+              <button
+                onClick={onNext}
+                disabled={!canProceed}
+                className="btn-primary flex-1"
+              >
+                NEXT: INTERVIEW SETUP →
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Step 2: Interview Setup
+    function Step2Page({ data, updateData, onNext, onBack, canProceed, setShowHelp }) {
+      return (
+        <div className="bg-white min-h-screen p-16 pb-32">
+          <div className="max-w-5xl mx-auto">
+            <ProgressIndicator currentStep={2} />
+            <HelpButton onClick={() => setShowHelp(true)} />
+
+            <div className="numbered-section mb-8 animate-in">02. CUSTOMER INTERVIEW SETUP</div>
+
+            <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
+              Plan structured interviews to understand customer value
+            </h3>
+
+            <div className="border-l-4 border-yellow-400 pl-6 mb-12 animate-in" style={{animationDelay: '0.1s'}}>
+              <p className="text-2xl italic">
+                &quot;70% of new products fail because they don&apos;t align with actual customer needs. Direct customer conversations reveal what they value versus what you assume.&quot;
+              </p>
+            </div>
+
+            <div className="space-y-8">
+              <div className="animate-in" style={{animationDelay: '0.15s'}}>
+                <label className="monument text-sm block mb-3">TARGET CUSTOMER SEGMENTS <span className="text-red-500">*</span></label>
+                <p className="text-base text-gray-600 mb-3">Who will you interview? Be specific about segments and decision-makers.</p>
+                <textarea
+                  value={data.targetCustomers}
+                  onChange={(e) => updateData('targetCustomers', e.target.value)}
+                  placeholder="CFOs at mid-market manufacturing companies ($50M-$200M revenue), currently using QuickBooks or legacy ERP systems. Decision-makers who control IT budget and experience inventory management pain."
+                  rows={4}
+                  className="w-full"
+                />
+                <div className={`char-counter ${data.targetCustomers.length < 30 ? 'invalid' : ''}`}>
+                  {data.targetCustomers.length}/500 (min 30 characters)
+                </div>
+              </div>
+
+              <div className="animate-in" style={{animationDelay: '0.2s'}}>
+                <label className="monument text-sm block mb-3">NUMBER OF INTERVIEWS PLANNED <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  value={data.numberOfInterviews}
+                  onChange={(e) => updateData('numberOfInterviews', e.target.value)}
+                  placeholder="12-15 interviews (4-5 per customer segment)"
+                  className="w-full"
+                />
+              </div>
+
+              <div className="animate-in" style={{animationDelay: '0.25s'}}>
+                <label className="monument text-sm block mb-3">INTERVIEW FORMAT & DURATION <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  value={data.interviewFormat}
+                  onChange={(e) => updateData('interviewFormat', e.target.value)}
+                  placeholder="45-minute Zoom calls, recorded with permission, conducted by product manager + sales lead"
+                  className="w-full"
+                />
+              </div>
+
+              <div className="animate-in" style={{animationDelay: '0.3s'}}>
+                <label className="monument text-sm block mb-3">KEY QUESTIONS TO ASK <span className="text-red-500">*</span></label>
+                <p className="text-base text-gray-600 mb-3">What will you ask to understand customer value and willingness to pay?</p>
+                <textarea
+                  value={data.keyQuestions}
+                  onChange={(e) => updateData('keyQuestions', e.target.value)}
+                  placeholder={'1. Walk me through your current inventory management process\n2. What does it cost you when inventory data is inaccurate?\n3. If we could solve X problem, what would that be worth to you?\n4. How do you currently budget for inventory management tools?\n5. What would make you switch from your current solution?'}
+                  rows={6}
+                  className="w-full"
+                />
+                <div className={`char-counter ${data.keyQuestions.length < 50 ? 'invalid' : ''}`}>
+                  {data.keyQuestions.length}/1000 (min 50 characters)
+                </div>
+              </div>
+            </div>
+
+            {/* Navigation */}
+            <div className="flex gap-6 mt-12">
+              <button onClick={onBack} className="btn-secondary flex-1">
+                ← BACK
+              </button>
+              <button
+                onClick={onNext}
+                disabled={!canProceed}
+                className="btn-primary flex-1"
+              >
+                NEXT: WTP RESULTS →
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Step 3: WTP Testing Results
+    function Step3Page({ data, updateWTPResult, onNext, onBack, canProceed, setShowHelp }) {
+      return (
+        <div className="bg-white min-h-screen p-16 pb-32">
+          <div className="max-w-5xl mx-auto">
+            <ProgressIndicator currentStep={3} />
+            <HelpButton onClick={() => setShowHelp(true)} />
+
+            <div className="numbered-section mb-8 animate-in">03. WTP TESTING RESULTS</div>
+
+            <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
+              Document what customers said about each feature
+            </h3>
+
+            <div className="border-l-4 border-yellow-400 pl-6 mb-12 animate-in" style={{animationDelay: '0.1s'}}>
+              <p className="text-2xl italic">
+                &quot;What customers say they value and what they&apos;ll actually pay for are different. Document both to make informed product decisions.&quot;
+              </p>
+            </div>
+
+            <div className="mb-12">
+              {data.wtpResults.map((result, index) => (
+                <div key={result.featureId} className="bg-gray-50 border-2 border-gray-200 p-6 mb-6 animate-in" style={{animationDelay: `${0.15 + index * 0.05}s`}}>
+                  <h4 className="riforma-bold text-2xl mb-4">
+                    {data.features.find(f => f.id === result.featureId)?.name || `Feature ${index + 1}`}
+                  </h4>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="monument text-sm block mb-2">CUSTOMER VALUE FEEDBACK <span className="text-red-500">*</span></label>
+                      <p className="text-sm text-gray-600 mb-2">What did customers say about the value of this feature?</p>
+                      <textarea
+                        value={result.customerValue}
+                        onChange={(e) => updateWTPResult(result.featureId, 'customerValue', e.target.value)}
+                        placeholder="8 out of 12 customers said this would save them 10-15 hours per week. CFO at Company X said: &quot;This alone would justify the cost - we lose $50K annually to stockouts.&quot; 3 customers said it&apos;s nice-to-have but not critical."
+                        rows={4}
+                        className="w-full"
+                      />
+                      <div className={`char-counter ${result.customerValue.length < 20 ? 'invalid' : ''}`}>
+                        {result.customerValue.length}/500 (min 20 characters)
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="monument text-sm block mb-2">WILLINGNESS TO PAY <span className="text-red-500">*</span></label>
+                      <textarea
+                        value={result.willingnessToPay}
+                        onChange={(e) => updateWTPResult(result.featureId, 'willingnessToPay', e.target.value)}
+                        placeholder="$500-$800/month for this feature alone. 5 customers would pay $1000+ if bundled with reporting. 2 customers said $200-$300 max."
+                        rows={3}
+                        className="w-full"
+                      />
+                      <div className={`char-counter ${result.willingnessToPay.length < 5 ? 'invalid' : ''}`}>
+                        {result.willingnessToPay.length}/300 (min 5 characters)
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="monument text-sm block mb-2">COMPETITIVE ADVANTAGE</label>
+                      <input
+                        type="text"
+                        value={result.competitiveAdvantage}
+                        onChange={(e) => updateWTPResult(result.featureId, 'competitiveAdvantage', e.target.value)}
+                        placeholder="Competitor A has similar feature but 4-hour delay. Competitor B requires $10K setup fee."
+                        className="w-full"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="monument text-sm block mb-2">PRIORITY SCORE (1-10) <span className="text-red-500">*</span></label>
+                      <select
+                        value={result.priorityScore}
+                        onChange={(e) => updateWTPResult(result.featureId, 'priorityScore', e.target.value)}
+                        className="w-full"
+                      >
+                        <option value="">Select priority score...</option>
+                        <option value="10">10 - Must have immediately</option>
+                        <option value="9">9 - Very high priority</option>
+                        <option value="8">8 - High priority</option>
+                        <option value="7">7 - Above average</option>
+                        <option value="6">6 - Average priority</option>
+                        <option value="5">5 - Medium priority</option>
+                        <option value="4">4 - Below average</option>
+                        <option value="3">3 - Low priority</option>
+                        <option value="2">2 - Very low priority</option>
+                        <option value="1">1 - Not worth pursuing</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Navigation */}
+            <div className="flex gap-6">
+              <button onClick={onBack} className="btn-secondary flex-1">
+                ← BACK
+              </button>
+              <button
+                onClick={onNext}
+                disabled={!canProceed}
+                className="btn-primary flex-1"
+              >
+                NEXT: PORTFOLIO DESIGN →
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Step 4: Product Portfolio Design
+    function Step4Page({ data, updatePortfolioItem, addPortfolioItem, removePortfolioItem, onNext, onBack, canProceed, setShowHelp }) {
+      return (
+        <div className="bg-white min-h-screen p-16 pb-32">
+          <div className="max-w-5xl mx-auto">
+            <ProgressIndicator currentStep={4} />
+            <HelpButton onClick={() => setShowHelp(true)} />
+
+            <div className="numbered-section mb-8 animate-in">04. PRODUCT PORTFOLIO DESIGN</div>
+
+            <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
+              Categorize products into strategic roles
+            </h3>
+
+            <div className="border-l-4 border-yellow-400 pl-6 mb-12 animate-in" style={{animationDelay: '0.1s'}}>
+              <p className="text-2xl italic">
+                &quot;Like a gardener&apos;s strategy: some plants for beauty (storytellers), some for harvest volume (top line), some for premium herbs (profit).&quot;
+              </p>
+            </div>
+
+            <div className="space-y-10">
+              {/* Storytellers */}
+              <div className="animate-in" style={{animationDelay: '0.15s'}}>
+                <h3 className="riforma-bold text-3xl mb-2">Storytellers (&lt;10% of portfolio)</h3>
+                <p className="text-lg text-gray-600 mb-4">Products that manifest your strategy and differentiate your brand. May not be profitable but critical for positioning.</p>
+
+                {data.storytellers.map((item, index) => (
+                  <div key={item.id} className="bg-gray-50 border-2 border-gray-200 p-4 mb-3">
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="monument text-xs">STORYTELLER {index + 1}</span>
+                      {data.storytellers.length > 1 && (
+                        <button onClick={() => removePortfolioItem('storytellers', item.id)} className="text-red-600 text-sm">REMOVE</button>
+                      )}
+                    </div>
+                    <div className="space-y-3">
+                      <input
+                        type="text"
+                        value={item.product}
+                        onChange={(e) => updatePortfolioItem('storytellers', item.id, 'product', e.target.value)}
+                        placeholder="Real-time inventory sync"
+                        className="w-full"
+                      />
+                      <textarea
+                        value={item.reason}
+                        onChange={(e) => updatePortfolioItem('storytellers', item.id, 'reason', e.target.value)}
+                        placeholder="Shows we&apos;re the innovation leader. Competitors don&apos;t have this. Gets us in the door with enterprise clients even though margins are thin."
+                        rows={2}
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+                ))}
+                <button onClick={() => addPortfolioItem('storytellers')} className="btn-secondary text-sm">+ ADD STORYTELLER</button>
+              </div>
+
+              {/* Top Line Contributors */}
+              <div className="animate-in" style={{animationDelay: '0.2s'}}>
+                <h3 className="riforma-bold text-3xl mb-2">Top Line Contributors (70-80% of sales)</h3>
+                <p className="text-lg text-gray-600 mb-4">High-volume products. Aggressively priced to win market share. These drive revenue growth.</p>
+
+                {data.topLineContributors.map((item, index) => (
+                  <div key={item.id} className="bg-gray-50 border-2 border-gray-200 p-4 mb-3">
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="monument text-xs">TOP LINE CONTRIBUTOR {index + 1}</span>
+                      {data.topLineContributors.length > 1 && (
+                        <button onClick={() => removePortfolioItem('topLineContributors', item.id)} className="text-red-600 text-sm">REMOVE</button>
+                      )}
+                    </div>
+                    <div className="space-y-3">
+                      <input
+                        type="text"
+                        value={item.product}
+                        onChange={(e) => updatePortfolioItem('topLineContributors', item.id, 'product', e.target.value)}
+                        placeholder="Basic inventory management"
+                        className="w-full"
+                      />
+                      <textarea
+                        value={item.features}
+                        onChange={(e) => updatePortfolioItem('topLineContributors', item.id, 'features', e.target.value)}
+                        placeholder="Standard tracking, reporting, alerts. Everything customers expect. Priced 20% below competitor X to gain market share."
+                        rows={2}
+                        className="w-full"
+                      />
+                      <input
+                        type="text"
+                        value={item.pricingStrategy}
+                        onChange={(e) => updatePortfolioItem('topLineContributors', item.id, 'pricingStrategy', e.target.value)}
+                        placeholder="$299/month, 15% margin, volume play"
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+                ))}
+                <button onClick={() => addPortfolioItem('topLineContributors')} className="btn-secondary text-sm">+ ADD TOP LINE CONTRIBUTOR</button>
+              </div>
+
+              {/* Profit Contributors */}
+              <div className="animate-in" style={{animationDelay: '0.25s'}}>
+                <h3 className="riforma-bold text-3xl mb-2">Profit Contributors (high margin)</h3>
+                <p className="text-lg text-gray-600 mb-4">Premium products with unique features customers will pay for. Protect these margins. Fund innovation with these profits.</p>
+
+                {data.profitContributors.map((item, index) => (
+                  <div key={item.id} className="bg-gray-50 border-2 border-gray-200 p-4 mb-3">
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="monument text-xs">PROFIT CONTRIBUTOR {index + 1}</span>
+                      {data.profitContributors.length > 1 && (
+                        <button onClick={() => removePortfolioItem('profitContributors', item.id)} className="text-red-600 text-sm">REMOVE</button>
+                      )}
+                    </div>
+                    <div className="space-y-3">
+                      <input
+                        type="text"
+                        value={item.product}
+                        onChange={(e) => updatePortfolioItem('profitContributors', item.id, 'product', e.target.value)}
+                        placeholder="Enterprise API integration"
+                        className="w-full"
+                      />
+                      <textarea
+                        value={item.uniqueFeatures}
+                        onChange={(e) => updatePortfolioItem('profitContributors', item.id, 'uniqueFeatures', e.target.value)}
+                        placeholder="Custom ERP integrations, dedicated support, SLA guarantees. Only we offer this level of integration."
+                        rows={2}
+                        className="w-full"
+                      />
+                      <input
+                        type="text"
+                        value={item.marginTarget}
+                        onChange={(e) => updatePortfolioItem('profitContributors', item.id, 'marginTarget', e.target.value)}
+                        placeholder="$2,500/month, 60% margin"
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+                ))}
+                <button onClick={() => addPortfolioItem('profitContributors')} className="btn-secondary text-sm">+ ADD PROFIT CONTRIBUTOR</button>
+              </div>
+            </div>
+
+            {/* Navigation */}
+            <div className="flex gap-6 mt-12">
+              <button onClick={onBack} className="btn-secondary flex-1">
+                ← BACK
+              </button>
+              <button
+                onClick={onNext}
+                disabled={!canProceed}
+                className="btn-primary flex-1"
+              >
+                NEXT: IMPLEMENTATION →
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Step 5: Implementation Plan
+    function Step5Page({ data, updateData, onNext, onBack, canProceed, setShowHelp }) {
+      return (
+        <div className="bg-white min-h-screen p-16 pb-32">
+          <div className="max-w-5xl mx-auto">
+            <ProgressIndicator currentStep={5} />
+            <HelpButton onClick={() => setShowHelp(true)} />
+
+            <div className="numbered-section mb-8 animate-in">05. IMPLEMENTATION PLAN</div>
+
+            <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
+              Transform insights into action
+            </h3>
+
+            <div className="border-l-4 border-yellow-400 pl-6 mb-12 animate-in" style={{animationDelay: '0.1s'}}>
+              <p className="riforma-bold text-2xl mb-4">SPRINT VALIDATION CHECKLIST:</p>
+              <div className="space-y-2 text-lg">
+                <div>□ Interviewed at least 10 customers about product features</div>
+                <div>□ Documented willingness to pay for each key feature</div>
+                <div>□ Categorized products into storytellers, top line, and profit contributors</div>
+                <div>□ Identified which features have competitive advantage and pricing power</div>
+              </div>
+            </div>
+
+            <div className="space-y-8">
+              <div className="animate-in" style={{animationDelay: '0.15s'}}>
+                <label className="monument text-sm block mb-3">QUICK WINS (NEXT 30 DAYS) <span className="text-red-500">*</span></label>
+                <p className="text-base text-gray-600 mb-3">What can you launch, adjust pricing on, or kill immediately?</p>
+                <textarea
+                  value={data.quickWins}
+                  onChange={(e) => updateData('quickWins', e.target.value)}
+                  placeholder={'1. Launch real-time sync feature for 3 pilot customers (identified as high WTP)\n2. Adjust pricing on basic package to $299 (20% below Competitor X)\n3. Create case study from pilot customers for storyteller positioning\n4. Kill Feature Y (scored 2/10 in interviews, no customer demand)'}
+                  rows={5}
+                  className="w-full"
+                />
+                <div className={`char-counter ${data.quickWins.length < 30 ? 'invalid' : ''}`}>
+                  {data.quickWins.length}/1000 (min 30 characters)
+                </div>
+              </div>
+
+              <div className="animate-in" style={{animationDelay: '0.2s'}}>
+                <label className="monument text-sm block mb-3">RESOURCE ALLOCATION <span className="text-red-500">*</span></label>
+                <p className="text-base text-gray-600 mb-3">How will you allocate development, sales, and marketing resources?</p>
+                <textarea
+                  value={data.resourceAllocation}
+                  onChange={(e) => updateData('resourceAllocation', e.target.value)}
+                  placeholder="Development: 60% on top line features, 30% on profit contributor enhancements, 10% on storyteller innovation. Sales: Focus on mid-market (top line) and enterprise (profit). Marketing: Case studies on storyteller wins, ROI calculator for profit contributors."
+                  rows={4}
+                  className="w-full"
+                />
+                <div className={`char-counter ${data.resourceAllocation.length < 30 ? 'invalid' : ''}`}>
+                  {data.resourceAllocation.length}/1000 (min 30 characters)
+                </div>
+              </div>
+
+              <div className="animate-in" style={{animationDelay: '0.25s'}}>
+                <label className="monument text-sm block mb-3">TIMELINE & MILESTONES <span className="text-red-500">*</span></label>
+                <textarea
+                  value={data.timeline}
+                  onChange={(e) => updateData('timeline', e.target.value)}
+                  placeholder={'Week 1-2: Pilot launches\nWeek 3-4: Gather pilot feedback, adjust pricing\nMonth 2: Full rollout of top 3 features\nMonth 3: Review portfolio mix, kill underperformers\nQuarter 2: Hit 70/20/10 portfolio balance'}
+                  rows={5}
+                  className="w-full"
+                />
+                <div className={`char-counter ${data.timeline.length < 20 ? 'invalid' : ''}`}>
+                  {data.timeline.length}/500 (min 20 characters)
+                </div>
+              </div>
+
+              <div className="animate-in" style={{animationDelay: '0.3s'}}>
+                <label className="monument text-sm block mb-3">SUCCESS METRICS <span className="text-red-500">*</span></label>
+                <textarea
+                  value={data.successMetrics}
+                  onChange={(e) => updateData('successMetrics', e.target.value)}
+                  placeholder={'Revenue: 70% from top line contributors by Q2\nMargins: Overall margin improvement from 25% to 35%\nMarket share: Gain 500 new customers in mid-market segment\nCustomer feedback: NPS of 50+ on profit contributor features\nPortfolio health: Kill 3 underperforming products, launch 2 new profit contributors'}
+                  rows={5}
+                  className="w-full"
+                />
+                <div className={`char-counter ${data.successMetrics.length < 30 ? 'invalid' : ''}`}>
+                  {data.successMetrics.length}/1000 (min 30 characters)
+                </div>
+              </div>
+            </div>
+
+            {/* Navigation */}
+            <div className="flex gap-6 mt-12">
+              <button onClick={onBack} className="btn-secondary flex-1">
+                ← BACK
+              </button>
+              <button
+                onClick={onNext}
+                disabled={!canProceed}
+                className="btn-primary flex-1"
+              >
+                VIEW CANVAS →
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Canvas Page
+    function CanvasPage({ data, onExport, onSubmit }) {
+      return (
+        <div className="bg-white min-h-screen p-16">
+          <div id="canvas-content" className="max-w-6xl mx-auto border-8 border-black p-12 bg-white">
+            <div className="flex items-center justify-between mb-12">
+              <img src="FastTrack_F_White.png" alt="Fast Track" className="h-16 invert" />
+              <h1 className="plaak" style={{fontSize: '60px'}}>PRODUCT DEVELOPMENT WTP TESTING</h1>
+            </div>
+
+            <div className="space-y-8">
+              {/* Features Tested */}
+              <div>
+                <h2 className="plaak text-4xl mb-4 border-b-4 border-black pb-2">FEATURES TESTED</h2>
+                <div className="grid grid-cols-2 gap-4">
+                  {data.features.slice(0, 6).map((feature, index) => (
+                    <div key={feature.id} className="border-2 border-black p-4">
+                      <div className="monument text-xs mb-2">FEATURE {index + 1}</div>
+                      <div className="riforma-bold text-lg mb-2">{feature.name}</div>
+                      <div className="text-sm">{feature.description.substring(0, 100)}...</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Top Priorities */}
+              <div>
+                <h2 className="plaak text-4xl mb-4 border-b-4 border-black pb-2">TOP PRIORITIES</h2>
+                <div className="space-y-3">
+                  {data.wtpResults
+                    .filter(r => parseInt(r.priorityScore) >= 7)
+                    .sort((a, b) => parseInt(b.priorityScore) - parseInt(a.priorityScore))
+                    .slice(0, 5)
+                    .map((result) => {
+                      const feature = data.features.find(f => f.id === result.featureId);
+                      return (
+                        <div key={result.featureId} className="border-2 border-black p-4 bg-yellow-50 flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="riforma-bold text-xl">{feature?.name}</div>
+                            <div className="text-sm mt-2">{result.customerValue.substring(0, 120)}...</div>
+                            <div className="monument text-xs mt-2">WTP: {result.willingnessToPay.substring(0, 60)}</div>
+                          </div>
+                          <div className="w-16 h-16 bg-black text-white flex items-center justify-center plaak text-3xl ml-4">
+                            {result.priorityScore}
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+
+              {/* Product Portfolio */}
+              <div>
+                <h2 className="plaak text-4xl mb-4 border-b-4 border-black pb-2">PRODUCT PORTFOLIO</h2>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="border-2 border-black p-4">
+                    <div className="riforma-bold text-lg mb-3">STORYTELLERS</div>
+                    <div className="monument text-xs mb-2">&lt;10% of portfolio</div>
+                    {data.storytellers.map(s => s.product && (
+                      <div key={s.id} className="text-sm mb-2">• {s.product}</div>
+                    ))}
+                  </div>
+                  <div className="border-2 border-black p-4 bg-yellow-50">
+                    <div className="riforma-bold text-lg mb-3">TOP LINE</div>
+                    <div className="monument text-xs mb-2">70-80% of sales</div>
+                    {data.topLineContributors.map(t => t.product && (
+                      <div key={t.id} className="text-sm mb-2">• {t.product}</div>
+                    ))}
+                  </div>
+                  <div className="border-2 border-black p-4">
+                    <div className="riforma-bold text-lg mb-3">PROFIT</div>
+                    <div className="monument text-xs mb-2">High margin</div>
+                    {data.profitContributors.map(p => p.product && (
+                      <div key={p.id} className="text-sm mb-2">• {p.product}</div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Next Steps */}
+              <div>
+                <h2 className="plaak text-4xl mb-4 border-b-4 border-black pb-2">IMPLEMENTATION PLAN</h2>
+                <div className="border-2 border-black p-6">
+                  <div className="monument text-xs mb-2">QUICK WINS (30 DAYS)</div>
+                  <div className="whitespace-pre-line mb-4 text-sm">{data.quickWins}</div>
+                  <div className="monument text-xs mb-2">SUCCESS METRICS</div>
+                  <div className="whitespace-pre-line text-sm">{data.successMetrics}</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-12 text-center text-sm text-gray-500">
+              Generated {new Date().toLocaleDateString()} • Fast Track Sprint 17 • Product Development WTP Testing
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="max-w-6xl mx-auto mt-8 flex gap-4 justify-center">
+            <button onClick={onExport} className="btn-secondary">EXPORT PDF</button>
+            <button onClick={onSubmit} className="btn-primary">SUBMIT</button>
+          </div>
+        </div>
+      );
+    }
+
+    // Progress Indicator
+    function ProgressIndicator({ currentStep }) {
+      const steps = [
+        { number: 1, label: 'Features' },
+        { number: 2, label: 'Interviews' },
+        { number: 3, label: 'WTP Results' },
+        { number: 4, label: 'Portfolio' },
+        { number: 5, label: 'Plan' }
+      ];
+
+      return (
+        <div className="flex items-center justify-center gap-4 mb-12">
+          {steps.map((step, index) => (
+            <Fragment key={step.number}>
+              <div className="flex flex-col items-center">
+                <div className={`progress-dot ${step.number === currentStep ? 'active' : ''} ${step.number < currentStep ? 'completed' : ''}`}></div>
+                <div className="monument text-xs mt-2">{step.label}</div>
+              </div>
+              {index < steps.length - 1 && <div className="progress-line w-12"></div>}
+            </Fragment>
+          ))}
+        </div>
+      );
+    }
+
+    // Help Button
+    function HelpButton({ onClick }) {
+      return (
+        <button onClick={onClick} className="help-button">
+          ?
+        </button>
+      );
+    }
+
+    // Render App
+    ReactDOM.render(<WTPApp />, document.getElementById('root'));
+  </script>
+</body>
+</html>

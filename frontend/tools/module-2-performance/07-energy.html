@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creating Energy in Body and Mind - Fast Track</title>
+    <link rel="icon" type="image/png" href="favicon/favicon-16x16.png">
+    
+    <!-- Fonts -->
+    <style>
+        @font-face {
+            font-family: 'Plaak';
+            src: url('Plaak3Trial-43-Bold.woff2') format('woff2');
+            font-weight: bold;
+        }
+        @font-face {
+            font-family: 'Riforma';
+            src: url('RiformaLL-Regular.woff2') format('woff2');
+            font-weight: normal;
+        }
+        @font-face {
+            font-family: 'Monument';
+            src: url('MonumentGrotesk-Mono.woff2') format('woff2');
+            font-weight: normal;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Riforma', sans-serif;
+            background: #FFFFFF;
+            color: #000000;
+            line-height: 1.6;
+        }
+        
+        .plaak {
+            font-family: 'Plaak', sans-serif;
+            line-height: 1.2;
+            letter-spacing: -0.01em;
+        }
+        
+        .monument {
+            font-family: 'Monument', monospace;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        
+        .numbered-section {
+            background: #000000;
+            color: #FFFFFF;
+            padding: 10px 16px;
+            font-family: 'Plaak';
+            font-size: 18px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            margin-bottom: 16px;
+            display: inline-block;
+        }
+        
+        .worksheet-input, .worksheet-textarea {
+            width: 100%;
+            border: 1px solid #E0E0E0;
+            padding: 12px 16px;
+            font-family: 'Riforma';
+            font-size: 16px;
+            transition: border-color 0.2s ease;
+        }
+        
+        .worksheet-input:focus, .worksheet-textarea:focus {
+            outline: none;
+            border-color: #000000;
+            border-width: 2px;
+        }
+        
+        .worksheet-textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+        
+        .btn-primary {
+            background: #000000;
+            color: #FFFFFF;
+            padding: 12px 24px;
+            border: 2px solid #000000;
+            font-family: 'Riforma';
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .btn-primary:disabled {
+            background: #E0E0E0;
+            color: #9CA3AF;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        
+        .btn-secondary {
+            background: #FFFFFF;
+            color: #000000;
+            padding: 12px 24px;
+            border: 2px solid #000000;
+            font-family: 'Riforma';
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-secondary:hover {
+            background: #000000;
+            color: #FFFFFF;
+        }
+        
+        .progress-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #E0E0E0;
+            transition: all 0.3s ease;
+        }
+        
+        .progress-dot.active {
+            background: #000000;
+            transform: scale(1.3);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .animate-in {
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+    </style>
+    
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const CONFIG = {
+            SUPABASE_URL: 'https://vpfayzzjnegdefjrnyoc.supabase.co',
+            SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZwZmF5enpqbmVnZGVmanJueW9jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMzAwODUsImV4cCI6MjA4NTcwNjA4NX0.7qwzd9kwyRG0Wx9DDSc8F9a1SRD0CoC6CGS-9M1sxIs',
+            TOOL_SLUG: 'energy',
+            SPRINT_NUMBER: 7,
+            SCHEMA_NAME: 'sprint_07_energy',
+            AUTOSAVE_DELAY: 2000
+        };
+
+        // Initialize Supabase client
+        const { createClient } = supabase;
+        const supabaseClient = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+        
+        // Transition Screen Component
+        const TransitionScreen = ({ title, subtitle, onContinue }) => {
+            React.useEffect(() => {
+                const timer = setTimeout(() => {
+                    onContinue();
+                }, 2000);
+                return () => clearTimeout(timer);
+            }, []);
+            
+            return (
+                <div className="min-h-screen bg-black text-white flex items-center justify-center p-8">
+                    <div className="max-w-4xl text-center">
+                        <div className="text-6xl mb-8">→</div>
+                        <h1 className="plaak text-8xl mb-6 animate-in">{title}</h1>
+                        <p className="text-3xl animate-in" style={{animationDelay: '0.2s'}}>{subtitle}</p>
+                        <button 
+                            onClick={onContinue}
+                            className="mt-12 btn-primary text-xl px-8 py-4 animate-in"
+                            style={{animationDelay: '0.4s'}}
+                        >
+                            Continue →
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+        
+        // Progress Dots Component (outside main component)
+        const ProgressDots = ({ current }) => {
+            const steps = [
+                { num: 1, label: 'Sleep' },
+                { num: 2, label: 'Food' },
+                { num: 3, label: 'Movement' },
+                { num: 4, label: 'Brain' },
+                { num: 5, label: 'Mental' }
+            ];
+            return (
+                <div className="flex items-center justify-center gap-8 py-8 border-b border-gray-200">
+                    {steps.map(s => (
+                        <div key={s.num} className="flex flex-col items-center gap-2">
+                            <div className={`progress-dot ${s.label === current ? 'active' : ''}`}></div>
+                            <span className={`monument text-xs ${s.label === current ? 'text-black' : 'text-gray-400'}`}>
+                                {s.label}
+                            </span>
+                        </div>
+                    ))}
+                </div>
+            );
+        };
+        
+        // Pillar Section Component (outside main component to prevent re-creation)
+        const PillarSection = ({ pillar, title, nextStep, prevStep, formData, updateField }) => {
+            return (
+                <div className="min-h-screen bg-white p-8">
+                    <div className="max-w-4xl mx-auto">
+                        <ProgressDots current={title} />
+                        
+                        <div className="mb-6 border-l-4 border-black pl-6 bg-gray-50 py-4">
+                            <p className="monument text-xs text-gray-600">CURRENT SECTION</p>
+                            <h2 className="plaak text-3xl">{title} Protocol</h2>
+                            <p className="text-sm text-gray-600 mt-1">Complete all fields to continue to the next pillar</p>
+                        </div>
+                        
+                        <div className="numbered-section mb-8">
+                            [{pillar === 'sleep' ? '01' : pillar === 'food' ? '02' : pillar === 'movement' ? '03' : '04'}] {title.toUpperCase()} PROTOCOL
+                        </div>
+                        
+                        {/* Current State */}
+                        <div className="border-2 border-black p-6 mb-6">
+                            <h3 className="plaak text-2xl mb-4">Current State Assessment</h3>
+                            <div className="mb-4">
+                                <label className="block mb-2 font-bold">Rate your current {title} (1-10):</label>
+                                <div className="flex items-center gap-4">
+                                    <input 
+                                        type="range"
+                                        min="1"
+                                        max="10"
+                                        className="flex-1"
+                                        value={formData[`${pillar}Rating`]}
+                                        onChange={(e) => updateField(`${pillar}Rating`, e.target.value)}
+                                    />
+                                    <span className="plaak text-4xl w-12">{formData[`${pillar}Rating`]}</span>
+                                </div>
+                            </div>
+                            <div className="mb-4">
+                                <label className="block mb-2 font-bold">What I do WELL:</label>
+                                <textarea 
+                                    className="worksheet-textarea"
+                                    value={formData[`${pillar}DoWell`]}
+                                    onChange={(e) => updateField(`${pillar}DoWell`, e.target.value)}
+                                    placeholder="e.g., I consistently get 7+ hours of sleep on weekdays"
+                                />
+                            </div>
+                            <div>
+                                <label className="block mb-2 font-bold">What I do NOT do well:</label>
+                                <textarea 
+                                    className="worksheet-textarea"
+                                    value={formData[`${pillar}NotDoWell`]}
+                                    onChange={(e) => updateField(`${pillar}NotDoWell`, e.target.value)}
+                                    placeholder="e.g., I look at my phone right before bed, disrupting sleep quality"
+                                />
+                            </div>
+                        </div>
+                        
+                        {/* Goals */}
+                        <div className="border-2 border-black p-6 mb-6">
+                            <h3 className="plaak text-2xl mb-4">My Goals for {title}</h3>
+                            <textarea 
+                                className="worksheet-textarea"
+                                value={formData[`${pillar}Goals`]}
+                                onChange={(e) => updateField(`${pillar}Goals`, e.target.value)}
+                                placeholder="What do you want to achieve?"
+                            />
+                        </div>
+                        
+                        {/* ONE KEY HABIT */}
+                        <div className="border-2 border-black p-6 mb-8 bg-yellow-50">
+                            <h3 className="plaak text-3xl mb-4">ONE KEY HABIT TO DEVELOP</h3>
+                            <p className="text-gray-600 mb-4">Using the Atomic Habits framework</p>
+                            
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block mb-2 font-bold">My Key Habit:</label>
+                                    <input 
+                                        className="worksheet-input"
+                                        value={formData[`${pillar}KeyHabit`]}
+                                        onChange={(e) => updateField(`${pillar}KeyHabit`, e.target.value)}
+                                        placeholder="e.g., Put phone in living room 1 hour before bed"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block mb-2 font-bold">TRIGGER/REMINDER (When/Where):</label>
+                                    <input 
+                                        className="worksheet-input"
+                                        value={formData[`${pillar}Trigger`]}
+                                        onChange={(e) => updateField(`${pillar}Trigger`, e.target.value)}
+                                        placeholder="e.g., Phone alarm at 10pm"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block mb-2 font-bold">ROUTINE (Specific actions):</label>
+                                    <textarea 
+                                        className="worksheet-textarea"
+                                        value={formData[`${pillar}Routine`]}
+                                        onChange={(e) => updateField(`${pillar}Routine`, e.target.value)}
+                                        placeholder="e.g., 1. Alarm goes off, 2. Put phone on charger in living room, 3. Read book for 15 min"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block mb-2 font-bold">REWARD (What you get):</label>
+                                    <input 
+                                        className="worksheet-input"
+                                        value={formData[`${pillar}Reward`]}
+                                        onChange={(e) => updateField(`${pillar}Reward`, e.target.value)}
+                                        placeholder="e.g., Wake up energized and focused"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block mb-2 font-bold">ACCOUNTABILITY PARTNER:</label>
+                                    <input 
+                                        className="worksheet-input"
+                                        value={formData[`${pillar}AccountabilityPartner`]}
+                                        onChange={(e) => updateField(`${pillar}AccountabilityPartner`, e.target.value)}
+                                        placeholder="Who will check in with you? (Name + how often)"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="flex gap-4">
+                            <button onClick={() => updateField('_step', prevStep)} className="btn-secondary">← Back</button>
+                            <button 
+                                onClick={() => updateField('_step', nextStep)}
+                                disabled={!formData[`${pillar}KeyHabit`] || !formData[`${pillar}Trigger`]}
+                                className="btn-primary flex-1"
+                            >
+                                Continue to {nextStep === 'food' ? 'Food' : nextStep === 'movement' ? 'Movement' : nextStep === 'brain' ? 'Brain' : 'Mental Energy'} →
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+        
+        function EnergyTool() {
+            const [step, setStep] = useState('cover');
+            const [showHelp, setShowHelp] = useState(false);
+            const [formData, setFormData] = useState({
+                userName: '',
+                userEmail: '',
+                companyName: '',
+                // Sleep
+                sleepRating: 5,
+                sleepDoWell: '',
+                sleepNotDoWell: '',
+                sleepGoals: '',
+                sleepKeyHabit: '',
+                sleepTrigger: '',
+                sleepRoutine: '',
+                sleepReward: '',
+                sleepAccountabilityPartner: '',
+                // Food
+                foodRating: 5,
+                foodDoWell: '',
+                foodNotDoWell: '',
+                foodGoals: '',
+                foodKeyHabit: '',
+                foodTrigger: '',
+                foodRoutine: '',
+                foodReward: '',
+                foodAccountabilityPartner: '',
+                // Movement
+                movementRating: 5,
+                movementDoWell: '',
+                movementNotDoWell: '',
+                movementGoals: '',
+                movementKeyHabit: '',
+                movementTrigger: '',
+                movementRoutine: '',
+                movementReward: '',
+                movementAccountabilityPartner: '',
+                // Brain
+                brainRating: 5,
+                brainDoWell: '',
+                brainNotDoWell: '',
+                brainGoals: '',
+                brainKeyHabit: '',
+                brainTrigger: '',
+                brainRoutine: '',
+                brainReward: '',
+                brainAccountabilityPartner: '',
+                // Mental Energy
+                mentalCanControl: '',
+                mentalCannotControl: '',
+                stopDoing1: '',
+                stopDoing2: '',
+                stopDoing3: '',
+                doLess1: '',
+                doLess2: '',
+                doLess3: '',
+                doMore1: '',
+                doMore2: '',
+                doMore3: '',
+                eventDescription: '',
+                gapAnalysis: '',
+                idealResponse: '',
+                futurePlan: ''
+            });
+            
+            useEffect(() => {
+                const saved = localStorage.getItem(CONFIG.STORAGE_KEY);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    setFormData(parsed.formData);
+                    setStep(parsed.step);
+                }
+            }, []);
+            
+            useEffect(() => {
+                const timer = setTimeout(() => {
+                    localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify({
+                        formData: formData,
+                        step: step,
+                        lastSaved: new Date().toISOString()
+                    }));
+                }, CONFIG.AUTOSAVE_DELAY);
+                return () => clearTimeout(timer);
+            }, [formData, step]);
+            
+            const updateField = (field, value) => {
+                if (field === '_step') {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    setStep(value);
+                } else {
+                    setFormData(prev => ({...prev, [field]: value}));
+                }
+            };
+            
+            const goToStep = (newStep) => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                setStep(newStep);
+            };
+            
+            const handleSubmit = async () => {
+                try {
+                    const userId = localStorage.getItem('ft_user_id');
+                    if (!userId) {
+                        alert('User not authenticated. Please return to the dashboard.');
+                        return;
+                    }
+
+                    const submissionData = {
+                        userName: formData.userName,
+                        userEmail: formData.userEmail,
+                        companyName: formData.companyName,
+                        timestamp: new Date().toISOString(),
+                        data: formData
+                    };
+
+                    // Submit using RPC function (handles schema-specific tables)
+                    const { data: result, error: submitError } = await supabaseClient
+                        .rpc('submit_tool_data', {
+                            p_schema_name: CONFIG.SCHEMA_NAME,
+                            p_user_id: userId,
+                            p_data: submissionData,
+                            p_tool_slug: CONFIG.TOOL_SLUG
+                        });
+
+                    if (submitError) throw submitError;
+
+                    if (!result || !result.success) {
+                        throw new Error(result?.message || 'Submission failed');
+                    }
+
+                    alert('Submission saved successfully!');
+                    console.log('Submission ID:', result.submission_id);
+                    localStorage.setItem('lastSubmissionId', result.submission_id);
+                    setStep('success');
+
+                } catch (error) {
+                    console.error('Submission error:', error);
+                    alert('Failed to save: ' + error.message);
+                }
+            };
+            
+            // Cover Page
+            if (step === 'cover') {
+                return (
+                    <div className="min-h-screen flex flex-col items-center justify-center bg-black text-white p-8 relative" style={{
+                        backgroundImage: 'linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url("cover image for energy tool.jpg")',
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center'
+                    }}>
+                        <img src="logo/FastTrack_F_White.png" alt="Fast Track" className="absolute top-8 right-8 w-16 h-16" />
+                        <div className="max-w-4xl text-center">
+                            <h1 className="plaak text-7xl mb-8 uppercase">Creating Energy in the<br />Body and Mind</h1>
+                            <p className="text-2xl mb-12 max-w-2xl mx-auto">
+                                Design your complete energy protocol across all four pillars of performance
+                            </p>
+                            <button onClick={() => goToStep('intro')} className="btn-primary text-xl px-12 py-4">
+                                Begin Your Energy Protocol
+                            </button>
+                            <div className="mt-16 text-sm monument opacity-70">Energy Sprint – Fast Track Program</div>
+                        </div>
+                    </div>
+                );
+            }
+            
+            // Intro Screen
+            if (step === 'intro') {
+                return (
+                    <div className="bg-black text-white min-h-screen p-16">
+                        <div className="max-w-5xl mx-auto">
+                            <h1 className="plaak text-9xl mb-16">BEFORE WE START</h1>
+                            <div className="mb-12">
+                                <h2 className="plaak text-6xl mb-6">PURPOSE</h2>
+                                <p className="text-3xl leading-relaxed">
+                                    Build your complete energy system across Sleep, Food, Movement, and Brain Use. 
+                                    Define ONE KEY HABIT for each pillar using the proven Trigger-Routine-Reward framework.
+                                </p>
+                            </div>
+                            <div className="mb-12">
+                                <h2 className="plaak text-6xl mb-6">TIME</h2>
+                                <p className="text-3xl leading-relaxed">45 minutes. Auto-saves every 2 seconds.</p>
+                            </div>
+                            <div className="mb-12">
+                                <h2 className="plaak text-6xl mb-6">YOUR INFO</h2>
+                                <div className="space-y-4">
+                                    <input 
+                                        className="worksheet-input text-black text-2xl p-4"
+                                        placeholder="Your Name"
+                                        value={formData.userName}
+                                        onChange={(e) => updateField('userName', e.target.value)}
+                                    />
+                                    <input 
+                                        className="worksheet-input text-black text-2xl p-4"
+                                        placeholder="Your Email"
+                                        value={formData.userEmail}
+                                        onChange={(e) => updateField('userEmail', e.target.value)}
+                                    />
+                                    <input 
+                                        className="worksheet-input text-black text-2xl p-4"
+                                        placeholder="Company Name"
+                                        value={formData.companyName}
+                                        onChange={(e) => updateField('companyName', e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                            <button 
+                                onClick={() => goToStep('sleep')}
+                                disabled={!formData.userName || !formData.companyName}
+                                className="bg-white text-black plaak text-3xl px-16 py-6 border-4 border-white hover:bg-black hover:text-white transition-all disabled:opacity-50"
+                            >
+                                START SLEEP PROTOCOL
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+            
+            // Transition screens
+            if (step === 'transition-mental') {
+                return <TransitionScreen 
+                    title="MENTAL ENERGY" 
+                    subtitle="Now let's build your mental wisdom protocol"
+                    onContinue={() => goToStep('mental')}
+                />;
+            }
+            
+            // Section screens
+            if (step === 'sleep') return <PillarSection pillar="sleep" title="Sleep" nextStep="food" prevStep="intro" formData={formData} updateField={updateField} />;
+            if (step === 'food') return <PillarSection pillar="food" title="Food" nextStep="movement" prevStep="sleep" formData={formData} updateField={updateField} />;
+            if (step === 'movement') return <PillarSection pillar="movement" title="Movement" nextStep="brain" prevStep="food" formData={formData} updateField={updateField} />;
+            if (step === 'brain') return <PillarSection pillar="brain" title="Brain" nextStep="transition-mental" prevStep="movement" formData={formData} updateField={updateField} />;
+            
+            // Mental Energy Wisdom
+            if (step === 'mental') {
+                return (
+                    <div className="min-h-screen bg-white p-8">
+                        <div className="max-w-4xl mx-auto">
+                            <ProgressDots current="Mental" />
+                            
+                            <div className="mb-6 border-l-4 border-black pl-6 bg-gray-50 py-4">
+                                <p className="monument text-xs text-gray-600">CURRENT SECTION</p>
+                                <h2 className="plaak text-3xl">Mental Energy Wisdom</h2>
+                                <p className="text-sm text-gray-600 mt-1">Complete all three parts to finish your protocol</p>
+                            </div>
+                            
+                            <div className="numbered-section mb-8">[05] MENTAL ENERGY WISDOM</div>
+                            
+                            {/* Part 1: Control */}
+                            <div className="border-2 border-black p-6 mb-6">
+                                <h3 className="plaak text-2xl mb-4">Part 1: Control Analysis</h3>
+                                <div className="mb-4">
+                                    <label className="block mb-2 font-bold">What matters to me that I CAN control:</label>
+                                    <textarea 
+                                        className="worksheet-textarea"
+                                        value={formData.mentalCanControl}
+                                        onChange={(e) => updateField('mentalCanControl', e.target.value)}
+                                        placeholder="List things within your control (e.g., my daily routine, my reactions, my habits)"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block mb-2 font-bold">What matters to me that I CANNOT control:</label>
+                                    <textarea 
+                                        className="worksheet-textarea"
+                                        value={formData.mentalCannotControl}
+                                        onChange={(e) => updateField('mentalCannotControl', e.target.value)}
+                                        placeholder="List things outside your control (e.g., other people's opinions, market conditions)"
+                                    />
+                                </div>
+                            </div>
+                            
+                            {/* Part 2: Stop/Do Less/Do More */}
+                            <div className="border-2 border-black p-6 mb-6">
+                                <h3 className="plaak text-2xl mb-4">Part 2: Strategic Decisions</h3>
+                                <div className="mb-6">
+                                    <label className="block mb-2 font-bold">STOP doing completely (3 things):</label>
+                                    {[1,2,3].map(i => (
+                                        <input 
+                                            key={i}
+                                            className="worksheet-input mb-2"
+                                            value={formData[`stopDoing${i}`]}
+                                            onChange={(e) => updateField(`stopDoing${i}`, e.target.value)}
+                                            placeholder={`${i}. e.g., Checking email before 9am`}
+                                        />
+                                    ))}
+                                </div>
+                                <div className="mb-6">
+                                    <label className="block mb-2 font-bold">DO LESS of (3 things):</label>
+                                    {[1,2,3].map(i => (
+                                        <input 
+                                            key={i}
+                                            className="worksheet-input mb-2"
+                                            value={formData[`doLess${i}`]}
+                                            onChange={(e) => updateField(`doLess${i}`, e.target.value)}
+                                            placeholder={`${i}. e.g., Attending non-essential meetings`}
+                                        />
+                                    ))}
+                                </div>
+                                <div>
+                                    <label className="block mb-2 font-bold">DO MORE of (3 things):</label>
+                                    {[1,2,3].map(i => (
+                                        <input 
+                                            key={i}
+                                            className="worksheet-input mb-2"
+                                            value={formData[`doMore${i}`]}
+                                            onChange={(e) => updateField(`doMore${i}`, e.target.value)}
+                                            placeholder={`${i}. e.g., Deep work sessions`}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                            
+                            {/* Part 3: Event-Gap-Response */}
+                            <div className="border-2 border-black p-6 mb-8 bg-yellow-50">
+                                <h3 className="plaak text-2xl mb-4">Part 3: Event-Gap-Response Analysis</h3>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block mb-2 font-bold">Recent event where your reaction wasn't ideal:</label>
+                                        <textarea 
+                                            className="worksheet-textarea"
+                                            value={formData.eventDescription}
+                                            onChange={(e) => updateField('eventDescription', e.target.value)}
+                                            placeholder="Describe the situation..."
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block mb-2 font-bold">The GAP - Your actual feelings and thoughts:</label>
+                                        <textarea 
+                                            className="worksheet-textarea"
+                                            value={formData.gapAnalysis}
+                                            onChange={(e) => updateField('gapAnalysis', e.target.value)}
+                                            placeholder="What did you feel? What thoughts did you have?"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block mb-2 font-bold">Your ideal response (how you wish you'd reacted):</label>
+                                        <textarea 
+                                            className="worksheet-textarea"
+                                            value={formData.idealResponse}
+                                            onChange={(e) => updateField('idealResponse', e.target.value)}
+                                            placeholder="What would the best version of you have done?"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block mb-2 font-bold">Plan for future similar situations:</label>
+                                        <textarea 
+                                            className="worksheet-textarea"
+                                            value={formData.futurePlan}
+                                            onChange={(e) => updateField('futurePlan', e.target.value)}
+                                            placeholder="What will you do differently next time?"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="flex gap-4">
+                                <button onClick={() => goToStep('transition-mental')} className="btn-secondary">← Back</button>
+                                <button 
+                                    onClick={() => goToStep('canvas')}
+                                    disabled={!formData.mentalCanControl || !formData.eventDescription}
+                                    className="btn-primary flex-1"
+                                >
+                                    Review My Protocol →
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+            
+            // Canvas
+            if (step === 'canvas') {
+                return (
+                    <div className="min-h-screen bg-white p-8">
+                        <div className="max-w-5xl mx-auto">
+                            <div className="mb-6 border-l-4 border-black pl-6 bg-yellow-50 py-4">
+                                <p className="monument text-xs text-gray-600">FINAL REVIEW</p>
+                                <h2 className="plaak text-3xl">Your Complete Energy Protocol</h2>
+                                <p className="text-sm text-gray-600 mt-1">Review everything before submitting</p>
+                            </div>
+                            
+                            <div className="numbered-section mb-8">[06] YOUR COMPLETE ENERGY PROTOCOL</div>
+                            
+                            <h1 className="plaak text-5xl mb-8">Energy Protocol Summary</h1>
+                            
+                            {/* 4 Pillars */}
+                            {['sleep', 'food', 'movement', 'brain'].map((pillar, idx) => (
+                                <div key={pillar} className="border-2 border-black p-6 mb-6">
+                                    <h3 className="plaak text-3xl mb-4">{pillar.charAt(0).toUpperCase() + pillar.slice(1)}</h3>
+                                    <div className="grid grid-cols-2 gap-4 mb-4">
+                                        <div>
+                                            <span className="monument text-xs">RATING:</span>
+                                            <p className="text-2xl plaak">{formData[`${pillar}Rating`]}/10</p>
+                                        </div>
+                                        <div>
+                                            <span className="monument text-xs">KEY HABIT:</span>
+                                            <p>{formData[`${pillar}KeyHabit`]}</p>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4 text-sm">
+                                        <div>
+                                            <span className="monument text-xs">TRIGGER:</span>
+                                            <p>{formData[`${pillar}Trigger`]}</p>
+                                        </div>
+                                        <div>
+                                            <span className="monument text-xs">REWARD:</span>
+                                            <p>{formData[`${pillar}Reward`]}</p>
+                                        </div>
+                                        <div>
+                                            <span className="monument text-xs">ACCOUNTABILITY:</span>
+                                            <p>{formData[`${pillar}AccountabilityPartner`]}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                            
+                            {/* Mental Energy */}
+                            <div className="border-2 border-black p-6 mb-8 bg-gray-50">
+                                <h3 className="plaak text-3xl mb-4">Mental Energy Wisdom</h3>
+                                <div className="space-y-3 text-sm">
+                                    <div>
+                                        <span className="monument text-xs">STOP DOING:</span>
+                                        <p>{formData.stopDoing1}, {formData.stopDoing2}, {formData.stopDoing3}</p>
+                                    </div>
+                                    <div>
+                                        <span className="monument text-xs">DO MORE:</span>
+                                        <p>{formData.doMore1}, {formData.doMore2}, {formData.doMore3}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="flex gap-4">
+                                <button onClick={() => goToStep('mental')} className="btn-secondary">← Back to Edit</button>
+                                <button onClick={handleSubmit} className="btn-primary flex-1 text-xl">
+                                    Submit My Energy Protocol
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+            
+            // Success
+            if (step === 'success') {
+                return (
+                    <div className="min-h-screen bg-black text-white flex items-center justify-center p-8">
+                        <div className="max-w-4xl text-center">
+                            <div className="text-8xl mb-8">✓</div>
+                            <h1 className="plaak text-6xl mb-8">PROTOCOL SUBMITTED</h1>
+                            <p className="text-2xl mb-12">Your complete energy protocol has been saved. Share it with your Guru before the team meeting.</p>
+                        </div>
+                    </div>
+                );
+            }
+            
+            return null;
+        }
+        
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<EnergyTool />);
+    </script>
+</body>
+</html>
+

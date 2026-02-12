@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Dependency Injection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .tool-card {
+            transition: all 0.2s;
+        }
+        .tool-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-success { background: #10b981; color: white; }
+        .badge-info { background: #3b82f6; color: white; }
+        .badge-warning { background: #f59e0b; color: white; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <div class="bg-white rounded-lg shadow-lg p-8 mb-6">
+            <h1 class="text-4xl font-bold mb-2">🔗 Dependency Injection Test</h1>
+            <p class="text-gray-600 mb-4">Test that data flows between tools automatically</p>
+
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <h3 class="font-bold text-blue-900 mb-2">📋 Test Instructions:</h3>
+                <ol class="list-decimal list-inside space-y-2 text-blue-800">
+                    <li>Click "Setup Test User" below to authenticate</li>
+                    <li>Click each tool button in order (WOOP → Know Thyself → Dream → Values → Team)</li>
+                    <li>When each tool opens, look for:
+                        <ul class="list-disc list-inside ml-6 mt-1">
+                            <li>Green notification: "✓ Loaded N/M values from previous tools"</li>
+                            <li>Fields with green left border (injected data)</li>
+                            <li>Pre-filled values from previous tools</li>
+                        </ul>
+                    </li>
+                </ol>
+            </div>
+
+            <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                <h3 class="font-bold text-green-900 mb-2">✅ Test User Setup:</h3>
+                <p class="text-sm text-green-800 mb-3">
+                    Test User ID: <code class="bg-green-100 px-2 py-1 rounded">5dc6b5ac-b69d-432f-a4b3-f5cd445fc4ad</code>
+                </p>
+                <button
+                    onclick="setupTestUser()"
+                    class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition"
+                >
+                    🔑 Setup Test User (Click First!)
+                </button>
+                <span id="auth-status" class="ml-4 text-sm"></span>
+            </div>
+        </div>
+
+        <!-- Chain 1: Foundation -->
+        <div class="bg-white rounded-lg shadow-lg p-8 mb-6">
+            <h2 class="text-2xl font-bold mb-4">Chain 1: Foundation</h2>
+            <p class="text-gray-600 mb-6">WOOP → Know Thyself → Dream → Values → Team → FIT</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- WOOP -->
+                <div class="tool-card border-2 border-gray-200 rounded-lg p-6 hover:border-blue-400">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-xl font-bold">1. WOOP</h3>
+                        <span class="badge badge-info">START</span>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-4">
+                        Wish, Outcome, Obstacle, Plan
+                    </p>
+                    <div class="bg-gray-50 rounded p-3 mb-4 text-xs">
+                        <strong>Data Available:</strong><br>
+                        ✓ wish: "Build a $10M..."<br>
+                        ✓ plan: "Bootstrap..."<br>
+                        ✓ obstacles: Array
+                    </div>
+                    <button
+                        onclick="openTool('00-woop.html', 'WOOP')"
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition"
+                    >
+                        Open WOOP
+                    </button>
+                </div>
+
+                <!-- Know Thyself -->
+                <div class="tool-card border-2 border-gray-200 rounded-lg p-6 hover:border-green-400">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-xl font-bold">2. Know Thyself</h3>
+                        <span class="badge badge-success">INJECTS</span>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-4">
+                        Self-discovery and identity
+                    </p>
+                    <div class="bg-green-50 border border-green-200 rounded p-3 mb-4 text-xs">
+                        <strong>Should Load:</strong><br>
+                        ← WOOP.wish → initial_aspiration<br>
+                        <span class="text-green-700">"Build a $10M sustainable tech company"</span>
+                    </div>
+                    <button
+                        onclick="openTool('01-know-thyself.html', 'Know Thyself')"
+                        class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold transition"
+                    >
+                        Open Know Thyself
+                    </button>
+                </div>
+
+                <!-- Dream -->
+                <div class="tool-card border-2 border-gray-200 rounded-lg p-6 hover:border-purple-400">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-xl font-bold">3. Dream</h3>
+                        <span class="badge badge-success">INJECTS</span>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-4">
+                        Company vision and dream
+                    </p>
+                    <div class="bg-purple-50 border border-purple-200 rounded p-3 mb-4 text-xs">
+                        <strong>Should Load:</strong><br>
+                        ← identity.personal_dream → founder_vision<br>
+                        ← identity.purpose → company_purpose<br>
+                        <span class="text-purple-700">"Lead a transformative organization"</span>
+                    </div>
+                    <button
+                        onclick="openTool('02-dream.html', 'Dream')"
+                        class="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-semibold transition"
+                    >
+                        Open Dream
+                    </button>
+                </div>
+
+                <!-- Values -->
+                <div class="tool-card border-2 border-gray-200 rounded-lg p-6 hover:border-yellow-400">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-xl font-bold">4. Values</h3>
+                        <span class="badge badge-success">INJECTS</span>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-4">
+                        Core company values
+                    </p>
+                    <div class="bg-yellow-50 border border-yellow-200 rounded p-3 mb-4 text-xs">
+                        <strong>Should Load:</strong><br>
+                        ← Dream.company_dream → dream_reference<br>
+                        <span class="text-yellow-700">"Become the #1 business transformation platform"</span>
+                    </div>
+                    <button
+                        onclick="openTool('03-values.html', 'Values')"
+                        class="w-full bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg font-semibold transition"
+                    >
+                        Open Values
+                    </button>
+                </div>
+
+                <!-- Team -->
+                <div class="tool-card border-2 border-gray-200 rounded-lg p-6 hover:border-red-400">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-xl font-bold">5. Team</h3>
+                        <span class="badge badge-success">INJECTS</span>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-4">
+                        Team building and hiring
+                    </p>
+                    <div class="bg-red-50 border border-red-200 rounded p-3 mb-4 text-xs">
+                        <strong>Should Load:</strong><br>
+                        ← Values.core_values → hiring_values<br>
+                        <span class="text-red-700">["Integrity", "Excellence", "Innovation", "Grit"]</span>
+                    </div>
+                    <button
+                        onclick="openTool('04-team.html', 'Team')"
+                        class="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-semibold transition"
+                    >
+                        Open Team
+                    </button>
+                </div>
+
+                <!-- FIT -->
+                <div class="tool-card border-2 border-gray-200 rounded-lg p-6 hover:border-indigo-400">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-xl font-bold">6. FIT</h3>
+                        <span class="badge badge-warning">PENDING</span>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-4">
+                        Team fit assessment
+                    </p>
+                    <div class="bg-indigo-50 border border-indigo-200 rounded p-3 mb-4 text-xs">
+                        <strong>Should Load:</strong><br>
+                        ← Team.team_members → assessment_subjects<br>
+                        <span class="text-indigo-700">Alice, Bob, Carol...</span>
+                    </div>
+                    <button
+                        onclick="alert('FIT tool (19-fit.html) not yet created')"
+                        class="w-full bg-gray-400 text-white px-4 py-2 rounded-lg font-semibold cursor-not-allowed"
+                        disabled
+                    >
+                        Tool Not Available
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Results -->
+        <div class="bg-white rounded-lg shadow-lg p-8">
+            <h2 class="text-2xl font-bold mb-4">📊 What to Look For</h2>
+
+            <div class="space-y-4">
+                <div class="border-l-4 border-green-500 pl-4">
+                    <h3 class="font-bold text-green-900">✅ Success Indicators:</h3>
+                    <ul class="list-disc list-inside text-green-800 space-y-1 mt-2">
+                        <li>Green notification appears: "✓ Loaded N/M values from previous tools"</li>
+                        <li>Form fields have green left border</li>
+                        <li>Fields are pre-populated with data from previous tool</li>
+                        <li>Console logs show "🔗 Dependency Injection initialized"</li>
+                        <li>Console logs show "✓ Populated [field_name] with dependency value"</li>
+                    </ul>
+                </div>
+
+                <div class="border-l-4 border-red-500 pl-4">
+                    <h3 class="font-bold text-red-900">❌ Failure Indicators:</h3>
+                    <ul class="list-disc list-inside text-red-800 space-y-1 mt-2">
+                        <li>No green notification appears</li>
+                        <li>Fields are empty (no data loaded)</li>
+                        <li>Console errors about missing dependencies</li>
+                        <li>Red browser console errors</li>
+                    </ul>
+                </div>
+
+                <div class="border-l-4 border-blue-500 pl-4">
+                    <h3 class="font-bold text-blue-900">🔍 How to Debug:</h3>
+                    <ul class="list-disc list-inside text-blue-800 space-y-1 mt-2">
+                        <li>Open browser DevTools (F12)</li>
+                        <li>Check Console tab for dependency injection logs</li>
+                        <li>Look for "🔗 Dependency Injection initialized for [tool-slug]"</li>
+                        <li>Check Network tab to verify execute_sql RPC calls</li>
+                        <li>Verify ft_user_id is set in localStorage</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const TEST_USER_ID = '5dc6b5ac-b69d-432f-a4b3-f5cd445fc4ad';
+
+        function setupTestUser() {
+            localStorage.setItem('ft_user_id', TEST_USER_ID);
+            document.getElementById('auth-status').innerHTML =
+                '<span class="text-green-600 font-semibold">✓ Test user authenticated!</span>';
+            console.log('✓ Test user authenticated:', TEST_USER_ID);
+        }
+
+        function openTool(filename, toolName) {
+            const userId = localStorage.getItem('ft_user_id');
+            if (!userId) {
+                alert('⚠️ Please click "Setup Test User" first!');
+                return;
+            }
+
+            console.log(`🚀 Opening ${toolName}...`);
+            console.log(`   Test User: ${userId}`);
+            console.log(`   Expected: Dependency injection should load previous tool data`);
+
+            const toolPath = `tools/${filename}`;
+            window.open(toolPath, '_blank');
+        }
+
+        // Auto-setup on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            const userId = localStorage.getItem('ft_user_id');
+            if (userId === TEST_USER_ID) {
+                document.getElementById('auth-status').innerHTML =
+                    '<span class="text-green-600 font-semibold">✓ Already authenticated</span>';
+            }
+        });
+    </script>
+</body>
+</html>

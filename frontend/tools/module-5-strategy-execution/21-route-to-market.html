@@ -1,0 +1,1781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Route to Market Strategy | Fast Track Program</title>
+
+  <!-- React & ReactDOM from CDN -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+  <!-- Babel Standalone for JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- jsPDF + html2canvas for PDF export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <style>
+    /* Font Face Declarations */
+    @font-face {
+      font-family: 'Plaak';
+      src: url('Plaak3Trial-43-Bold.woff2') format('woff2');
+      font-weight: bold;
+      font-style: normal;
+    }
+
+    @font-face {
+      font-family: 'Riforma';
+      src: url('RiformaLL-Regular.woff2') format('woff2');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    @font-face {
+      font-family: 'Monument';
+      src: url('MonumentGrotesk-Mono.woff2') format('woff2');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    /* Global Styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Riforma', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .plaak {
+      font-family: 'Plaak', sans-serif;
+      text-transform: uppercase;
+      font-weight: bold;
+      letter-spacing: -0.02em;
+    }
+
+    .riforma-bold {
+      font-family: 'Riforma', sans-serif;
+      font-weight: bold;
+    }
+
+    .monument {
+      font-family: 'Monument', monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Animations */
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .animate-in {
+      animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .fade-in {
+      animation: fadeIn 0.4s ease-out;
+    }
+
+    .transition-animate-in {
+      animation: slideIn 0.6s ease-out;
+    }
+
+    /* Button Styles */
+    .btn-primary {
+      background: #000000;
+      color: #FFFFFF;
+      padding: 16px 32px;
+      border: 2px solid #000000;
+      font-size: 18px;
+      font-family: 'Riforma', sans-serif;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: normal;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      transform: scale(1.02);
+    }
+
+    .btn-primary:disabled {
+      background: #E0E0E0;
+      border-color: #E0E0E0;
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #FFFFFF;
+      color: #000000;
+      padding: 12px 24px;
+      border: 2px solid #000000;
+      font-size: 16px;
+      font-family: 'Riforma', sans-serif;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-secondary:hover {
+      background: #F8F8F8;
+    }
+
+    /* Form Styles */
+    input[type="text"],
+    input[type="number"],
+    input[type="email"],
+    textarea,
+    select {
+      border: 1px solid #E0E0E0;
+      padding: 12px 16px;
+      font-size: 18px;
+      font-family: 'Riforma', sans-serif;
+      width: 100%;
+      transition: border-color 0.2s ease;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      outline: none;
+      border-color: #000000;
+    }
+
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    textarea::placeholder {
+      white-space: pre-line;
+    }
+
+    /* Numbered Section Badge */
+    .numbered-section {
+      background: #000000;
+      color: #FFFFFF;
+      padding: 10px 16px;
+      font-family: 'Plaak', sans-serif;
+      font-size: 26px;
+      display: inline-block;
+      text-transform: uppercase;
+      letter-spacing: -0.02em;
+    }
+
+    /* Help Button */
+    .help-button {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: #000000;
+      color: #FFFFFF;
+      font-size: 28px;
+      border: none;
+      cursor: pointer;
+      z-index: 40;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Riforma', sans-serif;
+    }
+
+    .help-button:hover {
+      background: #FFF469;
+      color: #000000;
+      transform: scale(1.1);
+    }
+
+    /* Progress Indicator */
+    .progress-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #E0E0E0;
+      transition: all 0.3s ease;
+    }
+
+    .progress-dot.active {
+      background: #000000;
+      transform: scale(1.3);
+    }
+
+    .progress-dot.completed {
+      background: #000000;
+    }
+
+    .progress-line {
+      height: 2px;
+      background: #E0E0E0;
+      flex: 1;
+    }
+
+    /* Character Counter */
+    .char-counter {
+      font-size: 14px;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    .char-counter.invalid {
+      color: #EF4444;
+    }
+
+    /* Choice Button */
+    .choice-button {
+      background: #FFFFFF;
+      color: #000000;
+      border: 4px solid #000000;
+      padding: 48px 64px;
+      font-family: 'Plaak', sans-serif;
+      font-size: 48px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-align: center;
+      width: 100%;
+      max-width: 500px;
+    }
+
+    .choice-button:hover {
+      background: #000000;
+      color: #FFF469;
+      transform: scale(1.05);
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, Fragment } = React;
+
+    // Configuration
+    const CONFIG = {
+      SUPABASE_URL: 'https://vpfayzzjnegdefjrnyoc.supabase.co',
+      SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZwZmF5enpqbmVnZGVmanJueW9jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMzAwODUsImV4cCI6MjA4NTcwNjA4NX0.7qwzd9kwyRG0Wx9DDSc8F9a1SRD0CoC6CGS-9M1sxIs',
+      TOOL_SLUG: 'route-to-market',
+      SPRINT_NUMBER: 21,
+      SCHEMA_NAME: 'sprint_21_route_to_market',
+      AUTOSAVE_DELAY: 2000
+    };
+
+    const { createClient } = supabase;
+    const supabaseClient = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+
+    // Main App Component
+    function RTMApp() {
+      const [step, setStep] = useState(0);
+      const [showHelp, setShowHelp] = useState(false);
+      const [showTransition, setShowTransition] = useState(false);
+      const [transitionMessage, setTransitionMessage] = useState('');
+      const [transitionProgress, setTransitionProgress] = useState(0);
+
+      const [data, setData] = useState({
+        // Business Type
+        businessType: '', // 'products' or 'services'
+
+        // Step 1: RTM Options Analysis
+        rtmOptions: [
+          { id: 1, name: '', customerReach: '', marginImpact: '', controlLevel: '', brandFit: '', operationalLoad: '' }
+        ],
+
+        // Step 2: VP-RTM Fit Filter
+        q1_valueUnique: '',
+        q2_customerControl: '',
+        q3_scalePotential: '',
+        q4_marginHealth: '',
+        q5_brandAlignment: '',
+        autoScore: 0,
+
+        // Step 3: Scenario Testing
+        scenarios: [
+          { id: 1, rtmName: '', capabilitiesNeeded: '', peopleRequired: '', toolsAndSystems: '', investmentRequired: '', timeline: '', riskFactors: '' }
+        ],
+
+        // Step 4: Final Decision
+        primaryRTM: '',
+        primaryRTMWhy: '',
+        primaryRTMSuccess: '',
+        secondaryRTM: '',
+        rejectedRTMs: '',
+        rejectedWhy: '',
+
+        // Step 5: Execution Plan
+        next30Days: '',
+        resourcesNeeded: '',
+        teamOwnership: '',
+        firstCheckpoint: '',
+        successMetrics: '',
+        dealBreakers: ''
+      });
+
+      // Load from localStorage
+      useEffect(() => {
+        const saved = localStorage.getItem('rtm-strategy-data');
+        if (saved) {
+          try {
+            const savedData = JSON.parse(saved);
+            setData(savedData);
+          } catch (e) {
+            console.error('Error loading saved data:', e);
+          }
+        }
+      }, []);
+
+      // Auto-save every 2 seconds
+      useEffect(() => {
+        const interval = setInterval(() => {
+          localStorage.setItem('rtm-strategy-data', JSON.stringify(data));
+        }, 2000);
+        return () => clearInterval(interval);
+      }, [data]);
+
+      const updateData = (field, value) => {
+        setData({ ...data, [field]: value });
+      };
+
+      const addRTMOption = () => {
+        const newOption = { id: Date.now(), name: '', customerReach: '', marginImpact: '', controlLevel: '', brandFit: '', operationalLoad: '' };
+        updateData('rtmOptions', [...(data.rtmOptions || []), newOption]);
+      };
+
+      const removeRTMOption = (id) => {
+        if ((data.rtmOptions || []).length > 1) {
+          updateData('rtmOptions', (data.rtmOptions || []).filter(o => o.id !== id));
+        }
+      };
+
+      const updateRTMOption = (id, field, value) => {
+        const updated = (data.rtmOptions || []).map(o => o.id === id ? { ...o, [field]: value } : o);
+        updateData('rtmOptions', updated);
+      };
+
+      const addScenario = () => {
+        const newScenario = { id: Date.now(), rtmName: '', capabilitiesNeeded: '', peopleRequired: '', toolsAndSystems: '', investmentRequired: '', timeline: '', riskFactors: '' };
+        updateData('scenarios', [...(data.scenarios || []), newScenario]);
+      };
+
+      const removeScenario = (id) => {
+        if ((data.scenarios || []).length > 1) {
+          updateData('scenarios', (data.scenarios || []).filter(s => s.id !== id));
+        }
+      };
+
+      const updateScenario = (id, field, value) => {
+        const updated = (data.scenarios || []).map(s => s.id === id ? { ...s, [field]: value } : s);
+        updateData('scenarios', updated);
+      };
+
+      const goNext = () => {
+        if (step === -0.5) {
+          setStep(0.5);
+        } else if (step === 0.5) {
+          setStep(1);
+        } else if (step >= 1 && step < 5) {
+          const messages = ['20% COMPLETE', '40% COMPLETE', '60% COMPLETE', '80% COMPLETE', '100% COMPLETE'];
+          const progressValues = [20, 40, 60, 80, 100];
+
+          setTransitionMessage(messages[step - 1]);
+          setTransitionProgress(progressValues[step - 1]);
+          setShowTransition(true);
+
+          setTimeout(() => {
+            setShowTransition(false);
+            setStep(step + 1);
+          }, 2000);
+        } else if (step === 5) {
+          setStep(6);
+        } else if (step === 0) {
+          setStep(-0.5);
+        }
+      };
+
+      const goBack = () => {
+        if (step === 6) {
+          setStep(5);
+        } else if (step > 1) {
+          setStep(step - 1);
+        } else if (step === 1) {
+          setStep(0.5);
+        } else if (step === 0.5) {
+          setStep(-0.5);
+        }
+      };
+
+      // Validation functions
+      const isStep1Valid = () => {
+        return data.rtmOptions?.length >= 3 &&
+               data.rtmOptions.every(o =>
+                 o.name?.trim().length >= 5 &&
+                 o.customerReach?.trim().length >= 20 &&
+                 o.marginImpact?.trim().length >= 20 &&
+                 o.controlLevel?.trim().length >= 20 &&
+                 o.brandFit?.trim().length >= 20 &&
+                 o.operationalLoad?.trim().length >= 20
+               );
+      };
+
+      const isStep2Valid = () => {
+        return (data.q1_valueUnique?.length || 0) > 0 &&
+               (data.q2_customerControl?.length || 0) > 0 &&
+               (data.q3_scalePotential?.length || 0) > 0 &&
+               (data.q4_marginHealth?.length || 0) > 0 &&
+               (data.q5_brandAlignment?.length || 0) > 0;
+      };
+
+      const isStep3Valid = () => {
+        return data.scenarios?.length >= 2 &&
+               data.scenarios.every(s =>
+                 s.rtmName?.trim().length >= 5 &&
+                 s.capabilitiesNeeded?.trim().length >= 30 &&
+                 s.peopleRequired?.trim().length >= 20 &&
+                 s.toolsAndSystems?.trim().length >= 20 &&
+                 s.investmentRequired?.trim().length >= 20 &&
+                 s.timeline?.trim().length >= 20 &&
+                 s.riskFactors?.trim().length >= 30
+               );
+      };
+
+      const isStep4Valid = () => {
+        return (data.primaryRTM?.length || 0) >= 10 &&
+               (data.primaryRTMWhy?.length || 0) >= 100 &&
+               (data.primaryRTMSuccess?.length || 0) >= 50 &&
+               (data.secondaryRTM?.length || 0) >= 10 &&
+               (data.rejectedRTMs?.length || 0) >= 20 &&
+               (data.rejectedWhy?.length || 0) >= 50;
+      };
+
+      const isStep5Valid = () => {
+        return (data.next30Days?.length || 0) >= 100 &&
+               (data.resourcesNeeded?.length || 0) >= 50 &&
+               (data.teamOwnership?.length || 0) >= 30 &&
+               (data.firstCheckpoint?.length || 0) >= 20 &&
+               (data.successMetrics?.length || 0) >= 100 &&
+               (data.dealBreakers?.length || 0) >= 50;
+      };
+
+      const exportPDF = async () => {
+        try {
+          const canvas = document.getElementById('canvas-content');
+          if (!canvas) {
+            alert('Canvas not found');
+            return;
+          }
+
+          // Hide images to avoid CORS
+          const images = canvas.querySelectorAll('img');
+          const imageStates = [];
+          images.forEach(img => {
+            imageStates.push({ img, display: img.style.display });
+            img.style.display = 'none';
+          });
+
+          const canvasImage = await html2canvas(canvas, {
+            scale: 2,
+            logging: false,
+            backgroundColor: '#ffffff'
+          });
+
+          // Restore images
+          imageStates.forEach(({ img, display }) => {
+            img.style.display = display;
+          });
+
+          const imgWidth = 190;
+          const imgHeight = (canvasImage.height * imgWidth) / canvasImage.width;
+
+          const { jsPDF } = window.jspdf;
+          const pdf = new jsPDF('p', 'mm', 'a4');
+          const imgData = canvasImage.toDataURL('image/png');
+
+          pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+          pdf.save('route-to-market-strategy.pdf');
+        } catch (error) {
+          console.error('PDF export error:', error);
+          alert('Failed to export PDF: ' + error.message);
+        }
+      };
+
+      const handleSubmit = async () => {
+        try {
+          const userId = localStorage.getItem('ft_user_id');
+          if (!userId) {
+            alert('User not authenticated. Please return to the dashboard.');
+            return;
+          }
+
+          // Submit using RPC function (handles schema-specific tables)
+          const { data: result, error: submitError } = await supabaseClient
+            .rpc('submit_tool_data', {
+              p_schema_name: CONFIG.SCHEMA_NAME,
+              p_user_id: userId,
+              p_data: data,
+              p_tool_slug: CONFIG.TOOL_SLUG
+            });
+
+          if (submitError) throw submitError;
+
+          if (!result || !result.success) {
+            throw new Error(result?.message || 'Submission failed');
+          }
+
+          console.log('Submission ID:', result.submission_id);
+          localStorage.setItem('lastSubmissionId', result.submission_id);
+          alert('Route to Market Strategy submitted successfully!');
+        } catch (error) {
+          console.error('Submit error:', error);
+          alert('Submission failed: ' + error.message);
+        }
+      };
+
+      // Render different pages based on step
+      if (showTransition) {
+        return <TransitionScreen message={transitionMessage} progress={transitionProgress} />;
+      }
+
+      if (step === 0) {
+        return <CoverPage onStart={goNext} />;
+      }
+
+      if (step === -0.5) {
+        return <ChoicePage data={data} updateData={updateData} onNext={goNext} />;
+      }
+
+      if (step === 0.5) {
+        return <IntroPage onNext={goNext} onBack={goBack} businessType={data.businessType} />;
+      }
+
+      if (step === 1) {
+        return (
+          <Step1Page
+            data={data}
+            updateData={updateData}
+            updateRTMOption={updateRTMOption}
+            addRTMOption={addRTMOption}
+            removeRTMOption={removeRTMOption}
+            onNext={goNext}
+            onBack={goBack}
+            canProceed={isStep1Valid()}
+            setShowHelp={setShowHelp}
+          />
+        );
+      }
+
+      if (step === 2) {
+        return (
+          <Step2Page
+            data={data}
+            updateData={updateData}
+            onNext={goNext}
+            onBack={goBack}
+            canProceed={isStep2Valid()}
+            setShowHelp={setShowHelp}
+          />
+        );
+      }
+
+      if (step === 3) {
+        return (
+          <Step3Page
+            data={data}
+            updateData={updateData}
+            updateScenario={updateScenario}
+            addScenario={addScenario}
+            removeScenario={removeScenario}
+            onNext={goNext}
+            onBack={goBack}
+            canProceed={isStep3Valid()}
+            setShowHelp={setShowHelp}
+          />
+        );
+      }
+
+      if (step === 4) {
+        return (
+          <Step4Page
+            data={data}
+            updateData={updateData}
+            onNext={goNext}
+            onBack={goBack}
+            canProceed={isStep4Valid()}
+            setShowHelp={setShowHelp}
+          />
+        );
+      }
+
+      if (step === 5) {
+        return (
+          <Step5Page
+            data={data}
+            updateData={updateData}
+            onNext={goNext}
+            onBack={goBack}
+            canProceed={isStep5Valid()}
+            setShowHelp={setShowHelp}
+          />
+        );
+      }
+
+      if (step === 6) {
+        return (
+          <CanvasPage
+            data={data}
+            onExport={exportPDF}
+            onSubmit={handleSubmit}
+          />
+        );
+      }
+
+      return null;
+    }
+
+    // Cover Page Component
+    function CoverPage({ onStart }) {
+      return (
+        <div className="relative min-h-screen flex items-center justify-center bg-black">
+          <div
+            className="absolute inset-0 w-full h-full"
+            style={{
+              backgroundImage: 'url("kevin-et-laurianne-langlais-yCg-sSDyxsE-unsplash.jpg")',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center'
+            }}
+          ></div>
+          <div className="absolute inset-0" style={{background: 'linear-gradient(to bottom, rgba(0,0,0,0.6), rgba(0,0,0,0.85))'}}></div>
+
+          <div className="relative z-10 text-center text-white px-8 max-w-5xl mx-auto">
+            <h1 className="plaak animate-in" style={{fontSize: '100px', lineHeight: '1', marginBottom: '32px'}}>
+              ROUTE TO
+            </h1>
+            <h2 className="plaak animate-in" style={{fontSize: '80px', lineHeight: '1', marginBottom: '32px', color: '#FFF469', animationDelay: '0.1s'}}>
+              MARKET STRATEGY
+            </h2>
+            <p className="text-4xl mb-12 animate-in" style={{animationDelay: '0.2s'}}>
+              Choose your path. Own your channel. Win your market.
+            </p>
+            <button
+              onClick={onStart}
+              className="bg-white text-black plaak px-16 py-6 border-4 border-white hover:bg-black hover:text-white transition-all text-3xl animate-in"
+              style={{animationDelay: '0.4s'}}
+            >
+              START
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // Choice Page Component
+    function ChoicePage({ data, updateData, onNext }) {
+      const [selected, setSelected] = useState(data.businessType);
+
+      const handleChoice = (type) => {
+        setSelected(type);
+        updateData('businessType', type);
+      };
+
+      return (
+        <div className="bg-black text-white min-h-screen p-16 flex items-center justify-center">
+          <div className="max-w-6xl mx-auto text-center">
+            <h1 className="plaak mb-16 animate-in" style={{fontSize: '100px'}}>
+              WHAT DO YOU SELL?
+            </h1>
+
+            <p className="text-3xl mb-16 text-gray-300 animate-in" style={{animationDelay: '0.1s'}}>
+              Your business model shapes your route to market. Choose one:
+            </p>
+
+            <div className="flex gap-12 justify-center mb-16">
+              <button
+                onClick={() => handleChoice('products')}
+                className="choice-button animate-in"
+                style={{
+                  animationDelay: '0.2s',
+                  background: selected === 'products' ? '#FFF469' : '#FFFFFF',
+                  color: '#000000'
+                }}
+              >
+                OPTION A<br/>PRODUCTS
+              </button>
+              <button
+                onClick={() => handleChoice('services')}
+                className="choice-button animate-in"
+                style={{
+                  animationDelay: '0.3s',
+                  background: selected === 'services' ? '#FFF469' : '#FFFFFF',
+                  color: '#000000'
+                }}
+              >
+                OPTION B<br/>SERVICES
+              </button>
+            </div>
+
+            <button
+              onClick={onNext}
+              disabled={!selected}
+              className="btn-primary text-3xl py-8 plaak px-16"
+              style={{
+                background: selected ? '#FFFFFF' : '#666666',
+                color: selected ? '#000000' : '#333333',
+                borderColor: selected ? '#FFFFFF' : '#666666'
+              }}
+            >
+              CONTINUE
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // Intro Page Component
+    function IntroPage({ onNext, onBack, businessType }) {
+      return (
+        <div className="bg-black text-white min-h-screen p-16">
+          <div className="max-w-5xl mx-auto">
+            <h1 className="plaak mb-16 animate-in" style={{fontSize: '100px'}}>
+              BEFORE WE START
+            </h1>
+
+            {/* Sprint Info */}
+            <div className="mb-12 animate-in" style={{animationDelay: '0.05s'}}>
+              <h2 className="plaak text-6xl mb-6" style={{color: '#FFF469'}}>SPRINT INFO</h2>
+              <div className="bg-white text-black p-8">
+                <p className="text-2xl font-bold mb-4">Sprint 21: Route to Market Strategy</p>
+                <p className="text-xl leading-relaxed mb-4">
+                  Your route to market determines who owns your customer relationship, controls your margin, and ultimately owns your growth. Wrong choice costs millions. Right choice creates competitive moats. This sprint builds your RTM strategy grounded in brutal market reality.
+                </p>
+                <div className="border-l-4 border-black pl-4 italic text-lg">
+                  Business Type: <strong>{businessType === 'products' ? 'PRODUCTS' : 'SERVICES'}</strong>
+                </div>
+              </div>
+            </div>
+
+            {/* Purpose */}
+            <div className="mb-12 animate-in" style={{animationDelay: '0.1s'}}>
+              <h2 className="plaak text-6xl mb-6">PURPOSE</h2>
+
+              <div className="border-l-4 border-white pl-6 mb-6">
+                <p className="text-3xl italic mb-2">&quot;Distribution eats product for breakfast. The best product with weak RTM loses to average product with owned channels.&quot;</p>
+                <p className="text-xl text-gray-400">— FAST TRACK RTM PRINCIPLE</p>
+              </div>
+
+              <p className="text-3xl leading-relaxed mb-4">
+                Most companies pick their route to market by accident or imitation. This sprint forces strategic clarity on channel choice, customer control, margin structure, and execution readiness. Choose wrong and competitors own your customers. Choose right and you control your destiny.
+              </p>
+            </div>
+
+            {/* Mistakes to Avoid */}
+            <div className="mb-12 animate-in" style={{animationDelay: '0.2s'}}>
+              <h2 className="plaak text-6xl mb-6" style={{color: '#FFF469'}}>MISTAKES TO AVOID</h2>
+
+              <div className="bg-white text-black p-6 mb-6 border-4 border-yellow-400">
+                <p className="riforma-bold text-2xl mb-4">COMMON RTM FAILURES:</p>
+                <ul className="text-xl space-y-3">
+                  <li className="flex items-start">
+                    <span className="text-3xl mr-3">1.</span>
+                    <span><strong>Following competitors blindly:</strong> Copying their RTM without understanding your unique value proposition and capabilities</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-3xl mr-3">2.</span>
+                    <span><strong>Chasing reach over control:</strong> Prioritizing maximum distribution while giving away customer relationships and margin</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-3xl mr-3">3.</span>
+                    <span><strong>Ignoring operational reality:</strong> Choosing a channel you cannot execute or afford to support</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-3xl mr-3">4.</span>
+                    <span><strong>No secondary backup:</strong> Single channel dependency creates catastrophic risk when markets shift</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-3xl mr-3">5.</span>
+                    <span><strong>Brand-channel mismatch:</strong> Premium brand through discount channels destroys positioning faster than bad marketing</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            {/* The Journey */}
+            <div className="mb-16 animate-in" style={{animationDelay: '0.3s'}}>
+              <h2 className="plaak text-6xl mb-8">THE JOURNEY</h2>
+              <div className="grid grid-cols-5 gap-4 text-center">
+                <div className="border-2 border-white p-6">
+                  <div className="text-8xl plaak mb-4">01</div>
+                  <p className="text-xl font-bold mb-2">OPTIONS</p>
+                  <p className="text-base text-gray-400">Analyze RTM choices</p>
+                </div>
+                <div className="border-2 border-white p-6">
+                  <div className="text-8xl plaak mb-4">02</div>
+                  <p className="text-xl font-bold mb-2">FIT FILTER</p>
+                  <p className="text-base text-gray-400">VP-RTM alignment</p>
+                </div>
+                <div className="border-2 border-white p-6">
+                  <div className="text-8xl plaak mb-4">03</div>
+                  <p className="text-xl font-bold mb-4">SCENARIOS</p>
+                  <p className="text-base text-gray-400">Test reality</p>
+                </div>
+                <div className="border-2 border-white p-6">
+                  <div className="text-8xl plaak mb-4">04</div>
+                  <p className="text-xl font-bold mb-2">DECISION</p>
+                  <p className="text-base text-gray-400">Primary + backup</p>
+                </div>
+                <div className="border-2 border-white p-6">
+                  <div className="text-8xl plaak mb-4">05</div>
+                  <p className="text-xl font-bold mb-2">EXECUTE</p>
+                  <p className="text-base text-gray-400">30-day plan</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Navigation */}
+            <div className="flex gap-6">
+              <button
+                onClick={onBack}
+                className="btn-secondary flex-1 text-white border-white hover:bg-gray-800"
+              >
+                BACK
+              </button>
+              <button
+                onClick={onNext}
+                className="btn-primary w-full text-3xl py-8 plaak"
+                style={{background: '#FFFFFF', color: '#000000', borderColor: '#FFFFFF'}}
+              >
+                LET&apos;S START →
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Transition Screen Component
+    function TransitionScreen({ message, progress }) {
+      return (
+        <div className="fixed inset-0 bg-black text-white flex items-center justify-center z-50 fade-in">
+          <div className="text-center px-8">
+            <h1 className="plaak transition-animate-in" style={{fontSize: '120px', marginBottom: '32px'}}>
+              SECTION COMPLETE
+            </h1>
+
+            <div className="max-w-2xl mx-auto mb-8 transition-animate-in" style={{animationDelay: '0.2s'}}>
+              <div className="h-2 bg-gray-800 mb-4">
+                <div
+                  className="h-full bg-white transition-all duration-1000"
+                  style={{width: `${progress}%`}}
+                ></div>
+              </div>
+              <p className="monument text-xl tracking-wider">{message}</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Help Modal Component
+    function HelpModal({ step, onClose }) {
+      const helpContent = {
+        1: {
+          why: "Every RTM option creates different trade-offs in customer reach, margin control, brand alignment, and operational load. Tesla chose direct-to-consumer to own the customer experience. Nike uses multi-channel to maximize reach while protecting brand. Your RTM choice determines who owns your growth.",
+          what: "Analyze 3-5 potential routes to market across six critical dimensions: customer reach, margin impact, control level, brand fit, and operational load. Be honest about what each channel requires and delivers.",
+          how: "List realistic RTM options for your business. For each, assess: How many customers can we reach? What margin do we keep? Who controls the customer? Does it match our brand? What does execution require? Rank brutal honesty over wishful thinking."
+        },
+        2: {
+          why: "Your value proposition must align with your route to market or one will kill the other. Premium products through discount channels destroy brand. Complex services through self-serve models create friction. This filter prevents misalignment disasters.",
+          what: "Answer 5 yes/no questions about value uniqueness, customer control needs, scale potential, margin health, and brand alignment. The tool auto-scores to highlight red flags and green lights.",
+          how: "Answer each question honestly based on your current business reality. Yes = 1 point, No = 0 points. Score of 4-5 = strong RTM fit. Score of 2-3 = proceed with caution. Score of 0-1 = wrong channel choice will kill you."
+        },
+        3: {
+          why: "Strategy without operational reality is fantasy. Most RTM failures happen in execution, not strategy. Gymshark scaled DTC because they had social media capability. Your scenarios must test what you can actually build and afford.",
+          what: "For your top 2-3 RTM candidates, map the full operational reality: capabilities needed, people required, tools and systems, investment required, timeline, and risk factors. This exposes execution gaps before you commit.",
+          how: "Pick your strongest RTM options. For each, ask: What capabilities must we build? Who runs this? What systems do we need? What does it cost? How long to launch? What kills us? Be specific, not vague."
+        },
+        4: {
+          why: "RTM decisions shape 5-10 years of business trajectory. Amazon committed to DTC marketplace and built backward. Your primary RTM gets 80% of resources. Your secondary is insurance. Rejected options clarify what you WON'T do.",
+          what: "Declare your primary route to market, explain why it wins, define success metrics. Choose a secondary RTM as backup. Document rejected options and why they failed your filter. This creates strategic clarity.",
+          how: "State primary RTM and why it aligns with your VP, capabilities, and market. Define what success looks like in 12 months. Choose secondary for diversification. List rejected options to prevent future distraction or second-guessing."
+        },
+        5: {
+          why: "The best strategy dies without a 30-day execution plan. This sprint forces you to move from decision to action: first steps, resource needs, ownership, checkpoints, success metrics, and deal-breakers that would force a pivot.",
+          what: "Document next 30 days of action, resources needed, who owns what, first checkpoint date, success metrics, and conditions that would trigger a channel pivot. Clarity breeds speed.",
+          how: "List specific actions in next 30 days. What resources do you need? Who is accountable? When is first review? What metrics prove this is working? What would make you kill this channel? Write it down."
+        }
+      };
+
+      const content = helpContent[step];
+
+      return (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-8"
+          onClick={onClose}
+        >
+          <div
+            className="bg-white text-black max-w-3xl w-full border-8 border-black p-12 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={onClose}
+              className="absolute top-4 right-4 text-4xl hover:text-gray-600"
+            >
+              ×
+            </button>
+
+            <h2 className="plaak mb-8 text-black" style={{fontSize: '80px'}}>
+              INSTRUCTIONS
+            </h2>
+
+            <div className="space-y-8 text-lg">
+              <div>
+                <h3 className="riforma-bold mb-3" style={{fontSize: '40px'}}>Why This Matters</h3>
+                <p>{content.why}</p>
+              </div>
+
+              <div>
+                <h3 className="riforma-bold mb-3" style={{fontSize: '40px'}}>What You&apos;re Doing</h3>
+                <p>{content.what}</p>
+              </div>
+
+              <div>
+                <h3 className="riforma-bold mb-3" style={{fontSize: '40px'}}>How To Do It</h3>
+                <p>{content.how}</p>
+              </div>
+            </div>
+
+            <button
+              onClick={onClose}
+              className="btn-primary w-full mt-8 text-2xl py-4"
+            >
+              GOT IT
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // Step 1: RTM Options Analysis
+    function Step1Page({ data, updateData, updateRTMOption, addRTMOption, removeRTMOption, onNext, onBack, canProceed, setShowHelp }) {
+      const [showHelpModal, setShowHelpModal] = useState(false);
+
+      return (
+        <div className="bg-white min-h-screen p-16 pb-32">
+          {showHelpModal && <HelpModal step={1} onClose={() => setShowHelpModal(false)} />}
+          <div className="max-w-5xl mx-auto">
+            <ProgressIndicator currentStep={1} />
+            <HelpButton onClick={() => setShowHelpModal(true)} />
+
+            <div className="numbered-section mb-8 animate-in">01. RTM OPTIONS ANALYSIS</div>
+
+            <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
+              Analyze your route to market options across key dimensions
+            </h3>
+
+            <div className="border-l-4 border-yellow-400 pl-6 mb-12 animate-in" style={{animationDelay: '0.1s'}}>
+              <p className="text-2xl italic">
+                &quot;Tesla bypassed dealerships and went direct. Nike uses wholesale + DTC. Your RTM choice determines who owns your customer and controls your margin.&quot;
+              </p>
+            </div>
+
+            <p className="text-xl mb-8 text-gray-700">
+              List 3-5 realistic RTM options. For each, assess customer reach, margin impact, control level, brand fit, and operational load. Be honest about trade-offs.
+            </p>
+
+            <div className="space-y-8 mb-12">
+              {(data.rtmOptions || []).map((option, index) => (
+                <div key={option.id} className="bg-gray-50 border-2 border-gray-200 p-6 animate-in" style={{animationDelay: `${0.15 + index * 0.05}s`}}>
+                  <div className="flex justify-between items-start mb-4">
+                    <h5 className="riforma-bold text-2xl">RTM Option {index + 1}</h5>
+                    {(data.rtmOptions || []).length > 1 && (
+                      <button
+                        onClick={() => removeRTMOption(option.id)}
+                        className="text-red-600 hover:text-red-800 text-sm"
+                      >
+                        REMOVE
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="monument text-sm block mb-2">RTM NAME <span className="text-red-500">*</span></label>
+                      <input
+                        type="text"
+                        value={option.name}
+                        onChange={(e) => updateRTMOption(option.id, 'name', e.target.value)}
+                        placeholder="Direct-to-Consumer / Channel Partners / Marketplace / Field Sales / Inside Sales"
+                        className="w-full"
+                      />
+                      <div className="char-counter">{(option.name || '').length}/100 (min 5)</div>
+                    </div>
+
+                    <div>
+                      <label className="monument text-sm block mb-2">CUSTOMER REACH <span className="text-red-500">*</span></label>
+                      <textarea
+                        value={option.customerReach}
+                        onChange={(e) => updateRTMOption(option.id, 'customerReach', e.target.value)}
+                        placeholder="How many customers can we realistically reach through this channel? What geographic/segment coverage?"
+                        className="w-full"
+                        rows={2}
+                      />
+                      <div className="char-counter">{(option.customerReach || '').length}/500 (min 20)</div>
+                    </div>
+
+                    <div>
+                      <label className="monument text-sm block mb-2">MARGIN IMPACT <span className="text-red-500">*</span></label>
+                      <textarea
+                        value={option.marginImpact}
+                        onChange={(e) => updateRTMOption(option.id, 'marginImpact', e.target.value)}
+                        placeholder="What margin do we keep? What do partners take? What are the economics?"
+                        className="w-full"
+                        rows={2}
+                      />
+                      <div className="char-counter">{(option.marginImpact || '').length}/500 (min 20)</div>
+                    </div>
+
+                    <div>
+                      <label className="monument text-sm block mb-2">CONTROL LEVEL <span className="text-red-500">*</span></label>
+                      <textarea
+                        value={option.controlLevel}
+                        onChange={(e) => updateRTMOption(option.id, 'controlLevel', e.target.value)}
+                        placeholder="Who owns the customer relationship? How much control do we have over experience, pricing, data?"
+                        className="w-full"
+                        rows={2}
+                      />
+                      <div className="char-counter">{(option.controlLevel || '').length}/500 (min 20)</div>
+                    </div>
+
+                    <div>
+                      <label className="monument text-sm block mb-2">BRAND FIT <span className="text-red-500">*</span></label>
+                      <textarea
+                        value={option.brandFit}
+                        onChange={(e) => updateRTMOption(option.id, 'brandFit', e.target.value)}
+                        placeholder="Does this channel align with our brand promise and positioning? Premium/discount fit?"
+                        className="w-full"
+                        rows={2}
+                      />
+                      <div className="char-counter">{(option.brandFit || '').length}/500 (min 20)</div>
+                    </div>
+
+                    <div>
+                      <label className="monument text-sm block mb-2">OPERATIONAL LOAD <span className="text-red-500">*</span></label>
+                      <textarea
+                        value={option.operationalLoad}
+                        onChange={(e) => updateRTMOption(option.id, 'operationalLoad', e.target.value)}
+                        placeholder="What does execution require? Team size, systems, processes, investment, complexity?"
+                        className="w-full"
+                        rows={2}
+                      />
+                      <div className="char-counter">{(option.operationalLoad || '').length}/500 (min 20)</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <button onClick={addRTMOption} className="btn-secondary text-sm w-full">+ ADD RTM OPTION</button>
+            </div>
+
+            {/* Navigation */}
+            <div className="flex gap-6">
+              <button onClick={onBack} className="btn-secondary flex-1">
+                BACK
+              </button>
+              <button
+                onClick={onNext}
+                disabled={!canProceed}
+                className="btn-primary flex-1"
+              >
+                NEXT: VP-RTM FIT →
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Step 2: VP-RTM Fit Filter
+    function Step2Page({ data, updateData, onNext, onBack, canProceed, setShowHelp }) {
+      const [showHelpModal, setShowHelpModal] = useState(false);
+
+      const calculateScore = () => {
+        let score = 0;
+        if (data.q1_valueUnique === 'yes') score++;
+        if (data.q2_customerControl === 'yes') score++;
+        if (data.q3_scalePotential === 'yes') score++;
+        if (data.q4_marginHealth === 'yes') score++;
+        if (data.q5_brandAlignment === 'yes') score++;
+        return score;
+      };
+
+      const score = calculateScore();
+      const scoreColor = score >= 4 ? 'green' : score >= 2 ? 'orange' : 'red';
+      const scoreMessage = score >= 4 ? 'STRONG FIT' : score >= 2 ? 'PROCEED WITH CAUTION' : 'HIGH RISK';
+
+      return (
+        <div className="bg-white min-h-screen p-16 pb-32">
+          {showHelpModal && <HelpModal step={2} onClose={() => setShowHelpModal(false)} />}
+          <div className="max-w-5xl mx-auto">
+            <ProgressIndicator currentStep={2} />
+            <HelpButton onClick={() => setShowHelpModal(true)} />
+
+            <div className="numbered-section mb-8 animate-in">02. VP-RTM FIT FILTER</div>
+
+            <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
+              Test alignment between your value proposition and RTM choice
+            </h3>
+
+            <div className="border-l-4 border-yellow-400 pl-6 mb-12 animate-in" style={{animationDelay: '0.1s'}}>
+              <p className="text-2xl italic">
+                &quot;Premium products through discount channels destroy brand faster than bad marketing. Your RTM must match your value proposition.&quot;
+              </p>
+            </div>
+
+            <p className="text-xl mb-8 text-gray-700">
+              Answer 5 questions to test VP-RTM alignment. The tool auto-scores to highlight fit or misalignment.
+            </p>
+
+            <div className="space-y-6 mb-12">
+              <div className="bg-gray-50 border-2 border-gray-200 p-6 animate-in" style={{animationDelay: '0.15s'}}>
+                <label className="monument text-sm block mb-2">Q1: IS YOUR VALUE PROPOSITION TRULY UNIQUE? <span className="text-red-500">*</span></label>
+                <p className="text-sm text-gray-600 mb-3">Can customers clearly articulate why you are different from competitors?</p>
+                <select
+                  value={data.q1_valueUnique}
+                  onChange={(e) => updateData('q1_valueUnique', e.target.value)}
+                  className="w-full"
+                >
+                  <option value="">-- Select --</option>
+                  <option value="yes">YES</option>
+                  <option value="no">NO</option>
+                </select>
+              </div>
+
+              <div className="bg-gray-50 border-2 border-gray-200 p-6 animate-in" style={{animationDelay: '0.2s'}}>
+                <label className="monument text-sm block mb-2">Q2: DO YOU NEED TO CONTROL THE CUSTOMER EXPERIENCE? <span className="text-red-500">*</span></label>
+                <p className="text-sm text-gray-600 mb-3">Is customer experience core to your value delivery, or can partners handle it?</p>
+                <select
+                  value={data.q2_customerControl}
+                  onChange={(e) => updateData('q2_customerControl', e.target.value)}
+                  className="w-full"
+                >
+                  <option value="">-- Select --</option>
+                  <option value="yes">YES - Must control experience</option>
+                  <option value="no">NO - Partners can handle it</option>
+                </select>
+              </div>
+
+              <div className="bg-gray-50 border-2 border-gray-200 p-6 animate-in" style={{animationDelay: '0.25s'}}>
+                <label className="monument text-sm block mb-2">Q3: CAN THIS RTM SCALE TO YOUR GROWTH TARGETS? <span className="text-red-500">*</span></label>
+                <p className="text-sm text-gray-600 mb-3">Does this channel have capacity to reach your revenue goals in 3 years?</p>
+                <select
+                  value={data.q3_scalePotential}
+                  onChange={(e) => updateData('q3_scalePotential', e.target.value)}
+                  className="w-full"
+                >
+                  <option value="">-- Select --</option>
+                  <option value="yes">YES</option>
+                  <option value="no">NO</option>
+                </select>
+              </div>
+
+              <div className="bg-gray-50 border-2 border-gray-200 p-6 animate-in" style={{animationDelay: '0.3s'}}>
+                <label className="monument text-sm block mb-2">Q4: DOES THIS RTM PRESERVE HEALTHY MARGINS? <span className="text-red-500">*</span></label>
+                <p className="text-sm text-gray-600 mb-3">After channel costs, do you keep enough margin to reinvest and grow profitably?</p>
+                <select
+                  value={data.q4_marginHealth}
+                  onChange={(e) => updateData('q4_marginHealth', e.target.value)}
+                  className="w-full"
+                >
+                  <option value="">-- Select --</option>
+                  <option value="yes">YES</option>
+                  <option value="no">NO</option>
+                </select>
+              </div>
+
+              <div className="bg-gray-50 border-2 border-gray-200 p-6 animate-in" style={{animationDelay: '0.35s'}}>
+                <label className="monument text-sm block mb-2">Q5: DOES THIS CHANNEL ALIGN WITH YOUR BRAND? <span className="text-red-500">*</span></label>
+                <p className="text-sm text-gray-600 mb-3">Would your ideal customer expect to find you in this channel?</p>
+                <select
+                  value={data.q5_brandAlignment}
+                  onChange={(e) => updateData('q5_brandAlignment', e.target.value)}
+                  className="w-full"
+                >
+                  <option value="">-- Select --</option>
+                  <option value="yes">YES</option>
+                  <option value="no">NO</option>
+                </select>
+              </div>
+
+              {/* Score Display */}
+              <div className="bg-black text-white p-8 text-center animate-in" style={{animationDelay: '0.4s'}}>
+                <p className="monument text-sm mb-2">FIT SCORE</p>
+                <p className="plaak text-8xl mb-4">{score}/5</p>
+                <p className="text-3xl" style={{color: scoreColor === 'green' ? '#4ADE80' : scoreColor === 'orange' ? '#FFA500' : '#EF4444'}}>
+                  {scoreMessage}
+                </p>
+              </div>
+            </div>
+
+            {/* Navigation */}
+            <div className="flex gap-6">
+              <button onClick={onBack} className="btn-secondary flex-1">
+                BACK
+              </button>
+              <button
+                onClick={onNext}
+                disabled={!canProceed}
+                className="btn-primary flex-1"
+              >
+                NEXT: SCENARIOS →
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Step 3: Scenario Testing
+    function Step3Page({ data, updateData, updateScenario, addScenario, removeScenario, onNext, onBack, canProceed, setShowHelp }) {
+      const [showHelpModal, setShowHelpModal] = useState(false);
+
+      return (
+        <div className="bg-white min-h-screen p-16 pb-32">
+          {showHelpModal && <HelpModal step={3} onClose={() => setShowHelpModal(false)} />}
+          <div className="max-w-5xl mx-auto">
+            <ProgressIndicator currentStep={3} />
+            <HelpButton onClick={() => setShowHelpModal(true)} />
+
+            <div className="numbered-section mb-8 animate-in">03. SCENARIO TESTING</div>
+
+            <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
+              Map operational reality for your top RTM candidates
+            </h3>
+
+            <div className="border-l-4 border-yellow-400 pl-6 mb-12 animate-in" style={{animationDelay: '0.1s'}}>
+              <p className="text-2xl italic">
+                &quot;Most RTM strategies die in execution, not strategy. Test what you can actually build, staff, and afford before you commit.&quot;
+              </p>
+            </div>
+
+            <p className="text-xl mb-8 text-gray-700">
+              For your top 2-3 RTM options, map the full execution picture: capabilities, people, systems, investment, timeline, and risks.
+            </p>
+
+            <div className="space-y-8 mb-12">
+              {(data.scenarios || []).map((scenario, index) => (
+                <div key={scenario.id} className="bg-gray-50 border-2 border-gray-200 p-6 animate-in" style={{animationDelay: `${0.15 + index * 0.05}s`}}>
+                  <div className="flex justify-between items-start mb-4">
+                    <h5 className="riforma-bold text-2xl">Scenario {index + 1}</h5>
+                    {(data.scenarios || []).length > 1 && (
+                      <button
+                        onClick={() => removeScenario(scenario.id)}
+                        className="text-red-600 hover:text-red-800 text-sm"
+                      >
+                        REMOVE
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="monument text-sm block mb-2">RTM NAME <span className="text-red-500">*</span></label>
+                      <input
+                        type="text"
+                        value={scenario.rtmName}
+                        onChange={(e) => updateScenario(scenario.id, 'rtmName', e.target.value)}
+                        placeholder="Direct-to-Consumer / Channel Partners / Inside Sales"
+                        className="w-full"
+                      />
+                      <div className="char-counter">{(scenario.rtmName || '').length}/100 (min 5)</div>
+                    </div>
+
+                    <div>
+                      <label className="monument text-sm block mb-2">CAPABILITIES NEEDED <span className="text-red-500">*</span></label>
+                      <textarea
+                        value={scenario.capabilitiesNeeded}
+                        onChange={(e) => updateScenario(scenario.id, 'capabilitiesNeeded', e.target.value)}
+                        placeholder="What skills, expertise, or organizational capabilities must we build or acquire?"
+                        className="w-full"
+                        rows={2}
+                      />
+                      <div className="char-counter">{(scenario.capabilitiesNeeded || '').length}/500 (min 30)</div>
+                    </div>
+
+                    <div>
+                      <label className="monument text-sm block mb-2">PEOPLE REQUIRED <span className="text-red-500">*</span></label>
+                      <textarea
+                        value={scenario.peopleRequired}
+                        onChange={(e) => updateScenario(scenario.id, 'peopleRequired', e.target.value)}
+                        placeholder="Who do we need to hire or reassign? What roles, how many, what expertise?"
+                        className="w-full"
+                        rows={2}
+                      />
+                      <div className="char-counter">{(scenario.peopleRequired || '').length}/500 (min 20)</div>
+                    </div>
+
+                    <div>
+                      <label className="monument text-sm block mb-2">TOOLS AND SYSTEMS <span className="text-red-500">*</span></label>
+                      <textarea
+                        value={scenario.toolsAndSystems}
+                        onChange={(e) => updateScenario(scenario.id, 'toolsAndSystems', e.target.value)}
+                        placeholder="What technology, platforms, or infrastructure do we need? CRM, marketplace integration, logistics?"
+                        className="w-full"
+                        rows={2}
+                      />
+                      <div className="char-counter">{(scenario.toolsAndSystems || '').length}/500 (min 20)</div>
+                    </div>
+
+                    <div>
+                      <label className="monument text-sm block mb-2">INVESTMENT REQUIRED <span className="text-red-500">*</span></label>
+                      <textarea
+                        value={scenario.investmentRequired}
+                        onChange={(e) => updateScenario(scenario.id, 'investmentRequired', e.target.value)}
+                        placeholder="What is the total cost to launch and run for 12 months? People, systems, marketing, operations?"
+                        className="w-full"
+                        rows={2}
+                      />
+                      <div className="char-counter">{(scenario.investmentRequired || '').length}/500 (min 20)</div>
+                    </div>
+
+                    <div>
+                      <label className="monument text-sm block mb-2">TIMELINE <span className="text-red-500">*</span></label>
+                      <textarea
+                        value={scenario.timeline}
+                        onChange={(e) => updateScenario(scenario.id, 'timeline', e.target.value)}
+                        placeholder="How long to launch? When do we see first revenue? When does it break even?"
+                        className="w-full"
+                        rows={2}
+                      />
+                      <div className="char-counter">{(scenario.timeline || '').length}/500 (min 20)</div>
+                    </div>
+
+                    <div>
+                      <label className="monument text-sm block mb-2">RISK FACTORS <span className="text-red-500">*</span></label>
+                      <textarea
+                        value={scenario.riskFactors}
+                        onChange={(e) => updateScenario(scenario.id, 'riskFactors', e.target.value)}
+                        placeholder="What could kill this? Market shifts, competitor response, execution failures, capability gaps?"
+                        className="w-full"
+                        rows={2}
+                      />
+                      <div className="char-counter">{(scenario.riskFactors || '').length}/1000 (min 30)</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <button onClick={addScenario} className="btn-secondary text-sm w-full">+ ADD SCENARIO</button>
+            </div>
+
+            {/* Navigation */}
+            <div className="flex gap-6">
+              <button onClick={onBack} className="btn-secondary flex-1">
+                BACK
+              </button>
+              <button
+                onClick={onNext}
+                disabled={!canProceed}
+                className="btn-primary flex-1"
+              >
+                NEXT: DECISION →
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Step 4: Final Decision
+    function Step4Page({ data, updateData, onNext, onBack, canProceed, setShowHelp }) {
+      const [showHelpModal, setShowHelpModal] = useState(false);
+
+      return (
+        <div className="bg-white min-h-screen p-16 pb-32">
+          {showHelpModal && <HelpModal step={4} onClose={() => setShowHelpModal(false)} />}
+          <div className="max-w-5xl mx-auto">
+            <ProgressIndicator currentStep={4} />
+            <HelpButton onClick={() => setShowHelpModal(true)} />
+
+            <div className="numbered-section mb-8 animate-in">04. FINAL DECISION</div>
+
+            <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
+              Declare your primary RTM, secondary backup, and rejected options
+            </h3>
+
+            <div className="border-l-4 border-yellow-400 pl-6 mb-12 animate-in" style={{animationDelay: '0.1s'}}>
+              <p className="text-2xl italic">
+                &quot;Your primary RTM gets 80% of resources. Your secondary is insurance. Rejected options create clarity by defining what you WON&apos;T do.&quot;
+              </p>
+            </div>
+
+            <div className="space-y-6 mb-12">
+              <div className="bg-gray-50 border-2 border-gray-200 p-6 animate-in" style={{animationDelay: '0.15s'}}>
+                <label className="monument text-sm block mb-2">PRIMARY RTM <span className="text-red-500">*</span></label>
+                <p className="text-sm text-gray-600 mb-2">What is your primary route to market?</p>
+                <input
+                  type="text"
+                  value={data.primaryRTM}
+                  onChange={(e) => updateData('primaryRTM', e.target.value)}
+                  placeholder="Direct-to-Consumer E-commerce"
+                  className="w-full"
+                />
+                <div className="char-counter">{(data.primaryRTM || '').length}/200 (min 10)</div>
+              </div>
+
+              <div className="bg-gray-50 border-2 border-gray-200 p-6 animate-in" style={{animationDelay: '0.2s'}}>
+                <label className="monument text-sm block mb-2">WHY THIS RTM WINS <span className="text-red-500">*</span></label>
+                <p className="text-sm text-gray-600 mb-2">Why does this channel align with your VP, capabilities, and market reality?</p>
+                <textarea
+                  value={data.primaryRTMWhy}
+                  onChange={(e) => updateData('primaryRTMWhy', e.target.value)}
+                  placeholder="DTC gives us full control of customer experience (critical for our premium positioning), preserves 65% margin vs 35% through wholesale, lets us own customer data for retention, and we already have e-commerce capability in-house."
+                  className="w-full"
+                  rows={4}
+                />
+                <div className="char-counter">{(data.primaryRTMWhy || '').length}/1000 (min 100)</div>
+              </div>
+
+              <div className="bg-gray-50 border-2 border-gray-200 p-6 animate-in" style={{animationDelay: '0.25s'}}>
+                <label className="monument text-sm block mb-2">SUCCESS METRICS (12 months) <span className="text-red-500">*</span></label>
+                <p className="text-sm text-gray-600 mb-2">What does success look like in 12 months?</p>
+                <textarea
+                  value={data.primaryRTMSuccess}
+                  onChange={(e) => updateData('primaryRTMSuccess', e.target.value)}
+                  placeholder="$2M revenue through DTC, 40% repeat customer rate, 60% gross margin, <$100 CAC, operational break-even"
+                  className="w-full"
+                  rows={3}
+                />
+                <div className="char-counter">{(data.primaryRTMSuccess || '').length}/500 (min 50)</div>
+              </div>
+
+              <div className="bg-gray-50 border-2 border-gray-200 p-6 animate-in" style={{animationDelay: '0.3s'}}>
+                <label className="monument text-sm block mb-2">SECONDARY RTM (Backup) <span className="text-red-500">*</span></label>
+                <p className="text-sm text-gray-600 mb-2">What is your secondary channel for diversification?</p>
+                <input
+                  type="text"
+                  value={data.secondaryRTM}
+                  onChange={(e) => updateData('secondaryRTM', e.target.value)}
+                  placeholder="Strategic Channel Partners (3-5 key partners)"
+                  className="w-full"
+                />
+                <div className="char-counter">{(data.secondaryRTM || '').length}/200 (min 10)</div>
+              </div>
+
+              <div className="bg-gray-50 border-2 border-gray-200 p-6 animate-in" style={{animationDelay: '0.35s'}}>
+                <label className="monument text-sm block mb-2">REJECTED RTM OPTIONS <span className="text-red-500">*</span></label>
+                <p className="text-sm text-gray-600 mb-2">What channels did you explicitly reject?</p>
+                <input
+                  type="text"
+                  value={data.rejectedRTMs}
+                  onChange={(e) => updateData('rejectedRTMs', e.target.value)}
+                  placeholder="Mass retail / Marketplaces / Affiliate networks"
+                  className="w-full"
+                />
+                <div className="char-counter">{(data.rejectedRTMs || '').length}/300 (min 20)</div>
+              </div>
+
+              <div className="bg-gray-50 border-2 border-gray-200 p-6 animate-in" style={{animationDelay: '0.4s'}}>
+                <label className="monument text-sm block mb-2">WHY REJECTED <span className="text-red-500">*</span></label>
+                <p className="text-sm text-gray-600 mb-2">Why did these options fail your filter?</p>
+                <textarea
+                  value={data.rejectedWhy}
+                  onChange={(e) => updateData('rejectedWhy', e.target.value)}
+                  placeholder="Mass retail destroys our premium positioning and gives away 50%+ margin. Marketplaces commoditize us and lose customer relationship. Affiliate networks create brand dilution and quality control issues."
+                  className="w-full"
+                  rows={3}
+                />
+                <div className="char-counter">{(data.rejectedWhy || '').length}/1000 (min 50)</div>
+              </div>
+            </div>
+
+            {/* Navigation */}
+            <div className="flex gap-6">
+              <button onClick={onBack} className="btn-secondary flex-1">
+                BACK
+              </button>
+              <button
+                onClick={onNext}
+                disabled={!canProceed}
+                className="btn-primary flex-1"
+              >
+                NEXT: EXECUTION PLAN →
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Step 5: Execution Plan
+    function Step5Page({ data, updateData, onNext, onBack, canProceed, setShowHelp }) {
+      const [showHelpModal, setShowHelpModal] = useState(false);
+
+      return (
+        <div className="bg-white min-h-screen p-16 pb-32">
+          {showHelpModal && <HelpModal step={5} onClose={() => setShowHelpModal(false)} />}
+          <div className="max-w-5xl mx-auto">
+            <ProgressIndicator currentStep={5} />
+            <HelpButton onClick={() => setShowHelpModal(true)} />
+
+            <div className="numbered-section mb-8 animate-in">05. EXECUTION PLAN</div>
+
+            <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
+              Build your 30-day action plan to launch your RTM
+            </h3>
+
+            <div className="border-l-4 border-yellow-400 pl-6 mb-12 animate-in" style={{animationDelay: '0.1s'}}>
+              <p className="text-2xl italic">
+                &quot;Strategy without a 30-day execution plan is wishful thinking. Clarity breeds speed. Speed creates momentum.&quot;
+              </p>
+            </div>
+
+            <div className="space-y-6 mb-12">
+              <div className="bg-gray-50 border-2 border-gray-200 p-6 animate-in" style={{animationDelay: '0.15s'}}>
+                <label className="monument text-sm block mb-2">NEXT 30 DAYS <span className="text-red-500">*</span></label>
+                <p className="text-sm text-gray-600 mb-2">What specific actions will you take in the next 30 days?</p>
+                <textarea
+                  value={data.next30Days}
+                  onChange={(e) => updateData('next30Days', e.target.value)}
+                  placeholder="Week 1: Finalize platform selection, hire e-commerce manager. Week 2: Build MVP storefront, set up payment processing. Week 3: Create first 10 product listings, launch soft beta. Week 4: Run $5K paid test campaign, measure conversion, iterate."
+                  className="w-full"
+                  rows={5}
+                />
+                <div className="char-counter">{(data.next30Days || '').length}/2000 (min 100)</div>
+              </div>
+
+              <div className="bg-gray-50 border-2 border-gray-200 p-6 animate-in" style={{animationDelay: '0.2s'}}>
+                <label className="monument text-sm block mb-2">RESOURCES NEEDED <span className="text-red-500">*</span></label>
+                <p className="text-sm text-gray-600 mb-2">What resources do you need to execute? Budget, tools, people?</p>
+                <textarea
+                  value={data.resourcesNeeded}
+                  onChange={(e) => updateData('resourcesNeeded', e.target.value)}
+                  placeholder="$50K launch budget (platform, ads, inventory). E-commerce manager (hired or contracted). Shopify platform. Payment processor. 3PL for fulfillment."
+                  className="w-full"
+                  rows={4}
+                />
+                <div className="char-counter">{(data.resourcesNeeded || '').length}/1000 (min 50)</div>
+              </div>
+
+              <div className="bg-gray-50 border-2 border-gray-200 p-6 animate-in" style={{animationDelay: '0.25s'}}>
+                <label className="monument text-sm block mb-2">TEAM OWNERSHIP <span className="text-red-500">*</span></label>
+                <p className="text-sm text-gray-600 mb-2">Who owns what? Clear accountability drives execution.</p>
+                <textarea
+                  value={data.teamOwnership}
+                  onChange={(e) => updateData('teamOwnership', e.target.value)}
+                  placeholder="Sarah (E-commerce Manager): Platform build, product listings, conversion optimization. Tom (Marketing): Paid campaigns, creative, analytics. CEO: Budget approval, partner negotiations."
+                  className="w-full"
+                  rows={3}
+                />
+                <div className="char-counter">{(data.teamOwnership || '').length}/1000 (min 30)</div>
+              </div>
+
+              <div className="bg-gray-50 border-2 border-gray-200 p-6 animate-in" style={{animationDelay: '0.3s'}}>
+                <label className="monument text-sm block mb-2">FIRST CHECKPOINT <span className="text-red-500">*</span></label>
+                <p className="text-sm text-gray-600 mb-2">When is your first review? What will you assess?</p>
+                <textarea
+                  value={data.firstCheckpoint}
+                  onChange={(e) => updateData('firstCheckpoint', e.target.value)}
+                  placeholder="30-day checkpoint on March 15. Review: revenue vs target, CAC vs forecast, conversion rate, operational issues, customer feedback."
+                  className="w-full"
+                  rows={3}
+                />
+                <div className="char-counter">{(data.firstCheckpoint || '').length}/500 (min 20)</div>
+              </div>
+
+              <div className="bg-gray-50 border-2 border-gray-200 p-6 animate-in" style={{animationDelay: '0.35s'}}>
+                <label className="monument text-sm block mb-2">SUCCESS METRICS <span className="text-red-500">*</span></label>
+                <p className="text-sm text-gray-600 mb-2">What metrics prove this RTM is working?</p>
+                <textarea
+                  value={data.successMetrics}
+                  onChange={(e) => updateData('successMetrics', e.target.value)}
+                  placeholder="Month 1: $20K revenue, <$150 CAC, 2% conversion rate. Month 3: $75K revenue, <$120 CAC, 3% conversion, 25% repeat rate. Month 6: $200K revenue, gross margin >60%, operational break-even."
+                  className="w-full"
+                  rows={4}
+                />
+                <div className="char-counter">{(data.successMetrics || '').length}/2000 (min 100)</div>
+              </div>
+
+              <div className="bg-gray-50 border-2 border-gray-200 p-6 animate-in" style={{animationDelay: '0.4s'}}>
+                <label className="monument text-sm block mb-2">DEAL-BREAKERS (When to pivot) <span className="text-red-500">*</span></label>
+                <p className="text-sm text-gray-600 mb-2">What would force you to kill or change this RTM?</p>
+                <textarea
+                  value={data.dealBreakers}
+                  onChange={(e) => updateData('dealBreakers', e.target.value)}
+                  placeholder="CAC >$200 after 90 days with no downward trend. Conversion rate <1% after optimization. Gross margin <50% due to unforeseen costs. Customer complaints about experience >20%. Competitor launches DTC with 10x our budget."
+                  className="w-full"
+                  rows={4}
+                />
+                <div className="char-counter">{(data.dealBreakers || '').length}/1000 (min 50)</div>
+              </div>
+            </div>
+
+            {/* Navigation */}
+            <div className="flex gap-6">
+              <button onClick={onBack} className="btn-secondary flex-1">
+                BACK
+              </button>
+              <button
+                onClick={onNext}
+                disabled={!canProceed}
+                className="btn-primary flex-1"
+              >
+                VIEW RTM STRATEGY →
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Canvas Page
+    function CanvasPage({ data, onExport, onSubmit }) {
+      return (
+        <div className="bg-gray-100 min-h-screen p-16">
+          <div className="max-w-6xl mx-auto">
+            {/* Canvas Content */}
+            <div id="canvas-content" className="bg-white p-16 mb-8">
+              <div className="border-b-4 border-black pb-8 mb-8">
+                <h1 className="plaak text-7xl mb-2">ROUTE TO MARKET STRATEGY</h1>
+                <p className="text-2xl text-gray-600">Sprint 21 - {data.businessType === 'products' ? 'PRODUCTS' : 'SERVICES'}</p>
+              </div>
+
+              {/* Primary RTM */}
+              <div className="mb-10">
+                <h2 className="riforma-bold text-4xl mb-4">Primary RTM</h2>
+                <div className="bg-gray-50 p-6 border-l-4 border-black">
+                  <p className="text-3xl riforma-bold mb-4">{data.primaryRTM}</p>
+                  <p className="text-xl">{data.primaryRTMWhy}</p>
+                  <p className="text-lg text-gray-600 mt-4"><strong>Success Metrics:</strong> {data.primaryRTMSuccess}</p>
+                </div>
+              </div>
+
+              {/* RTM Options Analyzed */}
+              <div className="mb-10">
+                <h2 className="riforma-bold text-4xl mb-4">RTM Options Analyzed</h2>
+                <div className="grid grid-cols-2 gap-4">
+                  {data.rtmOptions.slice(0, 4).map((option, i) => (
+                    <div key={i} className="bg-gray-50 p-4 border-2 border-black">
+                      <p className="riforma-bold text-xl mb-2">{option.name}</p>
+                      <p className="text-sm"><strong>Reach:</strong> {option.customerReach.substring(0, 80)}...</p>
+                      <p className="text-sm"><strong>Margin:</strong> {option.marginImpact.substring(0, 80)}...</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Scenarios Tested */}
+              <div className="mb-10">
+                <h2 className="riforma-bold text-4xl mb-4">Scenarios Tested</h2>
+                <div className="space-y-3">
+                  {data.scenarios.slice(0, 3).map((scenario, i) => (
+                    <div key={i} className="bg-gray-50 p-4 border-l-4 border-black">
+                      <p className="riforma-bold text-lg mb-1">{scenario.rtmName}</p>
+                      <p className="text-sm text-gray-700">Timeline: {scenario.timeline}</p>
+                      <p className="text-sm text-gray-700">Investment: {scenario.investmentRequired}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Decision */}
+              <div className="mb-10">
+                <h2 className="riforma-bold text-4xl mb-4">Final Decision</h2>
+                <div className="bg-gray-50 p-6 border-4 border-black mb-4">
+                  <p className="text-lg"><strong>Primary:</strong> {data.primaryRTM}</p>
+                  <p className="text-lg"><strong>Secondary:</strong> {data.secondaryRTM}</p>
+                </div>
+                <div className="bg-red-50 p-4 border-l-4 border-red-600">
+                  <p className="text-base"><strong>Rejected:</strong> {data.rejectedRTMs}</p>
+                  <p className="text-sm text-gray-700">{data.rejectedWhy.substring(0, 150)}...</p>
+                </div>
+              </div>
+
+              {/* Next 30 Days */}
+              <div>
+                <h2 className="riforma-bold text-4xl mb-4">Next 30 Days</h2>
+                <div className="bg-yellow-50 p-6 border-l-4 border-yellow-400">
+                  <p className="text-base">{data.next30Days.substring(0, 300)}...</p>
+                  <p className="text-sm text-gray-700 mt-3"><strong>First Checkpoint:</strong> {data.firstCheckpoint}</p>
+                </div>
+              </div>
+
+              <div className="mt-12 pt-8 border-t-2 border-gray-200 text-center text-sm text-gray-500">
+                <p>Generated: {new Date().toLocaleDateString()}</p>
+                <p className="mt-1">Fast Track Sprint 21 - Route to Market Strategy</p>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-6 mb-6">
+              <button onClick={onExport} className="btn-primary flex-1">
+                EXPORT PDF
+              </button>
+              <button onClick={onSubmit} className="btn-primary flex-1">
+                SUBMIT
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Progress Indicator
+    function ProgressIndicator({ currentStep }) {
+      const steps = [
+        { number: 1, label: 'Options' },
+        { number: 2, label: 'Fit Filter' },
+        { number: 3, label: 'Scenarios' },
+        { number: 4, label: 'Decision' },
+        { number: 5, label: 'Execute' }
+      ];
+
+      return (
+        <div className="flex items-center justify-center gap-4 mb-12">
+          {steps.map((step, index) => (
+            <Fragment key={step.number}>
+              <div className="flex flex-col items-center">
+                <div className={`progress-dot ${step.number === currentStep ? 'active' : ''} ${step.number < currentStep ? 'completed' : ''}`}></div>
+                <div className="monument text-xs mt-2">{step.label}</div>
+              </div>
+              {index < steps.length - 1 && <div className="progress-line w-12"></div>}
+            </Fragment>
+          ))}
+        </div>
+      );
+    }
+
+    // Help Button
+    function HelpButton({ onClick }) {
+      return (
+        <button onClick={onClick} className="help-button">
+          ?
+        </button>
+      );
+    }
+
+    // Render App
+    ReactDOM.render(<RTMApp />, document.getElementById('root'));
+  </script>
+</body>
+</html>

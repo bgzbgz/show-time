@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Company Values Tool | Fast Track</title>
+    
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        @font-face {
+            font-family: 'Plaak';
+            src: url('Plaak3Trial-43-Bold.otf') format('opentype');
+            font-weight: bold;
+        }
+        
+        @font-face {
+            font-family: 'Riforma';
+            src: url('RiformaLL-Regular.otf') format('opentype');
+            font-weight: normal;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Riforma', -apple-system, sans-serif;
+            font-size: 16px;
+            color: #000000;
+            background: #FFFFFF;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .plaak {
+            font-family: 'Plaak', sans-serif;
+            font-weight: bold;
+            letter-spacing: -0.01em;
+            line-height: 1.2;
+        }
+
+        .worksheet-input {
+            border: 1px solid #E0E0E0;
+            padding: 12px 16px;
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
+            transition: border-color 0.2s ease;
+            background: #FFFFFF;
+            width: 100%;
+        }
+
+        .worksheet-input:focus {
+            outline: none;
+            border-color: #000000;
+        }
+
+        .numbered-section {
+            background: #000000;
+            color: #FFFFFF;
+            padding: 10px 16px;
+            font-size: 18px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: #000000;
+            color: #FFFFFF;
+            padding: 12px 24px;
+            border: 2px solid #000000;
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: scale(1.02);
+        }
+
+        .btn-primary:disabled {
+            background: #E0E0E0;
+            border-color: #E0E0E0;
+            color: #9CA3AF;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .btn-secondary {
+            background: #FFFFFF;
+            color: #000000;
+            padding: 12px 24px;
+            border: 2px solid #000000;
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-secondary:hover { background: #F8F8F8; }
+
+        .progress-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #E0E0E0;
+            transition: all 0.2s ease;
+        }
+
+        .progress-dot.active {
+            background: #000000;
+            transform: scale(1.3);
+        }
+
+        .progress-dot.completed {
+            background: #000000;
+        }
+
+        .animate-in {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media print { .no-print { display: none; } }
+
+        .cover-overlay {
+            background: linear-gradient(to bottom, rgba(0,0,0,0.4), rgba(0,0,0,0.7));
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        const CONFIG = {
+            AUTOSAVE_WEBHOOK: 'https://n8n-edge.fasttrack-diagnostic.com/webhook/values-autosave',
+            SUBMIT_WEBHOOK: 'https://n8n-edge.fasttrack-diagnostic.com/webhook/608b17ea-9618-4877-ae3c-85eb2e89b700',
+            STORAGE_KEY: 'fasttrack_company_values',
+            TOOL_NAME: 'company_values_tool',
+            SPRINT_NUMBER: 2
+        };
+
+        const ValuesTool = () => {
+            const [step, setStep] = useState(0);
+            const [userEmail, setUserEmail] = useState('');
+            const [formData, setFormData] = useState({
+                // Section 1: Company Values
+                behaviors: Array(10).fill(''),
+                top5Values: Array(5).fill(''),
+                
+                // Section 2: Values Gap
+                dream: '',
+                requiredValues: '',
+                gap: '',
+                
+                // Section 3: Values into Behaviors
+                valuesBehaviors: Array(5).fill(null).map(() => ({ 
+                    value: '', 
+                    cool: '', 
+                    notCool: '' 
+                })),
+                
+                // Section 4: Red Lines
+                yellowLines: Array(5).fill(''),
+                redLines: Array(5).fill(''),
+                
+                // Section 5: Recruitment Questions
+                recruitmentQuestions: Array(5).fill(''),
+                
+                // Section 6: Communication Plan
+                commPlan: Array(5).fill(null).map(() => ({ 
+                    idea: '', 
+                    who: '', 
+                    when: '' 
+                }))
+            });
+
+            // Auto-save
+            useEffect(() => {
+                const timer = setTimeout(() => {
+                    if (userEmail) {
+                        localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify({
+                            formData, step, userEmail, lastSaved: new Date().toISOString()
+                        }));
+                    }
+                }, 2000);
+                return () => clearTimeout(timer);
+            }, [formData, step, userEmail]);
+
+            // Auto-restore disabled - tool always starts fresh
+            // Data still auto-saves in background for crash recovery
+
+            const updateField = (field, value) => {
+                setFormData(prev => ({ ...prev, [field]: value }));
+            };
+
+            const updateArrayField = (field, index, value) => {
+                setFormData(prev => ({
+                    ...prev,
+                    [field]: prev[field].map((item, i) => i === index ? value : item)
+                }));
+            };
+
+            const updateObjectField = (field, index, key, value) => {
+                setFormData(prev => ({
+                    ...prev,
+                    [field]: prev[field].map((item, i) => 
+                        i === index ? { ...item, [key]: value } : item
+                    )
+                }));
+            };
+
+            // Validation functions
+            const validateStep1 = () => {
+                const filledBehaviors = formData.behaviors.filter(b => b.trim().length >= 50);
+                const filledValues = formData.top5Values.filter(v => v.trim().length >= 2);
+                return filledBehaviors.length >= 3 && filledValues.length >= 3;
+            };
+
+            const validateStep2 = () => {
+                return formData.dream.trim().length >= 50 &&
+                       formData.requiredValues.trim().length >= 50 &&
+                       formData.gap.trim().length >= 50;
+            };
+
+            const validateStep3 = () => {
+                const validValues = formData.valuesBehaviors.filter(v => 
+                    v.value.trim().length >= 2 &&
+                    v.cool.trim().length >= 50 &&
+                    v.notCool.trim().length >= 50
+                );
+                return validValues.length >= 3;
+            };
+
+            const validateStep4 = () => {
+                const validYellow = formData.yellowLines.filter(l => l.trim().length >= 30);
+                const validRed = formData.redLines.filter(l => l.trim().length >= 30);
+                return validYellow.length >= 2 && validRed.length >= 2;
+            };
+
+            const validateStep5 = () => {
+                const validQuestions = formData.recruitmentQuestions.filter(q => q.trim().length >= 50);
+                return validQuestions.length >= 3;
+            };
+
+            const validateStep6 = () => {
+                const validPlans = formData.commPlan.filter(p => 
+                    p.idea.trim().length >= 30 &&
+                    p.who.trim().length >= 2 &&
+                    p.when.trim().length >= 2
+                );
+                return validPlans.length >= 3;
+            };
+
+            const handleSubmit = async () => {
+                try {
+                    const response = await fetch(CONFIG.SUBMIT_WEBHOOK, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            toolName: CONFIG.TOOL_NAME,
+                            userId: userEmail,
+                            sprintNumber: CONFIG.SPRINT_NUMBER,
+                            data: {
+                                userName: userEmail.split('@')[0],
+                                ...formData
+                            }
+                        })
+                    });
+
+                    const result = await response.json();
+                    
+                    if (response.ok) {
+                        alert('Submitted successfully! Your values system has been saved.');
+                    } else {
+                        alert('Submit failed. Please try again.');
+                    }
+                } catch (error) {
+                    console.error('Submit error:', error);
+                    alert('Submit failed. Please try again.');
+                }
+            };
+
+            // COVER PAGE
+            if (step === 0) {
+                return (
+                    <div className="relative min-h-screen flex items-center justify-center">
+                        <img 
+                            src="anastase-maragos-X4zx5Vc_LZU-unsplash.jpg" 
+                            alt="Background" 
+                            className="absolute inset-0 w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 cover-overlay"></div>
+                        <div className="relative z-10 text-center text-white px-8">
+                            <h1 className="plaak text-9xl mb-6 animate-in">COMPANY VALUES TOOL</h1>
+                            <p className="text-3xl mb-12 animate-in" style={{animationDelay: '0.2s'}}>
+                                Transform your values from words into daily behaviors
+                            </p>
+                            <button 
+                                className="bg-white text-black plaak text-3xl px-16 py-6 border-4 border-white hover:bg-black hover:text-white transition-all duration-200 animate-in"
+                                style={{animationDelay: '0.4s'}}
+                                onClick={() => setStep(0.5)}
+                            >
+                                START
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+
+            // INTRO SCREEN
+            if (step === 0.5) {
+                return (
+                    <div className="bg-black text-white min-h-screen p-16">
+                        <div className="max-w-5xl mx-auto">
+                            <h1 className="plaak text-9xl mb-16 animate-in">BEFORE WE START</h1>
+                            
+                            <div className="mb-12 animate-in" style={{animationDelay: '0.05s'}}>
+                                <h2 className="plaak text-6xl mb-6">YOUR EMAIL</h2>
+                                <input
+                                    type="email"
+                                    className="worksheet-input text-3xl w-full text-black"
+                                    placeholder="your@email.com"
+                                    value={userEmail}
+                                    onChange={(e) => setUserEmail(e.target.value)}
+                                />
+                                <p className="text-xl text-gray-400 mt-3">
+                                    We'll use this to save your progress.
+                                </p>
+                            </div>
+
+                            <div className="mb-12 animate-in" style={{animationDelay: '0.1s'}}>
+                                <h2 className="plaak text-6xl mb-6">PURPOSE</h2>
+                                <p className="text-3xl leading-relaxed">
+                                    Define your company values, translate them into specific behaviors, 
+                                    and create systems to live them every day.
+                                </p>
+                            </div>
+
+                            <div className="mb-16 animate-in" style={{animationDelay: '0.2s'}}>
+                                <h2 className="plaak text-6xl mb-8">THE JOURNEY</h2>
+                                <div className="grid grid-cols-3 gap-8 text-center">
+                                    <div className="border-2 border-white p-8">
+                                        <div className="text-9xl plaak mb-4">01</div>
+                                        <p className="text-2xl font-bold">Identify Values</p>
+                                    </div>
+                                    <div className="border-2 border-white p-8">
+                                        <div className="text-9xl plaak mb-4">02</div>
+                                        <p className="text-2xl font-bold">Define Behaviors</p>
+                                    </div>
+                                    <div className="border-2 border-white p-8">
+                                        <div className="text-9xl plaak mb-4">03</div>
+                                        <p className="text-2xl font-bold">Create Systems</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button 
+                                className="btn-primary w-full text-3xl py-8 plaak animate-in" 
+                                style={{animationDelay: '0.3s'}}
+                                onClick={() => setStep(1)}
+                                disabled={!userEmail || !userEmail.includes('@')}
+                            >
+                                LET'S START →
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+
+            // HEADER FOR STEPS 1-6
+            if (step >= 1 && step <= 6) {
+                return (
+                    <>
+                        <header className="border-b-2 border-black py-6 px-8 no-print">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <h1 className="plaak text-3xl">COMPANY VALUES TOOL</h1>
+                                    <p className="text-sm mt-2 text-gray-600">Transform values into behaviors</p>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-xs text-gray-500">Auto-saving progress</div>
+                                    <div className="text-xs text-gray-400 mt-1">{userEmail}</div>
+                                </div>
+                            </div>
+                        </header>
+
+                        {/* Progress Indicator */}
+                        <div className="border-b border-gray-200 py-6 px-8 no-print">
+                            <div className="flex items-center justify-between max-w-4xl">
+                                {[1,2,3,4,5,6].map((s, i) => (
+                                    <React.Fragment key={s}>
+                                        <div className="flex items-center gap-2">
+                                            <div className={`progress-dot ${step >= s ? 'active' : ''} ${step > s ? 'completed' : ''}`}></div>
+                                            <span className={`text-sm ${step === s ? 'font-bold' : ''}`}>
+                                                {['Values', 'Gap', 'Behaviors', 'Red Lines', 'Recruitment', 'Plan'][i]}
+                                            </span>
+                                        </div>
+                                        {i < 5 && (
+                                            <div className="flex-1 h-0.5 bg-gray-200 mx-4">
+                                                <div className={`h-full bg-black transition-all ${step > s ? 'w-full' : 'w-0'}`}></div>
+                                            </div>
+                                        )}
+                                    </React.Fragment>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* STEP CONTENT */}
+                        <main className="p-12 max-w-7xl mx-auto">
+                            {step === 1 && <Step1 formData={formData} updateArrayField={updateArrayField} onNext={() => setStep(2)} onBack={() => setStep(0.5)} canProceed={validateStep1()} />}
+                            {step === 2 && <Step2 formData={formData} updateField={updateField} onNext={() => setStep(3)} onBack={() => setStep(1)} canProceed={validateStep2()} />}
+                            {step === 3 && <Step3 formData={formData} updateObjectField={updateObjectField} onNext={() => setStep(4)} onBack={() => setStep(2)} canProceed={validateStep3()} />}
+                            {step === 4 && <Step4 formData={formData} updateArrayField={updateArrayField} onNext={() => setStep(5)} onBack={() => setStep(3)} canProceed={validateStep4()} />}
+                            {step === 5 && <Step5 formData={formData} updateArrayField={updateArrayField} onNext={() => setStep(6)} onBack={() => setStep(4)} canProceed={validateStep5()} />}
+                            {step === 6 && <Step6 formData={formData} updateObjectField={updateObjectField} onNext={() => setStep(7)} onBack={() => setStep(5)} canProceed={validateStep6()} />}
+                        </main>
+                    </>
+                );
+            }
+
+            // RESULTS PAGE
+            if (step === 7) {
+                return <ResultsPage formData={formData} userEmail={userEmail} handleSubmit={handleSubmit} onBack={() => setStep(6)} />;
+            }
+
+            // Default fallback
+            return null;
+        };
+
+        // STEP 1: COMPANY VALUES
+        function Step1({ formData, updateArrayField, onNext, onBack, canProceed }) {
+            return (
+                <div className="animate-in">
+                    <div className="numbered-section mb-8">[01] COMPANY VALUES</div>
+                    
+                    <div className="bg-black text-white border-4 border-black p-6 mb-8">
+                        <h3 className="plaak text-3xl mb-2">IDENTIFY CURRENT BEHAVIORS</h3>
+                        <p className="text-xl">
+                            List 5-10 behaviors you commonly observe in your organization, then extract the values they represent.
+                        </p>
+                    </div>
+
+                    <div className="mb-8">
+                        <label className="block font-bold mb-4 text-lg">List typical behaviors (good or bad)</label>
+                        <div className="space-y-3">
+                            {formData.behaviors.slice(0, 10).map((behavior, i) => {
+                                const placeholders = [
+                                    'e.g., People respond to emails within 24 hours',
+                                    'e.g., Team members always show up on time for meetings',
+                                    'e.g., Leaders make decisions without consulting the team',
+                                    'e.g., People help each other without being asked',
+                                    'e.g., Employees work late nights regularly',
+                                    'e.g., Mistakes are openly discussed in team meetings',
+                                    'e.g., New ideas are immediately shot down',
+                                    'e.g., People take ownership when things go wrong',
+                                    'e.g., Everyone checks with their manager before acting',
+                                    'e.g., Team celebrates wins together'
+                                ];
+                                return (
+                                    <input
+                                        key={i}
+                                        className="worksheet-input text-lg"
+                                        placeholder={placeholders[i]}
+                                        value={behavior}
+                                        onChange={(e) => updateArrayField('behaviors', i, e.target.value)}
+                                    />
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <div className="mb-8">
+                        <label className="block font-bold mb-4 text-lg">Your Top 5 Core Values</label>
+                        <div className="grid grid-cols-5 gap-4">
+                            {formData.top5Values.map((value, i) => (
+                                <input
+                                    key={i}
+                                    className="worksheet-input text-lg text-center"
+                                    placeholder={`Value ${i + 1}`}
+                                    value={value}
+                                    onChange={(e) => updateArrayField('top5Values', i, e.target.value)}
+                                />
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="flex justify-between">
+                        <button className="btn-secondary text-lg py-3 px-6" onClick={onBack}>← Back</button>
+                        <button className="btn-primary text-xl py-4 px-8" onClick={onNext} disabled={!canProceed}>
+                            Next: Values Gap →
+                        </button>
+                    </div>
+                    {!canProceed && (
+                        <p className="text-red-600 text-sm mt-4 text-right">
+                            Please fill at least 3 behaviors (50+ characters each) and 3 values to continue
+                        </p>
+                    )}
+                </div>
+            );
+        }
+
+        // STEP 2: VALUES GAP
+        function Step2({ formData, updateField, onNext, onBack, canProceed }) {
+            return (
+                <div className="animate-in">
+                    <div className="numbered-section mb-8">[02] VALUES GAP ANALYSIS</div>
+                    
+                    <div className="bg-black text-white border-4 border-black p-6 mb-8">
+                        <h3 className="plaak text-3xl mb-2">CURRENT VS ASPIRATIONAL VALUES</h3>
+                        <p className="text-xl">
+                            Identify the gap between where you are and where you need to be.
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-8 mb-8">
+                        <div>
+                            <label className="block font-bold mb-2 text-lg">Your Company Dream</label>
+                            <textarea
+                                className="worksheet-input min-h-[120px] text-lg"
+                                placeholder="Copy-paste your dream reminder from Sprint 1..."
+                                value={formData.dream}
+                                onChange={(e) => updateField('dream', e.target.value)}
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block font-bold mb-2 text-lg">Required Values for Your Dream</label>
+                            <textarea
+                                className="worksheet-input min-h-[120px] text-lg"
+                                placeholder="What values MUST exist to achieve your dream?"
+                                value={formData.requiredValues}
+                                onChange={(e) => updateField('requiredValues', e.target.value)}
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block font-bold mb-2 text-lg">The Gap</label>
+                            <textarea
+                                className="worksheet-input min-h-[120px] text-lg"
+                                placeholder="What's the gap between current and required values?"
+                                value={formData.gap}
+                                onChange={(e) => updateField('gap', e.target.value)}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex justify-between">
+                        <button className="btn-secondary text-lg py-3 px-6" onClick={onBack}>← Back</button>
+                        <button className="btn-primary text-xl py-4 px-8" onClick={onNext} disabled={!canProceed}>
+                            Next: Behaviors →
+                        </button>
+                    </div>
+                    {!canProceed && (
+                        <p className="text-red-600 text-sm mt-4 text-right">
+                            Each field must be at least 50 characters to continue
+                        </p>
+                    )}
+                </div>
+            );
+        }
+
+        // STEP 3: VALUES INTO BEHAVIORS
+        function Step3({ formData, updateObjectField, onNext, onBack, canProceed }) {
+            return (
+                <div className="animate-in">
+                    <div className="numbered-section mb-8">[03] VALUES INTO BEHAVIORS</div>
+                    
+                    <div className="bg-black text-white border-4 border-black p-6 mb-8">
+                        <h3 className="plaak text-3xl mb-2">DEFINE COOL & NOT COOL BEHAVIORS</h3>
+                        <p className="text-xl">
+                            For each value, describe what "cool" and "not cool" behaviors look like.
+                        </p>
+                    </div>
+
+                    <div className="space-y-8 mb-8">
+                        {formData.valuesBehaviors.map((item, i) => {
+                            const valuePlaceholders = [
+                                'e.g., Accountability',
+                                'e.g., Transparency', 
+                                'e.g., Excellence',
+                                'e.g., Collaboration',
+                                'e.g., Innovation'
+                            ];
+                            
+                            const coolPlaceholders = [
+                                'e.g., Taking ownership when things go wrong, proactively communicating delays, following through on commitments without reminders',
+                                'e.g., Sharing information openly in meetings, admitting mistakes immediately, keeping everyone informed of changes',
+                                'e.g., Delivering work that exceeds expectations, constantly seeking to improve, taking pride in every detail',
+                                'e.g., Asking for help when needed, sharing credit generously, making time to support teammates',
+                                'e.g., Experimenting with new approaches, challenging the status quo respectfully, turning failures into learning'
+                            ];
+                            
+                            const notCoolPlaceholders = [
+                                'e.g., Blaming others when projects fail, making excuses for missed deadlines, waiting to be chased for updates',
+                                'e.g., Keeping information to themselves, hiding problems until they explode, surprising people with bad news',
+                                'e.g., Delivering "good enough" work consistently, resisting feedback, cutting corners to save time',
+                                'e.g., Working in silos, hoarding knowledge, taking all the credit for team wins',
+                                'e.g., Responding to new ideas with "we tried that before", sticking to old ways, punishing failed experiments'
+                            ];
+                            
+                            return (
+                                <div key={i} className="border-2 border-gray-300 p-6 rounded">
+                                    <input
+                                        className="worksheet-input text-xl font-bold mb-4"
+                                        placeholder={valuePlaceholders[i]}
+                                        value={item.value}
+                                        onChange={(e) => updateObjectField('valuesBehaviors', i, 'value', e.target.value)}
+                                    />
+                                    <div className="grid grid-cols-2 gap-6">
+                                        <div>
+                                            <label className="block font-bold mb-2 text-green-600">Cool Behavior</label>
+                                            <textarea
+                                                className="worksheet-input min-h-[100px] border-green-600"
+                                                placeholder={coolPlaceholders[i]}
+                                                value={item.cool}
+                                                onChange={(e) => updateObjectField('valuesBehaviors', i, 'cool', e.target.value)}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block font-bold mb-2 text-red-600">Not Cool Behavior</label>
+                                            <textarea
+                                                className="worksheet-input min-h-[100px] border-red-600"
+                                                placeholder={notCoolPlaceholders[i]}
+                                                value={item.notCool}
+                                                onChange={(e) => updateObjectField('valuesBehaviors', i, 'notCool', e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    <div className="flex justify-between">
+                        <button className="btn-secondary text-lg py-3 px-6" onClick={onBack}>← Back</button>
+                        <button className="btn-primary text-xl py-4 px-8" onClick={onNext} disabled={!canProceed}>
+                            Next: Red Lines →
+                        </button>
+                    </div>
+                    {!canProceed && (
+                        <p className="text-red-600 text-sm mt-4 text-right">
+                            Complete at least 3 values with cool/not cool behaviors (50+ characters each) to continue
+                        </p>
+                    )}
+                </div>
+            );
+        }
+
+        // STEP 4: RED LINES
+        function Step4({ formData, updateArrayField, onNext, onBack, canProceed }) {
+            return (
+                <div className="animate-in">
+                    <div className="numbered-section mb-8">[04] RED LINES</div>
+                    
+                    <div className="bg-black text-white border-4 border-black p-6 mb-8">
+                        <h3 className="plaak text-3xl mb-2">NON-NEGOTIABLE BOUNDARIES</h3>
+                        <p className="text-xl">
+                            Define warning behaviors (yellow lines) and non-negotiables (red lines).
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-8 mb-8">
+                        <div>
+                            <label className="block font-bold mb-4 text-lg text-yellow-600">Yellow Lines (Warnings)</label>
+                            <div className="space-y-3">
+                                {formData.yellowLines.map((line, i) => (
+                                    <textarea
+                                        key={i}
+                                        className="worksheet-input min-h-[80px] border-yellow-600"
+                                        placeholder={`Yellow line ${i + 1}`}
+                                        value={line}
+                                        onChange={(e) => updateArrayField('yellowLines', i, e.target.value)}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block font-bold mb-4 text-lg text-red-600">Red Lines (Non-Negotiable)</label>
+                            <div className="space-y-3">
+                                {formData.redLines.map((line, i) => (
+                                    <textarea
+                                        key={i}
+                                        className="worksheet-input min-h-[80px] border-red-600"
+                                        placeholder={`Red line ${i + 1}`}
+                                        value={line}
+                                        onChange={(e) => updateArrayField('redLines', i, e.target.value)}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex justify-between">
+                        <button className="btn-secondary text-lg py-3 px-6" onClick={onBack}>← Back</button>
+                        <button className="btn-primary text-xl py-4 px-8" onClick={onNext} disabled={!canProceed}>
+                            Next: Recruitment →
+                        </button>
+                    </div>
+                    {!canProceed && (
+                        <p className="text-red-600 text-sm mt-4 text-right">
+                            Add at least 2 yellow lines and 2 red lines (30+ characters each) to continue
+                        </p>
+                    )}
+                </div>
+            );
+        }
+
+        // STEP 5: RECRUITMENT QUESTIONS
+        function Step5({ formData, updateArrayField, onNext, onBack, canProceed }) {
+            return (
+                <div className="animate-in">
+                    <div className="numbered-section mb-8">[05] RECRUITMENT QUESTIONS</div>
+                    
+                    <div className="bg-black text-white border-4 border-black p-6 mb-8">
+                        <h3 className="plaak text-3xl mb-2">VALUES-BASED INTERVIEW QUESTIONS</h3>
+                        <p className="text-xl">
+                            Create questions to test if candidates align with your values.
+                        </p>
+                    </div>
+
+                    <div className="mb-8">
+                        <label className="block font-bold mb-4 text-lg">Interview Questions</label>
+                        <div className="space-y-3">
+                            {formData.recruitmentQuestions.map((q, i) => (
+                                <textarea
+                                    key={i}
+                                    className="worksheet-input min-h-[100px] text-lg"
+                                    placeholder={`Question ${i + 1}: e.g., Tell me about a time when...`}
+                                    value={q}
+                                    onChange={(e) => updateArrayField('recruitmentQuestions', i, e.target.value)}
+                                />
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="flex justify-between">
+                        <button className="btn-secondary text-lg py-3 px-6" onClick={onBack}>← Back</button>
+                        <button className="btn-primary text-xl py-4 px-8" onClick={onNext} disabled={!canProceed}>
+                            Next: Communication Plan →
+                        </button>
+                    </div>
+                    {!canProceed && (
+                        <p className="text-red-600 text-sm mt-4 text-right">
+                            Add at least 3 recruitment questions (50+ characters each) to continue
+                        </p>
+                    )}
+                </div>
+            );
+        }
+
+        // STEP 6: COMMUNICATION PLAN
+        function Step6({ formData, updateObjectField, onNext, onBack, canProceed }) {
+            return (
+                <div className="animate-in">
+                    <div className="numbered-section mb-8">[06] COMMUNICATION PLAN</div>
+                    
+                    <div className="bg-black text-white border-4 border-black p-6 mb-8">
+                        <h3 className="plaak text-3xl mb-2">MAKE VALUES VISIBLE</h3>
+                        <p className="text-xl">
+                            Plan specific actions to communicate and reinforce your values.
+                        </p>
+                    </div>
+
+                    <div className="mb-8">
+                        <table className="w-full border-2 border-black">
+                            <thead>
+                                <tr className="bg-black text-white">
+                                    <th className="p-4 text-left plaak text-lg">#</th>
+                                    <th className="p-4 text-left plaak text-lg">Communication Idea</th>
+                                    <th className="p-4 text-left plaak text-lg">Who Owns It</th>
+                                    <th className="p-4 text-left plaak text-lg">When</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {formData.commPlan.map((plan, i) => (
+                                    <tr key={i} className="border-t border-gray-300">
+                                        <td className="p-4 font-bold">{i + 1}</td>
+                                        <td className="p-4">
+                                            <textarea
+                                                className="worksheet-input min-h-[60px]"
+                                                placeholder="e.g., Weekly values spotlight in team meetings"
+                                                value={plan.idea}
+                                                onChange={(e) => updateObjectField('commPlan', i, 'idea', e.target.value)}
+                                            />
+                                        </td>
+                                        <td className="p-4">
+                                            <input
+                                                className="worksheet-input"
+                                                placeholder="Name/Role"
+                                                value={plan.who}
+                                                onChange={(e) => updateObjectField('commPlan', i, 'who', e.target.value)}
+                                            />
+                                        </td>
+                                        <td className="p-4">
+                                            <input
+                                                className="worksheet-input"
+                                                placeholder="Deadline"
+                                                value={plan.when}
+                                                onChange={(e) => updateObjectField('commPlan', i, 'when', e.target.value)}
+                                            />
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div className="flex justify-between">
+                        <button className="btn-secondary text-lg py-3 px-6" onClick={onBack}>← Back</button>
+                        <button className="btn-primary text-xl py-4 px-8" onClick={onNext} disabled={!canProceed}>
+                            View Results →
+                        </button>
+                    </div>
+                    {!canProceed && (
+                        <p className="text-red-600 text-sm mt-4 text-right">
+                            Complete at least 3 communication plans (idea, who, when) to continue
+                        </p>
+                    )}
+                </div>
+            );
+        }
+
+        // RESULTS PAGE
+        function ResultsPage({ formData, userEmail, handleSubmit, onBack }) {
+            return (
+                <div className="min-h-screen bg-white p-12">
+                    <div className="max-w-6xl mx-auto">
+                        <div className="mb-12 no-print">
+                            <h1 className="plaak text-5xl mb-6">YOUR COMPANY VALUES SYSTEM</h1>
+                            <div className="bg-black text-white p-6 mb-6 border-4 border-black">
+                                <p className="text-xl mb-4">
+                                    Review your values system below, then submit to save it to your Fast Track account.
+                                </p>
+                            </div>
+                            <div className="flex gap-4">
+                                <button onClick={() => window.print()} className="btn-secondary text-xl py-4 px-8">
+                                    Export PDF
+                                </button>
+                                <button onClick={handleSubmit} className="btn-primary text-xl py-6 px-12 plaak">
+                                    SUBMIT TO FAST TRACK
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Top 5 Values */}
+                        <div className="mb-12 border-4 border-black p-8">
+                            <h2 className="plaak text-3xl mb-6">TOP 5 CORE VALUES</h2>
+                            <div className="grid grid-cols-5 gap-4">
+                                {formData.top5Values.filter(v => v).map((v, i) => (
+                                    <div key={i} className="text-center p-6 bg-black text-white">
+                                        <div className="plaak text-5xl mb-2">{i + 1}</div>
+                                        <div className="text-xl">{v}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Values Behaviors */}
+                        <div className="mb-12">
+                            <h2 className="plaak text-3xl mb-6">VALUES INTO BEHAVIORS</h2>
+                            {formData.valuesBehaviors.filter(v => v.value).map((item, i) => (
+                                <div key={i} className="mb-6 border-2 border-black p-6">
+                                    <h3 className="plaak text-2xl mb-4">{item.value}</h3>
+                                    <div className="grid grid-cols-2 gap-6">
+                                        <div className="bg-green-50 p-4 border-l-4 border-green-600">
+                                            <h4 className="font-bold mb-2 text-green-600">Cool</h4>
+                                            <p className="whitespace-pre-line">{item.cool}</p>
+                                        </div>
+                                        <div className="bg-red-50 p-4 border-l-4 border-red-600">
+                                            <h4 className="font-bold mb-2 text-red-600">Not Cool</h4>
+                                            <p className="whitespace-pre-line">{item.notCool}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Red Lines */}
+                        <div className="mb-12 grid grid-cols-2 gap-8">
+                            <div className="border-2 border-yellow-600 p-6">
+                                <h3 className="plaak text-2xl mb-4 text-yellow-600">Yellow Lines</h3>
+                                <ul className="space-y-2">
+                                    {formData.yellowLines.filter(l => l).map((l, i) => (
+                                        <li key={i} className="border-b pb-2">{l}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                            <div className="border-2 border-red-600 p-6">
+                                <h3 className="plaak text-2xl mb-4 text-red-600">Red Lines</h3>
+                                <ul className="space-y-2">
+                                    {formData.redLines.filter(l => l).map((l, i) => (
+                                        <li key={i} className="border-b pb-2">{l}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+
+                        {/* Communication Plan */}
+                        <div className="mb-12">
+                            <h2 className="plaak text-3xl mb-6">COMMUNICATION PLAN</h2>
+                            <table className="w-full border-2 border-black">
+                                <thead>
+                                    <tr className="bg-black text-white">
+                                        <th className="p-4 text-left">Idea</th>
+                                        <th className="p-4 text-left">Owner</th>
+                                        <th className="p-4 text-left">Timeline</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {formData.commPlan.filter(p => p.idea).map((p, i) => (
+                                        <tr key={i} className="border-t">
+                                            <td className="p-4">{p.idea}</td>
+                                            <td className="p-4">{p.who}</td>
+                                            <td className="p-4">{p.when}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <button onClick={onBack} className="btn-secondary text-lg py-3 px-6 no-print">
+                            ← Edit
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        // Render
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<ValuesTool />);
+    </script>
+</body>
+</html>

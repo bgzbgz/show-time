@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Impact/Easy Matrix | Fast Track</title>
+    
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        @font-face {
+            font-family: 'Plaak';
+            src: url('../fonts/Plaak3Trial-43-Bold.otf') format('opentype');
+            font-weight: bold;
+        }
+        
+        @font-face {
+            font-family: 'Riforma';
+            src: url('../fonts/RiformaLL-Regular.otf') format('opentype');
+            font-weight: normal;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Riforma', -apple-system, sans-serif;
+            font-size: 16px;
+            color: #000000;
+            background: #FFFFFF;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .plaak {
+            font-family: 'Plaak', sans-serif;
+            font-weight: bold;
+            letter-spacing: -0.01em;
+            line-height: 1.2;
+        }
+
+        .worksheet-input {
+            border: 1px solid #E0E0E0;
+            padding: 12px 16px;
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
+            transition: border-color 0.2s ease;
+            background: #FFFFFF;
+            width: 100%;
+        }
+
+        .worksheet-input:focus {
+            outline: none;
+            border-color: #000000;
+        }
+
+        .numbered-section {
+            background: #000000;
+            color: #FFFFFF;
+            padding: 10px 16px;
+            font-size: 18px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: #000000;
+            color: #FFFFFF;
+            padding: 12px 24px;
+            border: 2px solid #000000;
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: scale(1.02);
+        }
+
+        .btn-primary:disabled {
+            background: #E0E0E0;
+            border-color: #E0E0E0;
+            color: #9CA3AF;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .btn-secondary {
+            background: #FFFFFF;
+            color: #000000;
+            padding: 12px 24px;
+            border: 2px solid #000000;
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-secondary:hover { background: #F8F8F8; }
+
+        .score-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .score-high { background: #10B981; color: white; }
+        .score-medium { background: #F59E0B; color: white; }
+        .score-low { background: #EF4444; color: white; }
+
+        .animate-in {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media print { .no-print { display: none; } }
+
+        .cover-overlay {
+            background: linear-gradient(to bottom, rgba(0,0,0,0.4), rgba(0,0,0,0.7));
+        }
+
+        .priority-row {
+            transition: background-color 0.2s ease;
+        }
+
+        .priority-row:hover {
+            background-color: #F9FAFB;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        const CONFIG = {
+            AUTOSAVE_WEBHOOK: 'https://n8n-edge.fasttrack-diagnostic.com/webhook/tools/autosave',
+            SUBMIT_WEBHOOK: 'https://n8n-edge.fasttrack-diagnostic.com/webhook/608b17ea-9618-4877-ae3c-85eb2e89b700',
+            STORAGE_KEY: 'fasttrack_impact_easy_matrix',
+            TOOL_NAME: 'impact_easy_matrix',
+            SPRINT_NUMBER: 3,
+            AUTOSAVE_DELAY: 2000
+        };
+
+        const ImpactEasyMatrix = () => {
+            const [step, setStep] = useState(0);
+            const [userEmail, setUserEmail] = useState('');
+            const [formData, setFormData] = useState({
+                ideas: Array(20).fill(null).map(() => ({ 
+                    idea: '', 
+                    impact: 3, 
+                    easy: 3 
+                })),
+            });
+
+            // Auto-save
+            useEffect(() => {
+                const timer = setTimeout(() => {
+                    if (userEmail) {
+                        localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify({
+                            formData, step, userEmail, lastSaved: new Date().toISOString()
+                        }));
+                    }
+                }, CONFIG.AUTOSAVE_DELAY);
+                return () => clearTimeout(timer);
+            }, [formData, step, userEmail]);
+
+            const updateIdea = (index, field, value) => {
+                setFormData(prev => ({
+                    ...prev,
+                    ideas: prev.ideas.map((item, i) => 
+                        i === index ? { ...item, [field]: value } : item
+                    )
+                }));
+            };
+
+            const calculateScore = (impact, easy) => impact + easy;
+
+            const getSortedIdeas = () => {
+                return formData.ideas
+                    .map((idea, index) => ({
+                        ...idea,
+                        score: calculateScore(idea.impact, idea.easy),
+                        originalIndex: index
+                    }))
+                    .filter(idea => idea.idea.trim().length > 0)
+                    .sort((a, b) => b.score - a.score);
+            };
+
+            const getScoreClass = (score) => {
+                if (score >= 5) return 'score-high';
+                if (score >= 4) return 'score-medium';
+                return 'score-low';
+            };
+
+            const validateStep1 = () => {
+                const validIdeas = formData.ideas.filter(i => i.idea.trim().length >= 10);
+                return validIdeas.length >= 5;
+            };
+
+            const handleSubmit = async () => {
+                try {
+                    const response = await fetch(CONFIG.SUBMIT_WEBHOOK, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            toolName: CONFIG.TOOL_NAME,
+                            userId: userEmail,
+                            sprintNumber: CONFIG.SPRINT_NUMBER,
+                            data: {
+                                userName: userEmail.split('@')[0],
+                                ...formData,
+                                sortedIdeas: getSortedIdeas()
+                            }
+                        })
+                    });
+
+                    if (response.ok) {
+                        alert('Submitted successfully! Your prioritization has been saved.');
+                        localStorage.removeItem(CONFIG.STORAGE_KEY);
+                    } else {
+                        alert('Submit failed. Please try again.');
+                    }
+                } catch (error) {
+                    console.error('Submit error:', error);
+                    alert('Submit failed. Please try again.');
+                }
+            };
+
+            // COVER PAGE
+            if (step === 0) {
+                return (
+                    <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-black">
+                        <div className="absolute inset-0 cover-overlay"></div>
+                        <div className="relative z-10 text-center text-white px-8">
+                            <h1 className="plaak text-9xl mb-6 animate-in">IMPACT/EASY MATRIX</h1>
+                            <p className="text-3xl mb-12 animate-in" style={{animationDelay: '0.2s'}}>
+                                Prioritize actions that deliver maximum value with minimum complexity
+                            </p>
+                            <button 
+                                className="bg-white text-black plaak text-3xl px-16 py-6 border-4 border-white hover:bg-black hover:text-white transition-all duration-200 animate-in"
+                                style={{animationDelay: '0.4s'}}
+                                onClick={() => setStep(0.5)}
+                            >
+                                START
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+
+            // INTRO SCREEN
+            if (step === 0.5) {
+                return (
+                    <div className="bg-black text-white min-h-screen p-16">
+                        <div className="max-w-5xl mx-auto">
+                            <h1 className="plaak text-9xl mb-16 animate-in">BEFORE WE START</h1>
+                            
+                            <div className="mb-12 animate-in" style={{animationDelay: '0.05s'}}>
+                                <h2 className="plaak text-6xl mb-6">YOUR EMAIL</h2>
+                                <input
+                                    type="email"
+                                    className="worksheet-input text-3xl w-full text-black"
+                                    placeholder="your@email.com"
+                                    value={userEmail}
+                                    onChange={(e) => setUserEmail(e.target.value)}
+                                />
+                                <p className="text-xl text-gray-400 mt-3">
+                                    We'll use this to save your progress.
+                                </p>
+                            </div>
+
+                            <div className="mb-12 animate-in" style={{animationDelay: '0.1s'}}>
+                                <h2 className="plaak text-6xl mb-6">PURPOSE</h2>
+                                <p className="text-3xl leading-relaxed">
+                                    The Impact/Easy Matrix helps you cut through indecision by focusing 
+                                    your team's energy on high-impact, easy-to-implement actions. 
+                                    It's the 80/20 principle in action.
+                                </p>
+                            </div>
+
+                            <div className="mb-16 animate-in" style={{animationDelay: '0.2s'}}>
+                                <h2 className="plaak text-6xl mb-8">HOW IT WORKS</h2>
+                                <div className="space-y-6 text-2xl">
+                                    <div className="flex items-start gap-4">
+                                        <div className="plaak text-4xl">1</div>
+                                        <p>List all potential actions or ideas</p>
+                                    </div>
+                                    <div className="flex items-start gap-4">
+                                        <div className="plaak text-4xl">2</div>
+                                        <p>Rate each for Impact (1-3) and Ease (1-3)</p>
+                                    </div>
+                                    <div className="flex items-start gap-4">
+                                        <div className="plaak text-4xl">3</div>
+                                        <p>Score = Impact + Easy (max 6 points)</p>
+                                    </div>
+                                    <div className="flex items-start gap-4">
+                                        <div className="plaak text-4xl">4</div>
+                                        <p>Prioritize high scores first</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button 
+                                className="btn-primary w-full text-3xl py-8 plaak animate-in" 
+                                style={{animationDelay: '0.3s'}}
+                                onClick={() => setStep(1)}
+                                disabled={!userEmail || !userEmail.includes('@')}
+                            >
+                                LET'S START →
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+
+            // STEP 1: BRAINSTORM & RATE
+            if (step === 1) {
+                return (
+                    <>
+                        <header className="border-b-2 border-black py-6 px-8 no-print">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <h1 className="plaak text-3xl">IMPACT/EASY MATRIX</h1>
+                                    <p className="text-sm mt-2 text-gray-600">Prioritize with precision</p>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-xs text-gray-500">Auto-saving progress</div>
+                                    <div className="text-xs text-gray-400 mt-1">{userEmail}</div>
+                                </div>
+                            </div>
+                        </header>
+
+                        <main className="p-12 max-w-7xl mx-auto">
+                            <div className="animate-in">
+                                <div className="numbered-section mb-8">[01] BRAINSTORM & RATE IDEAS</div>
+                                
+                                <div className="bg-black text-white border-4 border-black p-6 mb-8">
+                                    <h3 className="plaak text-3xl mb-2">LIST YOUR IDEAS</h3>
+                                    <p className="text-xl">
+                                        Brainstorm potential actions, then rate each for Impact (1=low, 3=high) 
+                                        and Easy (1=hard, 3=easy). The tool will automatically calculate and rank them.
+                                    </p>
+                                </div>
+
+                                <div className="bg-gray-50 p-6 mb-6 border-l-4 border-black">
+                                    <h4 className="font-bold text-lg mb-2">Scoring Guide:</h4>
+                                    <div className="grid grid-cols-2 gap-6 text-sm">
+                                        <div>
+                                            <p className="font-bold mb-1">IMPACT:</p>
+                                            <p>3 = Biggest impact on goals</p>
+                                            <p>2 = Moderate impact</p>
+                                            <p>1 = Least impact</p>
+                                        </div>
+                                        <div>
+                                            <p className="font-bold mb-1">EASY:</p>
+                                            <p>3 = Very easy to implement</p>
+                                            <p>2 = Moderate difficulty</p>
+                                            <p>1 = Very difficult</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <table className="w-full border-2 border-black mb-8">
+                                    <thead>
+                                        <tr className="bg-black text-white">
+                                            <th className="p-4 text-left plaak text-lg w-12">#</th>
+                                            <th className="p-4 text-left plaak text-lg">Idea / Action</th>
+                                            <th className="p-4 text-center plaak text-lg w-32">Impact</th>
+                                            <th className="p-4 text-center plaak text-lg w-32">Easy</th>
+                                            <th className="p-4 text-center plaak text-lg w-32">Score</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {formData.ideas.map((idea, i) => {
+                                            const score = calculateScore(idea.impact, idea.easy);
+                                            return (
+                                                <tr key={i} className="border-t border-gray-300 priority-row">
+                                                    <td className="p-4 font-bold text-gray-500">{i + 1}</td>
+                                                    <td className="p-4">
+                                                        <input
+                                                            className="worksheet-input"
+                                                            placeholder={`Idea ${i + 1}`}
+                                                            value={idea.idea}
+                                                            onChange={(e) => updateIdea(i, 'idea', e.target.value)}
+                                                        />
+                                                    </td>
+                                                    <td className="p-4 text-center">
+                                                        <select
+                                                            className="worksheet-input text-center font-bold"
+                                                            value={idea.impact}
+                                                            onChange={(e) => updateIdea(i, 'impact', parseInt(e.target.value))}
+                                                        >
+                                                            <option value={3}>3</option>
+                                                            <option value={2}>2</option>
+                                                            <option value={1}>1</option>
+                                                        </select>
+                                                    </td>
+                                                    <td className="p-4 text-center">
+                                                        <select
+                                                            className="worksheet-input text-center font-bold"
+                                                            value={idea.easy}
+                                                            onChange={(e) => updateIdea(i, 'easy', parseInt(e.target.value))}
+                                                        >
+                                                            <option value={3}>3</option>
+                                                            <option value={2}>2</option>
+                                                            <option value={1}>1</option>
+                                                        </select>
+                                                    </td>
+                                                    <td className="p-4 text-center">
+                                                        {idea.idea.trim() && (
+                                                            <span className={`score-badge ${getScoreClass(score)}`}>
+                                                                {score}
+                                                            </span>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+
+                                <div className="flex justify-between">
+                                    <button className="btn-secondary text-lg py-3 px-6" onClick={() => setStep(0.5)}>← Back</button>
+                                    <button 
+                                        className="btn-primary text-xl py-4 px-8" 
+                                        onClick={() => setStep(2)} 
+                                        disabled={!validateStep1()}
+                                    >
+                                        View Priorities →
+                                    </button>
+                                </div>
+                                {!validateStep1() && (
+                                    <p className="text-red-600 text-sm mt-4 text-right">
+                                        Add at least 5 ideas (10+ characters each) to continue
+                                    </p>
+                                )}
+                            </div>
+                        </main>
+                    </>
+                );
+            }
+
+            // RESULTS PAGE
+            if (step === 2) {
+                const sortedIdeas = getSortedIdeas();
+                
+                return (
+                    <div className="min-h-screen bg-white p-12">
+                        <div className="max-w-6xl mx-auto">
+                            <div className="mb-12 no-print">
+                                <h1 className="plaak text-5xl mb-6">YOUR PRIORITIZED ACTION LIST</h1>
+                                <div className="bg-black text-white p-6 mb-6 border-4 border-black">
+                                    <p className="text-xl mb-4">
+                                        Your ideas are now ranked by score (Impact + Easy). 
+                                        Focus on the high-scoring items first—they deliver maximum value with minimum complexity.
+                                    </p>
+                                </div>
+                                <div className="flex gap-4">
+                                    <button onClick={() => window.print()} className="btn-secondary text-xl py-4 px-8">
+                                        Export PDF
+                                    </button>
+                                    <button onClick={handleSubmit} className="btn-primary text-xl py-6 px-12 plaak">
+                                        SUBMIT TO FAST TRACK
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Priority Rankings */}
+                            <div className="mb-12 border-4 border-black">
+                                <div className="bg-black text-white p-4">
+                                    <h2 className="plaak text-3xl">PRIORITY RANKINGS</h2>
+                                </div>
+                                
+                                <table className="w-full">
+                                    <thead>
+                                        <tr className="bg-gray-100 border-b-2 border-black">
+                                            <th className="p-4 text-left plaak text-lg w-16">Rank</th>
+                                            <th className="p-4 text-left plaak text-lg">Action / Idea</th>
+                                            <th className="p-4 text-center plaak text-lg w-32">Impact</th>
+                                            <th className="p-4 text-center plaak text-lg w-32">Easy</th>
+                                            <th className="p-4 text-center plaak text-lg w-32">Score</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {sortedIdeas.map((idea, i) => (
+                                            <tr key={i} className="border-b border-gray-200 hover:bg-gray-50">
+                                                <td className="p-4">
+                                                    <div className="plaak text-3xl text-gray-400">#{i + 1}</div>
+                                                </td>
+                                                <td className="p-4">
+                                                    <p className="text-lg">{idea.idea}</p>
+                                                </td>
+                                                <td className="p-4 text-center">
+                                                    <div className="font-bold text-2xl">{idea.impact}</div>
+                                                </td>
+                                                <td className="p-4 text-center">
+                                                    <div className="font-bold text-2xl">{idea.easy}</div>
+                                                </td>
+                                                <td className="p-4 text-center">
+                                                    <span className={`score-badge text-xl px-4 py-2 ${getScoreClass(idea.score)}`}>
+                                                        {idea.score}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Next Steps */}
+                            <div className="border-4 border-black p-8 mb-12">
+                                <h2 className="plaak text-3xl mb-6">NEXT STEPS</h2>
+                                <div className="space-y-4 text-lg">
+                                    <div className="flex items-start gap-4">
+                                        <div className="plaak text-2xl">1.</div>
+                                        <p>Focus on your top 3-5 highest-scoring actions first</p>
+                                    </div>
+                                    <div className="flex items-start gap-4">
+                                        <div className="plaak text-2xl">2.</div>
+                                        <p>Use the "Cut the Elephant" tool to break large actions into smaller steps</p>
+                                    </div>
+                                    <div className="flex items-start gap-4">
+                                        <div className="plaak text-2xl">3.</div>
+                                        <p>Assign clear owners and deadlines for each priority</p>
+                                    </div>
+                                    <div className="flex items-start gap-4">
+                                        <div className="plaak text-2xl">4.</div>
+                                        <p>Revisit this matrix regularly as new opportunities emerge</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button onClick={() => setStep(1)} className="btn-secondary text-lg py-3 px-6 no-print">
+                                ← Edit Rankings
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+
+            return null;
+        };
+
+        // Render
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<ImpactEasyMatrix />);
+    </script>
+</body>
+</html>
