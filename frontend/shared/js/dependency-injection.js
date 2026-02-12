@@ -186,6 +186,29 @@ const DependencyInjection = (function() {
                 "target_field": "top_cash_priority_context",
                 "display_label": "Top Cash Priority"
             }]
+        },
+        "market-size": {
+            "depends_on": ["dream"],
+            "fields": [{
+                "source_tool": "dream",
+                "source_field": "identity.dream.narrative",
+                "target_field": "dream_narrative_context",
+                "display_label": "Company Dream Narrative"
+            }]
+        },
+        "segmentation-target-market": {
+            "depends_on": ["market-size"],
+            "fields": [{
+                "source_tool": "market-size",
+                "source_field": "market.size.tam",
+                "target_field": "tam_context",
+                "display_label": "Market Size (TAM)"
+            }, {
+                "source_tool": "market-size",
+                "source_field": "market.size.driving_forces",
+                "target_field": "driving_forces_context",
+                "display_label": "Driving Forces"
+            }]
         }
     };
 
