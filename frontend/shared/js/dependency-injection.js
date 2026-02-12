@@ -545,6 +545,123 @@ const DependencyInjection = (function() {
                 "target_field": "vp_statement_context",
                 "display_label": "Value Proposition Statement"
             }]
+        },
+        "digitalization": {
+            "depends_on": ["dream", "values", "target-segment-deep-dive", "value-proposition", "org-redesign", "processes-decisions"],
+            "fields": [{
+                "source_tool": "dream",
+                "source_field": "identity.dream.one_sentence",
+                "target_field": "dream_context",
+                "display_label": "One-Sentence Dream"
+            }, {
+                "source_tool": "values",
+                "source_field": "identity.values.core_list",
+                "target_field": "core_values_context",
+                "display_label": "Core Company Values"
+            }, {
+                "source_tool": "target-segment-deep-dive",
+                "source_field": "strategy.target.persona",
+                "target_field": "customer_persona_context",
+                "display_label": "Customer Persona"
+            }, {
+                "source_tool": "value-proposition",
+                "source_field": "strategy.vp.statement",
+                "target_field": "vp_statement_context",
+                "display_label": "Value Proposition Statement"
+            }, {
+                "source_tool": "org-redesign",
+                "source_field": "org.redesign.machine_blueprint",
+                "target_field": "machine_blueprint_context",
+                "display_label": "Machine Blueprint"
+            }, {
+                "source_tool": "processes-decisions",
+                "source_field": "org.processes.top3_per_activity",
+                "target_field": "core_processes_context",
+                "display_label": "Core Processes"
+            }]
+        },
+        "digital-heart": {
+            "depends_on": ["dream", "values", "value-proposition", "org-redesign", "digitalization"],
+            "fields": [{
+                "source_tool": "dream",
+                "source_field": "identity.dream.one_sentence",
+                "target_field": "dream_context",
+                "display_label": "One-Sentence Dream"
+            }, {
+                "source_tool": "values",
+                "source_field": "identity.values.core_list",
+                "target_field": "core_values_context",
+                "display_label": "Core Company Values"
+            }, {
+                "source_tool": "value-proposition",
+                "source_field": "strategy.vp.statement",
+                "target_field": "vp_statement_context",
+                "display_label": "Value Proposition Statement"
+            }, {
+                "source_tool": "org-redesign",
+                "source_field": "org.redesign.machine_blueprint",
+                "target_field": "machine_blueprint_context",
+                "display_label": "Machine Blueprint"
+            }, {
+                "source_tool": "digitalization",
+                "source_field": "tech.digital.audit",
+                "target_field": "digital_audit_context",
+                "display_label": "Digitalization Audit"
+            }, {
+                "source_tool": "digitalization",
+                "source_field": "tech.digital.baby_ai",
+                "target_field": "ai_pilot_context",
+                "display_label": "AI Pilot Use Case"
+            }]
+        },
+        "program-overview": {
+            "depends_on": ["dream", "values", "fit", "goals", "value-proposition", "route-to-market", "org-redesign", "employer-branding", "digital-heart"],
+            "fields": [{
+                "source_tool": "dream",
+                "source_field": "identity.dream.one_sentence",
+                "target_field": "dream_context",
+                "display_label": "One-Sentence Dream"
+            }, {
+                "source_tool": "values",
+                "source_field": "identity.values.core_list",
+                "target_field": "core_values_context",
+                "display_label": "Core Values"
+            }, {
+                "source_tool": "fit",
+                "source_field": "identity.fit.abc_matrix",
+                "target_field": "abc_matrix_context",
+                "display_label": "ABC Matrix"
+            }, {
+                "source_tool": "goals",
+                "source_field": "performance.goals.quarterly_targets",
+                "target_field": "quarterly_targets_context",
+                "display_label": "Quarterly Targets"
+            }, {
+                "source_tool": "value-proposition",
+                "source_field": "strategy.vp.statement",
+                "target_field": "vp_statement_context",
+                "display_label": "Value Proposition"
+            }, {
+                "source_tool": "route-to-market",
+                "source_field": "execution.rtm.roadmap",
+                "target_field": "rtm_roadmap_context",
+                "display_label": "RTM Roadmap"
+            }, {
+                "source_tool": "org-redesign",
+                "source_field": "org.redesign.machine_blueprint",
+                "target_field": "machine_blueprint_context",
+                "display_label": "Machine Blueprint"
+            }, {
+                "source_tool": "employer-branding",
+                "source_field": "people.employer.evp",
+                "target_field": "employer_evp_context",
+                "display_label": "Employer Value Proposition"
+            }, {
+                "source_tool": "digital-heart",
+                "source_field": "tech.heart.blueprint",
+                "target_field": "digital_blueprint_context",
+                "display_label": "Digital Blueprint"
+            }]
         }
     };
 
