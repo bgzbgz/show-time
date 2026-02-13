@@ -35,6 +35,7 @@ const envSchema = z.object({
   LEARNWORLDS_API_SECRET: z.string().optional(),
   LEARNWORLDS_SCHOOL_ID: z.string().optional(),
   LEARNWORLDS_SSO_SECRET: z.string().optional(),
+  LEARNWORLDS_WEBHOOK_SECRET: z.string().optional(),
 
   // API Configuration
   API_BASE_PATH: z.string().default('/api'),
