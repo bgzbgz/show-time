@@ -2,7 +2,8 @@ import { Router, type Request, type Response } from 'express';
 import { progressService } from '../services/ProgressService.js';
 import { authenticate } from '../middleware/auth.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
-import { sendSuccess } from '../utils/response.js';
+import { sendSuccess, sendError } from '../utils/response.js';
+import { supabase } from '../config/supabase.js';
 
 const router = Router();
 
@@ -76,6 +77,47 @@ router.get(
     };
 
     return sendSuccess(res, stats);
+  })
+);
+
+// =============================================================================
+// GET /api/user/submission/:sprint_id/:tool_slug - Get tool submission
+// =============================================================================
+
+router.get(
+  '/submission/:sprint_id/:tool_slug',
+  authenticate,
+  asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.user!.id;
+    const { sprint_id, tool_slug } = req.params;
+    const sprintId = parseInt(sprint_id, 10);
+
+    if (isNaN(sprintId)) {
+      return sendError(res, 'Invalid sprint_id', 400);
+    }
+
+    // Query for submission data
+    const { data: submission, error } = await supabase
+      .from('tool_submissions')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('sprint_id', sprintId)
+      .eq('tool_slug', tool_slug)
+      .single();
+
+    if (error || !submission) {
+      return res.status(404).json({
+        error: 'No submission found',
+        message: `No submission found for ${tool_slug} in sprint ${sprintId}`,
+      });
+    }
+
+    return sendSuccess(res, {
+      sprint_id: submission.sprint_id,
+      tool_slug: submission.tool_slug,
+      submitted_at: submission.submitted_at,
+      submission_data: submission.submission_data,
+    });
   })
 );
 

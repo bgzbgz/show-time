@@ -49,6 +49,8 @@ import toolRoutes from './routes/tools.js';
 import userRoutes from './routes/user.js';
 import dataRoutes from './routes/data.js';
 import aiRoutes from './routes/ai.js';
+import guruRoutes from './routes/guru.js';
+import learnworldsRoutes from './routes/learnworlds.js';
 
 // Mount routes
 app.use('/api/auth', authRoutes);
@@ -56,6 +58,8 @@ app.use('/api/tools', toolRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/data', dataRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/guru', guruRoutes);
+app.use('/api/learnworlds', learnworldsRoutes);
 
 // 404 handler
 app.use((_req, res) => {
