@@ -2,7 +2,7 @@ import { Router, type Request, type Response } from 'express';
 import crypto from 'crypto';
 import { supabase } from '../config/supabase.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
-import { sendSuccess, sendError } from '../utils/response.js';
+import { sendSuccess, sendError, sendUnauthorized, sendNotFound, sendInternalError } from '../utils/response.js';
 import { generateAccessToken } from '../middleware/auth.js';
 import { config } from '../config/env.js';
 
@@ -121,7 +121,7 @@ router.get(
 
     // Validate required parameters
     if (!sso || !timestamp || !email || !user_id) {
-      return sendError(res, 'Missing required parameters: sso, timestamp, email, user_id', 400);
+      return sendError(res, 'Missing required parameters: sso, timestamp, email, user_id');
     }
 
     const timestampNum = parseInt(timestamp as string, 10);
@@ -131,21 +131,21 @@ router.get(
 
     // Validate email format
     if (!isValidEmail(emailStr)) {
-      return sendError(res, 'Invalid email format', 400);
+      return sendError(res, 'Invalid email format');
     }
 
     // Validate timestamp (replay attack prevention)
     if (!validateTimestamp(timestampNum)) {
-      return sendError(res, 'Token expired', 401);
+      return sendUnauthorized(res, 'Token expired');
     }
 
     // Validate HMAC signature
     if (!validateSSOSignature(ssoToken, emailStr, userIdStr, timestampNum)) {
-      return sendError(res, 'Invalid signature', 401);
+      return sendUnauthorized(res, 'Invalid signature');
     }
 
     // Look up user by LearnWorlds user ID
-    const { data: existingUser, error: lookupError } = await supabase
+    const { data: existingUser, error: lookupError} = await supabase
       .from('users')
       .select('*')
       .eq('learnworlds_user_id', userIdStr)
@@ -155,7 +155,7 @@ router.get(
 
     if (lookupError && lookupError.code !== 'PGRST116') {
       // PGRST116 is "not found" - other errors are real errors
-      return sendError(res, 'Database error', 500);
+      return sendInternalError(res, 'Database error');
     }
 
     // Create new user if doesn't exist
@@ -175,7 +175,7 @@ router.get(
         .single();
 
       if (createError) {
-        return sendError(res, 'Failed to create user', 500);
+        return sendInternalError(res, 'Failed to create user');
       }
 
       user = newUser;
@@ -234,7 +234,7 @@ router.get(
 
     // Validate required parameters
     if (!user_id || !email) {
-      return sendError(res, 'Missing required parameters: user_id, email', 400);
+      return sendError(res, 'Missing required parameters: user_id, email');
     }
 
     const userIdStr = user_id as string;
@@ -245,7 +245,7 @@ router.get(
 
     // Validate email format
     if (!isValidEmail(emailStr)) {
-      return sendError(res, 'Invalid email format', 400);
+      return sendError(res, 'Invalid email format');
     }
 
     // Look up user by LearnWorlds user ID
@@ -259,7 +259,7 @@ router.get(
 
     if (lookupError && lookupError.code !== 'PGRST116') {
       // PGRST116 is "not found" - other errors are real errors
-      return sendError(res, 'Database error', 500);
+      return sendInternalError(res, 'Database error');
     }
 
     // Create new user if doesn't exist
@@ -279,7 +279,7 @@ router.get(
         .single();
 
       if (createError) {
-        return sendError(res, 'Failed to create user', 500);
+        return sendInternalError(res, 'Failed to create user');
       }
 
       user = newUser;
@@ -584,7 +584,7 @@ router.post(
     // LearnWorlds uses 'Learnworlds-Webhook-Signature' header with 'v1=' prefix
     const signatureHeader = req.headers['learnworlds-webhook-signature'] as string;
     if (!signatureHeader) {
-      return sendError(res, 'Missing webhook signature', 401);
+      return sendUnauthorized(res, 'Missing webhook signature');
     }
 
     // Extract signature (format: "v1=abc123...")
@@ -595,7 +595,7 @@ router.post(
     // Validate webhook signature
     const payload = JSON.stringify(req.body);
     if (!validateWebhookSignature(signature, payload)) {
-      return sendError(res, 'Invalid webhook signature', 401);
+      return sendUnauthorized(res, 'Invalid webhook signature');
     }
 
     // Parse LearnWorlds webhook payload structure
@@ -612,7 +612,7 @@ router.post(
 
     // Validate timestamp (prevent old webhooks)
     if (timestamp && !validateTimestamp(timestamp)) {
-      return sendError(res, 'Webhook timestamp too old', 400);
+      return sendError(res, 'Webhook timestamp too old');
     }
 
     // Idempotency check
@@ -628,7 +628,7 @@ router.post(
       switch (eventType) {
         case 'courseCompleted':
           if (!userId) {
-            return sendError(res, 'Missing user id in webhook data', 400);
+            return sendError(res, 'Missing user id in webhook data');
           }
 
           // Parse course_id to determine what to unlock
@@ -672,7 +672,7 @@ router.post(
 
         case 'enrolledFreeCourse':
           if (!userId) {
-            return sendError(res, 'Missing user id in webhook data', 400);
+            return sendError(res, 'Missing user id in webhook data');
           }
 
           console.log(`User enrolled in free course: ${userId}, ${courseId}`);
@@ -683,7 +683,7 @@ router.post(
         case 'productBought':
           // Handle paid course purchases
           if (!userId) {
-            return sendError(res, 'Missing user id in webhook data', 400);
+            return sendError(res, 'Missing user id in webhook data');
           }
 
           console.log(`User purchased product: ${userId}`);
