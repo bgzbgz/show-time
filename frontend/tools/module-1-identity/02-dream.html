@@ -11,6 +11,10 @@
     <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../../shared/js/dependency-injection.js"></script>
+    <!-- LearnWorlds Auth Module -->
+    <script src="../../js/auth.js"></script>
+    <!-- Tool Access Control -->
+    <script src="../../js/tool-access-control.js"></script>
     <style>
         @font-face {
             font-family: 'Plaak';
@@ -351,6 +355,45 @@
             font-weight: bold;
             animation: fadeIn 0.3s ease;
         }
+
+        .jargon-warning {
+            background: #FEF2F2;
+            border-left: 4px solid #EF4444;
+            padding: 12px;
+            margin-top: 8px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .jargon-highlight {
+            background: #FEE2E2;
+            padding: 2px 4px;
+            border-radius: 2px;
+            font-weight: bold;
+            color: #DC2626;
+        }
+
+        .guru-login-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: transparent;
+            border: 2px solid #FFF469;
+            color: #FFF469;
+            padding: 10px 20px;
+            font-family: 'Riforma', sans-serif;
+            font-weight: 600;
+            font-size: 14px;
+            text-decoration: none;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            cursor: pointer;
+        }
+
+        .guru-login-btn:hover {
+            background: #FFF469;
+            color: #1A1A1A;
+        }
     </style>
 </head>
 <body>
@@ -380,11 +423,46 @@
         DependencyInjection.init(CONFIG.TOOL_SLUG, CONFIG.SCHEMA_NAME);
 
         const WORD_SUGGESTIONS = [
-            'Innovation', 'Excellence', 'Global', 'Trusted', 
+            'Innovation', 'Excellence', 'Global', 'Trusted',
             'Disruptive', 'Sustainable', 'Bold', 'Agile',
             'Market-Leader', 'Category-Defining', 'Unstoppable',
             'Transformative', 'Pioneering', 'Resilient', 'Visionary'
         ];
+
+        // Marketing jargon to detect and flag
+        const JARGON_PHRASES = [
+            'best in class', 'world class', 'world-class',
+            'market leader', 'market leading', 'industry leader',
+            'shareholder value', 'shareholder return',
+            'synergy', 'synergies', 'leverage',
+            'going forward', 'moving forward',
+            'paradigm shift', 'game changer', 'game-changer',
+            'thought leader', 'best practice',
+            'low hanging fruit', 'circle back',
+            'touch base', 'drill down',
+            'premier', 'leading provider',
+            'solutions provider', 'end-to-end solutions',
+            'maximize', 'optimize', 'streamline'
+        ];
+
+        // Helper to detect jargon in text
+        const detectJargon = (text) => {
+            if (!text) return { hasJargon: false, found: [] };
+            const textLower = text.toLowerCase();
+            const found = JARGON_PHRASES.filter(phrase => textLower.includes(phrase));
+            return { hasJargon: found.length > 0, found };
+        };
+
+        // Helper to detect bullet points
+        const hasBulletPoints = (text) => {
+            if (!text) return false;
+            const bulletPatterns = [
+                /^[\s]*[-•*]\s/m,  // Dash, bullet, asterisk at line start
+                /^[\s]*\d+\.\s/m,   // Numbered lists
+                /^[\s]*[a-z]\.\s/m, // Lettered lists
+            ];
+            return bulletPatterns.some(pattern => pattern.test(text));
+        };
 
         // Helper functions
         const analyzeText = (text, minLength = 20) => {
@@ -410,17 +488,22 @@
 
         const calculateOverallProgress = (data) => {
             let completed = 0;
-            let total = 12;
-            
+            let total = 15;
+
             // Basic Info (2 fields)
             if (data.companyName) completed++;
             if (data.userEmail) completed++;
-            
+
             // Corporate Killer (3 fields)
             if (data.corporateKiller.whatLost) completed++;
             if (data.corporateKiller.whatsAtStake) completed++;
             if (data.corporateKiller.whyImportant) completed++;
-            
+
+            // Employee Promise (3 fields) - NEW
+            if (data.employeePromise?.money) completed++;
+            if (data.employeePromise?.pride) completed++;
+            if (data.employeePromise?.freedom) completed++;
+
             // Dream Answers (6 fields)
             if (data.dreamAnswers.achievement) completed++;
             if (data.dreamAnswers.customersSay) completed++;
@@ -428,10 +511,10 @@
             if (data.dreamAnswers.marketPosition) completed++;
             if (data.dreamAnswers.officeFeelsLike) completed++;
             if (data.dreamAnswers.personalAchievement) completed++;
-            
+
             // One Sentence (1 field)
             if (data.oneSentence && data.oneSentence.length > 50) completed++;
-            
+
             return Math.round((completed / total) * 100);
         };
 
@@ -532,6 +615,11 @@
                     whatsAtStake: '',
                     whyImportant: ''
                 },
+                employeePromise: {
+                    money: '',
+                    pride: '',
+                    freedom: ''
+                },
                 dreamAnswers: {
                     achievement: '',
                     customersSay: '',
@@ -613,11 +701,7 @@
                     setSubmissionStatus('success');
                     console.log('Submission ID:', result.submission_id);
                     localStorage.setItem('lastSubmissionId', result.submission_id);
-                        setTimeout(() => setSubmissionStatus(null), 5000);
-                    } else {
-                        setSubmissionStatus('error');
-                        setTimeout(() => setSubmissionStatus(null), 5000);
-                    }
+                    setTimeout(() => setSubmissionStatus(null), 5000);
                 } catch (error) {
                     console.error('Webhook submission error:', error);
                     setSubmissionStatus('error');
@@ -704,6 +788,10 @@
                     {/* Cover Page */}
                     {step === 0 && (
                         <div className="relative min-h-screen flex items-center justify-center bg-black">
+                            {/* GURU LOGIN Button */}
+                            <a href="../../guru-suite/index.html" className="guru-login-btn no-print">
+                                GURU LOGIN
+                            </a>
                             <div className="relative z-10 text-center text-white px-8">
                                 <h1 className="plaak text-9xl mb-6 animate-in">COMPANY DREAM TOOL</h1>
                                 <p className="text-3xl mb-12 animate-in" style={{animationDelay: '0.2s'}}>
@@ -772,26 +860,31 @@
 
                                 <div className="mb-16 animate-in" style={{animationDelay: '0.3s'}}>
                                     <h2 className="plaak text-6xl mb-8">THE JOURNEY</h2>
-                                    <div className="grid grid-cols-4 gap-8 text-center">
-                                        <div className="border-2 border-white p-8">
-                                            <div className="text-9xl plaak mb-4">01</div>
-                                            <p className="text-2xl font-bold mb-2">Corporate Killer</p>
-                                            <p className="text-xl text-gray-400">3 minutes</p>
+                                    <div className="grid grid-cols-5 gap-6 text-center">
+                                        <div className="border-2 border-white p-6">
+                                            <div className="text-7xl plaak mb-3">01</div>
+                                            <p className="text-xl font-bold mb-2">Corporate Killer</p>
+                                            <p className="text-lg text-gray-400">3 min</p>
                                         </div>
-                                        <div className="border-2 border-white p-8">
-                                            <div className="text-9xl plaak mb-4">02</div>
-                                            <p className="text-2xl font-bold mb-2">Dream Questions</p>
-                                            <p className="text-xl text-gray-400">5 minutes</p>
+                                        <div className="border-2 border-white p-6">
+                                            <div className="text-7xl plaak mb-3">02</div>
+                                            <p className="text-xl font-bold mb-2">Employee Promise</p>
+                                            <p className="text-lg text-gray-400">2 min</p>
                                         </div>
-                                        <div className="border-2 border-white p-8">
-                                            <div className="text-9xl plaak mb-4">03</div>
-                                            <p className="text-2xl font-bold mb-2">One Sentence</p>
-                                            <p className="text-xl text-gray-400">3 minutes</p>
+                                        <div className="border-2 border-white p-6">
+                                            <div className="text-7xl plaak mb-3">03</div>
+                                            <p className="text-xl font-bold mb-2">Dream Questions</p>
+                                            <p className="text-lg text-gray-400">5 min</p>
                                         </div>
-                                        <div className="border-2 border-white p-8">
-                                            <div className="text-9xl plaak mb-4">04</div>
-                                            <p className="text-2xl font-bold mb-2">Dream Board</p>
-                                            <p className="text-xl text-gray-400">4 minutes</p>
+                                        <div className="border-2 border-white p-6">
+                                            <div className="text-7xl plaak mb-3">04</div>
+                                            <p className="text-xl font-bold mb-2">One Sentence</p>
+                                            <p className="text-lg text-gray-400">3 min</p>
+                                        </div>
+                                        <div className="border-2 border-white p-6">
+                                            <div className="text-7xl plaak mb-3">05</div>
+                                            <p className="text-xl font-bold mb-2">Dream Board</p>
+                                            <p className="text-lg text-gray-400">3 min</p>
                                         </div>
                                     </div>
                                 </div>
@@ -838,14 +931,14 @@
                                     THIS MATTERS.
                                 </h1>
                                 <p className="text-3xl mb-12 animate-in" style={{animationDelay: '0.2s'}}>
-                                    You've identified what's at stake. Now let's dream about what's possible.
+                                    You've identified what's at stake. Now answer the most important question...
                                 </p>
-                                <button 
-                                    className="btn-primary text-2xl py-6 px-16 animate-in" 
+                                <button
+                                    className="btn-primary text-2xl py-6 px-16 animate-in"
                                     style={{animationDelay: '0.4s'}}
-                                    onClick={() => setStep(2)}
+                                    onClick={() => setStep(1.7)}
                                 >
-                                    Continue to Dream Questions →
+                                    Continue →
                                 </button>
                             </div>
                         </div>
@@ -866,31 +959,38 @@
 
                             {/* Progress Indicator */}
                             <div className="border-b border-gray-200 py-6 px-8 no-print">
-                                <div className="flex items-center justify-between max-w-3xl">
-                                    <div className="flex items-center gap-2">
+                                <div className="flex items-center justify-between max-w-5xl">
+                                    <div className="flex items-center gap-1">
                                         <div className={`progress-dot ${step >= 1 ? 'active' : ''} ${step > 1 && step !== 1.5 ? 'completed' : ''}`}></div>
-                                        <span className={`text-sm ${step === 1 ? 'font-bold' : ''}`}>Corporate Killer</span>
+                                        <span className={`text-xs ${step === 1 ? 'font-bold' : ''}`}>Corporate Killer</span>
                                     </div>
-                                    <div className="flex-1 h-0.5 bg-gray-200 mx-4">
+                                    <div className="flex-1 h-0.5 bg-gray-200 mx-2">
                                         <div className={`h-full bg-black transition-all ${step > 1 && step !== 1.5 ? 'w-full' : 'w-0'}`}></div>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className={`progress-dot ${step >= 2 ? 'active' : ''} ${step > 2 && step !== 2.5 ? 'completed' : ''}`}></div>
-                                        <span className={`text-sm ${step === 2 ? 'font-bold' : ''}`}>Dream Questions</span>
+                                    <div className="flex items-center gap-1">
+                                        <div className={`progress-dot ${step >= 1.7 ? 'active' : ''} ${step > 1.7 && step !== 1.8 ? 'completed' : ''}`}></div>
+                                        <span className={`text-xs ${step === 1.7 ? 'font-bold' : ''}`}>Employee Promise</span>
                                     </div>
-                                    <div className="flex-1 h-0.5 bg-gray-200 mx-4">
+                                    <div className="flex-1 h-0.5 bg-gray-200 mx-2">
+                                        <div className={`h-full bg-black transition-all ${step > 1.7 && step !== 1.8 ? 'w-full' : 'w-0'}`}></div>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <div className={`progress-dot ${step >= 2 ? 'active' : ''} ${step > 2 && step !== 2.5 ? 'completed' : ''}`}></div>
+                                        <span className={`text-xs ${step === 2 ? 'font-bold' : ''}`}>Dream Questions</span>
+                                    </div>
+                                    <div className="flex-1 h-0.5 bg-gray-200 mx-2">
                                         <div className={`h-full bg-black transition-all ${step > 2 && step !== 2.5 ? 'w-full' : 'w-0'}`}></div>
                                     </div>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-1">
                                         <div className={`progress-dot ${step >= 3 ? 'active' : ''} ${step > 3 ? 'completed' : ''}`}></div>
-                                        <span className={`text-sm ${step === 3 ? 'font-bold' : ''}`}>One Sentence</span>
+                                        <span className={`text-xs ${step === 3 ? 'font-bold' : ''}`}>One Sentence</span>
                                     </div>
-                                    <div className="flex-1 h-0.5 bg-gray-200 mx-4">
+                                    <div className="flex-1 h-0.5 bg-gray-200 mx-2">
                                         <div className={`h-full bg-black transition-all ${step > 3 ? 'w-full' : 'w-0'}`}></div>
                                     </div>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-1">
                                         <div className={`progress-dot ${step >= 4 ? 'active' : ''}`}></div>
-                                        <span className={`text-sm ${step === 4 ? 'font-bold' : ''}`}>Dream Board</span>
+                                        <span className={`text-xs ${step === 4 ? 'font-bold' : ''}`}>Dream Board</span>
                                     </div>
                                 </div>
                             </div>
@@ -905,6 +1005,35 @@
                             updateData={updateData}
                             onNext={() => setStep(1.5)}
                         />}
+
+                        {/* Step 1.7: Employee Promise (WIFM Gate) */}
+                        {step === 1.7 && <Step1_7EmployeePromise
+                            data={data}
+                            updateData={updateData}
+                            onBack={() => setStep(1)}
+                            onNext={() => setStep(1.8)}
+                        />}
+
+                        {/* Transition after Employee Promise */}
+                        {step === 1.8 && (
+                            <div className="bg-black text-white min-h-screen flex items-center justify-center p-16">
+                                <div className="max-w-4xl text-center">
+                                    <h1 className="plaak text-7xl mb-8 animate-in" style={{color: '#FFF469'}}>
+                                        NOW BUILD THE DREAM.
+                                    </h1>
+                                    <p className="text-3xl mb-12 animate-in" style={{animationDelay: '0.2s'}}>
+                                        You know what's at stake. You know what employees get. Now imagine the vivid future.
+                                    </p>
+                                    <button
+                                        className="btn-primary text-2xl py-6 px-16 animate-in"
+                                        style={{animationDelay: '0.4s'}}
+                                        onClick={() => setStep(2)}
+                                    >
+                                        Continue to Dream Questions →
+                                    </button>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Step 2: Dream Questions (One-at-a-time) */}
                         {step === 2 && <Step2DreamQuestions
@@ -971,17 +1100,25 @@
             );
         }
 
-        // Step 1: Corporate Killer Component (with character feedback)
+        // Step 1: Corporate Killer Component (with character feedback and jargon detection)
         function Step1Corporate({ data, updateData, onNext }) {
             const canProceed = data.companyName &&
                               data.userEmail &&
-                              data.corporateKiller.whatLost && 
-                              data.corporateKiller.whatsAtStake && 
+                              data.corporateKiller.whatLost &&
+                              data.corporateKiller.whatsAtStake &&
                               data.corporateKiller.whyImportant;
 
             const analysis1 = analyzeText(data.corporateKiller.whatLost, 30);
             const analysis2 = analyzeText(data.corporateKiller.whatsAtStake, 30);
             const analysis3 = analyzeText(data.corporateKiller.whyImportant, 30);
+
+            const jargon1 = detectJargon(data.corporateKiller.whatLost);
+            const jargon2 = detectJargon(data.corporateKiller.whatsAtStake);
+            const jargon3 = detectJargon(data.corporateKiller.whyImportant);
+
+            const bullets1 = hasBulletPoints(data.corporateKiller.whatLost);
+            const bullets2 = hasBulletPoints(data.corporateKiller.whatsAtStake);
+            const bullets3 = hasBulletPoints(data.corporateKiller.whyImportant);
 
             return (
                 <main className="p-12 max-w-6xl mx-auto">
@@ -1038,6 +1175,19 @@
                                         </span>
                                     )}
                                 </div>
+                                {bullets1 && (
+                                    <div className="jargon-warning">
+                                        <strong>⚠️ BULLET POINTS DETECTED</strong>
+                                        <p className="text-sm mt-1">Tell a story, don't write a list. Remove bullet points and write in narrative form.</p>
+                                    </div>
+                                )}
+                                {jargon1.hasJargon && (
+                                    <div className="jargon-warning">
+                                        <strong>⚠️ MARKETING JARGON DETECTED</strong>
+                                        <p className="text-sm mt-1">This sounds like a press release. Found: <span className="jargon-highlight">{jargon1.found.join(', ')}</span></p>
+                                        <p className="text-sm mt-1">Rewrite for your team, not investors.</p>
+                                    </div>
+                                )}
                             </div>
 
                             <div>
@@ -1056,6 +1206,19 @@
                                         </span>
                                     )}
                                 </div>
+                                {bullets2 && (
+                                    <div className="jargon-warning">
+                                        <strong>⚠️ BULLET POINTS DETECTED</strong>
+                                        <p className="text-sm mt-1">Tell a story, don't write a list. Remove bullet points and write in narrative form.</p>
+                                    </div>
+                                )}
+                                {jargon2.hasJargon && (
+                                    <div className="jargon-warning">
+                                        <strong>⚠️ MARKETING JARGON DETECTED</strong>
+                                        <p className="text-sm mt-1">Found: <span className="jargon-highlight">{jargon2.found.join(', ')}</span></p>
+                                        <p className="text-sm mt-1">Rewrite for your team, not investors.</p>
+                                    </div>
+                                )}
                             </div>
 
                             <div>
@@ -1074,16 +1237,127 @@
                                         </span>
                                     )}
                                 </div>
+                                {bullets3 && (
+                                    <div className="jargon-warning">
+                                        <strong>⚠️ BULLET POINTS DETECTED</strong>
+                                        <p className="text-sm mt-1">Tell a story, don't write a list. Remove bullet points and write in narrative form.</p>
+                                    </div>
+                                )}
+                                {jargon3.hasJargon && (
+                                    <div className="jargon-warning">
+                                        <strong>⚠️ MARKETING JARGON DETECTED</strong>
+                                        <p className="text-sm mt-1">Found: <span className="jargon-highlight">{jargon3.found.join(', ')}</span></p>
+                                        <p className="text-sm mt-1">Rewrite for your team, not investors.</p>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
                         <div className="flex justify-end">
-                            <button 
+                            <button
                                 className="btn-primary text-xl py-4 px-8"
                                 disabled={!canProceed}
                                 onClick={onNext}
                             >
-                                Next: Dream Questions →
+                                Next: Employee Promise →
+                            </button>
+                        </div>
+                    </div>
+                </main>
+            );
+        }
+
+        // Step 1.7: Employee Promise (WIFM Gate) Component
+        function Step1_7EmployeePromise({ data, updateData, onBack, onNext }) {
+            const canProceed = data.employeePromise.money &&
+                              data.employeePromise.pride &&
+                              data.employeePromise.freedom;
+
+            return (
+                <main className="p-12 max-w-6xl mx-auto">
+                    <div className="animate-in">
+                        <div className="numbered-section mb-8">
+                            [02] THE EMPLOYEE PROMISE (WIFM)
+                        </div>
+
+                        <div className="bg-black text-white border-4 border-black p-6 mb-8">
+                            <h3 className="plaak text-3xl mb-2">WHAT'S IN IT FOR ME?</h3>
+                            <p className="text-xl">
+                                Dreams fail when employees don't know what's in it for them. Answer honestly: If we achieve this Dream, what do your employees get?
+                            </p>
+                        </div>
+
+                        <div className="bg-yellow-50 border-l-4 border-black p-6 mb-8">
+                            <p className="text-lg font-bold mb-2">💡 WHY THIS MATTERS</p>
+                            <p className="text-base">
+                                Employees sacrifice time with family to work. Your Dream must answer: "Why would I give up my evenings/weekends for this?"
+                                If the answer is only "shareholder returns," your Dream will fail.
+                            </p>
+                        </div>
+
+                        <div className="space-y-8 mb-8">
+                            <div>
+                                <label className="block font-bold mb-2 text-lg">💰 MONEY: What financial benefit do employees get?</label>
+                                <input
+                                    type="text"
+                                    className="worksheet-input text-lg"
+                                    placeholder="e.g., Equity in a billion-dollar company | Industry-leading salaries | Life-changing bonuses"
+                                    value={data.employeePromise.money}
+                                    onChange={(e) => updateData('employeePromise.money', e.target.value)}
+                                />
+                                <p className="text-sm text-gray-500 mt-2">Be specific. Numbers matter.</p>
+                            </div>
+
+                            <div>
+                                <label className="block font-bold mb-2 text-lg">🏆 PRIDE: What will they be proud to tell their family/friends?</label>
+                                <input
+                                    type="text"
+                                    className="worksheet-input text-lg"
+                                    placeholder="e.g., We built the product everyone uses | We solved climate change | We're changing an industry"
+                                    value={data.employeePromise.pride}
+                                    onChange={(e) => updateData('employeePromise.pride', e.target.value)}
+                                />
+                                <p className="text-sm text-gray-500 mt-2">What makes them feel their work matters?</p>
+                            </div>
+
+                            <div>
+                                <label className="block font-bold mb-2 text-lg">🕊️ FREEDOM: What personal freedom or growth do they gain?</label>
+                                <input
+                                    type="text"
+                                    className="worksheet-input text-lg"
+                                    placeholder="e.g., Learn skills that make them irreplaceable | Work from anywhere | Total creative autonomy"
+                                    value={data.employeePromise.freedom}
+                                    onChange={(e) => updateData('employeePromise.freedom', e.target.value)}
+                                />
+                                <p className="text-sm text-gray-500 mt-2">Time, skills, autonomy, or growth opportunities?</p>
+                            </div>
+                        </div>
+
+                        <div className="bg-gray-100 border-l-4 border-black p-6 mb-8">
+                            <p className="font-bold mb-2">❌ BAD ANSWERS (Too Vague)</p>
+                            <ul className="text-sm space-y-1">
+                                <li>• "Competitive compensation" (every company says this)</li>
+                                <li>• "Great culture" (meaningless without specifics)</li>
+                                <li>• "Make a difference" (too generic)</li>
+                            </ul>
+                            <p className="font-bold mt-4 mb-2">✅ GOOD ANSWERS (Specific)</p>
+                            <ul className="text-sm space-y-1">
+                                <li>• "Equity worth $500K+ when we IPO in 3 years"</li>
+                                <li>• "Build products used by 10 million people daily"</li>
+                                <li>• "Learn AI engineering skills that triple your market value"</li>
+                            </ul>
+                        </div>
+
+                        <div className="flex justify-between">
+                            <button className="btn-secondary text-lg py-3 px-6" onClick={onBack}>
+                                ← Back
+                            </button>
+                            <button
+                                className="btn-primary text-xl py-4 px-8"
+                                disabled={!canProceed}
+                                onClick={onNext}
+                            >
+                                Continue to Dream Questions →
                             </button>
                         </div>
                     </div>
@@ -1239,14 +1513,16 @@
             );
         }
 
-        // Step 3: One Sentence Component (with 3 AI versions)
+        // Step 3: One Sentence Component (with 3 AI versions + jargon detection)
         function Step3OneSentence({ data, updateData, generate3Sentences, onBack, onNext }) {
             const [selectedVersion, setSelectedVersion] = useState(null);
             const [showOptions, setShowOptions] = useState(false);
             const [aiSentences, setAiSentences] = useState([]);
-            
+
             const canProceed = data.oneSentence && data.oneSentence.length > 50;
             const analysis = analyzeText(data.oneSentence, 50);
+            const jargonCheck = detectJargon(data.oneSentence);
+            const bulletsCheck = hasBulletPoints(data.oneSentence);
 
             const handleGenerate = () => {
                 const sentences = generate3Sentences();
@@ -1295,6 +1571,19 @@
                                             </span>
                                         )}
                                     </div>
+                                    {bulletsCheck && (
+                                        <div className="jargon-warning">
+                                            <strong>⚠️ BULLET POINTS DETECTED</strong>
+                                            <p className="text-sm mt-1">Your Dream should be a narrative story, not a list. Remove bullet points.</p>
+                                        </div>
+                                    )}
+                                    {jargonCheck.hasJargon && (
+                                        <div className="jargon-warning">
+                                            <strong>⚠️ MARKETING JARGON DETECTED</strong>
+                                            <p className="text-sm mt-1">This sounds like a press release. Found: <span className="jargon-highlight">{jargonCheck.found.join(', ')}</span></p>
+                                            <p className="text-sm mt-1">Rewrite for your team, not for investors or customers.</p>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <button 
@@ -1653,6 +1942,15 @@
                                         <div><strong>What would be lost:</strong> {data.corporateKiller.whatLost}</div>
                                         <div><strong>What's at stake:</strong> {data.corporateKiller.whatsAtStake}</div>
                                     </div>
+                                </div>
+                            </div>
+
+                            <div className="border-t-2 border-gray-200 pt-8 mb-12">
+                                <div className="text-sm font-bold mb-4 uppercase">What Employees Get (WIFM)</div>
+                                <div className="space-y-3 text-lg">
+                                    <div><strong>💰 Money:</strong> {data.employeePromise.money}</div>
+                                    <div><strong>🏆 Pride:</strong> {data.employeePromise.pride}</div>
+                                    <div><strong>🕊️ Freedom:</strong> {data.employeePromise.freedom}</div>
                                 </div>
                             </div>
 
