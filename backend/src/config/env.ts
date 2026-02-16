@@ -41,6 +41,9 @@ const envSchema = z.object({
   API_BASE_PATH: z.string().default('/api'),
   API_VERSION: z.string().default('v1'),
 
+  // Frontend URL (for redirects after auth)
+  FRONTEND_URL: z.string().url().optional(),
+
   // CORS
   CORS_ORIGIN: z.string().default('http://localhost:3000'),
   CORS_CREDENTIALS: z.coerce.boolean().default(true),

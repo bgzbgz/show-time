@@ -109,8 +109,10 @@ async function getUserProgress(userId: string) {
 }
 
 // =============================================================================
-// GET /api/learnworlds/sso/validate - Validate SSO Token
+// GET /api/learnworlds/sso/validate - Validate SSO Token (LEGACY - HMAC)
 // =============================================================================
+// NOTE: This endpoint is kept for backward compatibility
+// New implementation should use /api/learnworlds/auth endpoint below
 
 router.get(
   '/sso/validate',
@@ -204,6 +206,125 @@ router.get(
     const progress = await getUserProgress(user.id);
 
     // Return success response
+    return sendSuccess(res, {
+      success: true,
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        full_name: user.full_name,
+        role: user.role,
+        learnworlds_user_id: user.learnworlds_user_id,
+      },
+      progress,
+    });
+  })
+);
+
+// =============================================================================
+// GET /api/learnworlds/auth - Simplified Authentication for External Links
+// =============================================================================
+// This endpoint handles LearnWorlds External Link Learning Activities
+// URL format: /api/learnworlds/auth?user_id={{USER_ID}}&email={{EMAIL}}&course_id={{COURSE_ID}}
+
+router.get(
+  '/auth',
+  asyncHandler(async (req: Request, res: Response) => {
+    const { user_id, email, course_id, user_name, redirect } = req.query;
+
+    // Validate required parameters
+    if (!user_id || !email) {
+      return sendError(res, 'Missing required parameters: user_id, email', 400);
+    }
+
+    const userIdStr = user_id as string;
+    const emailStr = email as string;
+    const courseIdStr = course_id as string | undefined;
+    const userNameStr = user_name as string | undefined;
+    const redirectPath = redirect as string | undefined;
+
+    // Validate email format
+    if (!isValidEmail(emailStr)) {
+      return sendError(res, 'Invalid email format', 400);
+    }
+
+    // Look up user by LearnWorlds user ID
+    const { data: existingUser, error: lookupError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('learnworlds_user_id', userIdStr)
+      .single();
+
+    let user = existingUser;
+
+    if (lookupError && lookupError.code !== 'PGRST116') {
+      // PGRST116 is "not found" - other errors are real errors
+      return sendError(res, 'Database error', 500);
+    }
+
+    // Create new user if doesn't exist
+    if (!user) {
+      const { data: newUser, error: createError } = await supabase
+        .from('users')
+        .insert({
+          learnworlds_user_id: userIdStr,
+          learnworlds_email: emailStr,
+          email: emailStr,
+          full_name: userNameStr || emailStr.split('@')[0], // Use provided name or default from email
+          sso_verified_at: new Date().toISOString(),
+          role: 'user',
+          last_login: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (createError) {
+        return sendError(res, 'Failed to create user', 500);
+      }
+
+      user = newUser;
+
+      // Initialize progress for new user
+      try {
+        await initializeUserProgress(userIdStr);
+      } catch (error) {
+        console.error('Failed to initialize user progress:', error);
+        // Don't fail auth if progress init fails
+      }
+    } else {
+      // Update last login for existing user
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({
+          last_login: new Date().toISOString(),
+        })
+        .eq('id', user.id);
+
+      if (updateError) {
+        console.error('Failed to update last login:', updateError);
+      }
+    }
+
+    // Generate JWT token
+    const token = generateAccessToken({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      organization_id: user.organization_id,
+    });
+
+    // Log authentication for debugging
+    console.log(`✓ LearnWorlds auth: ${emailStr} (${userIdStr}) from course ${courseIdStr || 'unknown'}`);
+
+    // If redirect parameter provided, redirect to frontend tool with token
+    if (redirectPath) {
+      const frontendUrl = config.FRONTEND_URL || 'http://localhost:3001';
+      const redirectUrl = `${frontendUrl}${redirectPath}?token=${token}`;
+      return res.redirect(redirectUrl);
+    }
+
+    // Otherwise, return JSON (for API testing)
+    const progress = await getUserProgress(user.id);
     return sendSuccess(res, {
       success: true,
       token,
