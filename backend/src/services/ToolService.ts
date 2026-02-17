@@ -19,8 +19,8 @@ export class ToolService {
     try {
       // Load tool-registry.json (check multiple locations for different deploy configs)
       const possiblePaths = [
-        path.join(process.cwd(), 'config/tool-registry.json'),       // rootDir: / (monorepo)
-        path.join(process.cwd(), '../config/tool-registry.json'),    // rootDir: /backend
+        path.join(process.cwd(), 'config/tool-registry.json'),       // rootDir: /backend (config copied into backend)
+        path.join(process.cwd(), '../config/tool-registry.json'),    // rootDir: / (monorepo root)
       ];
       let registryContent: string | null = null;
       for (const p of possiblePaths) {

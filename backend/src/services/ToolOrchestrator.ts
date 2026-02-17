@@ -32,8 +32,8 @@ export class ToolOrchestrator {
     try {
       // Check multiple locations for different deploy configs
       const possiblePaths = [
-        path.join(process.cwd(), 'config/dependencies.json'),       // rootDir: / (monorepo)
-        path.join(process.cwd(), '../config/dependencies.json'),    // rootDir: /backend
+        path.join(process.cwd(), 'config/dependencies.json'),       // rootDir: /backend (config copied into backend)
+        path.join(process.cwd(), '../config/dependencies.json'),    // rootDir: / (monorepo root)
       ];
       let configContent: string | null = null;
       for (const p of possiblePaths) {
