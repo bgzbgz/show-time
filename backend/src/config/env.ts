@@ -29,6 +29,10 @@ const envSchema = z.object({
   JWT_EXPIRY: z.string().default('24h'),
   JWT_REFRESH_EXPIRY: z.string().default('7d'),
 
+  // Supabase
+  SUPABASE_URL: z.string().url(),
+  SUPABASE_ANON_KEY: z.string().min(1),
+
   // LearnWorlds SSO
   LEARNWORLDS_API_URL: z.string().url().default('https://api.learnworlds.com/v2'),
   LEARNWORLDS_API_KEY: z.string().optional(),

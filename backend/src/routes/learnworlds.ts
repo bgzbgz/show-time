@@ -487,37 +487,37 @@ async function initializeUserProgress(learnworldsUserId: string): Promise<void> 
     return; // Already initialized
   }
 
-  // Tool slugs mapped to sprint IDs
+  // Tool slugs mapped to module IDs (matches frontend module structure)
+  // Module ID is used for batch unlocking via webhooks (e.g., course "module-2" completes → unlock all module 2 tools)
   const toolMapping = [
     { sprint_id: 0, tool_slug: 'woop' },
     { sprint_id: 1, tool_slug: 'know-thyself' },
-    { sprint_id: 1, tool_slug: 'ikigai' },
-    { sprint_id: 2, tool_slug: 'dream' },
-    { sprint_id: 3, tool_slug: 'values' },
-    { sprint_id: 4, tool_slug: 'team' },
-    { sprint_id: 5, tool_slug: 'fit' },
-    { sprint_id: 5, tool_slug: 'cash' },
-    { sprint_id: 5, tool_slug: 'energy' },
-    { sprint_id: 5, tool_slug: 'goals' },
-    { sprint_id: 5, tool_slug: 'focus' },
-    { sprint_id: 5, tool_slug: 'performance' },
-    { sprint_id: 5, tool_slug: 'meeting-rhythm' },
-    { sprint_id: 6, tool_slug: 'market-size' },
-    { sprint_id: 6, tool_slug: 'segmentation' },
-    { sprint_id: 6, tool_slug: 'target-segment' },
-    { sprint_id: 6, tool_slug: 'value-proposition' },
-    { sprint_id: 6, tool_slug: 'vp-testing' },
-    { sprint_id: 6, tool_slug: 'product-development' },
-    { sprint_id: 6, tool_slug: 'pricing' },
-    { sprint_id: 6, tool_slug: 'brand-marketing' },
-    { sprint_id: 6, tool_slug: 'customer-service' },
-    { sprint_id: 6, tool_slug: 'route-to-market' },
-    { sprint_id: 7, tool_slug: 'core-activities' },
-    { sprint_id: 7, tool_slug: 'processes-decisions' },
-    { sprint_id: 7, tool_slug: 'fit-abc' },
-    { sprint_id: 7, tool_slug: 'org-redesign' },
+    { sprint_id: 1, tool_slug: 'dream' },
+    { sprint_id: 1, tool_slug: 'values' },
+    { sprint_id: 1, tool_slug: 'team' },
+    { sprint_id: 1, tool_slug: 'fit' },
+    { sprint_id: 2, tool_slug: 'cash' },
+    { sprint_id: 2, tool_slug: 'energy' },
+    { sprint_id: 2, tool_slug: 'goals' },
+    { sprint_id: 2, tool_slug: 'focus' },
+    { sprint_id: 2, tool_slug: 'performance' },
+    { sprint_id: 2, tool_slug: 'meeting-rhythm' },
+    { sprint_id: 3, tool_slug: 'market-size' },
+    { sprint_id: 3, tool_slug: 'segmentation-target-market' },
+    { sprint_id: 4, tool_slug: 'target-segment-deep-dive' },
+    { sprint_id: 4, tool_slug: 'value-proposition' },
+    { sprint_id: 4, tool_slug: 'value-proposition-testing' },
+    { sprint_id: 5, tool_slug: 'product-development' },
+    { sprint_id: 5, tool_slug: 'pricing' },
+    { sprint_id: 5, tool_slug: 'brand-marketing' },
+    { sprint_id: 5, tool_slug: 'customer-service' },
+    { sprint_id: 5, tool_slug: 'route-to-market' },
+    { sprint_id: 6, tool_slug: 'core-activities' },
+    { sprint_id: 6, tool_slug: 'processes-decisions' },
+    { sprint_id: 6, tool_slug: 'fit-abc-analysis' },
+    { sprint_id: 6, tool_slug: 'org-redesign' },
     { sprint_id: 7, tool_slug: 'employer-branding' },
-    { sprint_id: 8, tool_slug: 'agile-teams' },
+    { sprint_id: 7, tool_slug: 'agile-teams' },
     { sprint_id: 8, tool_slug: 'digitalization' },
     { sprint_id: 8, tool_slug: 'digital-heart' },
     { sprint_id: 9, tool_slug: 'program-overview' },
@@ -610,10 +610,11 @@ router.post(
     // Use combination of type + user + course + timestamp
     const eventId = `${eventType}_${userId}_${courseId}_${timestamp}`;
 
-    // Validate timestamp (prevent old webhooks)
-    if (timestamp && !validateTimestamp(timestamp)) {
-      return sendError(res, 'Webhook timestamp too old');
-    }
+    // Note: We do NOT validate the timestamp for webhooks.
+    // The completed_at field reflects when the course was completed, not when the
+    // webhook was sent. Webhooks can arrive minutes or hours after the event.
+    // Authenticity is guaranteed by the HMAC signature, and the idempotency check
+    // below prevents duplicate processing.
 
     // Idempotency check
     if (eventId) {
