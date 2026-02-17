@@ -30,8 +30,16 @@ export class ToolOrchestrator {
    */
   async loadDependencyConfig(): Promise<void> {
     try {
-      const configPath = path.join(process.cwd(), '../config/dependencies.json');
-      const configContent = await fs.readFile(configPath, 'utf-8');
+      // Check multiple locations for different deploy configs
+      const possiblePaths = [
+        path.join(process.cwd(), 'config/dependencies.json'),       // rootDir: / (monorepo)
+        path.join(process.cwd(), '../config/dependencies.json'),    // rootDir: /backend
+      ];
+      let configContent: string | null = null;
+      for (const p of possiblePaths) {
+        try { configContent = await fs.readFile(p, 'utf-8'); break; } catch { /* try next */ }
+      }
+      if (!configContent) throw new Error('dependencies.json not found');
       const config = JSON.parse(configContent);
 
       this.dependencyConfig = config.tools || {};

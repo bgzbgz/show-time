@@ -17,9 +17,16 @@ export class ToolService {
    */
   async loadToolRegistry(): Promise<void> {
     try {
-      // Load tool-registry.json
-      const registryPath = path.join(process.cwd(), '../config/tool-registry.json');
-      const registryContent = await fs.readFile(registryPath, 'utf-8');
+      // Load tool-registry.json (check multiple locations for different deploy configs)
+      const possiblePaths = [
+        path.join(process.cwd(), 'config/tool-registry.json'),       // rootDir: / (monorepo)
+        path.join(process.cwd(), '../config/tool-registry.json'),    // rootDir: /backend
+      ];
+      let registryContent: string | null = null;
+      for (const p of possiblePaths) {
+        try { registryContent = await fs.readFile(p, 'utf-8'); break; } catch { /* try next */ }
+      }
+      if (!registryContent) throw new Error('tool-registry.json not found in any expected location');
       const registry = JSON.parse(registryContent);
 
       this.toolRegistry = registry.tools || [];
