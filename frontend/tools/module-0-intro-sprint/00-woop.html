@@ -4,276 +4,329 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WOOP Tool | Fast Track Program</title>
-    <!-- Updated: no login, direct access -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../../shared/js/dependency-injection.js"></script>
+    <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
+    <script src="../../shared/js/cognitive-load.js"></script>
 
     <style>
-        @font-face {
-            font-family: 'Plaak';
-            src: url('Plaak3Trial-43-Bold.woff2') format('woff2');
-            font-weight: bold;
-        }
+        @font-face { font-family: 'Plaak'; src: url('Plaak3Trial-43-Bold.woff2') format('woff2'); font-weight: bold; }
+        @font-face { font-family: 'Riforma'; src: url('RiformaLL-Regular.woff2') format('woff2'); font-weight: normal; }
+        @font-face { font-family: 'Riforma'; src: url('RiformaLL-Regular.woff2') format('woff2'); font-weight: 600; }
+        @font-face { font-family: 'Monument'; src: url('MonumentGrotesk-Mono.woff2') format('woff2'); }
 
-        @font-face {
-            font-family: 'Riforma';
-            src: url('RiformaLL-Regular.woff2') format('woff2');
-            font-weight: normal;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        @font-face {
-            font-family: 'Monument';
-            src: url('MonumentGrotesk-Mono.woff2') format('woff2');
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
         body {
             font-family: 'Riforma', -apple-system, sans-serif;
             font-size: 16px;
-            color: #000000;
-            background: #FFFFFF;
+            color: #000;
+            background: #000;
             -webkit-font-smoothing: antialiased;
         }
-        
-        .plaak {
+
+        .plaak { font-family: 'Plaak', sans-serif; font-weight: bold; letter-spacing: -0.01em; line-height: 1.2; }
+        .monument { font-family: 'Monument', monospace; letter-spacing: 0.05em; }
+
+        /* Outer frame */
+        .tool-frame {
+            background: #fff;
+            min-height: 100vh;
+        }
+        .tool-inner {
+            background: #fff;
+            min-height: 100vh;
+        }
+
+        /* Wizard layout */
+        .wizard-layout {
+            display: flex;
+            min-height: 100vh;
+        }
+        .wizard-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background: #fff;
+            padding: 0 48px;
+        }
+        .wizard-sidebar {
+            width: 280px;
+            background: #000;
+            border-left: 1px solid #000;
+            flex-shrink: 0;
+        }
+        .wizard-sidebar-inner {
+            position: sticky;
+            top: 0;
+            padding: 32px 24px;
+            max-height: 100vh;
+            overflow-y: auto;
+        }
+
+        /* Step content area */
+        .step-content {
+            max-width: 100%;
+            padding: 40px 0;
+            flex: 1;
+        }
+        .step-indicator {
+            font-family: 'Monument', monospace;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        /* Opening area — the one Plaak heading per page */
+        .opening-box {
+            margin-bottom: 32px;
+        }
+        .opening-box .step-heading {
             font-family: 'Plaak', sans-serif;
             font-weight: bold;
+            font-size: 32px;
             letter-spacing: -0.01em;
             line-height: 1.2;
+            color: #000;
+            margin-bottom: 6px;
         }
-        
-        .monument {
+        .opening-box .step-hint {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        /* Questions layout */
+        .questions-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            margin-bottom: 32px;
+        }
+        .questions-grid.single-col {
+            /* same */
+        }
+        .question-box {
+            /* no border, no box */
+        }
+        .question-box.full-width {
+            /* no-op */
+        }
+
+        /* Closing area */
+        .closing-box {
+            border-top: 1px solid #E0E0E0;
+            padding: 20px 0 0 0;
+            margin-top: 8px;
+            text-align: center;
+        }
+        .closing-box p {
+            font-size: 14px;
+            color: #666;
+        }
+        .closing-box .closing-title {
             font-family: 'Monument', monospace;
+            font-size: 11px;
+            text-transform: uppercase;
             letter-spacing: 0.05em;
+            color: #000;
+            margin-bottom: 6px;
         }
-        
-        .smooth {
-            transition: all 0.2s ease;
+
+        /* Form elements */
+        .field-group { margin-bottom: 40px; }
+        .field-group:last-child { margin-bottom: 0; }
+        .field-label {
+            font-weight: 600;
+            font-size: 16px;
+            color: #000;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
-        
-        .worksheet-input {
+        .field-input {
             border: 1px solid #E0E0E0;
             padding: 12px 16px;
             font-family: 'Riforma', sans-serif;
-            font-size: 18px;
-            transition: border-color 0.2s ease;
+            font-size: 16px;
             width: 100%;
+            color: #000;
+            background: #fff;
+            transition: border-color 0.2s ease;
         }
-        
-        .worksheet-input:focus {
-            outline: none;
-            border-color: #000000;
-        }
-        
-        .worksheet-textarea {
+        .field-input:focus { outline: none; border-color: #000; }
+        .field-textarea {
             border: 1px solid #E0E0E0;
             padding: 12px 16px;
             font-family: 'Riforma', sans-serif;
-            font-size: 18px;
-            transition: border-color 0.2s ease;
+            font-size: 16px;
             width: 100%;
-            min-height: 120px;
+            min-height: 100px;
             resize: vertical;
+            color: #000;
+            background: #fff;
+            transition: border-color 0.2s ease;
         }
-        
-        .worksheet-textarea:focus {
-            outline: none;
-            border-color: #000000;
-        }
-        
-        .btn-primary {
-            background: #000000;
-            color: #FFFFFF;
-            padding: 16px 32px;
-            border: 2px solid #000000;
-            font-family: 'Riforma', sans-serif;
-            font-size: 18px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        
-        .btn-primary:hover:not(:disabled) {
-            transform: scale(1.02);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-        
-        .btn-primary:disabled {
+        .field-textarea:focus { outline: none; border-color: #000; }
+        .field-help { font-size: 13px; color: #666; margin-top: 4px; }
+        .field-error { font-size: 13px; color: #DC2626; margin-top: 4px; }
+
+        /* Help icon (?) */
+        .help-icon-btn {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
             background: #E0E0E0;
-            color: #9CA3AF;
-            cursor: not-allowed;
-            opacity: 0.5;
+            border: 1.5px solid #999;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: help;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+            font-size: 11px;
+            font-weight: 600;
+            color: #666;
         }
-        
-        .btn-secondary {
-            background: #FFFFFF;
-            color: #000000;
+        .help-icon-btn:hover { background: #000; color: #fff; border-color: #000; }
+
+        /* Help accordion — drops down between label and field */
+        .help-accordion {
+            background: #F5F5F5;
+            border: 1px solid #E0E0E0;
+            border-left: 3px solid #000;
+            padding: 14px 16px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: #333;
+            line-height: 1.5;
+            animation: accordionOpen 0.2s ease-out;
+        }
+        @keyframes accordionOpen {
+            from { opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0; }
+            to { opacity: 1; max-height: 300px; }
+        }
+
+        /* LearnMore expandable — prominent so users read before answering */
+        .learn-more-toggle {
+            font-family: 'Monument', monospace;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #000;
+            background: #F5F5F5;
+            border: 1px solid #E0E0E0;
+            cursor: pointer;
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 32px;
+            transition: background 0.15s ease;
+        }
+        .learn-more-toggle:hover { background: #EBEBEB; }
+        .learn-more-content {
+            border-left: 3px solid #000;
+            background: #F5F5F5;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            font-size: 14px;
+            color: #333;
+            line-height: 1.7;
+        }
+
+        /* Button footer */
+        .btn-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-top: 1px solid #E0E0E0;
+            background: #fff;
+            width: 100%;
+        }
+        .btn-back {
+            background: #fff;
+            color: #000;
+            border: 2px solid #000;
             padding: 12px 24px;
-            border: 2px solid #000000;
             font-family: 'Riforma', sans-serif;
             font-size: 16px;
             cursor: pointer;
             transition: all 0.2s ease;
         }
-        
-        .btn-secondary:hover {
-            background: #F8F8F8;
-        }
-        
-        .numbered-section {
-            background: #000000;
-            color: #FFFFFF;
-            padding: 10px 16px;
-            font-size: 26px;
-            font-weight: bold;
-            letter-spacing: 0.5px;
-            display: inline-block;
-            font-family: 'Plaak', sans-serif;
-        }
-        
-        .help-button {
-            position: fixed;
-            top: 24px;
-            right: 24px;
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            background: #000000;
-            color: #FFFFFF;
-            border: 2px solid #000000;
-            font-size: 28px;
+        .btn-back:hover { background: #F5F5F5; }
+        .btn-next {
+            background: #000;
+            color: #fff;
+            border: 2px solid #000;
+            padding: 12px 24px;
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 40;
             transition: all 0.2s ease;
         }
-        
-        .help-button:hover {
-            transform: scale(1.1);
-            background: #fff469;
-            color: #000000;
-        }
-        
-        .progress-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #E0E0E0;
+        .btn-next:hover:not(:disabled) { transform: scale(1.02); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .btn-next:disabled { background: #E0E0E0; color: #9CA3AF; border-color: #E0E0E0; cursor: not-allowed; }
+
+        /* (Breadcrumb removed — navigation via sidebar) */
+
+        /* Sidebar step items */
+        .sidebar-step-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            border-left: 3px solid transparent;
             transition: all 0.2s ease;
         }
-        
-        .progress-dot.active {
-            background: #000000;
-            transform: scale(1.3);
+        .sidebar-step-item.active { border-left-color: #FFF469; background: #222; }
+        .sidebar-step-item.completed { background: #fff; color: #000; border-left-color: #fff; cursor: pointer; }
+        .sidebar-step-item.completed:hover { background: #E0E0E0; }
+        .sidebar-step-item.locked { opacity: 0.5; }
+        .sidebar-step-item .step-num { font-family: 'Riforma', sans-serif; font-size: 14px; }
+        .sidebar-step-item .step-name { font-family: 'Riforma', sans-serif; font-size: 14px; }
+        .sidebar-snippet { font-size: 12px; margin-top: 4px; opacity: 0.7; line-height: 1.3; }
+
+        /* Canvas styles */
+        .numbered-section { background: #000; color: #fff; padding: 8px 14px; font-size: 14px; font-weight: bold; letter-spacing: 0.5px; display: inline-block; font-family: 'Monument', monospace; }
+        .canvas-wish-box { background: #FAFAFA; border-left: 4px solid #000; padding: 20px; margin-bottom: 16px; }
+        .canvas-step-box { border: 2px solid #000; background: #FAFAFA; padding: 16px; }
+        .canvas-obstacle-box { background: #FAFAFA; border-left: 4px solid #DC2626; padding: 16px; margin-bottom: 12px; }
+        .canvas-plan-box { border: 3px solid #000; background: #FAFAFA; padding: 24px; }
+
+        /* Mobile step indicator */
+        .mobile-step-bar { display: none; padding: 12px 16px; border-bottom: 1px solid #E0E0E0; background: #F5F5F5; }
+        .mobile-step-bar .bar-text { font-family: 'Monument', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #666; margin-bottom: 6px; }
+        .mobile-progress { height: 3px; background: #E0E0E0; width: 100%; }
+        .mobile-progress-fill { height: 100%; background: #000; transition: width 0.3s ease; }
+
+        @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-in { animation: fadeSlideIn 0.3s ease-out; }
+
+        @media print { .no-print { display: none !important; } }
+
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .wizard-sidebar { width: 220px; }
+            .wizard-sidebar-inner { padding: 24px 16px; }
         }
-        
-        .progress-dot.completed {
-            background: #000000;
-        }
-        
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        .animate-in {
-            animation: slideIn 0.3s ease-out;
-        }
-        
-        .cover-overlay {
-            background: linear-gradient(to bottom, rgba(0,0,0,0.4), rgba(0,0,0,0.7));
-        }
-        
-        /* Enhanced box styles for better PDF visibility */
-        .canvas-wish-box {
-            background-color: #F0FDF4 !important;
-            border-left: 6px solid #22C55E !important;
-            border-right: 2px solid #E5E7EB !important;
-            border-top: 2px solid #E5E7EB !important;
-            border-bottom: 2px solid #E5E7EB !important;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
-            padding: 20px !important;
-        }
-        
-        .canvas-step-box {
-            border-width: 3px !important;
-            border-color: #000000 !important;
-            background-color: #FAFAFA !important;
-            padding: 16px !important;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
-        }
-        
-        .canvas-obstacle-box {
-            background-color: #FEF2F2 !important;
-            border-left: 6px solid #EF4444 !important;
-            border-right: 2px solid #E5E7EB !important;
-            border-top: 2px solid #E5E7EB !important;
-            border-bottom: 2px solid #E5E7EB !important;
-            padding: 16px !important;
-            box-shadow: 0 2px 4px rgba(239,68,68,0.15) !important;
-            margin-bottom: 16px !important;
-        }
-        
-        .canvas-plan-box {
-            border-width: 5px !important;
-            border-color: #22C55E !important;
-            background-color: #F0FDF4 !important;
-            padding: 24px !important;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
-        }
-        
-        .canvas-container {
-            border-width: 5px !important;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
-        }
-        
-        @media print {
-            .no-print {
-                display: none !important;
-            }
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        
-        .fade-in {
-            animation: fadeIn 0.5s ease-out;
-        }
-        
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        .transition-animate-in {
-            animation: slideIn 0.3s ease-out;
+        @media (max-width: 768px) {
+            .wizard-sidebar { display: none; }
+            .mobile-step-bar { display: block; }
+            .step-content { padding: 20px 16px; }
+            .opening-box .step-heading { font-size: 24px; }
+            .btn-footer { padding: 12px 16px; }
+            /* questions stack on mobile - already column */
+            /* no header */
         }
     </style>
 </head>
@@ -283,7 +336,6 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        // Configuration
         const CONFIG = {
             SUPABASE_URL: 'https://vpfayzzjnegdefjrnyoc.supabase.co',
             SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZwZmF5enpqbmVnZGVmanJueW9jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMzAwODUsImV4cCI6MjA4NTcwNjA4NX0.7qwzd9kwyRG0Wx9DDSc8F9a1SRD0CoC6CGS-9M1sxIs',
@@ -293,1369 +345,725 @@
             AUTOSAVE_DELAY: 2000
         };
 
-        // Initialize Supabase client
         const { createClient } = supabase;
         const supabaseClient = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
-
-        // Make Supabase client globally available for dependency injection
         window.supabaseClient = supabaseClient;
-
-        // Initialize dependency injection
         DependencyInjection.init(CONFIG.TOOL_SLUG, CONFIG.SCHEMA_NAME);
+        CognitiveLoad.init('woop');
 
-        // Help Modal Component
-        function HelpModal({ isOpen, onClose, content }) {
-            if (!isOpen) return null;
+        // --- Resolve logo path relative to HTML file ---
+        const LOGO_WHITE = '../../../Designs/02. logos/FastTrack_F_White.png';
 
+        // --- Small Components ---
+
+        function CheckIcon({ color = "#fff", size = 16 }) {
+            return <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>;
+        }
+
+        /* Breadcrumb removed — navigation via sidebar steps */
+
+        function LearnMore({ children }) {
+            const [open, setOpen] = useState(false);
             return (
-                <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
-                    <div className="bg-white max-w-3xl p-12 border-8 border-black max-h-[80vh] overflow-y-auto">
-                        <div className="flex justify-between items-start mb-6">
-                            <h2 className="plaak text-5xl">INSTRUCTIONS</h2>
-                            <button onClick={onClose} className="text-4xl font-bold hover:text-gray-600">×</button>
+                <div style={{ marginBottom: open ? 0 : 12 }}>
+                    <button className="learn-more-toggle" onClick={() => setOpen(!open)}>WHY THIS MATTERS {open ? '\u2212' : '+'}</button>
+                    {open && <div className="learn-more-content">{children}</div>}
+                </div>
+            );
+        }
+
+        function ButtonFooter({ onBack, onNext, nextLabel = 'Save & Go Next', canProceed, showBack = true }) {
+            return (
+                <div className="btn-footer no-print">
+                    {showBack ? <button className="btn-back" onClick={onBack}>&larr; Back</button> : <div />}
+                    <button className="btn-next" disabled={!canProceed} onClick={onNext}>{nextLabel} &rarr;</button>
+                </div>
+            );
+        }
+
+        function MobileStepBar({ currentStep }) {
+            const progress = currentStep >= 999 ? 100 : Math.round((currentStep / 4) * 100);
+            return (
+                <div className="mobile-step-bar no-print">
+                    <div className="bar-text">Step {Math.min(currentStep, 4)} of 4</div>
+                    <div className="mobile-progress"><div className="mobile-progress-fill" style={{ width: `${progress}%` }} /></div>
+                </div>
+            );
+        }
+
+        function WizardSidebar({ currentStep, data, onNavigate }) {
+            const steps = [{ num: 1, label: 'Wish' }, { num: 2, label: 'Outcome' }, { num: 3, label: 'Obstacle' }, { num: 4, label: 'Plan' }];
+            const getSnippet = (n) => {
+                if (n === 1 && data.outcome) return '"' + data.outcome.substring(0, 50) + (data.outcome.length > 50 ? '...' : '') + '"';
+                if (n === 2 && data.steps[0]) { const f = data.steps.filter(s => s.trim()); return f.length + ' milestone' + (f.length !== 1 ? 's' : '') + ' defined'; }
+                if (n === 3 && data.obstacles[0]?.problem) return data.obstacles.length + ' obstacle' + (data.obstacles.length !== 1 ? 's' : '') + ' planned';
+                if (n === 4 && data.firstAction) return 'Deadline: ' + (data.deadline ? new Date(data.deadline).toLocaleDateString() : 'Not set');
+                return null;
+            };
+            return (
+                <div className="wizard-sidebar no-print">
+                    <div className="wizard-sidebar-inner">
+                        <div style={{ marginBottom: 24 }}>
+                            <div className="monument" style={{ fontSize: 12, textTransform: 'uppercase', color: '#fff', marginBottom: 4 }}>WOOP</div>
+                            <div style={{ fontSize: 13, color: '#999' }}>~15 min</div>
                         </div>
-                        {content}
-                        <button className="btn-primary w-full text-xl py-4 mt-8" onClick={onClose}>
-                            GOT IT
-                        </button>
+                        <div style={{ marginBottom: 16, fontFamily: "'Monument', monospace", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#999' }}>Your journey</div>
+                        {steps.map(s => {
+                            const isCompleted = currentStep > s.num, isActive = currentStep === s.num, isLocked = currentStep < s.num;
+                            const snippet = isCompleted ? getSnippet(s.num) : null;
+                            return (
+                                <div key={s.num} className={`sidebar-step-item ${isCompleted ? 'completed' : ''} ${isActive ? 'active' : ''} ${isLocked ? 'locked' : ''}`}
+                                    onClick={() => isCompleted && onNavigate && onNavigate(s.num)}
+                                    title={isCompleted ? 'Click to review this step' : ''}
+                                >
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                        {isCompleted ? <CheckIcon color="#000" size={14} /> : <span className="step-num" style={{ color: isActive ? '#fff' : '#ccc' }}>{String(s.num).padStart(2, '0')}</span>}
+                                        <span className="step-name" style={{ color: isLocked ? '#666' : isCompleted ? '#000' : '#fff' }}>{s.label}</span>
+                                    </div>
+                                    {snippet && <div className="sidebar-snippet">{snippet}</div>}
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             );
         }
 
-        // Transition Screen Component
-        function TransitionScreen({ title, subtitle, progress, onNext, autoAdvance = true, delay = 2000 }) {
-            React.useEffect(() => {
-                if (autoAdvance) {
-                    const timer = setTimeout(() => {
-                        onNext();
-                    }, delay);
-                    return () => clearTimeout(timer);
-                }
-            }, [onNext, autoAdvance, delay]);
-            
+        // Help accordion: renders ? icon inline, accordion drops BELOW the label, ABOVE the input
+        function HelpAccordion({ id, activeHelp, setActiveHelp, children }) {
+            const isOpen = activeHelp === id;
             return (
-                <div className="fixed inset-0 bg-black text-white flex items-center justify-center z-50 fade-in">
-                    <div className="text-center px-8">
-                        <h1 className="plaak text-8xl md:text-9xl mb-8 transition-animate-in">
-                            {title}
-                        </h1>
-                        
-                        {subtitle && (
-                            <p className="text-2xl text-gray-400 mb-8 transition-animate-in"
-                                style={{animationDelay: '0.1s'}}>
-                                {subtitle}
-                            </p>
-                        )}
-                        
-                        {progress && (
-                            <div className="max-w-2xl mx-auto mb-8 transition-animate-in"
-                                  style={{animationDelay: '0.2s'}}>
-                                <div className="h-2 bg-gray-800 mb-4">
-                                    <div 
-                                        className="h-full bg-white transition-all duration-1000"
-                                        style={{width: `${progress}%`}}
-                                    ></div>
-                                </div>
-                                <p className="monument text-xl tracking-wider">
-                                    [{progress}% COMPLETE]
-                                </p>
-                            </div>
-                        )}
-                        
-                        {!autoAdvance && (
-                            <button 
-                                onClick={onNext}
-                                className="btn-primary text-2xl py-4 px-12 mt-8"
-                            >
-                                Continue →
-                            </button>
-                        )}
-                    </div>
-                </div>
+                <>
+                    <button className="help-icon-btn" onClick={() => setActiveHelp(isOpen ? null : id)} title="Help">?</button>
+                    {isOpen && <div className="help-accordion" style={{ marginTop: 6 }}>{children}</div>}
+                </>
             );
         }
+
+        // --- Main App ---
 
         function WOOPTool() {
-            const [step, setStep] = useState(0); // 0=cover, 0.5=intro, 1-4=steps, 1.5/2.5/3.5=transitions, 999=canvas
-            const [showHelp, setShowHelp] = useState(false);
-            
-            // Data state
+            const [step, setStep] = useState(0);
+            const [questionHelp, setQuestionHelp] = useState(null);
+
+            const [authState, setAuthState] = useState({ loading: true, authenticated: false, user: null, progress: null, error: null });
+
             const [data, setData] = useState({
-                // User Info
-                companyId: '',
-                userId: '',
-
-                // Scope Selection (CRITICAL FIX #1)
-                scopeType: '', // 'program' or 'business'
-
-                // Step 1: Wish
-                outcome: '',
-                worldChange: '',
-                feeling: '',
-
-                // Step 2: Outcome (CRITICAL FIX #3: Reduced from 5 to 3)
-                steps: ['', '', ''],
-                mentallyRehearsed: false,
-
-                // Step 3: Obstacles (CRITICAL FIX #2: If-Then structure)
-                obstacles: [{
-                    problem: '',
-                    ifTrigger: '',
-                    thenPerson: '',
-                    thenAction: '',
-                    byWhen: ''
-                }],
-
-                // Step 4: Plan
-                bigChunks: '',
-                firstAction: '',
-                deadline: ''
+                companyId: '', userId: '', scopeType: '',
+                outcome: '', worldChange: '', feeling: '',
+                steps: ['', '', ''], mentallyRehearsed: false,
+                obstacles: [{ problem: '', ifTrigger: '', thenPerson: '', thenAction: '', byWhen: '' }],
+                bigChunks: '', firstAction: '', deadline: ''
             });
-            
+
             const autosaveTimer = useRef(null);
-            
-            // Auto-save
+
+            // --- Auth ---
             useEffect(() => {
-                if (autosaveTimer.current) {
-                    clearTimeout(autosaveTimer.current);
-                }
-                
-                autosaveTimer.current = setTimeout(() => {
-                    localStorage.setItem('woopData', JSON.stringify({
-                        data,
-                        step,
-                        timestamp: new Date().toISOString()
-                    }));
-                }, CONFIG.AUTOSAVE_DELAY);
-                
-                return () => {
-                    if (autosaveTimer.current) {
-                        clearTimeout(autosaveTimer.current);
+                async function initAuth() {
+                    const isLocalFile = window.location.protocol === 'file:';
+                    const hasAuthManager = window.authManager && typeof window.authManager.initialize === 'function';
+                    if (isLocalFile || !hasAuthManager) {
+                        if (!localStorage.getItem('ft_user_id')) localStorage.setItem('ft_user_id', 'b609a543-e487-4ace-91d4-84a07402ff99');
+                        setAuthState({ loading: false, authenticated: true, user: { email: 'local@dev.test', id: 'local-dev' }, progress: { completed_tools: [], unlocked_tools: ['woop'] }, isUnlocked: true, isCompleted: false, error: null });
+                        return;
                     }
-                };
+                    try {
+                        const result = await window.authManager.initialize();
+                        if (result.authenticated) {
+                            setAuthState({ loading: false, authenticated: true, user: result.user, progress: result.progress, isUnlocked: window.authManager.isToolUnlocked(result.progress, 'woop'), isCompleted: window.authManager.isToolCompleted(result.progress, 'woop'), error: null });
+                        } else {
+                            setAuthState({ loading: false, authenticated: false, user: null, progress: null, error: result.error || result.message });
+                            window.authManager.requireAuthentication();
+                        }
+                    } catch (error) {
+                        if (!localStorage.getItem('ft_user_id')) localStorage.setItem('ft_user_id', 'b609a543-e487-4ace-91d4-84a07402ff99');
+                        setAuthState({ loading: false, authenticated: true, user: { email: 'local@dev.test', id: 'local-dev' }, progress: { completed_tools: [], unlocked_tools: ['woop'] }, isUnlocked: true, isCompleted: false, error: null });
+                    }
+                }
+                initAuth();
+            }, []);
+
+            useEffect(() => {
+                if (authState.authenticated && authState.progress && window.toolAccessControl) {
+                    window.toolAccessControl.initialize(authState.progress, 'woop', 0);
+                }
+            }, [authState.authenticated]);
+
+            // --- Auto-save ---
+            useEffect(() => {
+                if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+                autosaveTimer.current = setTimeout(() => {
+                    localStorage.setItem('woopData', JSON.stringify({ data, step, timestamp: new Date().toISOString() }));
+                }, CONFIG.AUTOSAVE_DELAY);
+                return () => { if (autosaveTimer.current) clearTimeout(autosaveTimer.current); };
             }, [data, step]);
-            
-            // Load saved data (with migration for old structure)
+
+            // --- Load saved data ---
             useEffect(() => {
                 const saved = localStorage.getItem('woopData');
                 if (saved) {
                     try {
                         const parsed = JSON.parse(saved);
                         if (parsed.data && Array.isArray(parsed.data.obstacles)) {
-                            // Migrate old obstacle structure to new If-Then structure
-                            const migratedObstacles = parsed.data.obstacles.map(o => {
-                                if (o.solution !== undefined && !o.ifTrigger) {
-                                    // Old structure - clear it
-                                    return {
-                                        problem: o.problem || '',
-                                        ifTrigger: '',
-                                        thenPerson: '',
-                                        thenAction: '',
-                                        byWhen: ''
-                                    };
-                                }
-                                return o;
-                            });
-
-                            setData({
-                                ...parsed.data,
-                                obstacles: migratedObstacles,
-                                scopeType: parsed.data.scopeType || '' // Ensure scopeType exists
-                            });
-                            setStep(parsed.step);
+                            const migratedObstacles = parsed.data.obstacles.map(o => (o.solution !== undefined && !o.ifTrigger) ? { problem: o.problem || '', ifTrigger: '', thenPerson: '', thenAction: '', byWhen: '' } : o);
+                            setData({ ...parsed.data, obstacles: migratedObstacles, scopeType: parsed.data.scopeType || '' });
+                            let s = parsed.step; if (s === 1.5) s = 2; else if (s === 2.5) s = 3; else if (s === 3.5) s = 4;
+                            setStep(s);
                         }
-                    } catch (e) {
-                        console.log('Error loading saved data:', e);
-                        localStorage.removeItem('woopData');
-                    }
+                    } catch (e) { localStorage.removeItem('woopData'); }
                 }
             }, []);
-            
-            const updateData = (field, value) => {
-                setData(prev => ({ ...prev, [field]: value }));
-            };
-            
-            const updateStep = (index, value) => {
-                setData(prev => ({
-                    ...prev,
-                    steps: prev.steps.map((s, i) => i === index ? value : s)
-                }));
-            };
-            
-            const updateObstacle = (index, field, value) => {
-                setData(prev => ({
-                    ...prev,
-                    obstacles: prev.obstacles.map((o, i) => 
-                        i === index ? { ...o, [field]: value } : o
-                    )
-                }));
-            };
-            
-            // CRITICAL FIX #3: Hard limit of 3 obstacles
-            const addObstacle = () => {
-                if (data.obstacles.length >= 3) {
-                    alert('Maximum 3 obstacles allowed.\n\nStrategy is sacrifice.\n\nWhich of the previous 3 will you delete?');
-                    return;
-                }
-                setData(prev => ({
-                    ...prev,
-                    obstacles: [...prev.obstacles, {
-                        problem: '',
-                        ifTrigger: '',
-                        thenPerson: '',
-                        thenAction: '',
-                        byWhen: ''
-                    }]
-                }));
-            };
-            
-            const removeObstacle = (index) => {
-                if (data.obstacles.length > 1) {
-                    setData(prev => ({
-                        ...prev,
-                        obstacles: prev.obstacles.filter((_, i) => i !== index)
-                    }));
-                }
-            };
-            
-            // Validation
-            const canProceedStep1 = data.outcome.length >= 20 && 
-                                   data.worldChange.length >= 10 && 
-                                   data.feeling.length >= 3;
-            
-            const canProceedStep2 = data.steps.filter(s => s.trim().length > 5).length >= 3 &&
-                                   data.mentallyRehearsed;
 
-            // CRITICAL FIX #2: Updated validation for If-Then structure
-            const canProceedStep3 = data.obstacles.length >= 1 &&
-                                   data.obstacles.every(o =>
-                                       o && o.problem && o.problem.trim().length > 5 &&
-                                       o.ifTrigger && o.ifTrigger.trim().length > 3 &&
-                                       o.thenPerson && o.thenPerson.trim().length > 2 &&
-                                       o.thenAction && o.thenAction.trim().length > 5 &&
-                                       o.byWhen && o.byWhen.trim().length > 0
-                                   );
-            
-            const canProceedStep4 = data.bigChunks.length >= 10 && 
-                                   data.firstAction.length >= 10 && 
-                                   data.deadline !== '';
-            
-            // Help content
-            const getHelpContent = () => {
-                if (step === 1) {
-                    return (
-                        <div>
-                            <h3 className="font-bold text-3xl mb-4">WHY</h3>
-                            <p className="mb-6 text-lg">Dreams create energy. Clarity of your dream creates comfort. Your brain doesn't differentiate between what's in your head and reality.</p>
-                            
-                            <h3 className="font-bold text-3xl mb-4">WHAT</h3>
-                            <p className="mb-6 text-lg">Define your end game for the Fast Track program with brutal clarity.</p>
-                            
-                            <h3 className="font-bold text-3xl mb-4">HOW</h3>
-                            <ol className="text-lg space-y-2">
-                                <li>1. Picture the concrete outcome</li>
-                                <li>2. Describe how the world changed</li>
-                                <li>3. Feel the emotion of success</li>
-                            </ol>
-                        </div>
-                    );
-                } else if (step === 2) {
-                    return (
-                        <div>
-                            <h3 className="font-bold text-3xl mb-4">WHY</h3>
-                            <p className="mb-6 text-lg">Mental rehearsal works. Lewis Hamilton mentally drives each lap before stepping in the car.</p>
-                            
-                            <h3 className="font-bold text-3xl mb-4">WHAT</h3>
-                            <p className="mb-6 text-lg">Map the journey from where you are to your end game.</p>
-                            
-                            <h3 className="font-bold text-3xl mb-4">HOW</h3>
-                            <ol className="text-lg space-y-2">
-                                <li>1. List 3-5 key milestones</li>
-                                <li>2. Close your eyes</li>
-                                <li>3. See yourself doing each step</li>
-                                <li>4. Confirm when ready</li>
-                            </ol>
-                        </div>
-                    );
-                } else if (step === 3) {
-                    return (
-                        <div>
-                            <h3 className="font-bold text-3xl mb-4">WHY</h3>
-                            <p className="mb-6 text-lg">You need to be mentally prepared. When the problem comes, you'll recognize it and say "Nothing new to me."</p>
-                            
-                            <h3 className="font-bold text-3xl mb-4">WHAT</h3>
-                            <p className="mb-6 text-lg">Identify what will try to stop you, and decide now how you'll respond.</p>
-                            
-                            <h3 className="font-bold text-3xl mb-4">HOW</h3>
-                            <ol className="text-lg space-y-2">
-                                <li>1. List the problems you'll face</li>
-                                <li>2. For each: What will you do?</li>
-                                <li>3. Visualize handling each one</li>
-                            </ol>
-                        </div>
-                    );
-                } else if (step === 4) {
-                    return (
-                        <div>
-                            <h3 className="font-bold text-3xl mb-4">WHY</h3>
-                            <p className="mb-6 text-lg">Big steps are intimidating. Fast Track hates big steps. Cut the elephant into pieces.</p>
-                            
-                            <h3 className="font-bold text-3xl mb-4">WHAT</h3>
-                            <p className="mb-6 text-lg">Break down your journey and commit to the easiest first action.</p>
-                            
-                            <h3 className="font-bold text-3xl mb-4">HOW</h3>
-                            <ol className="text-lg space-y-2">
-                                <li>1. List the big chunks of work</li>
-                                <li>2. Pick the easiest piece</li>
-                                <li>3. Set a specific deadline</li>
-                                <li>4. Commit publicly</li>
-                            </ol>
-                        </div>
-                    );
-                }
-                return null;
+            const updateData = (field, value) => setData(prev => ({ ...prev, [field]: value }));
+            const updateStepField = (index, value) => setData(prev => ({ ...prev, steps: prev.steps.map((s, i) => i === index ? value : s) }));
+            const updateObstacle = (index, field, value) => setData(prev => ({ ...prev, obstacles: prev.obstacles.map((o, i) => i === index ? { ...o, [field]: value } : o) }));
+            const addObstacle = () => { if (data.obstacles.length >= 3) { alert('Maximum 3 obstacles allowed.\n\nStrategy is sacrifice.'); return; } setData(prev => ({ ...prev, obstacles: [...prev.obstacles, { problem: '', ifTrigger: '', thenPerson: '', thenAction: '', byWhen: '' }] })); };
+            const removeObstacle = (index) => { if (data.obstacles.length > 1) setData(prev => ({ ...prev, obstacles: prev.obstacles.filter((_, i) => i !== index) })); };
+
+            const canProceedStep1 = data.outcome.length >= 20 && data.worldChange.length >= 10 && data.feeling.length >= 3;
+            const canProceedStep2 = data.steps.filter(s => s.trim().length > 5).length >= 3 && data.mentallyRehearsed;
+            const canProceedStep3 = data.obstacles.length >= 1 && data.obstacles.every(o => o && o.problem && o.problem.trim().length > 5 && o.ifTrigger && o.ifTrigger.trim().length > 3 && o.thenPerson && o.thenPerson.trim().length > 2 && o.thenAction && o.thenAction.trim().length > 5 && o.byWhen && o.byWhen.trim().length > 0);
+            const canProceedStep4 = data.bigChunks.length >= 10 && data.firstAction.length >= 10 && data.deadline !== '';
+
+            // Step closing messages
+            const closingMessages = {
+                1: { title: 'WISH DEFINED', text: 'Your end game is clear. Next: map the milestones to get there.' },
+                2: { title: 'OUTCOME MAPPED', text: 'Your route is planned and mentally rehearsed. Next: anticipate what could stop you.' },
+                3: { title: 'OBSTACLES PREPARED', text: 'You have IF-THEN plans ready. Nothing will catch you off guard. Next: commit to action.' },
+                4: { title: 'PLAN LOCKED', text: 'Your first action and deadline are set. Time to execute.' }
             };
 
             return (
-                <div className="min-h-screen bg-white">
-                    {/* Help Button */}
-                    {step >= 1 && step <= 4 && step !== 1.5 && step !== 2.5 && step !== 3.5 && (
-                        <button className="help-button no-print" onClick={() => setShowHelp(true)}>
-                            ?
-                        </button>
-                    )}
-
-                    {/* Help Modal */}
-                    <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} content={getHelpContent()} />
-
-                    {/* Cover Page */}
-                    {step === 0 && (
-                        <div className="relative min-h-screen flex items-center justify-center bg-black">
-                            <div className="relative z-10 text-center text-white px-8">
-                                <h1 className="plaak text-9xl mb-6 animate-in">WOOP TOOL</h1>
-                                <p className="text-3xl mb-12 animate-in" style={{animationDelay: '0.2s'}}>
-                                    Transform your wish into an actionable plan
-                                </p>
-                                <button
-                                    className="bg-white text-black plaak text-3xl px-16 py-6 border-4 border-white hover:bg-black hover:text-white transition-all duration-200 animate-in"
-                                    style={{animationDelay: '0.4s'}}
-                                    onClick={() => setStep(0.5)}
-                                >
-                                    START
-                                </button>
+                <div className="tool-frame">
+                    <div className="tool-inner">
+                        {/* Auth loading */}
+                        {authState.loading && (
+                            <div style={{ position: 'fixed', inset: 0, background: '#000', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
+                                <div style={{ textAlign: 'center' }}>
+                                    <h1 className="plaak" style={{ fontSize: 48, marginBottom: 16 }}>AUTHENTICATING</h1>
+                                    <p style={{ fontSize: 18 }}>Please wait...</p>
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )}
 
-                    {/* Intro Screen */}
-                    {step === 0.5 && (
-                        <div className="bg-black text-white min-h-screen p-16">
-                            <div className="max-w-5xl mx-auto">
-                                <h1 className="plaak text-6xl mb-16 animate-in">BEFORE WE START</h1>
+                        {/* Auth required */}
+                        {!authState.loading && !authState.authenticated && (
+                            <div style={{ position: 'fixed', inset: 0, background: '#000', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 40 }}>
+                                <div style={{ textAlign: 'center', padding: '0 32px', maxWidth: 640 }}>
+                                    <h1 className="plaak" style={{ fontSize: 48, marginBottom: 24 }}>AUTHENTICATION REQUIRED</h1>
+                                    <p style={{ fontSize: 20, marginBottom: 32 }}>Please access this tool from your LearnWorlds course.</p>
+                                    <p style={{ fontSize: 16, color: '#999' }}>{authState.error || 'No active session found'}</p>
+                                </div>
+                            </div>
+                        )}
 
-                                {/* CRITICAL FIX #1: Scope Selection */}
-                                <div className="mb-12 animate-in" style={{animationDelay: '0.02s'}}>
-                                    <h2 className="plaak text-6xl mb-6" style={{color: '#fff469'}}>FIRST: CHOOSE YOUR FOCUS</h2>
-                                    <div className="border-4 border-black p-8 mb-6" style={{backgroundColor: '#fff469'}}>
-                                        <p className="text-2xl font-bold mb-4 text-black">CRITICAL DECISION</p>
-                                        <p className="text-xl leading-relaxed text-black">
-                                            This is THE #1 question every client gets wrong. Read carefully.
-                                        </p>
+                        {/* Step 0: Cover */}
+                        {step === 0 && authState.authenticated && (
+                            <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+                                <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url(cover.jpg)', backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.5 }} />
+                                <div style={{ position: 'relative', textAlign: 'center', color: '#fff', padding: '0 32px' }} className="animate-in">
+                                    <h1 className="plaak" style={{ fontSize: 80, marginBottom: 16 }}>WOOP</h1>
+                                    <p style={{ fontSize: 18, color: '#ccc', marginBottom: 48 }}>Transform your wish into an actionable plan</p>
+                                    <button onClick={() => setStep(0.5)} style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 48px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                                        onMouseOver={e => { e.target.style.background = '#FFF469'; }}
+                                        onMouseOut={e => { e.target.style.background = '#fff'; }}
+                                    >START</button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Step 0.5: Setup */}
+                        {step === 0.5 && (
+                            <div style={{ minHeight: '100vh', background: '#fff', display: 'flex', flexDirection: 'column', padding: '0 48px' }}>
+                                <div className="step-content animate-in" style={{ maxWidth: 560, margin: '0 auto' }}>
+                                    <p className="step-indicator">SETUP</p>
+                                    <div className="opening-box">
+                                        <h1 className="step-heading">Before We Start</h1>
+                                        <p className="step-hint">WOOP helps you translate aspirations into concrete, actionable steps using mental contrasting and implementation intentions.</p>
                                     </div>
-                                    <div className="bg-white text-black p-8 rounded space-y-6">
-                                        <p className="text-2xl font-bold mb-6">What are you defining a goal for?</p>
-                                        <div className="space-y-4">
-                                            <label className={`block p-6 border-4 cursor-pointer transition-all ${data.scopeType === 'program' ? 'border-black bg-gray-50' : 'border-gray-300 hover:border-gray-400'}`}>
-                                                <input
-                                                    type="radio"
-                                                    name="scopeType"
-                                                    value="program"
-                                                    checked={data.scopeType === 'program'}
-                                                    onChange={(e) => updateData('scopeType', e.target.value)}
-                                                    className="mr-4"
-                                                    style={{transform: 'scale(1.5)'}}
-                                                />
-                                                <span className="text-2xl font-bold">Completing the Fast Track Program successfully</span>
-                                                <p className="text-lg text-gray-600 ml-10 mt-2">
-                                                    Example: "Finish all 30 sprints, implement 5 core tools, have team aligned on strategy"
-                                                </p>
+
+                                    <div className="field-group">
+                                        <label className="field-label" style={{ marginBottom: 12 }}>What are you defining a goal for?</label>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                            <label style={{ display: 'block', padding: '14px 16px', border: '1px solid #E0E0E0', borderRadius: 4, cursor: 'pointer', transition: 'all 0.15s ease', background: data.scopeType === 'program' ? '#F5F5F5' : '#fff', borderColor: data.scopeType === 'program' ? '#000' : '#E0E0E0' }}>
+                                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                                                    <input type="radio" name="scopeType" value="program" checked={data.scopeType === 'program'} onChange={e => updateData('scopeType', e.target.value)} style={{ marginTop: 3, accentColor: '#000' }} />
+                                                    <div>
+                                                        <div style={{ fontWeight: 600, marginBottom: 2 }}>Completing the Fast Track Program</div>
+                                                        <div style={{ fontSize: 13, color: '#666' }}>e.g. "Finish all 30 sprints, implement 5 core tools"</div>
+                                                    </div>
+                                                </div>
                                             </label>
-                                            <label className={`block p-6 border-4 cursor-pointer transition-all ${data.scopeType === 'business' ? 'border-black bg-gray-50' : 'border-gray-300 hover:border-gray-400'}`}>
-                                                <input
-                                                    type="radio"
-                                                    name="scopeType"
-                                                    value="business"
-                                                    checked={data.scopeType === 'business'}
-                                                    onChange={(e) => updateData('scopeType', e.target.value)}
-                                                    className="mr-4"
-                                                    style={{transform: 'scale(1.5)'}}
-                                                />
-                                                <span className="text-2xl font-bold">Your company's strategic transformation</span>
-                                                <p className="text-lg text-gray-600 ml-10 mt-2">
-                                                    Example: "Reach €10M revenue, enter 3 new markets, build A-player leadership team"
-                                                </p>
+                                            <label style={{ display: 'block', padding: '14px 16px', border: '1px solid #E0E0E0', borderRadius: 4, cursor: 'pointer', transition: 'all 0.15s ease', background: data.scopeType === 'business' ? '#F5F5F5' : '#fff', borderColor: data.scopeType === 'business' ? '#000' : '#E0E0E0' }}>
+                                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                                                    <input type="radio" name="scopeType" value="business" checked={data.scopeType === 'business'} onChange={e => updateData('scopeType', e.target.value)} style={{ marginTop: 3, accentColor: '#000' }} />
+                                                    <div>
+                                                        <div style={{ fontWeight: 600, marginBottom: 2 }}>Your company's strategic transformation</div>
+                                                        <div style={{ fontSize: 13, color: '#666' }}>e.g. "Reach €10M revenue, enter 3 new markets"</div>
+                                                    </div>
+                                                </div>
                                             </label>
                                         </div>
-                                        {!data.scopeType && (
-                                            <div className="bg-yellow-100 border-2 border-yellow-500 p-4 mt-4">
-                                                <p className="text-xl font-bold text-yellow-900">You must select one option to continue</p>
-                                            </div>
-                                        )}
                                     </div>
-                                </div>
 
-                                <div className="mb-12 animate-in" style={{animationDelay: '0.05s'}}>
-                                    <h2 className="plaak text-6xl mb-6">YOUR DETAILS</h2>
-                                    <div className="space-y-6 bg-white text-black p-8 rounded">
-                                        <div>
-                                            <label className="block font-bold mb-2 text-xl">Company ID</label>
-                                            <input
-                                                type="text"
-                                                className="worksheet-input text-black"
-                                                value={data.companyId}
-                                                onChange={(e) => updateData('companyId', e.target.value)}
-                                                placeholder="Enter your company ID"
-                                                required
-                                            />
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginTop: 32 }}>
+                                        <div className="field-group">
+                                            <label className="field-label">Company ID</label>
+                                            <input type="text" className="field-input" value={data.companyId} onChange={e => updateData('companyId', e.target.value)} placeholder="Enter company ID" />
                                         </div>
-                                        <div>
-                                            <label className="block font-bold mb-2 text-xl">Username ID</label>
-                                            <input
-                                                type="text"
-                                                className="worksheet-input text-black"
-                                                value={data.userId}
-                                                onChange={(e) => updateData('userId', e.target.value)}
-                                                placeholder="Enter your username ID"
-                                                required
-                                            />
+                                        <div className="field-group">
+                                            <label className="field-label">Username ID</label>
+                                            <input type="text" className="field-input" value={data.userId} onChange={e => updateData('userId', e.target.value)} placeholder="Enter username ID" />
                                         </div>
                                     </div>
-                                </div>
-                                
-                                <div className="mb-12 animate-in" style={{animationDelay: '0.08s'}}>
-                                    <h2 className="plaak text-6xl mb-6" style={{color: '#fff469'}}>SPRINT INFO</h2>
-                                    <div className="bg-white text-black p-8 rounded">
-                                        <p className="text-2xl font-bold mb-4">Program WOOP</p>
-                                        <p className="text-xl leading-relaxed">
-                                            This tool helps you translate aspirations into concrete, actionable steps. 
-                                            By integrating mental contrasting with implementation intentions, WOOP empowers 
-                                            you to move from wishful thinking to strategic action.
+
+                                    {(!data.scopeType || !data.companyId || !data.userId) && (
+                                        <p className="field-error" style={{ marginTop: 16 }}>
+                                            {!data.scopeType && 'Select your focus. '}{!data.companyId && 'Enter Company ID. '}{!data.userId && 'Enter Username ID.'}
                                         </p>
-                                    </div>
+                                    )}
                                 </div>
-                                
-                                <div className="mb-12 animate-in" style={{animationDelay: '0.1s'}}>
-                                    <h2 className="plaak text-6xl mb-6">PURPOSE</h2>
-                                    <p className="text-3xl leading-relaxed">
-                                        WOOP helps you transform ambitious goals into concrete, actionable plans using mental contrasting and implementation intentions.
-                                    </p>
-                                    <p className="text-2xl text-gray-400 mt-4">
-                                        Based on research by Gabriele Oettingen. Used by elite performers worldwide.
-                                    </p>
-                                </div>
-
-                                <div className="mb-12 animate-in" style={{animationDelay: '0.2s'}}>
-                                    <h2 className="plaak text-6xl mb-6" style={{color: '#fff469'}}>MISTAKES TO AVOID</h2>
-                                    <ul className="text-2xl space-y-4">
-                                        <li className="flex items-start">
-                                            <span className="text-4xl mr-4">•</span>
-                                            <span>Being vague about your outcome (specificity creates energy)</span>
-                                        </li>
-                                        <li className="flex items-start">
-                                            <span className="text-4xl mr-4">•</span>
-                                            <span>Skipping mental rehearsal (visualization is half the work)</span>
-                                        </li>
-                                        <li className="flex items-start">
-                                            <span className="text-4xl mr-4">•</span>
-                                            <span>Only thinking positive (must anticipate obstacles)</span>
-                                        </li>
-                                        <li className="flex items-start">
-                                            <span className="text-4xl mr-4">•</span>
-                                            <span>Choosing a big first step (smallest action wins)</span>
-                                        </li>
-                                        <li className="flex items-start">
-                                            <span className="text-4xl mr-4">•</span>
-                                            <span>Not committing to a deadline (date = reality)</span>
-                                        </li>
-                                    </ul>
-                                </div>
-
-                                <div className="mb-16 animate-in" style={{animationDelay: '0.3s'}}>
-                                    <h2 className="plaak text-6xl mb-8">THE JOURNEY</h2>
-                                    <div className="grid grid-cols-4 gap-8 text-center">
-                                        <div className="border-2 border-white p-8">
-                                            <div className="text-9xl plaak mb-4">01</div>
-                                            <p className="text-2xl font-bold mb-2">WISH</p>
-                                            <p className="text-xl text-gray-400">Your End Game</p>
-                                        </div>
-                                        <div className="border-2 border-white p-8">
-                                            <div className="text-9xl plaak mb-4">02</div>
-                                            <p className="text-2xl font-bold mb-2">OUTCOME</p>
-                                            <p className="text-xl text-gray-400">The Steps</p>
-                                        </div>
-                                        <div className="border-2 border-white p-8">
-                                            <div className="text-9xl plaak mb-4">03</div>
-                                            <p className="text-2xl font-bold mb-2">OBSTACLE</p>
-                                            <p className="text-xl text-gray-400">The Traps</p>
-                                        </div>
-                                        <div className="border-2 border-white p-8">
-                                            <div className="text-9xl plaak mb-4">04</div>
-                                            <p className="text-2xl font-bold mb-2">PLAN</p>
-                                            <p className="text-xl text-gray-400">First Bite</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <button
-                                    className="btn-primary w-full text-3xl py-8 plaak animate-in"
-                                    style={{animationDelay: '0.4s'}}
-                                    onClick={() => setStep(1)}
-                                    disabled={!data.scopeType || !data.companyId || !data.userId}
-                                >
-                                    LET'S START →
-                                </button>
-                                {(!data.scopeType || !data.companyId || !data.userId) && (
-                                    <p className="text-center text-yellow-300 mt-4 text-xl">
-                                        {!data.scopeType && 'Please select your focus (Program or Business) • '}
-                                        {!data.companyId && 'Please fill in Company ID • '}
-                                        {!data.userId && 'Please fill in Username ID'}
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Header (for steps 1-4, excluding transitions) */}
-                    {step >= 1 && step < 5 && step !== 1.5 && step !== 2.5 && step !== 3.5 && (
-                        <>
-                            <header className="border-b-2 border-black py-6 px-8 no-print">
-                                <h1 className="plaak text-3xl">WOOP TOOL</h1>
-                                <p className="text-sm mt-2 text-gray-600">Wish, Outcome, Obstacle, Plan</p>
-                            </header>
-
-                            {/* Progress Indicator */}
-                            <div className="border-b border-gray-200 py-6 px-8 no-print">
-                                <div className="flex items-center justify-between max-w-4xl">
-                                    <div className="flex items-center gap-2">
-                                        <div className={`progress-dot ${step >= 1 ? 'active' : ''} ${step > 1 ? 'completed' : ''}`}></div>
-                                        <span className={`text-sm ${step === 1 ? 'font-bold' : ''}`}>Wish</span>
-                                    </div>
-                                    <div className="flex-1 h-0.5 bg-gray-200 mx-4">
-                                        <div className={`h-full bg-black transition-all ${step > 1 ? 'w-full' : 'w-0'}`}></div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className={`progress-dot ${step >= 2 ? 'active' : ''} ${step > 2 ? 'completed' : ''}`}></div>
-                                        <span className={`text-sm ${step === 2 ? 'font-bold' : ''}`}>Outcome</span>
-                                    </div>
-                                    <div className="flex-1 h-0.5 bg-gray-200 mx-4">
-                                        <div className={`h-full bg-black transition-all ${step > 2 ? 'w-full' : 'w-0'}`}></div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className={`progress-dot ${step >= 3 ? 'active' : ''} ${step > 3 ? 'completed' : ''}`}></div>
-                                        <span className={`text-sm ${step === 3 ? 'font-bold' : ''}`}>Obstacle</span>
-                                    </div>
-                                    <div className="flex-1 h-0.5 bg-gray-200 mx-4">
-                                        <div className={`h-full bg-black transition-all ${step > 3 ? 'w-full' : 'w-0'}`}></div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className={`progress-dot ${step >= 4 ? 'active' : ''}`}></div>
-                                        <span className={`text-sm ${step === 4 ? 'font-bold' : ''}`}>Plan</span>
-                                    </div>
+                                <div className="btn-footer no-print">
+                                    <button className="btn-back" onClick={() => setStep(0)}>&larr; Back</button>
+                                    <button className="btn-next" disabled={!data.scopeType || !data.companyId || !data.userId} onClick={() => setStep(1)}>Let's Start &rarr;</button>
                                 </div>
                             </div>
-                        </>
-                    )}
+                        )}
 
-                    {/* Step 1: Wish */}
-                    {step === 1 && <Step1 
-                        data={data}
-                        updateData={updateData}
-                        canProceed={canProceedStep1}
-                        onNext={() => setStep(1.5)}
-                    />}
+                        {/* Steps 1-4 */}
+                        {step >= 1 && step <= 4 && (
+                            <div className="wizard-layout">
+                                <div className="wizard-main">
+                                    <MobileStepBar currentStep={step} />
 
-                    {/* Transition after Step 1 */}
-                    {step === 1.5 && <TransitionScreen 
-                        title="SECTION COMPLETE"
-                        progress="25"
-                        onNext={() => setStep(2)}
-                    />}
+                                    {step === 1 && <Step1Content data={data} updateData={updateData} questionHelp={questionHelp} setQuestionHelp={setQuestionHelp} closing={closingMessages[1]} canProceed={canProceedStep1} />}
+                                    {step === 2 && <Step2Content data={data} updateStep={updateStepField} updateData={updateData} questionHelp={questionHelp} setQuestionHelp={setQuestionHelp} closing={closingMessages[2]} canProceed={canProceedStep2} />}
+                                    {step === 3 && <Step3Content data={data} updateObstacle={updateObstacle} addObstacle={addObstacle} removeObstacle={removeObstacle} questionHelp={questionHelp} setQuestionHelp={setQuestionHelp} closing={closingMessages[3]} canProceed={canProceedStep3} />}
+                                    {step === 4 && <Step4Content data={data} updateData={updateData} questionHelp={questionHelp} setQuestionHelp={setQuestionHelp} closing={closingMessages[4]} canProceed={canProceedStep4} />}
 
-                    {/* Step 2: Outcome */}
-                    {step === 2 && <Step2 
-                        data={data}
-                        updateStep={updateStep}
-                        updateData={updateData}
-                        canProceed={canProceedStep2}
-                        onBack={() => setStep(1)}
-                        onNext={() => setStep(2.5)}
-                    />}
+                                    <ButtonFooter
+                                        onBack={() => setStep(step === 1 ? 0.5 : step - 1)}
+                                        onNext={() => setStep(step === 4 ? 999 : step + 1)}
+                                        canProceed={step === 1 ? canProceedStep1 : step === 2 ? canProceedStep2 : step === 3 ? canProceedStep3 : canProceedStep4}
+                                        nextLabel={step === 4 ? 'View Your Canvas' : 'Next'}
+                                        showBack={true}
+                                    />
+                                </div>
+                                <WizardSidebar currentStep={step} data={data} onNavigate={setStep} />
+                            </div>
+                        )}
 
-                    {/* Transition after Step 2 */}
-                    {step === 2.5 && <TransitionScreen 
-                        title="SECTION COMPLETE"
-                        progress="50"
-                        onNext={() => setStep(3)}
-                    />}
-
-                    {/* Step 3: Obstacles */}
-                    {step === 3 && <Step3 
-                        data={data}
-                        updateObstacle={updateObstacle}
-                        addObstacle={addObstacle}
-                        removeObstacle={removeObstacle}
-                        canProceed={canProceedStep3}
-                        onBack={() => setStep(2)}
-                        onNext={() => setStep(3.5)}
-                    />}
-
-                    {/* Transition after Step 3 */}
-                    {step === 3.5 && <TransitionScreen 
-                        title="SECTION COMPLETE"
-                        progress="75"
-                        onNext={() => setStep(4)}
-                    />}
-
-                    {/* Step 4: Plan */}
-                    {step === 4 && <Step4 
-                        data={data}
-                        updateData={updateData}
-                        canProceed={canProceedStep4}
-                        onBack={() => setStep(3)}
-                        onNext={() => setStep(999)}
-                    />}
-
-                    {/* Canvas View */}
-                    {step === 999 && <CanvasView 
-                        data={data}
-                        onBack={() => setStep(4)}
-                    />}
+                        {/* Step 999: Canvas */}
+                        {step === 999 && <CanvasView data={data} onBack={() => setStep(4)} />}
+                    </div>
                 </div>
             );
         }
 
-        // Step 1: Wish Component
-        function Step1({ data, updateData, canProceed, onNext }) {
-            // CRITICAL FIX #1: Dynamic placeholders based on scope
-            const placeholders = data.scopeType === 'program' ? {
-                outcome: "It's 90 days from now. The Fast Track program is complete. All 30 sprints done. Our team is aligned on 3 core values. We've implemented the ABC delegation system. Weekly metrics dashboard is running. Everyone knows their role.",
-                worldChange: "My team makes decisions without me. Leadership meetings are productive. I have 10 hours/week for strategy work. The company runs smoothly when I'm away.",
+        // --- Step 1: Wish ---
+        function Step1Content({ data, updateData, questionHelp, setQuestionHelp, closing, canProceed }) {
+            const p = data.scopeType === 'program' ? {
+                outcome: "It's 90 days from now. The Fast Track program is complete. All 30 sprints done. Our team is aligned on 3 core values.",
+                worldChange: "My team makes decisions without me. Leadership meetings are productive. I have 10 hours/week for strategy.",
                 feeling: "Energized. Clear. In control. Proud."
             } : {
-                outcome: "It's 12 months from now. Revenue hit €10M. We've entered 3 new markets successfully. Built an A-player leadership team of 5. Implemented automated sales process. Customer retention is 95%.",
-                worldChange: "We're the market leader in our segment. Clients seek us out. Competition is struggling to keep up. Team is self-managing. I work ON the business, not IN it.",
-                feeling: "Unstoppable. Fulfilled. Free. Excited for what's next."
+                outcome: "It's 12 months from now. Revenue hit \u20AC10M. We've entered 3 new markets. Built an A-player leadership team of 5.",
+                worldChange: "We're the market leader. Clients seek us out. Team is self-managing.",
+                feeling: "Unstoppable. Fulfilled. Free. Excited."
             };
 
             return (
-                <main className="p-12 max-w-6xl mx-auto">
-                    <div className="animate-in">
-                        {/* Scope Reminder */}
-                        <div className="bg-yellow-50 border-2 border-yellow-400 p-4 mb-6">
-                            <p className="text-lg font-bold">
-                                Your Focus: <span className="text-green-600">
-                                    {data.scopeType === 'program' ? 'Fast Track Program Completion' : 'Company Strategic Transformation'}
-                                </span>
-                            </p>
+                <div className="step-content animate-in">
+                    <p className="step-indicator">STEP 1 OF 4</p>
+                    <div className="opening-box">
+                        <h1 className="step-heading">Define Your Wish</h1>
+                        <p className="step-hint">Write in present tense as if it already happened. Specificity creates energy.</p>
+                    </div>
+
+                    <LearnMore>
+                        Dreams create energy. Your brain doesn't differentiate between what's in your head and reality. Mental contrasting increases goal achievement by 40% vs. positive thinking alone (Oettingen, 2014).
+                    </LearnMore>
+
+                    <div className="questions-grid">
+                        <div className="question-box full-width">
+                            <label className="field-label">
+                                What have you achieved? What's the concrete outcome?
+                                <HelpAccordion id="outcome" activeHelp={questionHelp} setActiveHelp={setQuestionHelp}>
+                                    <strong>Why:</strong> Specificity creates energy. Vague goals = vague results.<br/>
+                                    <strong>Good:</strong> Concrete numbers, timeline ("90 days from now"), observable results.
+                                </HelpAccordion>
+                            </label>
+                            <textarea className="field-textarea" value={data.outcome} onChange={e => updateData('outcome', e.target.value)} placeholder={p.outcome} maxLength={300} />
+                            <p className="field-help">{data.outcome.length}/300 (min 20)</p>
                         </div>
 
-                        <div className="numbered-section mb-8">
-                            [01] YOUR WISH
+                        <div className="question-box">
+                            <label className="field-label">
+                                How has the world changed?
+                                <HelpAccordion id="worldChange" activeHelp={questionHelp} setActiveHelp={setQuestionHelp}>
+                                    <strong>Why:</strong> Impact on others creates "approach motivation" — your brain works harder for goals that matter beyond yourself.<br/>
+                                    <strong>Think:</strong> How others behave differently, what systems improved, what's now possible.
+                                </HelpAccordion>
+                            </label>
+                            <textarea className="field-textarea" style={{ minHeight: 80 }} value={data.worldChange} onChange={e => updateData('worldChange', e.target.value)} placeholder={p.worldChange} maxLength={200} />
+                            <p className="field-help">{data.worldChange.length}/200 (min 10)</p>
                         </div>
 
-                        <div className="bg-black text-white border-4 border-black p-6 mb-8">
-                            <h3 className="font-bold text-3xl mb-2">DEFINE YOUR END GAME</h3>
-                            <p className="text-xl">
-                                Picture your success in vivid detail. What have you achieved? How has the world changed? How do you feel?
-                            </p>
-                        </div>
-
-                        <div className="space-y-8">
-                            <div>
-                                <label className="block font-bold mb-3 text-xl">What have you achieved? What's the concrete outcome?</label>
-                                <textarea
-                                    id="wish"
-                                    data-field="wish"
-                                    name="wish"
-                                    className="worksheet-textarea"
-                                    value={data.outcome}
-                                    onChange={(e) => updateData('outcome', e.target.value)}
-                                    placeholder={placeholders.outcome}
-                                    maxLength={300}
-                                />
-                                <div className="text-sm text-gray-600 mt-2">
-                                    {data.outcome.length}/300 characters (min 20)
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block font-bold mb-3 text-xl">How has the world changed?</label>
-                                <textarea
-                                    id="world-change"
-                                    data-field="world_change"
-                                    name="world_change"
-                                    className="worksheet-textarea"
-                                    value={data.worldChange}
-                                    onChange={(e) => updateData('worldChange', e.target.value)}
-                                    placeholder={placeholders.worldChange}
-                                    maxLength={200}
-                                />
-                                <div className="text-sm text-gray-600 mt-2">
-                                    {data.worldChange.length}/200 characters (min 10)
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block font-bold mb-3 text-xl">How do you feel about it?</label>
-                                <input
-                                    type="text"
-                                    id="feeling"
-                                    data-field="feeling"
-                                    name="feeling"
-                                    className="worksheet-input"
-                                    value={data.feeling}
-                                    onChange={(e) => updateData('feeling', e.target.value)}
-                                    placeholder={placeholders.feeling}
-                                />
-                                <div className="text-sm text-gray-600 mt-2">
-                                    One word or short phrase
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="flex justify-end mt-12">
-                            <button 
-                                className="btn-primary text-xl py-4 px-8"
-                                disabled={!canProceed}
-                                onClick={onNext}
-                            >
-                                Next: Define Steps →
-                            </button>
+                        <div className="question-box">
+                            <label className="field-label">
+                                How do you feel about it?
+                                <HelpAccordion id="feeling" activeHelp={questionHelp} setActiveHelp={setQuestionHelp}>
+                                    <strong>Why:</strong> Emotion is the fuel. Without feeling, goals are just words.<br/>
+                                    <strong>Good:</strong> One powerful word or short phrase that makes you sit up straighter.
+                                </HelpAccordion>
+                            </label>
+                            <input type="text" className="field-input" value={data.feeling} onChange={e => updateData('feeling', e.target.value)} placeholder={p.feeling} />
                         </div>
                     </div>
-                </main>
+
+                    {canProceed && (
+                        <div className="closing-box animate-in">
+                            <p className="closing-title">{closing.title}</p>
+                            <p>{closing.text}</p>
+                        </div>
+                    )}
+                </div>
             );
         }
 
-        // Step 2: Outcome Component
-        function Step2({ data, updateStep, updateData, canProceed, onBack, onNext }) {
-            // CRITICAL FIX #3: Dynamic placeholders based on scope
-            const placeholders = data.scopeType === 'program' ? [
+        // --- Step 2: Outcome ---
+        function Step2Content({ data, updateStep, updateData, questionHelp, setQuestionHelp, closing, canProceed }) {
+            const ph = data.scopeType === 'program' ? [
                 "Align team on core values and 3 critical moves",
-                "Implement ABC delegation system and run first delegation session",
+                "Implement ABC delegation system and run first session",
                 "Launch weekly metrics dashboard and complete 4 review cycles"
             ] : [
                 "Hire A-player VP of Sales and close first 3 major deals",
                 "Launch in 2 new markets with validated product-market fit",
-                "Build 5-person leadership team with clear OKRs and accountability"
+                "Build 5-person leadership team with clear OKRs"
             ];
 
             return (
-                <main className="p-12 max-w-6xl mx-auto">
-                    <div className="animate-in">
-                        {/* CRITICAL FIX #3: Constraint Warning */}
-                        <div className="bg-yellow-50 border-2 border-black p-4 mb-6">
-                            <p className="text-lg font-bold">
-                                CONSTRAINT: Maximum 3 key milestones only. Strategy is sacrifice.
-                            </p>
-                        </div>
+                <div className="step-content animate-in">
+                    <p className="step-indicator">STEP 2 OF 4</p>
+                    <div className="opening-box">
+                        <h1 className="step-heading">Map the Outcome</h1>
+                        <p className="step-hint">What are the 3 key milestones to reach your end game? Strategy is sacrifice — only 3.</p>
+                    </div>
 
-                        <div className="numbered-section mb-8">
-                            [02] THE OUTCOME
-                        </div>
+                    <LearnMore>
+                        Mental rehearsal works. Lewis Hamilton mentally drives each lap before stepping in the car. Research shows mental practice activates the same brain regions as physical practice.
+                    </LearnMore>
 
-                        <div className="bg-black text-white border-4 border-black p-6 mb-8">
-                            <h3 className="font-bold text-3xl mb-2">MAP THE STEPS</h3>
-                            <p className="text-xl">
-                                What are the 3 key milestones to reach your end game? Then mentally rehearse each one.
-                            </p>
-                        </div>
+                    <div className="questions-grid single-col">
+                        {data.steps.map((stepVal, index) => (
+                            <div key={index} className="question-box" style={{ marginBottom: 24 }}>
+                                <label className="field-label">
+                                    Step {index + 1}
+                                    <HelpAccordion id={`step${index}`} activeHelp={questionHelp} setActiveHelp={setQuestionHelp}>
+                                        <strong>Good milestone:</strong> Specific, measurable, builds toward your end game, you can visualize completing it.
+                                    </HelpAccordion>
+                                </label>
+                                <input type="text" className="field-input" value={stepVal} onChange={e => updateStep(index, e.target.value)} placeholder={ph[index]} />
+                            </div>
+                        ))}
 
-                        <div className="space-y-6 mb-8">
-                            {data.steps.map((step, index) => (
-                                <div key={index}>
-                                    <label className="block font-bold mb-2 text-lg">
-                                        Step {index + 1} <span className="text-red-500">* REQUIRED</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        className="worksheet-input"
-                                        value={step}
-                                        onChange={(e) => updateStep(index, e.target.value)}
-                                        placeholder={placeholders[index]}
-                                    />
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="bg-gray-50 border-4 border-black p-8 mb-8">
-                            <h3 className="font-bold text-2xl mb-4">MENTAL REHEARSAL</h3>
-                            <p className="text-lg mb-6">
-                                Close your eyes. Picture yourself completing each step above. See the details. Feel the momentum.
-                            </p>
-                            <p className="text-base text-gray-600 italic mb-6">
-                                Lewis Hamilton mentally drives each lap before stepping in the car.
-                            </p>
-                            <label className="flex items-center gap-3 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    className="w-6 h-6"
-                                    checked={data.mentallyRehearsed}
-                                    onChange={(e) => updateData('mentallyRehearsed', e.target.checked)}
-                                />
-                                <span className="font-bold text-lg">
-                                    I've mentally rehearsed each step. I can see exactly what needs to happen.
-                                </span>
+                        <div className="question-box" style={{ marginTop: 32 }}>
+                            <p style={{ fontWeight: 600, fontSize: 16, marginBottom: 8 }}>Mental Rehearsal</p>
+                            <p style={{ fontSize: 14, color: '#666', marginBottom: 14 }}>Close your eyes. Picture yourself completing each step. See the details. Feel the momentum.</p>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                                <input type="checkbox" checked={data.mentallyRehearsed} onChange={e => updateData('mentallyRehearsed', e.target.checked)} style={{ width: 18, height: 18 }} />
+                                <span style={{ fontSize: 14 }}>I've mentally rehearsed each step.</span>
                             </label>
                         </div>
-
-                        <div className="flex justify-between">
-                            <button className="btn-secondary text-lg py-3 px-6" onClick={onBack}>
-                                ← Back
-                            </button>
-                            <button 
-                                className="btn-primary text-xl py-4 px-8"
-                                disabled={!canProceed}
-                                onClick={onNext}
-                            >
-                                Next: Identify Obstacles →
-                            </button>
-                        </div>
                     </div>
-                </main>
+
+                    {canProceed && (
+                        <div className="closing-box animate-in">
+                            <p className="closing-title">{closing.title}</p>
+                            <p>{closing.text}</p>
+                        </div>
+                    )}
+                </div>
             );
         }
 
-        // Step 3: Obstacles Component (CRITICAL FIX #2: If-Then Structure)
-        function Step3({ data, updateObstacle, addObstacle, removeObstacle, canProceed, onBack, onNext }) {
+        // --- Step 3: Obstacles ---
+        function Step3Content({ data, updateObstacle, addObstacle, removeObstacle, questionHelp, setQuestionHelp, closing, canProceed }) {
             return (
-                <main className="p-12 max-w-6xl mx-auto">
-                    <div className="animate-in">
-                        {/* CRITICAL FIX #3: Hard Limit Warning */}
-                        <div className="bg-red-50 border-2 border-red-500 p-4 mb-6">
-                            <p className="text-lg font-bold text-red-900">
-                                CONSTRAINT: Maximum 3 obstacles. Focus on what will ACTUALLY stop you.
-                            </p>
-                        </div>
+                <div className="step-content animate-in">
+                    <p className="step-indicator">STEP 3 OF 4</p>
+                    <div className="opening-box">
+                        <h1 className="step-heading">Anticipate Obstacles</h1>
+                        <p className="step-hint">Identify what will try to stop you. Create specific IF-THEN plans. Max 3 obstacles.</p>
+                    </div>
 
-                        <div className="numbered-section mb-8">
-                            [03] THE OBSTACLES
-                        </div>
+                    <LearnMore>
+                        IF-THEN plans increase follow-through by up to 300%. Your brain automatically links trigger to action — no willpower required (Gollwitzer, 1999).
+                    </LearnMore>
 
-                        <div className="bg-black text-white border-4 border-black p-6 mb-8">
-                            <h3 className="font-bold text-3xl mb-2">IF-THEN PLANS</h3>
-                            <p className="text-xl mb-4">
-                                When problems occur, you need a SPECIFIC plan. No vague "I'll try harder."
-                            </p>
-                            <p className="text-lg text-yellow-300">
-                                Format: IF [trigger event], THEN [specific person] will [specific action] BY [date/time]
-                            </p>
-                        </div>
-
-                        <div className="space-y-8 mb-6">
-                            {data.obstacles && Array.isArray(data.obstacles) && data.obstacles.map((obstacle, index) => (
-                                <div key={index} className="border-4 border-red-500 bg-red-50 p-6">
-                                    <div className="flex justify-between items-center mb-6">
-                                        <span className="font-bold text-2xl plaak">OBSTACLE {index + 1}</span>
-                                        {data.obstacles.length > 1 && (
-                                            <button
-                                                onClick={() => removeObstacle(index)}
-                                                className="text-red-600 text-3xl font-bold hover:text-red-800"
-                                            >
-                                                ×
-                                            </button>
-                                        )}
-                                    </div>
-
-                                    {/* Problem Description */}
-                                    <div className="mb-6">
-                                        <label className="block font-bold mb-2 text-lg">What's the problem?</label>
-                                        <textarea
-                                            className="worksheet-textarea"
-                                            style={{minHeight: '80px'}}
-                                            value={obstacle.problem}
-                                            onChange={(e) => updateObstacle(index, 'problem', e.target.value)}
-                                            placeholder="Example: Team pushes back on new accountability system. Or: Client emergencies steal my strategic thinking time."
-                                        />
-                                    </div>
-
-                                    {/* If-Then Structure */}
-                                    <div className="bg-white border-2 border-black p-6">
-                                        <h4 className="font-bold text-xl mb-4">IF-THEN PLAN:</h4>
-
-                                        <div className="space-y-4">
-                                            {/* IF Trigger */}
-                                            <div>
-                                                <label className="block font-bold mb-2">
-                                                    IF <span className="text-red-500">* (Specific trigger event)</span>
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    className="worksheet-input"
-                                                    value={obstacle.ifTrigger}
-                                                    onChange={(e) => updateObstacle(index, 'ifTrigger', e.target.value)}
-                                                    placeholder="Example: A team member complains about the new system"
-                                                />
-                                            </div>
-
-                                            {/* THEN Person */}
-                                            <div>
-                                                <label className="block font-bold mb-2">
-                                                    THEN <span className="text-red-500">* (Who will act?)</span>
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    className="worksheet-input"
-                                                    value={obstacle.thenPerson}
-                                                    onChange={(e) => updateObstacle(index, 'thenPerson', e.target.value)}
-                                                    placeholder="Example: I (CEO), Sarah (VP Ops), or John (Team Lead)"
-                                                />
-                                            </div>
-
-                                            {/* THEN Action */}
-                                            <div>
-                                                <label className="block font-bold mb-2">
-                                                    WILL <span className="text-red-500">* (Specific action)</span>
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    className="worksheet-input"
-                                                    value={obstacle.thenAction}
-                                                    onChange={(e) => updateObstacle(index, 'thenAction', e.target.value)}
-                                                    placeholder="Example: Schedule 30-min 1-on-1 to understand concerns and explain benefits"
-                                                />
-                                            </div>
-
-                                            {/* BY When */}
-                                            <div>
-                                                <label className="block font-bold mb-2">
-                                                    BY WHEN <span className="text-red-500">* (Deadline)</span>
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    className="worksheet-input"
-                                                    value={obstacle.byWhen}
-                                                    onChange={(e) => updateObstacle(index, 'byWhen', e.target.value)}
-                                                    placeholder="Example: Within 24 hours, or End of week Friday 5pm"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        {/* Preview */}
-                                        {(obstacle.ifTrigger || obstacle.thenPerson || obstacle.thenAction || obstacle.byWhen) && (
-                                            <div className="mt-6 p-4 bg-green-50 border-2 border-green-500">
-                                                <p className="font-bold mb-2">Your If-Then Plan:</p>
-                                                <p className="text-lg">
-                                                    IF <strong>{obstacle.ifTrigger || '___'}</strong>,
-                                                    THEN <strong>{obstacle.thenPerson || '___'}</strong> will
-                                                    <strong> {obstacle.thenAction || '___'}</strong>
-                                                    BY <strong>{obstacle.byWhen || '___'}</strong>
-                                                </p>
-                                            </div>
-                                        )}
-                                    </div>
+                    <div className="questions-grid single-col">
+                        {data.obstacles && data.obstacles.map((obstacle, index) => (
+                            <div key={index} className="question-box">
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                                    <span className="monument" style={{ fontSize: 11, textTransform: 'uppercase', color: '#666' }}>OBSTACLE {index + 1}</span>
+                                    {data.obstacles.length > 1 && (
+                                        <button onClick={() => removeObstacle(index)} style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: '#999' }}>&times;</button>
+                                    )}
                                 </div>
-                            ))}
-                        </div>
 
-                        {data.obstacles.length < 3 && (
-                            <button
-                                onClick={addObstacle}
-                                className="btn-secondary w-full text-lg py-4 mb-8"
-                            >
-                                + Add Another Obstacle (Max 3)
-                            </button>
-                        )}
-
-                        <div className="bg-black text-white p-6 mb-8 text-center">
-                            <p className="text-xl">
-                                <strong>Remember:</strong> When these show up, you'll smile and say "Nothing new to me. I'm prepared."
-                            </p>
-                        </div>
-
-                        <div className="flex justify-between">
-                            <button className="btn-secondary text-lg py-3 px-6" onClick={onBack}>
-                                ← Back
-                            </button>
-                            <button 
-                                className="btn-primary text-xl py-4 px-8"
-                                disabled={!canProceed}
-                                onClick={onNext}
-                            >
-                                Next: Create Plan →
-                            </button>
-                        </div>
-                    </div>
-                </main>
-            );
-        }
-
-        // Step 4: Plan Component
-        function Step4({ data, updateData, canProceed, onBack, onNext }) {
-            return (
-                <main className="p-12 max-w-6xl mx-auto">
-                    <div className="animate-in">
-                        <div className="numbered-section mb-8">
-                            [04] THE PLAN
-                        </div>
-
-                        <div className="bg-black text-white border-4 border-black p-6 mb-8">
-                            <h3 className="font-bold text-3xl mb-2">CUT THE ELEPHANT</h3>
-                            <p className="text-xl">
-                                Big steps are intimidating. Break them down. Choose the smallest, easiest piece to start.
-                            </p>
-                        </div>
-
-                        <div className="space-y-8">
-                            <div>
-                                <label className="block font-bold mb-3 text-xl">What are the big chunks of work?</label>
-                                <textarea
-                                    className="worksheet-textarea"
-                                    style={{ minHeight: '100px' }}
-                                    value={data.bigChunks}
-                                    onChange={(e) => updateData('bigChunks', e.target.value)}
-                                    placeholder="Define and document company values&#10;Build ABC delegation framework&#10;Set up weekly metrics dashboard"
-                                />
-                            </div>
-
-                            <div className="bg-green-50 border-4 border-green-500 p-6">
-                                <h3 className="font-bold text-2xl mb-6">THE FIRST BITE</h3>
-
-                                <div className="mb-6">
-                                    <label className="block font-bold mb-3 text-lg">
-                                        Which is the smallest, easiest piece you can do first?
+                                <div className="field-group">
+                                    <label className="field-label">
+                                        What's the problem?
+                                        <HelpAccordion id={`obstacle${index}`} activeHelp={questionHelp} setActiveHelp={setQuestionHelp}>
+                                            <strong>Good obstacle:</strong> Specific, realistic, actually likely to happen, could genuinely derail progress.
+                                        </HelpAccordion>
                                     </label>
-                                    <textarea
-                                        className="worksheet-textarea"
-                                        value={data.firstAction}
-                                        onChange={(e) => updateData('firstAction', e.target.value)}
-                                        placeholder="Schedule 90-minute workshop with leadership team to brainstorm our 5 core values. Book the room. Send the invite. That's it."
-                                    />
+                                    <textarea className="field-textarea" style={{ minHeight: 70 }} value={obstacle.problem} onChange={e => updateObstacle(index, 'problem', e.target.value)} placeholder="e.g. Team pushes back on new accountability system" />
                                 </div>
 
-                                <div>
-                                    <label className="block font-bold mb-3 text-lg">By when?</label>
-                                    <input
-                                        type="date"
-                                        className="worksheet-input text-xl"
-                                        value={data.deadline}
-                                        onChange={(e) => updateData('deadline', e.target.value)}
-                                        min={new Date().toISOString().split('T')[0]}
-                                        style={{ padding: '16px' }}
-                                    />
+                                <div style={{ borderLeft: '3px solid #FFF469', paddingLeft: 16, marginTop: 8 }}>
+                                    <p className="monument" style={{ fontSize: 10, textTransform: 'uppercase', color: '#666', marginBottom: 10 }}>IF-THEN PLAN</p>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                                        <div className="field-group">
+                                            <label className="field-label">IF (trigger)</label>
+                                            <input type="text" className="field-input" value={obstacle.ifTrigger} onChange={e => updateObstacle(index, 'ifTrigger', e.target.value)} placeholder="A team member complains..." />
+                                        </div>
+                                        <div className="field-group">
+                                            <label className="field-label">THEN (who?)</label>
+                                            <input type="text" className="field-input" value={obstacle.thenPerson} onChange={e => updateObstacle(index, 'thenPerson', e.target.value)} placeholder="I (CEO)" />
+                                        </div>
+                                        <div className="field-group">
+                                            <label className="field-label">WILL (action)</label>
+                                            <input type="text" className="field-input" value={obstacle.thenAction} onChange={e => updateObstacle(index, 'thenAction', e.target.value)} placeholder="Schedule 30-min 1-on-1" />
+                                        </div>
+                                        <div className="field-group">
+                                            <label className="field-label">BY WHEN</label>
+                                            <input type="text" className="field-input" value={obstacle.byWhen} onChange={e => updateObstacle(index, 'byWhen', e.target.value)} placeholder="Within 24 hours" />
+                                        </div>
+                                    </div>
+
+                                    {(obstacle.ifTrigger || obstacle.thenAction) && (
+                                        <div style={{ background: '#F5F5F5', padding: 10, marginTop: 8, fontSize: 13, color: '#333' }}>
+                                            <strong>IF</strong> {obstacle.ifTrigger || '___'}, <strong>THEN</strong> {obstacle.thenPerson || '___'} will <strong>{obstacle.thenAction || '___'}</strong> <strong>BY</strong> {obstacle.byWhen || '___'}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
-                        </div>
-
-                        <div className="flex justify-between mt-12">
-                            <button className="btn-secondary text-lg py-3 px-6" onClick={onBack}>
-                                ← Back
-                            </button>
-                            <button 
-                                className="btn-primary text-xl py-4 px-8"
-                                disabled={!canProceed}
-                                onClick={onNext}
-                            >
-                                View Your Canvas →
-                            </button>
-                        </div>
+                        ))}
                     </div>
-                </main>
+
+                    {data.obstacles.length < 3 && (
+                        <button onClick={addObstacle} style={{ width: '100%', padding: '12px 0', border: '2px dashed #E0E0E0', background: 'none', fontSize: 14, cursor: 'pointer', color: '#666', marginBottom: 24 }}>
+                            + Add Another Obstacle (Max 3)
+                        </button>
+                    )}
+
+                    {canProceed && (
+                        <div className="closing-box animate-in">
+                            <p className="closing-title">{closing.title}</p>
+                            <p>{closing.text}</p>
+                        </div>
+                    )}
+                </div>
             );
         }
 
-        // Canvas View Component
+        // --- Step 4: Plan ---
+        function Step4Content({ data, updateData, questionHelp, setQuestionHelp, closing, canProceed }) {
+            return (
+                <div className="step-content animate-in">
+                    <p className="step-indicator">STEP 4 OF 4</p>
+                    <div className="opening-box">
+                        <h1 className="step-heading">Create Your Plan</h1>
+                        <p className="step-hint">Break down your journey. Choose the smallest, easiest first action. Date = Reality.</p>
+                    </div>
+
+                    <LearnMore>
+                        The Zeigarnik Effect: once you start a task, your brain becomes obsessed with completing it. A specific deadline activates time-based implementation intentions.
+                    </LearnMore>
+
+                    <div className="questions-grid single-col">
+                        <div className="question-box">
+                            <label className="field-label">
+                                What are the big chunks of work?
+                                <HelpAccordion id="bigChunks" activeHelp={questionHelp} setActiveHelp={setQuestionHelp}>
+                                    See the full picture before picking your first bite. List major phases or work streams.
+                                </HelpAccordion>
+                            </label>
+                            <textarea className="field-textarea" style={{ minHeight: 90 }} value={data.bigChunks} onChange={e => updateData('bigChunks', e.target.value)} placeholder={"Define and document company values\nBuild ABC delegation framework\nSet up weekly metrics dashboard"} />
+                        </div>
+
+                        <div className="question-box">
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                                <div className="field-group">
+                                    <label className="field-label">
+                                        Smallest first action?
+                                        <HelpAccordion id="firstAction" activeHelp={questionHelp} setActiveHelp={setQuestionHelp}>
+                                            So small it feels silly. Under 30 min. Impossible to fail at. Creates momentum.
+                                        </HelpAccordion>
+                                    </label>
+                                    <textarea className="field-textarea" style={{ minHeight: 80 }} value={data.firstAction} onChange={e => updateData('firstAction', e.target.value)} placeholder="Book the room. Send the invite. That's it." />
+                                </div>
+                                <div className="field-group">
+                                    <label className="field-label">By when?</label>
+                                    <input type="date" className="field-input" value={data.deadline} onChange={e => updateData('deadline', e.target.value)} min={new Date().toISOString().split('T')[0]} />
+                                    <p className="field-help">Date = Reality.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {canProceed && (
+                        <div className="closing-box animate-in">
+                            <p className="closing-title">{closing.title}</p>
+                            <p>{closing.text}</p>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // --- Canvas View ---
         function CanvasView({ data, onBack }) {
-            const handleShare = () => {
-                alert('WOOP plan shared with your team. Accountability activated.');
-            };
+            const handleShare = () => alert('WOOP plan shared with your team. Accountability activated.');
+
+            const [submitStatus, setSubmitStatus] = useState(null); // 'saving' | 'success' | 'error'
+            const [submitMessage, setSubmitMessage] = useState('');
 
             const handleSubmit = async () => {
                 try {
-                    // Get user ID from localStorage (set by dashboard with JWT)
+                    setSubmitStatus('saving');
+                    setSubmitMessage('');
                     const userId = localStorage.getItem('ft_user_id');
-                    if (!userId) {
-                        alert('User not authenticated. Please return to the dashboard.');
-                        return;
-                    }
-
-                    // Prepare the submission data (CRITICAL FIX #1: Include scopeType)
+                    if (!userId) { setSubmitStatus('error'); setSubmitMessage('User not authenticated. No user ID found.'); return; }
+                    console.log('[WOOP Submit] userId:', userId);
                     const submissionData = {
-                        companyId: data.companyId,
-                        userId: data.userId,
-                        scopeType: data.scopeType, // CRITICAL FIX #1
-                        wish: {
-                            outcome: data.outcome,
-                            worldChange: data.worldChange,
-                            feeling: data.feeling
-                        },
-                        outcome: {
-                            steps: data.steps.filter(s => s.trim()),
-                            mentallyRehearsed: data.mentallyRehearsed
-                        },
-                        obstacles: data.obstacles, // CRITICAL FIX #2: Now includes If-Then structure
-                        plan: {
-                            bigChunks: data.bigChunks,
-                            firstAction: data.firstAction,
-                            deadline: data.deadline
-                        }
+                        companyId: data.companyId, userId: data.userId, scopeType: data.scopeType,
+                        wish: { outcome: data.outcome, worldChange: data.worldChange, feeling: data.feeling },
+                        outcome: { steps: data.steps.filter(s => s.trim()), mentallyRehearsed: data.mentallyRehearsed },
+                        obstacles: data.obstacles,
+                        plan: { bigChunks: data.bigChunks, firstAction: data.firstAction, deadline: data.deadline }
                     };
-
-                    // Submit using RPC function (handles schema-specific tables)
-                    const { data: result, error: submitError } = await supabaseClient
-                        .rpc('submit_tool_data', {
-                            p_schema_name: CONFIG.SCHEMA_NAME,
-                            p_user_id: userId,
-                            p_data: submissionData,
-                            p_tool_slug: CONFIG.TOOL_SLUG
-                        });
-
+                    console.log('[WOOP Submit] Calling RPC with data:', submissionData);
+                    const { data: result, error: submitError } = await supabaseClient.rpc('submit_tool_data', { p_schema_name: CONFIG.SCHEMA_NAME, p_user_id: userId, p_data: submissionData, p_tool_slug: CONFIG.TOOL_SLUG });
+                    console.log('[WOOP Submit] RPC result:', result, 'error:', submitError);
                     if (submitError) throw submitError;
-
-                    if (!result || !result.success) {
-                        throw new Error(result?.message || 'Submission failed');
-                    }
-
-                    alert('Submission saved successfully!');
-                    console.log('Submission ID:', result.submission_id);
+                    if (!result || !result.success) throw new Error(result?.message || 'Submission failed');
+                    setSubmitStatus('success');
+                    setSubmitMessage('Submission saved successfully!');
                     localStorage.setItem('lastSubmissionId', result.submission_id);
-
                 } catch (error) {
-                    console.error('Submission error:', error);
-                    alert('Failed to save WOOP plan: ' + error.message);
+                    console.error('[WOOP Submit] Error:', error);
+                    setSubmitStatus('error');
+                    setSubmitMessage('Failed to save: ' + error.message);
                 }
             };
 
-            // Helper function to convert image to base64 data URL (fixes CORS issues)
-            const imageToDataURL = (img) => {
-                return new Promise((resolve, reject) => {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    ctx.drawImage(img, 0, 0);
-                    try {
-                        const dataURL = canvas.toDataURL('image/png');
-                        resolve(dataURL);
-                    } catch (err) {
-                        reject(err);
-                    }
-                });
-            };
+            const imageToDataURL = (img) => new Promise((resolve, reject) => {
+                const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+                c.getContext('2d').drawImage(img, 0, 0);
+                try { resolve(c.toDataURL('image/png')); } catch (e) { reject(e); }
+            });
 
             const handleExport = async (e) => {
                 try {
-                    // Show loading state
-                    const exportBtn = e.target;
-                    exportBtn.disabled = true;
-                    exportBtn.textContent = 'Generating PDF...';
-
-                    // Check if libraries are loaded
-                    if (!window.jspdf || !window.html2canvas) {
-                        alert('PDF libraries are still loading. Please wait a moment and try again.');
-                        exportBtn.disabled = false;
-                        exportBtn.textContent = 'Export PDF';
-                        return;
-                    }
-
+                    const btn = e.target; btn.disabled = true; btn.textContent = 'Generating...';
+                    if (!window.jspdf || !window.html2canvas) { alert('PDF libraries loading...'); btn.disabled = false; btn.textContent = 'Export PDF'; return; }
                     const { jsPDF } = window.jspdf;
-                    const pdf = new jsPDF({
-                        orientation: 'portrait',
-                        unit: 'mm',
-                        format: 'a4'
-                    });
-
-                    // Canvas Content (single page, no cover)
-                    const canvasElement = document.querySelector('.max-w-6xl .border-4.border-black');
-                    if (!canvasElement) {
-                        throw new Error('Canvas element not found. Please ensure you are on the canvas view.');
-                    }
-
-                    const canvas = await html2canvas(canvasElement, {
-                        scale: 2,
-                        backgroundColor: '#ffffff',
-                        useCORS: false,
-                        logging: false,
-                        width: canvasElement.scrollWidth,
-                        height: canvasElement.scrollHeight
-                    });
-
+                    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+                    const el = document.getElementById('woop-canvas-content');
+                    if (!el) throw new Error('Canvas not found.');
+                    const canvas = await html2canvas(el, { scale: 2, backgroundColor: '#fff', useCORS: false, logging: false, width: el.scrollWidth, height: el.scrollHeight });
                     const imgData = canvas.toDataURL('image/png');
-                    const pageWidth = 210; // A4 width in mm
-                    const pageHeight = 297; // A4 height in mm
-                    const margin = 10; // 10mm margins
-                    const maxWidth = pageWidth - (margin * 2);
-                    const maxHeight = pageHeight - (margin * 2) - 20; // Extra space for logo
-                    
-                    // Calculate dimensions maintaining aspect ratio
-                    const imgAspectRatio = canvas.width / canvas.height;
-                    let imgWidth = maxWidth;
-                    let imgHeight = imgWidth / imgAspectRatio;
-                    
-                    if (imgHeight > maxHeight) {
-                        imgHeight = maxHeight;
-                        imgWidth = imgHeight * imgAspectRatio;
-                    }
-                    
-                    const xOffset = (pageWidth - imgWidth) / 2;
-                    const yOffset = margin;
-                    
-                    pdf.addImage(imgData, 'PNG', xOffset, yOffset, imgWidth, imgHeight);
-                    
-                    // Add logo to canvas page (white background, so use black logo)
-                    const logoImg2 = new Image();
-                    logoImg2.crossOrigin = 'anonymous';
-                    logoImg2.src = 'FastTrack_F_black (1).png';
-                    logoImg2.onload = async () => {
-                        try {
-                            const logo2DataURL = await imageToDataURL(logoImg2);
-                            pdf.addImage(logo2DataURL, 'PNG', pageWidth - 50, 10, 40, 15);
-                        } catch (err) {
-                            console.log('Logo 2 failed:', err);
-                        }
-                        const today = new Date().toISOString().split('T')[0];
-                        pdf.save(`WOOP-Canvas-${today}.pdf`);
-                        exportBtn.disabled = false;
-                        exportBtn.textContent = 'Export PDF';
-                    };
-                    logoImg2.onerror = () => {
-                        const today = new Date().toISOString().split('T')[0];
-                        pdf.save(`WOOP-Canvas-${today}.pdf`);
-                        exportBtn.disabled = false;
-                        exportBtn.textContent = 'Export PDF';
-                    };
-                } catch (error) {
-                    console.error('PDF Export Error:', error);
-                    alert('Failed to generate PDF: ' + error.message);
-                    if (e && e.target) {
-                        e.target.disabled = false;
-                        e.target.textContent = 'Export PDF';
-                    }
-                }
+                    const pw = 210, ph = 297, m = 10, mw = pw - m * 2, mh = ph - m * 2 - 20;
+                    const ar = canvas.width / canvas.height; let iw = mw, ih = iw / ar;
+                    if (ih > mh) { ih = mh; iw = ih * ar; }
+                    pdf.addImage(imgData, 'PNG', (pw - iw) / 2, m, iw, ih);
+                    const logo = new Image(); logo.crossOrigin = 'anonymous'; logo.src = 'FastTrack_F_black (1).png';
+                    logo.onload = async () => { try { pdf.addImage(await imageToDataURL(logo), 'PNG', pw - 50, 10, 40, 15); } catch(e){} pdf.save(`WOOP-Canvas-${new Date().toISOString().split('T')[0]}.pdf`); btn.disabled = false; btn.textContent = 'Export PDF'; };
+                    logo.onerror = () => { pdf.save(`WOOP-Canvas-${new Date().toISOString().split('T')[0]}.pdf`); btn.disabled = false; btn.textContent = 'Export PDF'; };
+                } catch (error) { alert('PDF failed: ' + error.message); if (e?.target) { e.target.disabled = false; e.target.textContent = 'Export PDF'; } }
             };
 
             return (
-                <div className="min-h-screen bg-white">
-                    {/* Header */}
-                    <header className="no-print border-b-4 border-black p-6">
-                        <div className="max-w-6xl mx-auto flex justify-between items-center">
+                <div style={{ minHeight: '100vh', background: '#fff' }}>
+                    <header className="no-print" style={{ borderBottom: '2px solid #000', padding: '16px 24px' }}>
+                        <div style={{ maxWidth: 960, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
-                                <h1 className="plaak text-4xl mb-2">YOUR WOOP CANVAS</h1>
-                                <p className="text-gray-600">Clarity + Energy = Action</p>
+                                <h1 className="plaak" style={{ fontSize: 28, marginBottom: 4 }}>YOUR WOOP CANVAS</h1>
+                                <p style={{ fontSize: 14, color: '#666' }}>Clarity + Energy = Action</p>
                             </div>
-                            <button onClick={onBack} className="btn-secondary">
-                                ← Edit
-                            </button>
+                            <button onClick={onBack} className="btn-back">&larr; Edit</button>
                         </div>
                     </header>
-
-                    {/* Canvas */}
-                    <div className="max-w-6xl mx-auto p-12">
-                        <div className="border-4 border-black p-8 mb-8 canvas-container">
-                            {/* Wish Section */}
-                            <div className="mb-12">
-                                <div className="numbered-section mb-4">[W] YOUR WISH</div>
+                    <div style={{ maxWidth: 960, margin: '0 auto', padding: '32px 24px' }}>
+                        <div id="woop-canvas-content" style={{ border: '2px solid #000', padding: 32, marginBottom: 24 }}>
+                            <div style={{ marginBottom: 32 }}>
+                                <div className="numbered-section" style={{ marginBottom: 12 }}>[W] YOUR WISH</div>
                                 <div className="canvas-wish-box">
-                                    <h3 className="font-bold text-xl mb-2">ACHIEVED</h3>
-                                    <p className="mb-4">{data.outcome}</p>
-
-                                    <h3 className="font-bold text-xl mb-2">WORLD CHANGED</h3>
-                                    <p className="mb-4">{data.worldChange}</p>
-
-                                    <h3 className="font-bold text-xl mb-2">FEELING</h3>
-                                    <p className="text-2xl font-bold">{data.feeling}</p>
+                                    <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 4, color: '#666' }}>ACHIEVED</p>
+                                    <p style={{ marginBottom: 16 }}>{data.outcome}</p>
+                                    <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 4, color: '#666' }}>WORLD CHANGED</p>
+                                    <p style={{ marginBottom: 16 }}>{data.worldChange}</p>
+                                    <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 4, color: '#666' }}>FEELING</p>
+                                    <p style={{ fontWeight: 600, fontSize: 18 }}>{data.feeling}</p>
                                 </div>
                             </div>
-
-                            {/* Outcomes Section */}
-                            <div className="mb-12">
-                                <div className="numbered-section mb-4">[O] THE OUTCOME</div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    {data.steps && Array.isArray(data.steps) && data.steps.filter(s => s.trim()).map((step, index) => (
-                                        <div key={index} className="border-black canvas-step-box">
-                                            <div className="monument text-xs mb-2">STEP {index + 1}</div>
-                                            <p>{step}</p>
+                            <div style={{ marginBottom: 32 }}>
+                                <div className="numbered-section" style={{ marginBottom: 12 }}>[O] THE OUTCOME</div>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+                                    {data.steps && data.steps.filter(s => s.trim()).map((s, i) => (
+                                        <div key={i} className="canvas-step-box">
+                                            <div className="monument" style={{ fontSize: 10, marginBottom: 6, color: '#666' }}>STEP {i + 1}</div>
+                                            <p style={{ fontSize: 14 }}>{s}</p>
                                         </div>
                                     ))}
                                 </div>
-                                {data.mentallyRehearsed && (
-                                    <div className="bg-black text-white p-2 mt-4 text-center monument text-sm">
-                                        MENTALLY REHEARSED
-                                    </div>
-                                )}
+                                {data.mentallyRehearsed && <div style={{ background: '#000', color: '#fff', padding: '6px 12px', marginTop: 8, textAlign: 'center' }}><span className="monument" style={{ fontSize: 10 }}>MENTALLY REHEARSED</span></div>}
                             </div>
-
-                            {/* Obstacles Section - CRITICAL FIX #2: Display If-Then Structure */}
-                            <div className="mb-12">
-                                <div className="numbered-section mb-4">[O] THE OBSTACLES & IF-THEN PLANS</div>
-                                {data.obstacles && Array.isArray(data.obstacles) && data.obstacles.map((obstacle, index) => (
-                                    <div key={index} className="canvas-obstacle-box mb-4">
-                                        <div className="font-bold mb-3 text-lg border-b-2 border-red-300 pb-2">
-                                            Problem {index + 1}: {obstacle.problem}
-                                        </div>
-                                        <div className="bg-white p-4 border-2 border-black">
-                                            <p className="font-bold mb-2 text-green-700">IF-THEN PLAN:</p>
-                                            <p className="text-base leading-relaxed">
-                                                <strong>IF</strong> {obstacle.ifTrigger || '[Not specified]'},
-                                                <strong> THEN</strong> {obstacle.thenPerson || '[Not specified]'} will
-                                                <strong> {obstacle.thenAction || '[Not specified]'}</strong>
-                                                <strong> BY</strong> {obstacle.byWhen || '[Not specified]'}
-                                            </p>
+                            <div style={{ marginBottom: 32 }}>
+                                <div className="numbered-section" style={{ marginBottom: 12 }}>[O] OBSTACLES & IF-THEN PLANS</div>
+                                {data.obstacles && data.obstacles.map((o, i) => (
+                                    <div key={i} className="canvas-obstacle-box">
+                                        <p style={{ fontWeight: 600, marginBottom: 8 }}>Problem {i + 1}: {o.problem}</p>
+                                        <div style={{ background: '#fff', padding: 12, border: '1px solid #E0E0E0', fontSize: 14 }}>
+                                            <strong>IF</strong> {o.ifTrigger || '—'}, <strong>THEN</strong> {o.thenPerson || '—'} will <strong>{o.thenAction || '—'}</strong> <strong>BY</strong> {o.byWhen || '—'}
                                         </div>
                                     </div>
                                 ))}
                             </div>
-
-                            {/* Plan Section */}
                             <div>
-                                <div className="numbered-section mb-4">[P] THE PLAN</div>
-                                <div className="canvas-plan-box border-green-500">
-                                    <div className="bg-green-500 text-white px-4 py-2 inline-block mb-4 font-bold">
-                                        FIRST ACTION
-                                    </div>
-                                    <p className="text-xl mb-4">{data.firstAction}</p>
-                                    <div className="flex items-center gap-4">
-                                        <span className="monument text-sm">DEADLINE:</span>
-                                        <span className="text-2xl font-bold">
-                                            {new Date(data.deadline).toLocaleDateString('en-US', {
-                                                month: 'short',
-                                                day: 'numeric',
-                                                year: 'numeric'
-                                            })}
-                                        </span>
+                                <div className="numbered-section" style={{ marginBottom: 12 }}>[P] THE PLAN</div>
+                                <div className="canvas-plan-box">
+                                    <div className="monument" style={{ fontSize: 10, marginBottom: 8, color: '#666' }}>FIRST ACTION</div>
+                                    <p style={{ fontSize: 16, marginBottom: 16 }}>{data.firstAction}</p>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <span className="monument" style={{ fontSize: 10, color: '#666' }}>DEADLINE:</span>
+                                        <span style={{ fontSize: 18, fontWeight: 600 }}>{data.deadline ? new Date(data.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Not set'}</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
-
-                        {/* Action Buttons */}
-                        <div className="flex gap-4 no-print">
-                            <button onClick={handleShare} className="btn-primary flex-1 text-lg py-4">
-                                Share With Team
-                            </button>
-                            <button onClick={handleExport} className="btn-secondary flex-1 text-lg py-4">
-                                Export PDF
-                            </button>
-                            <button
-                                id="submit-button"
-                                data-testid="submit-button"
-                                onClick={handleSubmit}
-                                className="btn-primary flex-1 text-lg py-4"
-                            >
-                                Final Submit
+                        <div className="no-print" style={{ display: 'flex', gap: 12 }}>
+                            <button onClick={handleShare} className="btn-next" style={{ flex: 1 }}>Share With Team</button>
+                            <button onClick={handleExport} className="btn-back" style={{ flex: 1 }}>Export PDF</button>
+                            <button id="submit-button" data-testid="submit-button" onClick={handleSubmit} className="btn-next" style={{ flex: 1 }} disabled={submitStatus === 'saving'}>
+                                {submitStatus === 'saving' ? 'Saving...' : 'Final Submit'}
                             </button>
                         </div>
-
-                        <div className="mt-6 text-center text-sm text-gray-600">
-                            <p className="monument">CLARITY AND ENERGY LOCKED IN</p>
-                        </div>
+                        {submitStatus && (
+                            <div style={{ marginTop: 16, padding: '12px 16px', textAlign: 'center', background: submitStatus === 'success' ? '#f0fdf4' : submitStatus === 'error' ? '#fef2f2' : '#f5f5f5', border: `1px solid ${submitStatus === 'success' ? '#bbf7d0' : submitStatus === 'error' ? '#fecaca' : '#e0e0e0'}`, fontSize: 14 }}>
+                                <span style={{ color: submitStatus === 'success' ? '#166534' : submitStatus === 'error' ? '#991b1b' : '#333' }}>{submitMessage}</span>
+                            </div>
+                        )}
+                        <div style={{ marginTop: 24, textAlign: 'center' }}><p className="monument" style={{ fontSize: 11, color: '#999' }}>CLARITY AND ENERGY LOCKED IN</p></div>
                     </div>
                 </div>
             );
         }
 
-        // Render App
         ReactDOM.render(<WOOPTool />, document.getElementById('root'));
     </script>
 </body>
