@@ -17,7 +17,10 @@
 
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../../shared/js/tool-db.js"></script>
   <script src="../../shared/js/dependency-injection.js"></script>
+    <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
+    <script src="../../shared/js/cognitive-load.js"></script>
 
   <!-- jsPDF + html2canvas for PDF export -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -269,8 +272,6 @@
       SUPABASE_URL: 'https://vpfayzzjnegdefjrnyoc.supabase.co',
       SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZwZmF5enpqbmVnZGVmanJueW9jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMzAwODUsImV4cCI6MjA4NTcwNjA4NX0.7qwzd9kwyRG0Wx9DDSc8F9a1SRD0CoC6CGS-9M1sxIs',
       TOOL_SLUG: 'vp-testing',
-      SPRINT_NUMBER: 16,
-      SCHEMA_NAME: 'sprint_16_vp_testing',
       AUTOSAVE_DELAY: 2000
     };
 
@@ -280,8 +281,13 @@
     // Make Supabase client globally available for dependency injection
     window.supabaseClient = supabaseClient;
 
-    // Initialize dependency injection to load data from previous tools
-    DependencyInjection.init(CONFIG.TOOL_SLUG, CONFIG.SCHEMA_NAME);
+    // Initialize ToolDB and dependency injection
+    ToolDB.init(CONFIG.TOOL_SLUG);
+    DependencyInjection.init(CONFIG.TOOL_SLUG);
+
+        // Initialize cognitive load components
+        CognitiveLoad.init('vp-testing', {"insights":["An untested value proposition is just a hypothesis.","Real validation requires real customers and real commitment signals."],"caseStudy":{"before":"[PLACEHOLDER] Launched based on internal assumptions. Minimal uptake.","after":"[PLACEHOLDER] Tested with 20 target customers. 14 showed purchase intent.","quote":"[PLACEHOLDER] Testing saved us from building something nobody wanted."}});
+        const { FastTrackInsight, ScienceBox, WarningBox, CaseStudy, ScienceBookmarkIcon, ToolGuideDrawer } = CognitiveLoad.components;
 
     // Main App Component
     function TestingApp() {
@@ -616,23 +622,15 @@
             return;
           }
 
-          // Submit using RPC function (handles schema-specific tables)
-          const { data: result, error: submitError } = await supabaseClient
-            .rpc('submit_tool_data', {
-              p_schema_name: CONFIG.SCHEMA_NAME,
-              p_user_id: userId,
-              p_data: data,
-              p_tool_slug: CONFIG.TOOL_SLUG
-            });
+          const questionMappings = {
+              customer_feedback: { round1Interviews: data.round1Interviews, round2Interviews: data.round2Interviews },
+              comparison_results: { round1Patterns: data.round1Patterns, positivePatterns: data.positivePatterns, confusionPoints: data.confusionPoints, objections: data.objections },
+              reality_log: { validation: data.validation, consistentReactions: data.consistentReactions, strongestDifferentiator: data.strongestDifferentiator },
+              final_vp: { finalValueProp: data.finalValueProp, refinedValueProp: data.refinedValueProp, changesJustification: data.changesJustification },
+              next_steps: { remainingAdjustments: data.remainingAdjustments, rolloutPlan: data.rolloutPlan }
+          };
+          await ToolDB.save(userId, questionMappings);
 
-          if (submitError) throw submitError;
-
-          if (!result || !result.success) {
-            throw new Error(result?.message || 'Submission failed');
-          }
-
-          console.log('Submission ID:', result.submission_id);
-          localStorage.setItem('lastSubmissionId', result.submission_id);
           alert('Value proposition testing results submitted successfully!');
         } catch (error) {
           console.error('Submit error:', error);
@@ -950,6 +948,22 @@
 
             <div className="numbered-section mb-8 animate-in">01. TEST SETUP</div>
 
+            {/* Fast Track Insight */}
+            <FastTrackInsight>
+                [PLACEHOLDER] Fast Track Principle for Value Proposition Testing: This foundational step drives 80% of results. Leaders who invest proper time here see the biggest transformation in their organization.
+            </FastTrackInsight>
+
+            {/* The Science */}
+            <ScienceBox collapsible={true}>
+                [PLACEHOLDER] Research from organizational psychology shows that structured value proposition testing frameworks improve decision quality by 25-40% compared to unstructured approaches (Harvard Business Review, 2023). Writing responses down activates deeper cognitive processing than thinking alone.
+            </ScienceBox>
+
+            {/* Common Mistake */}
+            <WarningBox>
+                [PLACEHOLDER] Common mistake in Value Proposition Testing: Leaders often rush through this with surface-level answers. <strong>Bad:</strong> Generic responses completed in under 5 minutes. <strong>Good:</strong> Specific, honest answers that require real thought and sometimes discomfort.
+            </WarningBox>
+
+
             <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
               Prepare your testing plan
             </h3>
@@ -963,6 +977,9 @@
 
             <div className="mb-12 animate-in" style={{animationDelay: '0.15s'}}>
               <label className="monument text-sm block mb-3">VALUE PROPOSITION BEING TESTED <span className="text-red-500">*</span></label>
+              <ScienceBookmarkIcon>
+                  [PLACEHOLDER] Research backs this: Studies show that structured reflection on this aspect of value proposition testing leads to significantly better outcomes than intuitive approaches alone.
+              </ScienceBookmarkIcon>
               <p className="text-base text-gray-600 mb-3">What is the exact value proposition you will test with customers?</p>
               <textarea
                 value={data.valuePropBeingTested}
@@ -978,6 +995,9 @@
 
             <div className="mb-12 animate-in" style={{animationDelay: '0.2s'}}>
               <label className="monument text-sm block mb-3">TESTING OBJECTIVE <span className="text-red-500">*</span></label>
+              <ScienceBookmarkIcon>
+                  [PLACEHOLDER] Research backs this: Studies show that structured reflection on this aspect of value proposition testing leads to significantly better outcomes than intuitive approaches alone.
+              </ScienceBookmarkIcon>
               <p className="text-base text-gray-600 mb-3">What do you want to learn from these tests?</p>
               <textarea
                 value={data.testingObjective}
@@ -993,6 +1013,9 @@
 
             <div className="mb-12 animate-in" style={{animationDelay: '0.25s'}}>
               <label className="monument text-sm block mb-3">TARGET CUSTOMER PROFILE FOR INTERVIEWS</label>
+              <ScienceBookmarkIcon>
+                  [PLACEHOLDER] Research backs this: Studies show that structured reflection on this aspect of value proposition testing leads to significantly better outcomes than intuitive approaches alone.
+              </ScienceBookmarkIcon>
               <p className="text-base text-gray-600 mb-3">Who exactly will you interview? Be specific.</p>
               <textarea
                 value={data.targetCustomerProfile}
@@ -1041,6 +1064,17 @@
             <HelpButton onClick={() => setShowHelp(true)} />
 
             <div className="numbered-section mb-8 animate-in">02. ROUND 1 CUSTOMER INTERVIEWS</div>
+
+            {/* Fast Track Insight */}
+            <FastTrackInsight>
+                [PLACEHOLDER] Fast Track Insight: The second phase of Value Proposition Testing is where most leaders see breakthroughs. Be specific and brutally honest in your answers here.
+            </FastTrackInsight>
+
+            {/* The Science */}
+            <ScienceBox collapsible={true}>
+                [PLACEHOLDER] Behavioral science research indicates that teams using systematic value proposition testing processes make decisions 2.5x faster with 30% fewer errors (McKinsey, 2022). The structure reduces cognitive bias and forces comprehensive thinking.
+            </ScienceBox>
+
 
             <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
               Document customer reactions (Discovery Round)
@@ -1228,6 +1262,17 @@
 
             <div className="numbered-section mb-8 animate-in">03. ANALYZE & REFINE</div>
 
+            {/* Fast Track Insight */}
+            <FastTrackInsight>
+                [PLACEHOLDER] Fast Track Advanced: This Value Proposition Testing step connects your work to the broader strategy. Look for patterns across your previous answers.
+            </FastTrackInsight>
+
+            {/* The Science */}
+            <ScienceBox collapsible={true}>
+                [PLACEHOLDER] Meta-analysis of 200+ organizations shows that completing structured exercises like this correlates with 35% higher strategic execution rates (Deloitte, 2023). Written commitments create psychological accountability.
+            </ScienceBox>
+
+
             <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
               Identify patterns and fix weak spots
             </h3>
@@ -1346,6 +1391,17 @@
             <HelpButton onClick={() => setShowHelp(true)} />
 
             <div className="numbered-section mb-8 animate-in">04. ROUND 2 VALIDATION</div>
+
+            {/* Fast Track Insight */}
+            <FastTrackInsight>
+                [PLACEHOLDER] Fast Track Integration: At this stage of Value Proposition Testing, synthesis matters most. Your outputs should connect to at least 2 other Fast Track tools.
+            </FastTrackInsight>
+
+            {/* The Science */}
+            <ScienceBox collapsible={true}>
+                [PLACEHOLDER] Longitudinal studies demonstrate that organizations revisiting their value proposition testing outputs quarterly maintain 60% higher alignment scores (BCG, 2023). Regular review prevents strategic drift.
+            </ScienceBox>
+
 
             <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
               Confirm refinements work
@@ -1574,6 +1630,17 @@
             <HelpButton onClick={() => setShowHelp(true)} />
 
             <div className="numbered-section mb-8 animate-in">05. FINAL DECISION</div>
+
+            {/* Fast Track Insight */}
+            <FastTrackInsight>
+                [PLACEHOLDER] Fast Track Completion: The final step ties everything together. Review your Value Proposition Testing work holistically before moving on.
+            </FastTrackInsight>
+
+            {/* The Science */}
+            <ScienceBox collapsible={true}>
+                [PLACEHOLDER] Cross-industry research confirms that structured frameworks reduce implementation time by 40% while improving quality of outcomes across all organizational levels (Bain, 2023).
+            </ScienceBox>
+
 
             <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
               Lock in your value proposition
@@ -1871,6 +1938,13 @@
                 SUBMIT
               </button>
             </div>
+
+            {/* Case Study */}
+            <CaseStudy
+                before={"[PLACEHOLDER] Launched based on internal assumptions. Minimal uptake."}
+                after={"[PLACEHOLDER] Tested with 20 target customers. 14 showed purchase intent."}
+                quote={"[PLACEHOLDER] Testing saved us from building something nobody wanted."}
+            />
           </div>
         </div>
       );

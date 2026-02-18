@@ -17,7 +17,10 @@
 
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../../shared/js/tool-db.js"></script>
   <script src="../../shared/js/dependency-injection.js"></script>
+    <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
+    <script src="../../shared/js/cognitive-load.js"></script>
 
   <!-- jsPDF + html2canvas for PDF export -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -551,8 +554,6 @@
         SUPABASE_URL: 'https://vpfayzzjnegdefjrnyoc.supabase.co',
         SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZwZmF5enpqbmVnZGVmanJueW9jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMzAwODUsImV4cCI6MjA4NTcwNjA4NX0.7qwzd9kwyRG0Wx9DDSc8F9a1SRD0CoC6CGS-9M1sxIs',
         TOOL_SLUG: 'agile-teams',
-        SPRINT_NUMBER: 27,
-        SCHEMA_NAME: 'sprint_27_agile_teams',
         AUTOSAVE_DELAY: 2000
     };
 
@@ -563,7 +564,12 @@
     window.supabaseClient = supabaseClient;
 
     // Initialize dependency injection to load data from previous tools
-    DependencyInjection.init(CONFIG.TOOL_SLUG, CONFIG.SCHEMA_NAME);
+    ToolDB.init(CONFIG.TOOL_SLUG);
+    DependencyInjection.init(CONFIG.TOOL_SLUG);
+
+        // Initialize cognitive load components
+        CognitiveLoad.init('agile-teams', {"insights":["Agile is about empowering small teams to make decisions and deliver value fast.","Cross-functional teams of 5-7 outperform siloed departments of 50."],"caseStudy":{"before":"[PLACEHOLDER] Waterfall. 12-month delivery cycles.","after":"[PLACEHOLDER] 2-week sprints. Customer feedback loop in days.","quote":"[PLACEHOLDER] Agile teams delivered the right things, not just faster."}});
+        const { FastTrackInsight, ScienceBox, WarningBox, CaseStudy, ScienceBookmarkIcon, ToolGuideDrawer } = CognitiveLoad.components;
 
     // Main App Component
     function AgileTeamsApp() {
@@ -809,28 +815,22 @@
         }
 
         try {
-          // Submit using RPC function
-          const { data: result, error } = await supabaseClient
-            .rpc('submit_tool_data', {
-              p_schema_name: CONFIG.SCHEMA_NAME,
-              p_user_id: userId,
-              p_data: data,
-              p_tool_slug: CONFIG.TOOL_SLUG
-            });
+          const questionMappings = {
+            team_charter: {
+              items: data.items,
+              charters: data.charters
+            },
+            sprint_design: {
+              charters: data.charters
+            }
+          };
 
-          if (error) throw error;
-
-          if (!result || !result.success) {
-            throw new Error(result?.message || 'Submission failed');
-          }
-
-          console.log('Submission ID:', result.submission_id);
-          localStorage.setItem('lastSubmissionId', result.submission_id);
-          alert('✅ Agile Teams strategy submitted successfully!');
+          await ToolDB.save(userId, questionMappings);
+          alert('Agile Teams strategy submitted successfully!');
           return true;
         } catch (error) {
           console.error('Supabase submission error:', error);
-          alert('❌ Submission failed. Please try again.');
+          alert('Submission failed. Please try again.');
           return false;
         }
       };
@@ -903,6 +903,22 @@
         <div className="min-h-screen bg-white p-8 animate-in">
           <div className="max-w-4xl mx-auto">
             <div className="numbered-section mb-8">INTRODUCTION</div>
+
+            {/* Fast Track Insight */}
+            <FastTrackInsight>
+                [PLACEHOLDER] Fast Track Principle for Agile Teams: This foundational step drives 80% of results. Leaders who invest proper time here see the biggest transformation in their organization.
+            </FastTrackInsight>
+
+            {/* The Science */}
+            <ScienceBox collapsible={true}>
+                [PLACEHOLDER] Research from organizational psychology shows that structured agile teams frameworks improve decision quality by 25-40% compared to unstructured approaches (Harvard Business Review, 2023). Writing responses down activates deeper cognitive processing than thinking alone.
+            </ScienceBox>
+
+            {/* Common Mistake */}
+            <WarningBox>
+                [PLACEHOLDER] Common mistake in Agile Teams: Leaders often rush through this with surface-level answers. <strong>Bad:</strong> Generic responses completed in under 5 minutes. <strong>Good:</strong> Specific, honest answers that require real thought and sometimes discomfort.
+            </WarningBox>
+
 
             <h2 className="plaak text-5xl mb-6">
               Why Agile Teams Matter
@@ -986,6 +1002,17 @@
               <ProgressIndicator currentStep={1} />
               <div className="numbered-section mb-8">01</div>
 
+              {/* Fast Track Insight */}
+              <FastTrackInsight>
+                  [PLACEHOLDER] Fast Track Insight: The second phase of Agile Teams is where most leaders see breakthroughs. Be specific and brutally honest in your answers here.
+              </FastTrackInsight>
+
+              {/* The Science */}
+              <ScienceBox collapsible={true}>
+                  [PLACEHOLDER] Behavioral science research indicates that teams using systematic agile teams processes make decisions 2.5x faster with 30% fewer errors (McKinsey, 2022). The structure reduces cognitive bias and forces comprehensive thinking.
+              </ScienceBox>
+
+
               <h2 className="plaak text-5xl mb-6">
                 BRAINSTORM PROBLEMS & OPPORTUNITIES
               </h2>
@@ -1014,6 +1041,9 @@
                         <label className="monument text-sm mb-2 block">
                           DESCRIPTION
                         </label>
+                        <ScienceBookmarkIcon>
+                            [PLACEHOLDER] Research backs this: Studies show that structured reflection on this aspect of agile teams leads to significantly better outcomes than intuitive approaches alone.
+                        </ScienceBookmarkIcon>
                         <textarea
                           value={item.description || ''}
                           onChange={(e) => updateItem(item.id, 'description', e.target.value)}
@@ -1029,6 +1059,9 @@
                         <label className="monument text-sm mb-2 block">
                           TYPE
                         </label>
+                        <ScienceBookmarkIcon>
+                            [PLACEHOLDER] Research backs this: Studies show that structured reflection on this aspect of agile teams leads to significantly better outcomes than intuitive approaches alone.
+                        </ScienceBookmarkIcon>
                         <div className="radio-group">
                           <label className="radio-option">
                             <input
@@ -1113,6 +1146,17 @@
               <ProgressIndicator currentStep={2} />
               <div className="numbered-section mb-8">02</div>
 
+              {/* Fast Track Insight */}
+              <FastTrackInsight>
+                  [PLACEHOLDER] Fast Track Advanced: This Agile Teams step connects your work to the broader strategy. Look for patterns across your previous answers.
+              </FastTrackInsight>
+
+              {/* The Science */}
+              <ScienceBox collapsible={true}>
+                  [PLACEHOLDER] Meta-analysis of 200+ organizations shows that completing structured exercises like this correlates with 35% higher strategic execution rates (Deloitte, 2023). Written commitments create psychological accountability.
+              </ScienceBox>
+
+
               <h2 className="plaak text-5xl mb-6">
                 IMPACT / EASE MATRIX
               </h2>
@@ -1150,6 +1194,9 @@
                               <label className="monument text-xs mb-2 block">
                                 IMPACT (1=Low, 2=Medium, 3=High)
                               </label>
+                              <ScienceBookmarkIcon>
+                                  [PLACEHOLDER] Research backs this: Studies show that structured reflection on this aspect of agile teams leads to significantly better outcomes than intuitive approaches alone.
+                              </ScienceBookmarkIcon>
                               <div className="rating-buttons">
                                 {[1, 2, 3].map(value => (
                                   <button
@@ -1305,6 +1352,17 @@
             <div className="max-w-5xl mx-auto">
               <ProgressIndicator currentStep={3} />
               <div className="numbered-section mb-8">03</div>
+
+              {/* Fast Track Insight */}
+              <FastTrackInsight>
+                  [PLACEHOLDER] Fast Track Integration: At this stage of Agile Teams, synthesis matters most. Your outputs should connect to at least 2 other Fast Track tools.
+              </FastTrackInsight>
+
+              {/* The Science */}
+              <ScienceBox collapsible={true}>
+                  [PLACEHOLDER] Longitudinal studies demonstrate that organizations revisiting their agile teams outputs quarterly maintain 60% higher alignment scores (BCG, 2023). Regular review prevents strategic drift.
+              </ScienceBox>
+
 
               <h2 className="plaak text-5xl mb-6">
                 TEAM CHARTERS FOR TOP 3
@@ -2057,11 +2115,18 @@
 
           {showHelp && renderHelpModal()}
         </div>
+
+        {/* Case Study */}
+        <CaseStudy
+            before={"[PLACEHOLDER] Waterfall. 12-month delivery cycles."}
+            after={"[PLACEHOLDER] 2-week sprints. Customer feedback loop in days."}
+            quote={"[PLACEHOLDER] Agile teams delivered the right things, not just faster."}
+        />
       );
     }
 
     // Render App
-    ReactDOM.render(<AgileTeamsApp />, document.getElementById('root'));
+        ReactDOM.render(<AgileTeamsApp />, document.getElementById('root'));
   </script>
 </body>
 </html>

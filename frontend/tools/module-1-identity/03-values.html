@@ -11,7 +11,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../../shared/js/tool-db.js"></script>
     <script src="../../shared/js/dependency-injection.js"></script>
+    <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
+    <script src="../../shared/js/cognitive-load.js"></script>
 
     <style>
         @font-face {
@@ -153,8 +156,6 @@
             SUPABASE_URL: 'https://vpfayzzjnegdefjrnyoc.supabase.co',
             SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZwZmF5enpqbmVnZGVmanJueW9jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMzAwODUsImV4cCI6MjA4NTcwNjA4NX0.7qwzd9kwyRG0Wx9DDSc8F9a1SRD0CoC6CGS-9M1sxIs',
             TOOL_SLUG: 'values',
-            SPRINT_NUMBER: 3,
-            SCHEMA_NAME: 'sprint_03_values',
             AUTOSAVE_DELAY: 2000,
             STORAGE_KEY: 'fasttrack_company_values',
             TOOL_NAME: 'company_values_tool'
@@ -167,8 +168,13 @@
         // Make Supabase client globally available for dependency injection
         window.supabaseClient = supabaseClient;
 
-        // Initialize dependency injection
-        DependencyInjection.init(CONFIG.TOOL_SLUG, CONFIG.SCHEMA_NAME);
+        // Initialize ToolDB and dependency injection
+        ToolDB.init(CONFIG.TOOL_SLUG);
+        DependencyInjection.init(CONFIG.TOOL_SLUG);
+
+        // Initialize cognitive load components
+        CognitiveLoad.init('values', {"insights":["Values are not aspirational - they describe who you actually are.","Fast Track way: 3-5 values maximum. More than 5 means you have not made hard choices."],"caseStudy":{"before":"[PLACEHOLDER] Company had 12 generic values nobody remembered.","after":"[PLACEHOLDER] 3 sharp values that drove hiring, firing, and promotion decisions.","quote":"[PLACEHOLDER] Our values became our operating system."}});
+        const { FastTrackInsight, ScienceBox, WarningBox, CaseStudy, ScienceBookmarkIcon, ToolGuideDrawer } = CognitiveLoad.components;
 
         const ValuesTool = () => {
             const [step, setStep] = useState(0);
@@ -291,30 +297,16 @@
                         return;
                     }
 
-                    // Prepare submission data
-                    const submissionData = {
-                        userName: userEmail.split('@')[0],
-                        ...formData
+                    const questionMappings = {
+                        core_values_list: formData.top5Values,
+                        cool_not_cool: formData.valuesBehaviors,
+                        red_lines: { yellowLines: formData.yellowLines, redLines: formData.redLines },
+                        recruitment_questions: formData.recruitmentQuestions,
+                        rollout_plan: formData.commPlan
                     };
-
-                    // Submit using RPC function (handles schema-specific tables)
-                    const { data: result, error: submitError } = await supabaseClient
-                        .rpc('submit_tool_data', {
-                            p_schema_name: CONFIG.SCHEMA_NAME,
-                            p_user_id: userId,
-                            p_data: submissionData,
-                            p_tool_slug: CONFIG.TOOL_SLUG
-                        });
-
-                    if (submitError) throw submitError;
-
-                    if (!result || !result.success) {
-                        throw new Error(result?.message || 'Submission failed');
-                    }
+                    await ToolDB.save(userId, questionMappings);
 
                     alert('Submitted successfully! Your values system has been saved.');
-                    console.log('Submission ID:', result.submission_id);
-                    localStorage.setItem('lastSubmissionId', result.submission_id);
 
                 } catch (error) {
                     console.error('Submit error:', error);
@@ -474,6 +466,22 @@
             return (
                 <div className="animate-in">
                     <div className="numbered-section mb-8">[01] COMPANY VALUES</div>
+
+                    {/* Fast Track Insight */}
+                    <FastTrackInsight>
+                        [PLACEHOLDER] Fast Track Principle for Values: This foundational step drives 80% of results. Leaders who invest proper time here see the biggest transformation in their organization.
+                    </FastTrackInsight>
+
+                    {/* The Science */}
+                    <ScienceBox collapsible={true}>
+                        [PLACEHOLDER] Research from organizational psychology shows that structured values frameworks improve decision quality by 25-40% compared to unstructured approaches (Harvard Business Review, 2023). Writing responses down activates deeper cognitive processing than thinking alone.
+                    </ScienceBox>
+
+                    {/* Common Mistake */}
+                    <WarningBox>
+                        [PLACEHOLDER] Common mistake in Values: Leaders often rush through this with surface-level answers. <strong>Bad:</strong> Generic responses completed in under 5 minutes. <strong>Good:</strong> Specific, honest answers that require real thought and sometimes discomfort.
+                    </WarningBox>
+
                     
                     <div className="bg-black text-white border-4 border-black p-6 mb-8">
                         <h3 className="plaak text-3xl mb-2">IDENTIFY CURRENT BEHAVIORS</h3>
@@ -484,6 +492,9 @@
 
                     <div className="mb-8">
                         <label className="block font-bold mb-4 text-lg">List typical behaviors (good or bad)</label>
+                        <ScienceBookmarkIcon>
+                            [PLACEHOLDER] Research backs this: Studies show that structured reflection on this aspect of values leads to significantly better outcomes than intuitive approaches alone.
+                        </ScienceBookmarkIcon>
                         <div className="space-y-3">
                             {formData.behaviors.slice(0, 10).map((behavior, i) => {
                                 const placeholders = [
@@ -513,6 +524,9 @@
 
                     <div className="mb-8">
                         <label className="block font-bold mb-4 text-lg">Your Top 5 Core Values</label>
+                        <ScienceBookmarkIcon>
+                            [PLACEHOLDER] Research backs this: Studies show that structured reflection on this aspect of values leads to significantly better outcomes than intuitive approaches alone.
+                        </ScienceBookmarkIcon>
                         <div className="grid grid-cols-5 gap-4">
                             {formData.top5Values.map((value, i) => (
                                 <input
@@ -546,6 +560,17 @@
             return (
                 <div className="animate-in">
                     <div className="numbered-section mb-8">[02] VALUES GAP ANALYSIS</div>
+
+                    {/* Fast Track Insight */}
+                    <FastTrackInsight>
+                        [PLACEHOLDER] Fast Track Insight: The second phase of Values is where most leaders see breakthroughs. Be specific and brutally honest in your answers here.
+                    </FastTrackInsight>
+
+                    {/* The Science */}
+                    <ScienceBox collapsible={true}>
+                        [PLACEHOLDER] Behavioral science research indicates that teams using systematic values processes make decisions 2.5x faster with 30% fewer errors (McKinsey, 2022). The structure reduces cognitive bias and forces comprehensive thinking.
+                    </ScienceBox>
+
                     
                     <div className="bg-black text-white border-4 border-black p-6 mb-8">
                         <h3 className="plaak text-3xl mb-2">CURRENT VS ASPIRATIONAL VALUES</h3>
@@ -557,6 +582,9 @@
                     <div className="grid grid-cols-1 gap-8 mb-8">
                         <div>
                             <label className="block font-bold mb-2 text-lg">Your Company Dream</label>
+                            <ScienceBookmarkIcon>
+                                [PLACEHOLDER] Research backs this: Studies show that structured reflection on this aspect of values leads to significantly better outcomes than intuitive approaches alone.
+                            </ScienceBookmarkIcon>
                             <textarea
                                 className="worksheet-input min-h-[120px] text-lg"
                                 placeholder="Copy-paste your dream reminder from Sprint 1..."
@@ -606,6 +634,17 @@
             return (
                 <div className="animate-in">
                     <div className="numbered-section mb-8">[03] VALUES INTO BEHAVIORS</div>
+
+                    {/* Fast Track Insight */}
+                    <FastTrackInsight>
+                        [PLACEHOLDER] Fast Track Advanced: This Values step connects your work to the broader strategy. Look for patterns across your previous answers.
+                    </FastTrackInsight>
+
+                    {/* The Science */}
+                    <ScienceBox collapsible={true}>
+                        [PLACEHOLDER] Meta-analysis of 200+ organizations shows that completing structured exercises like this correlates with 35% higher strategic execution rates (Deloitte, 2023). Written commitments create psychological accountability.
+                    </ScienceBox>
+
                     
                     <div className="bg-black text-white border-4 border-black p-6 mb-8">
                         <h3 className="plaak text-3xl mb-2">DEFINE COOL & NOT COOL BEHAVIORS</h3>
@@ -693,6 +732,17 @@
             return (
                 <div className="animate-in">
                     <div className="numbered-section mb-8">[04] RED LINES</div>
+
+                    {/* Fast Track Insight */}
+                    <FastTrackInsight>
+                        [PLACEHOLDER] Fast Track Integration: At this stage of Values, synthesis matters most. Your outputs should connect to at least 2 other Fast Track tools.
+                    </FastTrackInsight>
+
+                    {/* The Science */}
+                    <ScienceBox collapsible={true}>
+                        [PLACEHOLDER] Longitudinal studies demonstrate that organizations revisiting their values outputs quarterly maintain 60% higher alignment scores (BCG, 2023). Regular review prevents strategic drift.
+                    </ScienceBox>
+
                     
                     <div className="bg-black text-white border-4 border-black p-6 mb-8">
                         <h3 className="plaak text-3xl mb-2">NON-NEGOTIABLE BOUNDARIES</h3>
@@ -752,6 +802,17 @@
             return (
                 <div className="animate-in">
                     <div className="numbered-section mb-8">[05] RECRUITMENT QUESTIONS</div>
+
+                    {/* Fast Track Insight */}
+                    <FastTrackInsight>
+                        [PLACEHOLDER] Fast Track Completion: The final step ties everything together. Review your Values work holistically before moving on.
+                    </FastTrackInsight>
+
+                    {/* The Science */}
+                    <ScienceBox collapsible={true}>
+                        [PLACEHOLDER] Cross-industry research confirms that structured frameworks reduce implementation time by 40% while improving quality of outcomes across all organizational levels (Bain, 2023).
+                    </ScienceBox>
+
                     
                     <div className="bg-black text-white border-4 border-black p-6 mb-8">
                         <h3 className="plaak text-3xl mb-2">VALUES-BASED INTERVIEW QUESTIONS</h3>
@@ -882,6 +943,13 @@
                                     SUBMIT TO FAST TRACK
                                 </button>
                             </div>
+
+                            {/* Case Study */}
+                            <CaseStudy
+                                before={"[PLACEHOLDER] Company had 12 generic values nobody remembered."}
+                                after={"[PLACEHOLDER] 3 sharp values that drove hiring, firing, and promotion decisions."}
+                                quote={"[PLACEHOLDER] Our values became our operating system."}
+                            />
                         </div>
 
                         {/* Top 5 Values */}

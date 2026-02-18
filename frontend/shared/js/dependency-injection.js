@@ -1,23 +1,22 @@
 /**
  * Dependency Injection Library
  * Automatically loads field values from dependent tools
+ * via the ToolDB shared library (3-table architecture).
  *
  * Usage in tool HTML:
+ * <script src="../../shared/js/tool-db.js"></script>
  * <script src="../../shared/js/dependency-injection.js"></script>
  * <script>
- *   // After DOM loaded
- *   DependencyInjection.init('tool-slug', CONFIG.SCHEMA_NAME);
+ *   DependencyInjection.init('tool-slug');
  * </script>
  */
 
 const DependencyInjection = (function() {
     'use strict';
 
-    // Cache for dependencies config
     let currentTool = null;
-    let currentSchema = null;
 
-    // Embedded dependencies configuration (inline to avoid file:// fetch issues)
+    // Embedded dependencies configuration
     const dependenciesConfig = {
         "know-thyself": {
             "depends_on": ["woop"],
@@ -666,91 +665,24 @@ const DependencyInjection = (function() {
     };
 
     /**
-     * Load dependencies configuration
+     * Query field value using ToolDB.getDependency (replaces old RPC/schema approach)
      */
-    async function loadConfig() {
-        return dependenciesConfig;
-    }
-
-    /**
-     * Get schema name for a tool slug
-     */
-    function getSchemaName(toolSlug) {
-        const schemaMap = {
-            'woop': 'sprint_00_woop',
-            'know-thyself': 'sprint_01_know_thyself',
-            'dream': 'sprint_02_dream',
-            'values': 'sprint_03_values',
-            'team': 'sprint_04_team',
-            'goals': 'sprint_05_goals',
-            'market-size': 'sprint_06_market_size',
-            'segmentation-target-market': 'sprint_07_segmentation',
-            'target-segment-deep-dive': 'sprint_08_target_segment',
-            'value-proposition': 'sprint_09_value_proposition',
-            'value-proposition-testing': 'sprint_10_vp_testing',
-            'product-development': 'sprint_11_product_dev',
-            'pricing': 'sprint_12_pricing',
-            'brand-marketing': 'sprint_13_brand_marketing',
-            'customer-service': 'sprint_14_customer_service',
-            'route-to-market': 'sprint_15_route_to_market',
-            'core-activities': 'sprint_16_core_activities',
-            'processes-decisions': 'sprint_17_processes',
-            'digitalization': 'sprint_18_digitalization',
-            'fit': 'sprint_19_fit',
-            'fit-abc-analysis': 'sprint_20_fit_abc',
-            'org-redesign': 'sprint_21_org_redesign',
-            'employer-branding': 'sprint_22_employer_branding',
-            'agile-teams': 'sprint_23_agile_teams',
-            'focus': 'sprint_24_focus',
-            'performance': 'sprint_25_performance',
-            'energy': 'sprint_26_energy',
-            'digital-heart': 'sprint_27_digital_heart',
-            'program-overview': 'sprint_30_program_overview',
-        };
-        return schemaMap[toolSlug];
-    }
-
-    /**
-     * Query field_outputs for a specific field
-     */
-    async function queryFieldOutput(sourceTool, fieldId) {
+    async function queryFieldOutput(sourceTool, referenceKey) {
         const userId = localStorage.getItem('ft_user_id');
         if (!userId) {
             console.warn('No user ID found in localStorage');
             return null;
         }
 
-        const schemaName = getSchemaName(sourceTool);
-        if (!schemaName) {
-            console.warn(`Unknown schema for tool: ${sourceTool}`);
+        if (!window.ToolDB) {
+            console.warn('ToolDB not loaded — cannot query dependencies');
             return null;
         }
 
-        // Query using RPC function
-        const query = `
-            SELECT fo.field_id, fo.field_value, fo.created_at
-            FROM ${schemaName}.field_outputs fo
-            JOIN ${schemaName}.submissions s ON fo.submission_id = s.id
-            WHERE s.user_id = '${userId}' AND fo.field_id = '${fieldId}'
-            ORDER BY fo.created_at DESC
-            LIMIT 1
-        `;
-
         try {
-            const { data, error } = await window.supabaseClient.rpc('execute_sql', { query });
-
-            if (error) {
-                console.error(`Error querying ${sourceTool}.${fieldId}:`, error);
-                return null;
-            }
-
-            if (data && data.length > 0) {
-                return data[0].field_value;
-            }
-
-            return null;
+            return await ToolDB.getDependency(userId, referenceKey);
         } catch (error) {
-            console.error(`Exception querying ${sourceTool}.${fieldId}:`, error);
+            console.error(`Error querying ${sourceTool}.${referenceKey}:`, error);
             return null;
         }
     }
@@ -759,7 +691,6 @@ const DependencyInjection = (function() {
      * Populate a field with dependency value
      */
     function populateField(targetField, value) {
-        // Try multiple selector strategies
         const selectors = [
             `#${targetField}`,
             `[name="${targetField}"]`,
@@ -778,13 +709,11 @@ const DependencyInjection = (function() {
             return false;
         }
 
-        // Handle different element types
         const tagName = element.tagName.toLowerCase();
         const type = element.type?.toLowerCase();
 
         try {
             if (tagName === 'input' || tagName === 'textarea') {
-                // For input/textarea, set the value
                 if (type === 'checkbox') {
                     element.checked = Boolean(value);
                 } else if (type === 'radio') {
@@ -792,31 +721,26 @@ const DependencyInjection = (function() {
                         element.checked = true;
                     }
                 } else {
-                    // Text input, textarea, etc.
                     const displayValue = typeof value === 'object'
                         ? JSON.stringify(value, null, 2)
                         : String(value);
                     element.value = displayValue;
-
-                    // Trigger input event for reactive frameworks
                     element.dispatchEvent(new Event('input', { bubbles: true }));
                 }
             } else if (tagName === 'select') {
                 element.value = value;
                 element.dispatchEvent(new Event('change', { bubbles: true }));
             } else {
-                // For display elements (div, span, etc.), set text content
                 const displayValue = typeof value === 'object'
                     ? JSON.stringify(value, null, 2)
                     : String(value);
                 element.textContent = displayValue;
             }
 
-            // Add visual indicator that this is injected data
             element.classList.add('dependency-injected');
             element.title = `Loaded from ${currentTool} dependencies`;
 
-            console.log(`✓ Populated ${targetField} with dependency value:`, value);
+            console.log(`Populated ${targetField} with dependency value`);
             return true;
 
         } catch (error) {
@@ -829,10 +753,7 @@ const DependencyInjection = (function() {
      * Load all dependencies for current tool
      */
     async function loadDependencies(toolSlug) {
-        const config = await loadConfig();
-        if (!config) return;
-
-        const toolDeps = config[toolSlug];
+        const toolDeps = dependenciesConfig[toolSlug];
         if (!toolDeps || !toolDeps.fields || toolDeps.fields.length === 0) {
             console.log(`No dependencies configured for ${toolSlug}`);
             return;
@@ -840,13 +761,8 @@ const DependencyInjection = (function() {
 
         console.log(`Loading ${toolDeps.fields.length} dependencies for ${toolSlug}...`);
 
-        const results = {
-            total: toolDeps.fields.length,
-            loaded: 0,
-            failed: 0,
-        };
+        const results = { total: toolDeps.fields.length, loaded: 0, failed: 0 };
 
-        // Load each dependency
         for (const dep of toolDeps.fields) {
             const value = await queryFieldOutput(dep.source_tool, dep.source_field);
 
@@ -858,14 +774,13 @@ const DependencyInjection = (function() {
                     results.failed++;
                 }
             } else {
-                console.log(`⚠️ No data found for ${dep.source_tool}.${dep.source_field}${dep.required ? ' (REQUIRED)' : ''}`);
+                console.log(`No data found for ${dep.source_tool}.${dep.source_field}`);
                 results.failed++;
             }
         }
 
         console.log(`Dependency loading complete: ${results.loaded}/${results.total} loaded, ${results.failed} failed`);
 
-        // Show notification if dependencies were loaded
         if (results.loaded > 0) {
             showDependencyNotification(results.loaded, results.total);
         }
@@ -891,7 +806,7 @@ const DependencyInjection = (function() {
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                 animation: slideIn 0.3s ease-out;
             ">
-                ✓ Loaded ${loaded}/${total} values from previous tools
+                Loaded ${loaded}/${total} values from previous tools
             </div>
             <style>
                 @keyframes slideIn {
@@ -907,7 +822,6 @@ const DependencyInjection = (function() {
 
         document.body.appendChild(notification);
 
-        // Remove after 3 seconds
         setTimeout(() => {
             notification.style.transition = 'opacity 0.3s';
             notification.style.opacity = '0';
@@ -918,15 +832,12 @@ const DependencyInjection = (function() {
     /**
      * Initialize dependency injection for a tool
      * @param {string} toolSlug - Tool slug (e.g., 'know-thyself')
-     * @param {string} schemaName - Schema name (e.g., 'sprint_01_know_thyself')
      */
-    async function init(toolSlug, schemaName = null) {
+    async function init(toolSlug) {
         currentTool = toolSlug;
-        currentSchema = schemaName || getSchemaName(toolSlug);
 
-        console.log(`🔗 Dependency Injection initialized for ${toolSlug}`);
+        console.log(`Dependency Injection initialized for ${toolSlug}`);
 
-        // Wait for DOM to be ready
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => loadDependencies(toolSlug));
         } else {
@@ -934,14 +845,13 @@ const DependencyInjection = (function() {
         }
     }
 
-    // Public API
     return {
         init,
         queryFieldOutput,
         populateField,
         loadDependencies,
+        getDependenciesConfig: function() { return dependenciesConfig; },
     };
 })();
 
-// Make available globally
 window.DependencyInjection = DependencyInjection;

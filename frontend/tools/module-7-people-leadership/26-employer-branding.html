@@ -17,7 +17,10 @@
 
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../../shared/js/tool-db.js"></script>
   <script src="../../shared/js/dependency-injection.js"></script>
+    <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
+    <script src="../../shared/js/cognitive-load.js"></script>
 
   <!-- jsPDF + html2canvas for PDF export -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -435,8 +438,6 @@
         SUPABASE_URL: 'https://vpfayzzjnegdefjrnyoc.supabase.co',
         SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZwZmF5enpqbmVnZGVmanJueW9jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMzAwODUsImV4cCI6MjA4NTcwNjA4NX0.7qwzd9kwyRG0Wx9DDSc8F9a1SRD0CoC6CGS-9M1sxIs',
         TOOL_SLUG: 'employer-branding',
-        SPRINT_NUMBER: 26,
-        SCHEMA_NAME: 'sprint_26_employer_branding',
         AUTOSAVE_DELAY: 2000
     };
 
@@ -447,7 +448,12 @@
     window.supabaseClient = supabaseClient;
 
     // Initialize dependency injection to load data from previous tools
-    DependencyInjection.init(CONFIG.TOOL_SLUG, CONFIG.SCHEMA_NAME);
+    ToolDB.init(CONFIG.TOOL_SLUG);
+    DependencyInjection.init(CONFIG.TOOL_SLUG);
+
+        // Initialize cognitive load components
+        CognitiveLoad.init('employer-branding', {"insights":["Your employer brand is what employees say when you are not in the room.","A-players join companies with strong cultures. Salary is factor #3, not #1."],"caseStudy":{"before":"[PLACEHOLDER] 6-month average time to hire.","after":"[PLACEHOLDER] Time-to-hire reduced to 6 weeks. A-player acceptance: 85%.","quote":"[PLACEHOLDER] The right people started finding us."}});
+        const { FastTrackInsight, ScienceBox, WarningBox, CaseStudy, ScienceBookmarkIcon, ToolGuideDrawer } = CognitiveLoad.components;
 
     // Main App Component
     function EmployerBrandingApp() {
@@ -733,28 +739,24 @@
         }
 
         try {
-          // Submit using RPC function
-          const { data: result, error } = await supabaseClient
-            .rpc('submit_tool_data', {
-              p_schema_name: CONFIG.SCHEMA_NAME,
-              p_user_id: userId,
-              p_data: data,
-              p_tool_slug: CONFIG.TOOL_SLUG
-            });
+          const questionMappings = {
+            evp: {
+              targetSegment: data.targetSegment,
+              needsRanking: data.needsRanking,
+              evp: data.evp,
+              evpTesting: data.evpTesting
+            },
+            recruitment_playbook: {
+              campaign: data.campaign
+            }
+          };
 
-          if (error) throw error;
-
-          if (!result || !result.success) {
-            throw new Error(result?.message || 'Submission failed');
-          }
-
-          console.log('Submission ID:', result.submission_id);
-          localStorage.setItem('lastSubmissionId', result.submission_id);
-          alert('✅ Employer Branding Strategy submitted successfully!');
+          await ToolDB.save(userId, questionMappings);
+          alert('Employer Branding Strategy submitted successfully!');
           return true;
         } catch (error) {
           console.error('Supabase submission error:', error);
-          alert('❌ Submission failed. Please try again.');
+          alert('Submission failed. Please try again.');
           return false;
         }
       };
@@ -827,6 +829,22 @@
         <div className="min-h-screen bg-white p-8 animate-in">
           <div className="max-w-4xl mx-auto">
             <div className="numbered-section mb-8">INTRODUCTION</div>
+
+            {/* Fast Track Insight */}
+            <FastTrackInsight>
+                [PLACEHOLDER] Fast Track Principle for Employer Branding: This foundational step drives 80% of results. Leaders who invest proper time here see the biggest transformation in their organization.
+            </FastTrackInsight>
+
+            {/* The Science */}
+            <ScienceBox collapsible={true}>
+                [PLACEHOLDER] Research from organizational psychology shows that structured employer branding frameworks improve decision quality by 25-40% compared to unstructured approaches (Harvard Business Review, 2023). Writing responses down activates deeper cognitive processing than thinking alone.
+            </ScienceBox>
+
+            {/* Common Mistake */}
+            <WarningBox>
+                [PLACEHOLDER] Common mistake in Employer Branding: Leaders often rush through this with surface-level answers. <strong>Bad:</strong> Generic responses completed in under 5 minutes. <strong>Good:</strong> Specific, honest answers that require real thought and sometimes discomfort.
+            </WarningBox>
+
 
             <h2 className="plaak text-5xl mb-6">
               What is an Employer Value Proposition?
@@ -905,6 +923,17 @@
               <ProgressIndicator currentStep={1} />
               <div className="numbered-section mb-8">01</div>
 
+              {/* Fast Track Insight */}
+              <FastTrackInsight>
+                  [PLACEHOLDER] Fast Track Insight: The second phase of Employer Branding is where most leaders see breakthroughs. Be specific and brutally honest in your answers here.
+              </FastTrackInsight>
+
+              {/* The Science */}
+              <ScienceBox collapsible={true}>
+                  [PLACEHOLDER] Behavioral science research indicates that teams using systematic employer branding processes make decisions 2.5x faster with 30% fewer errors (McKinsey, 2022). The structure reduces cognitive bias and forces comprehensive thinking.
+              </ScienceBox>
+
+
               <h2 className="plaak text-5xl mb-6">
                 EMPLOYEE SEGMENTATION
               </h2>
@@ -919,6 +948,9 @@
                   <label className="monument text-sm mb-2 block">
                     SEGMENT NAME
                   </label>
+                  <ScienceBookmarkIcon>
+                      [PLACEHOLDER] Research backs this: Studies show that structured reflection on this aspect of employer branding leads to significantly better outcomes than intuitive approaches alone.
+                  </ScienceBookmarkIcon>
                   <input
                     type="text"
                     value={seg.segmentName || ''}
@@ -936,6 +968,9 @@
                   <label className="monument text-sm mb-2 block">
                     TARGET ROLES
                   </label>
+                  <ScienceBookmarkIcon>
+                      [PLACEHOLDER] Research backs this: Studies show that structured reflection on this aspect of employer branding leads to significantly better outcomes than intuitive approaches alone.
+                  </ScienceBookmarkIcon>
                   <textarea
                     value={seg.targetRoles || ''}
                     onChange={(e) => updateNested('targetSegment', 'targetRoles', e.target.value)}
@@ -952,6 +987,9 @@
                   <label className="monument text-sm mb-2 block">
                     MINDSET TRAITS
                   </label>
+                  <ScienceBookmarkIcon>
+                      [PLACEHOLDER] Research backs this: Studies show that structured reflection on this aspect of employer branding leads to significantly better outcomes than intuitive approaches alone.
+                  </ScienceBookmarkIcon>
                   <textarea
                     value={seg.mindsetTraits || ''}
                     onChange={(e) => updateNested('targetSegment', 'mindsetTraits', e.target.value)}
@@ -1041,6 +1079,17 @@
             <div className="max-w-4xl mx-auto">
               <ProgressIndicator currentStep={2} />
               <div className="numbered-section mb-8">02</div>
+
+              {/* Fast Track Insight */}
+              <FastTrackInsight>
+                  [PLACEHOLDER] Fast Track Advanced: This Employer Branding step connects your work to the broader strategy. Look for patterns across your previous answers.
+              </FastTrackInsight>
+
+              {/* The Science */}
+              <ScienceBox collapsible={true}>
+                  [PLACEHOLDER] Meta-analysis of 200+ organizations shows that completing structured exercises like this correlates with 35% higher strategic execution rates (Deloitte, 2023). Written commitments create psychological accountability.
+              </ScienceBox>
+
 
               <h2 className="plaak text-5xl mb-6">
                 NEEDS RANKING
@@ -1152,6 +1201,17 @@
             <div className="max-w-4xl mx-auto">
               <ProgressIndicator currentStep={3} />
               <div className="numbered-section mb-8">03</div>
+
+              {/* Fast Track Insight */}
+              <FastTrackInsight>
+                  [PLACEHOLDER] Fast Track Integration: At this stage of Employer Branding, synthesis matters most. Your outputs should connect to at least 2 other Fast Track tools.
+              </FastTrackInsight>
+
+              {/* The Science */}
+              <ScienceBox collapsible={true}>
+                  [PLACEHOLDER] Longitudinal studies demonstrate that organizations revisiting their employer branding outputs quarterly maintain 60% higher alignment scores (BCG, 2023). Regular review prevents strategic drift.
+              </ScienceBox>
+
 
               <h2 className="plaak text-5xl mb-6">
                 EVP FORMULATION
@@ -1300,6 +1360,17 @@
             <div className="max-w-4xl mx-auto">
               <ProgressIndicator currentStep={4} />
               <div className="numbered-section mb-8">04</div>
+
+              {/* Fast Track Insight */}
+              <FastTrackInsight>
+                  [PLACEHOLDER] Fast Track Completion: The final step ties everything together. Review your Employer Branding work holistically before moving on.
+              </FastTrackInsight>
+
+              {/* The Science */}
+              <ScienceBox collapsible={true}>
+                  [PLACEHOLDER] Cross-industry research confirms that structured frameworks reduce implementation time by 40% while improving quality of outcomes across all organizational levels (Bain, 2023).
+              </ScienceBox>
+
 
               <h2 className="plaak text-5xl mb-6">
                 EVP TESTING
@@ -2134,11 +2205,18 @@
 
           {showHelp && renderHelpModal()}
         </div>
+
+        {/* Case Study */}
+        <CaseStudy
+            before={"[PLACEHOLDER] 6-month average time to hire."}
+            after={"[PLACEHOLDER] Time-to-hire reduced to 6 weeks. A-player acceptance: 85%."}
+            quote={"[PLACEHOLDER] The right people started finding us."}
+        />
       );
     }
 
     // Render App
-    ReactDOM.render(<EmployerBrandingApp />, document.getElementById('root'));
+        ReactDOM.render(<EmployerBrandingApp />, document.getElementById('root'));
   </script>
 </body>
 </html>

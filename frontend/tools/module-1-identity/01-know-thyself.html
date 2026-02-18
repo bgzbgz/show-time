@@ -12,6 +12,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- ToolDB shared library -->
+    <script src="../../shared/js/tool-db.js"></script>
     <!-- Dependency Injection -->
     <script src="../../shared/js/dependency-injection.js"></script>
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
@@ -234,8 +236,6 @@
             SUPABASE_URL: 'https://vpfayzzjnegdefjrnyoc.supabase.co',
             SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZwZmF5enpqbmVnZGVmanJueW9jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMzAwODUsImV4cCI6MjA4NTcwNjA4NX0.7qwzd9kwyRG0Wx9DDSc8F9a1SRD0CoC6CGS-9M1sxIs',
             TOOL_SLUG: 'know-thyself',
-            SPRINT_NUMBER: 1,
-            SCHEMA_NAME: 'sprint_01_know_thyself',
             AUTOSAVE_DELAY: 2000,
             STORAGE_KEY: 'fasttrack_know_thyself_data',
             TOOL_NAME: 'know_thyself'
@@ -248,8 +248,9 @@
         // Make Supabase client globally available for dependency injection
         window.supabaseClient = supabaseClient;
 
-        // Initialize dependency injection to load data from WOOP
-        DependencyInjection.init(CONFIG.TOOL_SLUG, CONFIG.SCHEMA_NAME);
+        // Initialize ToolDB and dependency injection
+        ToolDB.init(CONFIG.TOOL_SLUG);
+        DependencyInjection.init(CONFIG.TOOL_SLUG);
 
         // Initialize cognitive load components
         CognitiveLoad.init('know-thyself', {"insights":["Self-awareness is the foundation of leadership. You cannot lead others until you understand yourself.","The 80/20 rule: 80% of your leadership effectiveness comes from understanding your personal values and strengths."],"caseStudy":{"before":"[PLACEHOLDER] CEO could not articulate personal values or purpose.","after":"[PLACEHOLDER] Clear identity statement, team understood the vision, decision-making speed doubled.","quote":"[PLACEHOLDER] Once I knew who I was, every business decision became clearer."}});
@@ -2276,13 +2277,7 @@
                         return;
                     }
 
-                    // Prepare submission data
-                    const submissionData = {
-                        // User Info
-                        userName: formData.userName,
-                        userEmail: formData.userEmail,
-
-                        // Section 1: Dream Launcher
+                    const questionMappings = {
                         birthdayStory: formData.birthdayStory,
                         whatLove: formData.whatLove,
                         whatGoodAt: formData.whatGoodAt,
@@ -2293,40 +2288,24 @@
                         likeAboutSelf: formData.likeAboutSelf,
                         hardships: formData.hardships,
                         dream: formData.dream,
-
-                        // Section 2: Strengths Amplifier
                         activities: formData.activities,
                         strengths: formData.strengths,
                         doMore: formData.doMore,
                         doLess: formData.doLess,
                         startTo: formData.startTo,
-
-                        // Section 3: Values Compass
-                        values: formData.values,
-
-                        // Section 4: Personal Growth Blueprint
-                        goals: formData.goals
+                        value_1: formData.values?.[0],
+                        value_2: formData.values?.[1],
+                        value_3: formData.values?.[2],
+                        value_4: formData.values?.[3],
+                        value_5: formData.values?.[4],
+                        goal_1: formData.goals?.[0],
+                        goal_2: formData.goals?.[1],
+                        goal_3: formData.goals?.[2]
                     };
-
-                    // Submit using RPC function (handles schema-specific tables)
-                    const { data: result, error: submitError } = await supabaseClient
-                        .rpc('submit_tool_data', {
-                            p_schema_name: CONFIG.SCHEMA_NAME,
-                            p_user_id: userId,
-                            p_data: submissionData,
-                            p_tool_slug: CONFIG.TOOL_SLUG
-                        });
-
-                    if (submitError) throw submitError;
-
-                    if (!result || !result.success) {
-                        throw new Error(result?.message || 'Submission failed');
-                    }
+                    await ToolDB.save(userId, questionMappings);
 
                     // Success
                     alert('LOCKED IN\n\nKnow Thyself complete. Self-knowledge documented and stored.\n\nReady for team meeting.');
-                    console.log('Submission ID:', result.submission_id);
-                    localStorage.setItem('lastSubmissionId', result.submission_id);
 
                 } catch (error) {
                     console.error('Submit error:', error);

@@ -8,7 +8,10 @@
 
     <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../../shared/js/tool-db.js"></script>
     <script src="../../shared/js/dependency-injection.js"></script>
+    <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
+    <script src="../../shared/js/cognitive-load.js"></script>
 
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -145,8 +148,6 @@
             SUPABASE_URL: 'https://vpfayzzjnegdefjrnyoc.supabase.co',
             SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZwZmF5enpqbmVnZGVmanJueW9jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMzAwODUsImV4cCI6MjA4NTcwNjA4NX0.7qwzd9kwyRG0Wx9DDSc8F9a1SRD0CoC6CGS-9M1sxIs',
             TOOL_SLUG: 'performance',
-            SPRINT_NUMBER: 10,
-            SCHEMA_NAME: 'sprint_10_performance',
             AUTOSAVE_DELAY: 2000
         };
 
@@ -157,8 +158,13 @@
         // Make Supabase client globally available for dependency injection
         window.supabaseClient = supabaseClient;
 
-        // Initialize dependency injection to load data from previous tools
-        DependencyInjection.init(CONFIG.TOOL_SLUG, CONFIG.SCHEMA_NAME);
+        // Initialize ToolDB and dependency injection
+        ToolDB.init(CONFIG.TOOL_SLUG);
+        DependencyInjection.init(CONFIG.TOOL_SLUG);
+
+        // Initialize cognitive load components
+        CognitiveLoad.init('performance', {"insights":["What gets measured gets managed. But only measure what truly matters.","The 5 Whys technique reveals root causes that symptoms analysis misses."],"caseStudy":{"before":"[PLACEHOLDER] Performance reviews happened annually.","after":"[PLACEHOLDER] Weekly 15-minute check-ins. Problems caught within days.","quote":"[PLACEHOLDER] The accountability framework removed emotion from difficult conversations."}});
+        const { FastTrackInsight, ScienceBox, WarningBox, CaseStudy, ScienceBookmarkIcon, ToolGuideDrawer } = CognitiveLoad.components;
 
         function PerformanceApp() {
             const [step, setStep] = useState(0);
@@ -390,30 +396,13 @@
                 try {
                     const userId = localStorage.getItem('ft_user_id');
                     if (userId) {
-                        const submissionData = {
-                            companyId: data.companyId,
-                            userId: data.userId,
-                            toolType: toolType,
-                            data: data
+                        const questionMappings = {
+                            execution_dashboard: { performanceSystem: data.performanceSystem, eighty20: data.eighty20, impactEasy: data.impactEasy },
+                            five_why: data.fiveWhys,
+                            consequences_table: { accountability: data.accountability, accountabilitySystem: data.accountabilitySystem }
                         };
-
-                        // Submit using RPC function (handles schema-specific tables)
-                        const { data: result, error: submitError } = await supabaseClient
-                            .rpc('submit_tool_data', {
-                                p_schema_name: CONFIG.SCHEMA_NAME,
-                                p_user_id: userId,
-                                p_data: submissionData,
-                                p_tool_slug: CONFIG.TOOL_SLUG
-                            });
-
-                        if (submitError) throw submitError;
-
-                        if (!result || !result.success) {
-                            throw new Error(result?.message || 'Submission failed');
-                        }
-
-                        localStorage.setItem('lastSubmissionId', result.submission_id);
-                        console.log('Saved to Supabase successfully. Submission ID:', result.submission_id);
+                        await ToolDB.save(userId, questionMappings);
+                        console.log('Saved to Supabase successfully.');
                     }
                 } catch (error) {
                     console.error('Supabase submission error:', error);
@@ -605,12 +594,31 @@
                     <div className="max-w-4xl mx-auto">
                         <div className="numbered-section">[01] THE 5 WHYS</div>
 
+                        {/* Fast Track Insight */}
+                        <FastTrackInsight>
+                            [PLACEHOLDER] Fast Track Principle for Performance Tracking: This foundational step drives 80% of results. Leaders who invest proper time here see the biggest transformation in their organization.
+                        </FastTrackInsight>
+
+                        {/* The Science */}
+                        <ScienceBox collapsible={true}>
+                            [PLACEHOLDER] Research from organizational psychology shows that structured performance tracking frameworks improve decision quality by 25-40% compared to unstructured approaches (Harvard Business Review, 2023). Writing responses down activates deeper cognitive processing than thinking alone.
+                        </ScienceBox>
+
+                        {/* Common Mistake */}
+                        <WarningBox>
+                            [PLACEHOLDER] Common mistake in Performance Tracking: Leaders often rush through this with surface-level answers. <strong>Bad:</strong> Generic responses completed in under 5 minutes. <strong>Good:</strong> Specific, honest answers that require real thought and sometimes discomfort.
+                        </WarningBox>
+
+
                         <p className="text-xl mb-8 text-gray-700">
                             Uncover the root cause of problems through iterative questioning. Ask "Why?" five times to drill down from symptoms to true causes.
                         </p>
 
                         <div className="mb-8">
                             <label className="block text-lg font-bold mb-2">Define the Problem</label>
+                            <ScienceBookmarkIcon>
+                                [PLACEHOLDER] Research backs this: Studies show that structured reflection on this aspect of performance tracking leads to significantly better outcomes than intuitive approaches alone.
+                            </ScienceBookmarkIcon>
                             <p className="text-gray-700 mb-4">What is the specific issue you're experiencing?</p>
                             <textarea
                                 className="worksheet-textarea"
@@ -624,6 +632,9 @@
                             {[1, 2, 3, 4, 5].map(num => (
                                 <div key={num} className="mb-6">
                                     <label className="block text-lg font-bold mb-2">WHY #{num}</label>
+                                    <ScienceBookmarkIcon>
+                                        [PLACEHOLDER] Research backs this: Studies show that structured reflection on this aspect of performance tracking leads to significantly better outcomes than intuitive approaches alone.
+                                    </ScienceBookmarkIcon>
                                     <input
                                         type="text"
                                         className="worksheet-input"
@@ -637,6 +648,9 @@
 
                         <div className="mb-8">
                             <label className="block text-lg font-bold mb-2">Root Cause Identified</label>
+                            <ScienceBookmarkIcon>
+                                [PLACEHOLDER] Research backs this: Studies show that structured reflection on this aspect of performance tracking leads to significantly better outcomes than intuitive approaches alone.
+                            </ScienceBookmarkIcon>
                             <p className="text-gray-700 mb-4">What is the fundamental cause that emerged from your analysis?</p>
                             <textarea
                                 className="worksheet-textarea"
@@ -679,6 +693,17 @@
                 <div className="min-h-screen bg-white pt-24 pb-16 px-8">
                     <div className="max-w-4xl mx-auto">
                         <div className="numbered-section">[02] THE 80/20 PRINCIPLE</div>
+
+                        {/* Fast Track Insight */}
+                        <FastTrackInsight>
+                            [PLACEHOLDER] Fast Track Insight: The second phase of Performance Tracking is where most leaders see breakthroughs. Be specific and brutally honest in your answers here.
+                        </FastTrackInsight>
+
+                        {/* The Science */}
+                        <ScienceBox collapsible={true}>
+                            [PLACEHOLDER] Behavioral science research indicates that teams using systematic performance tracking processes make decisions 2.5x faster with 30% fewer errors (McKinsey, 2022). The structure reduces cognitive bias and forces comprehensive thinking.
+                        </ScienceBox>
+
 
                         <p className="text-xl mb-8 text-gray-700">
                             Focus on the vital few that drive 80% of results. Identify which 20% of your efforts yield 80% of outcomes.
@@ -766,6 +791,17 @@
                 <div className="min-h-screen bg-white pt-24 pb-16 px-8">
                     <div className="max-w-4xl mx-auto">
                         <div className="numbered-section">[03] BRAINSTORMING & IMPACT-EASY</div>
+
+                        {/* Fast Track Insight */}
+                        <FastTrackInsight>
+                            [PLACEHOLDER] Fast Track Advanced: This Performance Tracking step connects your work to the broader strategy. Look for patterns across your previous answers.
+                        </FastTrackInsight>
+
+                        {/* The Science */}
+                        <ScienceBox collapsible={true}>
+                            [PLACEHOLDER] Meta-analysis of 200+ organizations shows that completing structured exercises like this correlates with 35% higher strategic execution rates (Deloitte, 2023). Written commitments create psychological accountability.
+                        </ScienceBox>
+
 
                         <p className="text-xl mb-8 text-gray-700">
                             Generate ideas and prioritize them using the Impact-Easy Matrix
@@ -917,6 +953,17 @@
                     <div className="max-w-4xl mx-auto">
                         <div className="numbered-section">[04] ACCOUNTABILITY & CONSEQUENCES</div>
 
+                        {/* Fast Track Insight */}
+                        <FastTrackInsight>
+                            [PLACEHOLDER] Fast Track Integration: At this stage of Performance Tracking, synthesis matters most. Your outputs should connect to at least 2 other Fast Track tools.
+                        </FastTrackInsight>
+
+                        {/* The Science */}
+                        <ScienceBox collapsible={true}>
+                            [PLACEHOLDER] Longitudinal studies demonstrate that organizations revisiting their performance tracking outputs quarterly maintain 60% higher alignment scores (BCG, 2023). Regular review prevents strategic drift.
+                        </ScienceBox>
+
+
                         <p className="text-xl mb-8 text-gray-700">
                             Build a clear accountability system with transparent expectations and fair consequences
                         </p>
@@ -1012,6 +1059,17 @@
                 <div className="min-h-screen bg-white pt-24 pb-16 px-8">
                     <div className="max-w-4xl mx-auto">
                         <div className="numbered-section">[01] PERFORMANCE ANALYSIS SYSTEM</div>
+
+                        {/* Fast Track Insight */}
+                        <FastTrackInsight>
+                            [PLACEHOLDER] Fast Track Completion: The final step ties everything together. Review your Performance Tracking work holistically before moving on.
+                        </FastTrackInsight>
+
+                        {/* The Science */}
+                        <ScienceBox collapsible={true}>
+                            [PLACEHOLDER] Cross-industry research confirms that structured frameworks reduce implementation time by 40% while improving quality of outcomes across all organizational levels (Bain, 2023).
+                        </ScienceBox>
+
 
                         <p className="text-xl mb-8 text-gray-700">
                             Set up a system to track task completion, identify gaps, and drive continuous improvement
@@ -1260,6 +1318,13 @@
                                 📥 EXPORT PDF
                             </button>
                         </div>
+
+                        {/* Case Study */}
+                        <CaseStudy
+                            before={"[PLACEHOLDER] Performance reviews happened annually."}
+                            after={"[PLACEHOLDER] Weekly 15-minute check-ins. Problems caught within days."}
+                            quote={"[PLACEHOLDER] The accountability framework removed emotion from difficult conversations."}
+                        />
                     </div>
                 </div>
             );
@@ -1347,7 +1412,6 @@
                 </div>
             );
         }
-
         ReactDOM.render(<PerformanceApp />, document.getElementById('root'));
     </script>
 </body>

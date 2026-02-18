@@ -17,7 +17,10 @@
 
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../../shared/js/tool-db.js"></script>
   <script src="../../shared/js/dependency-injection.js"></script>
+    <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
+    <script src="../../shared/js/cognitive-load.js"></script>
 
   <!-- jsPDF + html2canvas for PDF export -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -268,8 +271,6 @@
       SUPABASE_URL: 'https://vpfayzzjnegdefjrnyoc.supabase.co',
       SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZwZmF5enpqbmVnZGVmanJueW9jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMzAwODUsImV4cCI6MjA4NTcwNjA4NX0.7qwzd9kwyRG0Wx9DDSc8F9a1SRD0CoC6CGS-9M1sxIs',
       TOOL_SLUG: 'segmentation',
-      SPRINT_NUMBER: 13,
-      SCHEMA_NAME: 'sprint_13_segmentation',
       AUTOSAVE_DELAY: 2000
     };
 
@@ -279,8 +280,13 @@
     // Make Supabase client globally available for dependency injection
     window.supabaseClient = supabaseClient;
 
-    // Initialize dependency injection to load data from previous tools
-    DependencyInjection.init(CONFIG.TOOL_SLUG, CONFIG.SCHEMA_NAME);
+    // Initialize ToolDB and dependency injection
+    ToolDB.init(CONFIG.TOOL_SLUG);
+    DependencyInjection.init(CONFIG.TOOL_SLUG);
+
+        // Initialize cognitive load components
+        CognitiveLoad.init('segmentation', {"insights":["Trying to serve everyone means serving no one well.","The best segments are underserved, accessible, and profitable."],"caseStudy":{"before":"[PLACEHOLDER] Company targeted everyone. Marketing was generic.","after":"[PLACEHOLDER] 3 clear segments identified. CAC dropped 40%.","quote":"[PLACEHOLDER] We became essential to someone."}});
+        const { FastTrackInsight, ScienceBox, WarningBox, CaseStudy, ScienceBookmarkIcon, ToolGuideDrawer } = CognitiveLoad.components;
 
     // Main App Component
     function SegmentationApp() {
@@ -575,31 +581,12 @@
             return;
           }
 
-          const submissionData = {
-            toolName: 'segmentation-target-market',
-            userId: data.email,
-            sprintNumber: 13,
-            timestamp: new Date().toISOString(),
-            data: data
+          const questionMappings = {
+              segments_list: { customerBehaviors: data.customerBehaviors, segments: data.segments, segmentSizes: data.segmentSizes, attractivenessCriteria: data.attractivenessCriteria, criteriaWeights: data.criteriaWeights },
+              primary_target: { targetSegments: data.targetSegments, marketShareGoals: data.marketShareGoals, endGame: data.endGame }
           };
+          await ToolDB.save(userId, questionMappings);
 
-          // Submit using RPC function (handles schema-specific tables)
-          const { data: result, error: submitError } = await supabaseClient
-            .rpc('submit_tool_data', {
-              p_schema_name: CONFIG.SCHEMA_NAME,
-              p_user_id: userId,
-              p_data: submissionData,
-              p_tool_slug: CONFIG.TOOL_SLUG
-            });
-
-          if (submitError) throw submitError;
-
-          if (!result || !result.success) {
-            throw new Error(result?.message || 'Submission failed');
-          }
-
-          console.log('Submission ID:', result.submission_id);
-          localStorage.setItem('lastSubmissionId', result.submission_id);
           alert('Segmentation & Target Market plan submitted successfully!');
         } catch (error) {
           console.error('Submit error:', error);
@@ -953,6 +940,22 @@
                 [01] DEFINE MARKET SEGMENTS
               </div>
 
+              {/* Fast Track Insight */}
+              <FastTrackInsight>
+                  [PLACEHOLDER] Fast Track Principle for Market Segmentation: This foundational step drives 80% of results. Leaders who invest proper time here see the biggest transformation in their organization.
+              </FastTrackInsight>
+
+              {/* The Science */}
+              <ScienceBox collapsible={true}>
+                  [PLACEHOLDER] Research from organizational psychology shows that structured market segmentation frameworks improve decision quality by 25-40% compared to unstructured approaches (Harvard Business Review, 2023). Writing responses down activates deeper cognitive processing than thinking alone.
+              </ScienceBox>
+
+              {/* Common Mistake */}
+              <WarningBox>
+                  [PLACEHOLDER] Common mistake in Market Segmentation: Leaders often rush through this with surface-level answers. <strong>Bad:</strong> Generic responses completed in under 5 minutes. <strong>Good:</strong> Specific, honest answers that require real thought and sometimes discomfort.
+              </WarningBox>
+
+
               <div className="bg-black text-white border-4 border-black p-6 mb-8">
                 <h3 className="riforma-bold text-3xl mb-2">Identify Behavior-Based Segments</h3>
                 <p className="text-xl mb-4">
@@ -968,6 +971,9 @@
                   <label className="monument text-sm block mb-2">
                     CUSTOMER BEHAVIORS OBSERVED <span className="text-red-500">*</span>
                   </label>
+                  <ScienceBookmarkIcon>
+                      [PLACEHOLDER] Research backs this: Studies show that structured reflection on this aspect of market segmentation leads to significantly better outcomes than intuitive approaches alone.
+                  </ScienceBookmarkIcon>
                   <textarea
                     value={data.customerBehaviors}
                     onChange={(e) => updateData('customerBehaviors', e.target.value)}
@@ -1003,6 +1009,9 @@
                       <div className="space-y-4">
                         <div>
                           <label className="monument text-xs block mb-2">SEGMENT NAME <span className="text-red-500">*</span></label>
+                          <ScienceBookmarkIcon>
+                              [PLACEHOLDER] Research backs this: Studies show that structured reflection on this aspect of market segmentation leads to significantly better outcomes than intuitive approaches alone.
+                          </ScienceBookmarkIcon>
                           <input
                             type="text"
                             value={segment.name}
@@ -1017,6 +1026,9 @@
 
                         <div>
                           <label className="monument text-xs block mb-2">SEGMENT DESCRIPTION <span className="text-red-500">*</span></label>
+                          <ScienceBookmarkIcon>
+                              [PLACEHOLDER] Research backs this: Studies show that structured reflection on this aspect of market segmentation leads to significantly better outcomes than intuitive approaches alone.
+                          </ScienceBookmarkIcon>
                           <textarea
                             value={segment.description}
                             onChange={(e) => updateSegment(index, 'description', e.target.value)}
@@ -1088,6 +1100,17 @@
               <div className="numbered-section mb-8">
                 [02] QUANTIFY SEGMENTS
               </div>
+
+              {/* Fast Track Insight */}
+              <FastTrackInsight>
+                  [PLACEHOLDER] Fast Track Insight: The second phase of Market Segmentation is where most leaders see breakthroughs. Be specific and brutally honest in your answers here.
+              </FastTrackInsight>
+
+              {/* The Science */}
+              <ScienceBox collapsible={true}>
+                  [PLACEHOLDER] Behavioral science research indicates that teams using systematic market segmentation processes make decisions 2.5x faster with 30% fewer errors (McKinsey, 2022). The structure reduces cognitive bias and forces comprehensive thinking.
+              </ScienceBox>
+
 
               <div className="bg-black text-white border-4 border-black p-6 mb-8">
                 <h3 className="riforma-bold text-3xl mb-2">Size The Prize</h3>
@@ -1224,6 +1247,17 @@
               <div className="numbered-section mb-8">
                 [03] ATTRACTIVENESS INDEX
               </div>
+
+              {/* Fast Track Insight */}
+              <FastTrackInsight>
+                  [PLACEHOLDER] Fast Track Advanced: This Market Segmentation step connects your work to the broader strategy. Look for patterns across your previous answers.
+              </FastTrackInsight>
+
+              {/* The Science */}
+              <ScienceBox collapsible={true}>
+                  [PLACEHOLDER] Meta-analysis of 200+ organizations shows that completing structured exercises like this correlates with 35% higher strategic execution rates (Deloitte, 2023). Written commitments create psychological accountability.
+              </ScienceBox>
+
 
               <div className="bg-black text-white border-4 border-black p-6 mb-8">
                 <h3 className="riforma-bold text-3xl mb-2">Rank By Strategic Value</h3>
@@ -1418,6 +1452,17 @@
               <div className="numbered-section mb-8">
                 [04] TARGET MARKET & GOALS
               </div>
+
+              {/* Fast Track Insight */}
+              <FastTrackInsight>
+                  [PLACEHOLDER] Fast Track Integration: At this stage of Market Segmentation, synthesis matters most. Your outputs should connect to at least 2 other Fast Track tools.
+              </FastTrackInsight>
+
+              {/* The Science */}
+              <ScienceBox collapsible={true}>
+                  [PLACEHOLDER] Longitudinal studies demonstrate that organizations revisiting their market segmentation outputs quarterly maintain 60% higher alignment scores (BCG, 2023). Regular review prevents strategic drift.
+              </ScienceBox>
+
 
               <div className="bg-black text-white border-4 border-black p-6 mb-8">
                 <h3 className="riforma-bold text-3xl mb-2">Set Market Share Targets</h3>
@@ -1726,6 +1771,13 @@
                 Submit to Team
               </button>
             </div>
+
+            {/* Case Study */}
+            <CaseStudy
+                before={"[PLACEHOLDER] Company targeted everyone. Marketing was generic."}
+                after={"[PLACEHOLDER] 3 clear segments identified. CAC dropped 40%."}
+                quote={"[PLACEHOLDER] We became essential to someone."}
+            />
           </div>
         </div>
       );
@@ -1866,7 +1918,7 @@
     }
 
     // Render App
-    ReactDOM.render(<SegmentationApp />, document.getElementById('root'));
+        ReactDOM.render(<SegmentationApp />, document.getElementById('root'));
   </script>
 </body>
 </html>

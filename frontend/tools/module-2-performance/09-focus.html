@@ -8,7 +8,10 @@
 
     <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../../shared/js/tool-db.js"></script>
     <script src="../../shared/js/dependency-injection.js"></script>
+    <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
+    <script src="../../shared/js/cognitive-load.js"></script>
 
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -174,8 +177,6 @@
             SUPABASE_URL: 'https://vpfayzzjnegdefjrnyoc.supabase.co',
             SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZwZmF5enpqbmVnZGVmanJueW9jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMzAwODUsImV4cCI6MjA4NTcwNjA4NX0.7qwzd9kwyRG0Wx9DDSc8F9a1SRD0CoC6CGS-9M1sxIs',
             TOOL_SLUG: 'focus',
-            SPRINT_NUMBER: 9,
-            SCHEMA_NAME: 'sprint_09_focus',
             AUTOSAVE_DELAY: 2000
         };
 
@@ -186,8 +187,13 @@
         // Make Supabase client globally available for dependency injection
         window.supabaseClient = supabaseClient;
 
-        // Initialize dependency injection to load data from previous tools
-        DependencyInjection.init(CONFIG.TOOL_SLUG, CONFIG.SCHEMA_NAME);
+        // Initialize ToolDB and dependency injection
+        ToolDB.init(CONFIG.TOOL_SLUG);
+        DependencyInjection.init(CONFIG.TOOL_SLUG);
+
+        // Initialize cognitive load components
+        CognitiveLoad.init('focus', {"insights":["Multitasking is a lie. Each task switch costs 23 minutes of refocus time.","The Impact/Easy Matrix is the single most powerful prioritization tool."],"caseStudy":{"before":"[PLACEHOLDER] CEO responded to every email within 5 minutes.","after":"[PLACEHOLDER] Daily plan with 3 priorities. Strategic thinking time doubled.","quote":"[PLACEHOLDER] The Empty Brain exercise freed up mental bandwidth."}});
+        const { FastTrackInsight, ScienceBox, WarningBox, CaseStudy, ScienceBookmarkIcon, ToolGuideDrawer } = CognitiveLoad.components;
 
         function FocusApp() {
             const [step, setStep] = useState(0);
@@ -427,30 +433,14 @@
                 try {
                     const userId = localStorage.getItem('ft_user_id');
                     if (userId) {
-                        const submissionData = {
-                            companyId: data.companyId,
-                            userId: data.userId,
-                            toolType: toolType,
-                            data: data
+                        const questionMappings = {
+                            golden_hour: { emptyBrain: data.emptyBrain, dailyPlan: data.dailyPlan, flowState: data.flowState },
+                            distraction_plan: { distractions: data.distractions, eliminate: data.eliminate },
+                            daily_reflection: { routines: data.routines, threeRoutines: data.threeRoutines },
+                            team_rituals: data.teamDynamics
                         };
-
-                        // Submit using RPC function (handles schema-specific tables)
-                        const { data: result, error: submitError } = await supabaseClient
-                            .rpc('submit_tool_data', {
-                                p_schema_name: CONFIG.SCHEMA_NAME,
-                                p_user_id: userId,
-                                p_data: submissionData,
-                                p_tool_slug: CONFIG.TOOL_SLUG
-                            });
-
-                        if (submitError) throw submitError;
-
-                        if (!result || !result.success) {
-                            throw new Error(result?.message || 'Submission failed');
-                        }
-
-                        localStorage.setItem('lastSubmissionId', result.submission_id);
-                        console.log('Saved to Supabase successfully. Submission ID:', result.submission_id);
+                        await ToolDB.save(userId, questionMappings);
+                        console.log('Saved to Supabase successfully.');
                     }
                 } catch (error) {
                     console.error('Supabase submission error:', error);
@@ -644,6 +634,22 @@
                     <div className="max-w-4xl mx-auto">
                         <div className="numbered-section">[01] EMPTY BRAIN & IMPACT/EASY</div>
 
+                        {/* Fast Track Insight */}
+                        <FastTrackInsight>
+                            [PLACEHOLDER] Fast Track Principle for Focus and Discipline: This foundational step drives 80% of results. Leaders who invest proper time here see the biggest transformation in their organization.
+                        </FastTrackInsight>
+
+                        {/* The Science */}
+                        <ScienceBox collapsible={true}>
+                            [PLACEHOLDER] Research from organizational psychology shows that structured focus and discipline frameworks improve decision quality by 25-40% compared to unstructured approaches (Harvard Business Review, 2023). Writing responses down activates deeper cognitive processing than thinking alone.
+                        </ScienceBox>
+
+                        {/* Common Mistake */}
+                        <WarningBox>
+                            [PLACEHOLDER] Common mistake in Focus and Discipline: Leaders often rush through this with surface-level answers. <strong>Bad:</strong> Generic responses completed in under 5 minutes. <strong>Good:</strong> Specific, honest answers that require real thought and sometimes discomfort.
+                        </WarningBox>
+
+
                         <div className="mb-12">
                             <h2 className="text-3xl font-bold mb-4">Brain Dump Your Tasks</h2>
                             <p className="text-lg text-gray-700 mb-6">
@@ -784,12 +790,26 @@
                     <div className="max-w-4xl mx-auto">
                         <div className="numbered-section">[02] YOUR DAILY PLAN</div>
 
+                        {/* Fast Track Insight */}
+                        <FastTrackInsight>
+                            [PLACEHOLDER] Fast Track Insight: The second phase of Focus and Discipline is where most leaders see breakthroughs. Be specific and brutally honest in your answers here.
+                        </FastTrackInsight>
+
+                        {/* The Science */}
+                        <ScienceBox collapsible={true}>
+                            [PLACEHOLDER] Behavioral science research indicates that teams using systematic focus and discipline processes make decisions 2.5x faster with 30% fewer errors (McKinsey, 2022). The structure reduces cognitive bias and forces comprehensive thinking.
+                        </ScienceBox>
+
+
                         <div className="mb-8">
                             <h2 className="text-2xl font-bold mb-4">Top 3 Priorities for Tomorrow</h2>
                             <p className="text-gray-700 mb-4">What are the three most important tasks you must complete?</p>
                             {[0, 1, 2].map(idx => (
                                 <div key={idx} className="mb-4">
                                     <label className="block text-sm font-bold mb-2">PRIORITY {idx + 1}</label>
+                                    <ScienceBookmarkIcon>
+                                        [PLACEHOLDER] Research backs this: Studies show that structured reflection on this aspect of focus and discipline leads to significantly better outcomes than intuitive approaches alone.
+                                    </ScienceBookmarkIcon>
                                     <input
                                         type="text"
                                         className="worksheet-input"
@@ -808,6 +828,9 @@
                             <div className="space-y-4">
                                 <div>
                                     <label className="block text-sm font-bold mb-2">MORNING (6AM - 10AM)</label>
+                                    <ScienceBookmarkIcon>
+                                        [PLACEHOLDER] Research backs this: Studies show that structured reflection on this aspect of focus and discipline leads to significantly better outcomes than intuitive approaches alone.
+                                    </ScienceBookmarkIcon>
                                     <textarea
                                         className="worksheet-textarea"
                                         value={data.dailyPlan.schedule.morning}
@@ -817,6 +840,9 @@
                                 </div>
                                 <div>
                                     <label className="block text-sm font-bold mb-2">MIDDAY (10AM - 2PM)</label>
+                                    <ScienceBookmarkIcon>
+                                        [PLACEHOLDER] Research backs this: Studies show that structured reflection on this aspect of focus and discipline leads to significantly better outcomes than intuitive approaches alone.
+                                    </ScienceBookmarkIcon>
                                     <textarea
                                         className="worksheet-textarea"
                                         value={data.dailyPlan.schedule.midday}
@@ -878,6 +904,17 @@
                 <div className="min-h-screen bg-white pt-24 pb-16 px-8">
                     <div className="max-w-4xl mx-auto">
                         <div className="numbered-section">[03] ELIMINATE, LIMIT, DELEGATE (1/2)</div>
+
+                        {/* Fast Track Insight */}
+                        <FastTrackInsight>
+                            [PLACEHOLDER] Fast Track Advanced: This Focus and Discipline step connects your work to the broader strategy. Look for patterns across your previous answers.
+                        </FastTrackInsight>
+
+                        {/* The Science */}
+                        <ScienceBox collapsible={true}>
+                            [PLACEHOLDER] Meta-analysis of 200+ organizations shows that completing structured exercises like this correlates with 35% higher strategic execution rates (Deloitte, 2023). Written commitments create psychological accountability.
+                        </ScienceBox>
+
 
                         <p className="text-xl mb-8 text-gray-700">
                             Identify activities that drain your time and energy without providing proportional value
@@ -951,6 +988,17 @@
                     <div className="max-w-4xl mx-auto">
                         <div className="numbered-section">[04] ELIMINATE, LIMIT, DELEGATE (2/2)</div>
 
+                        {/* Fast Track Insight */}
+                        <FastTrackInsight>
+                            [PLACEHOLDER] Fast Track Integration: At this stage of Focus and Discipline, synthesis matters most. Your outputs should connect to at least 2 other Fast Track tools.
+                        </FastTrackInsight>
+
+                        {/* The Science */}
+                        <ScienceBox collapsible={true}>
+                            [PLACEHOLDER] Longitudinal studies demonstrate that organizations revisiting their focus and discipline outputs quarterly maintain 60% higher alignment scores (BCG, 2023). Regular review prevents strategic drift.
+                        </ScienceBox>
+
+
                         <p className="text-xl mb-8 text-gray-700">
                             Create specific action plans for each category
                         </p>
@@ -1010,6 +1058,17 @@
                 <div className="min-h-screen bg-white pt-24 pb-16 px-8">
                     <div className="max-w-4xl mx-auto">
                         <div className="numbered-section">[05] REDUCE DISTRACTIONS</div>
+
+                        {/* Fast Track Insight */}
+                        <FastTrackInsight>
+                            [PLACEHOLDER] Fast Track Completion: The final step ties everything together. Review your Focus and Discipline work holistically before moving on.
+                        </FastTrackInsight>
+
+                        {/* The Science */}
+                        <ScienceBox collapsible={true}>
+                            [PLACEHOLDER] Cross-industry research confirms that structured frameworks reduce implementation time by 40% while improving quality of outcomes across all organizational levels (Bain, 2023).
+                        </ScienceBox>
+
 
                         <div className="mb-8">
                             <h2 className="text-2xl font-bold mb-4">Digital Distractions</h2>
@@ -1487,6 +1546,13 @@
                                     📥 EXPORT PDF
                                 </button>
                             </div>
+
+                            {/* Case Study */}
+                            <CaseStudy
+                                before={"[PLACEHOLDER] CEO responded to every email within 5 minutes."}
+                                after={"[PLACEHOLDER] Daily plan with 3 priorities. Strategic thinking time doubled."}
+                                quote={"[PLACEHOLDER] The Empty Brain exercise freed up mental bandwidth."}
+                            />
                         </div>
                     </div>
                 );
@@ -1585,7 +1651,6 @@
                 </div>
             );
         }
-
         ReactDOM.render(<FocusApp />, document.getElementById('root'));
     </script>
 </body>

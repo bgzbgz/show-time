@@ -12,7 +12,10 @@
 
     <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../../shared/js/tool-db.js"></script>
     <script src="../../shared/js/dependency-injection.js"></script>
+    <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
+    <script src="../../shared/js/cognitive-load.js"></script>
 
     <style>
         @font-face {
@@ -157,8 +160,6 @@
             SUPABASE_URL: 'https://vpfayzzjnegdefjrnyoc.supabase.co',
             SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZwZmF5enpqbmVnZGVmanJueW9jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMzAwODUsImV4cCI6MjA4NTcwNjA4NX0.7qwzd9kwyRG0Wx9DDSc8F9a1SRD0CoC6CGS-9M1sxIs',
             TOOL_SLUG: 'goals',
-            SPRINT_NUMBER: 8,
-            SCHEMA_NAME: 'sprint_08_goals',
             AUTOSAVE_DELAY: 2000
         };
 
@@ -169,8 +170,13 @@
         // Make Supabase client globally available for dependency injection
         window.supabaseClient = supabaseClient;
 
-        // Initialize dependency injection to load data from Dream tool
-        DependencyInjection.init(CONFIG.TOOL_SLUG, CONFIG.SCHEMA_NAME);
+        // Initialize ToolDB and dependency injection
+        ToolDB.init(CONFIG.TOOL_SLUG);
+        DependencyInjection.init(CONFIG.TOOL_SLUG);
+
+        // Initialize cognitive load components
+        CognitiveLoad.init('goals', {"insights":["Goals without alignment are chaos. Every goal must connect to the dream.","OKRs work because they create transparency and focus. Maximum 3-5 objectives per quarter."],"caseStudy":{"before":"[PLACEHOLDER] 47 goals across the company.","after":"[PLACEHOLDER] 3 company OKRs. Goal completion rate jumped from 20% to 75%.","quote":"[PLACEHOLDER] Fewer goals meant better goals."}});
+        const { FastTrackInsight, ScienceBox, WarningBox, CaseStudy, ScienceBookmarkIcon, ToolGuideDrawer } = CognitiveLoad.components;
 
         const ImpactEasyMatrix = () => {
             const [step, setStep] = useState(0);
@@ -236,31 +242,16 @@
                         return;
                     }
 
-                    const submissionData = {
-                        userName: userEmail.split('@')[0],
-                        userEmail: userEmail,
-                        ...formData,
-                        sortedIdeas: getSortedIdeas()
+                    const sortedIdeas = getSortedIdeas();
+                    const questionMappings = {
+                        quarterly_targets: formData.ideas.filter(i => i.idea.trim()),
+                        impact_ease_matrix: sortedIdeas,
+                        big_rocks: sortedIdeas.slice(0, 5),
+                        elephant_breakdown: sortedIdeas.map(i => ({ idea: i.idea, impact: i.impact, easy: i.easy, score: i.score }))
                     };
-
-                    // Submit using RPC function (handles schema-specific tables)
-                    const { data: result, error: submitError } = await supabaseClient
-                        .rpc('submit_tool_data', {
-                            p_schema_name: CONFIG.SCHEMA_NAME,
-                            p_user_id: userId,
-                            p_data: submissionData,
-                            p_tool_slug: CONFIG.TOOL_SLUG
-                        });
-
-                    if (submitError) throw submitError;
-
-                    if (!result || !result.success) {
-                        throw new Error(result?.message || 'Submission failed');
-                    }
+                    await ToolDB.save(userId, questionMappings);
 
                     alert('Submission saved successfully!');
-                    console.log('Submission ID:', result.submission_id);
-                    localStorage.setItem('lastSubmissionId', result.submission_id);
 
                 } catch (error) {
                     console.error('Submission error:', error);
@@ -375,6 +366,22 @@
                         <main className="p-12 max-w-7xl mx-auto">
                             <div className="animate-in">
                                 <div className="numbered-section mb-8">[01] BRAINSTORM & RATE IDEAS</div>
+
+                                {/* Fast Track Insight */}
+                                <FastTrackInsight>
+                                    [PLACEHOLDER] Fast Track Principle for Goals and Impact Matrix: This foundational step drives 80% of results. Leaders who invest proper time here see the biggest transformation in their organization.
+                                </FastTrackInsight>
+
+                                {/* The Science */}
+                                <ScienceBox collapsible={true}>
+                                    [PLACEHOLDER] Research from organizational psychology shows that structured goals and impact matrix frameworks improve decision quality by 25-40% compared to unstructured approaches (Harvard Business Review, 2023). Writing responses down activates deeper cognitive processing than thinking alone.
+                                </ScienceBox>
+
+                                {/* Common Mistake */}
+                                <WarningBox>
+                                    [PLACEHOLDER] Common mistake in Goals and Impact Matrix: Leaders often rush through this with surface-level answers. <strong>Bad:</strong> Generic responses completed in under 5 minutes. <strong>Good:</strong> Specific, honest answers that require real thought and sometimes discomfort.
+                                </WarningBox>
+
                                 
                                 <div className="bg-black text-white border-4 border-black p-6 mb-8">
                                     <h3 className="plaak text-3xl mb-2">LIST YOUR IDEAS</h3>
@@ -505,6 +512,13 @@
                                         SUBMIT TO FAST TRACK
                                     </button>
                                 </div>
+
+                                {/* Case Study */}
+                                <CaseStudy
+                                    before={"[PLACEHOLDER] 47 goals across the company."}
+                                    after={"[PLACEHOLDER] 3 company OKRs. Goal completion rate jumped from 20% to 75%."}
+                                    quote={"[PLACEHOLDER] Fewer goals meant better goals."}
+                                />
                             </div>
 
                             {/* Priority Rankings */}

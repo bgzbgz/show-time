@@ -11,6 +11,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../../shared/js/tool-db.js"></script>
     <script src="../../shared/js/dependency-injection.js"></script>
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
     <script src="../../shared/js/cognitive-load.js"></script>
@@ -340,15 +341,14 @@
             SUPABASE_URL: 'https://vpfayzzjnegdefjrnyoc.supabase.co',
             SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZwZmF5enpqbmVnZGVmanJueW9jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMzAwODUsImV4cCI6MjA4NTcwNjA4NX0.7qwzd9kwyRG0Wx9DDSc8F9a1SRD0CoC6CGS-9M1sxIs',
             TOOL_SLUG: 'woop',
-            SPRINT_NUMBER: 0,
-            SCHEMA_NAME: 'sprint_00_woop',
             AUTOSAVE_DELAY: 2000
         };
 
         const { createClient } = supabase;
         const supabaseClient = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
         window.supabaseClient = supabaseClient;
-        DependencyInjection.init(CONFIG.TOOL_SLUG, CONFIG.SCHEMA_NAME);
+        ToolDB.init(CONFIG.TOOL_SLUG);
+        DependencyInjection.init(CONFIG.TOOL_SLUG);
         CognitiveLoad.init('woop');
 
         // --- Resolve logo path relative to HTML file ---
@@ -929,21 +929,19 @@
                     const userId = localStorage.getItem('ft_user_id');
                     if (!userId) { setSubmitStatus('error'); setSubmitMessage('User not authenticated. No user ID found.'); return; }
                     console.log('[WOOP Submit] userId:', userId);
-                    const submissionData = {
-                        companyId: data.companyId, userId: data.userId, scopeType: data.scopeType,
+                    // Map form data to question_keys for the new 3-table DB
+                    const questionMappings = {
                         wish: { outcome: data.outcome, worldChange: data.worldChange, feeling: data.feeling },
                         outcome: { steps: data.steps.filter(s => s.trim()), mentallyRehearsed: data.mentallyRehearsed },
-                        obstacles: data.obstacles,
-                        plan: { bigChunks: data.bigChunks, firstAction: data.firstAction, deadline: data.deadline }
+                        obstacle_internal: data.obstacles.filter(o => o.problem),
+                        plan_if_then: data.bigChunks,
+                        first_action: data.firstAction,
+                        commitment_level: data.scopeType
                     };
-                    console.log('[WOOP Submit] Calling RPC with data:', submissionData);
-                    const { data: result, error: submitError } = await supabaseClient.rpc('submit_tool_data', { p_schema_name: CONFIG.SCHEMA_NAME, p_user_id: userId, p_data: submissionData, p_tool_slug: CONFIG.TOOL_SLUG });
-                    console.log('[WOOP Submit] RPC result:', result, 'error:', submitError);
-                    if (submitError) throw submitError;
-                    if (!result || !result.success) throw new Error(result?.message || 'Submission failed');
+                    console.log('[WOOP Submit] Saving via ToolDB:', questionMappings);
+                    await ToolDB.save(userId, questionMappings);
                     setSubmitStatus('success');
                     setSubmitMessage('Submission saved successfully!');
-                    localStorage.setItem('lastSubmissionId', result.submission_id);
                 } catch (error) {
                     console.error('[WOOP Submit] Error:', error);
                     setSubmitStatus('error');

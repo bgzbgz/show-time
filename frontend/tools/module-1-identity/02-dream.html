@@ -10,7 +10,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../../shared/js/tool-db.js"></script>
     <script src="../../shared/js/dependency-injection.js"></script>
+    <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
+    <script src="../../shared/js/cognitive-load.js"></script>
     <!-- LearnWorlds Auth Module -->
     <script src="../../js/auth.js"></script>
     <!-- Tool Access Control -->
@@ -407,8 +410,6 @@
             SUPABASE_URL: 'https://vpfayzzjnegdefjrnyoc.supabase.co',
             SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZwZmF5enpqbmVnZGVmanJueW9jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMzAwODUsImV4cCI6MjA4NTcwNjA4NX0.7qwzd9kwyRG0Wx9DDSc8F9a1SRD0CoC6CGS-9M1sxIs',
             TOOL_SLUG: 'dream',
-            SPRINT_NUMBER: 2,
-            SCHEMA_NAME: 'sprint_02_dream',
             AUTOSAVE_DELAY: 2000
         };
 
@@ -419,8 +420,13 @@
         // Make Supabase client globally available for dependency injection
         window.supabaseClient = supabaseClient;
 
-        // Initialize dependency injection
-        DependencyInjection.init(CONFIG.TOOL_SLUG, CONFIG.SCHEMA_NAME);
+        // Initialize ToolDB and dependency injection
+        ToolDB.init(CONFIG.TOOL_SLUG);
+        DependencyInjection.init(CONFIG.TOOL_SLUG);
+
+        // Initialize cognitive load components
+        CognitiveLoad.init('dream', {"insights":["A company without a dream is just a job. Dreams create energy and alignment across the entire organization.","Your dream must be specific enough to measure but inspiring enough to energize."],"caseStudy":{"before":"[PLACEHOLDER] Company had no shared vision. Each department pulled in different directions.","after":"[PLACEHOLDER] One-sentence dream aligned all 50 employees. Revenue grew 40% in 12 months.","quote":"[PLACEHOLDER] When everyone knows the dream, they make decisions without waiting for the CEO."}});
+        const { FastTrackInsight, ScienceBox, WarningBox, CaseStudy, ScienceBookmarkIcon, ToolGuideDrawer } = CognitiveLoad.components;
 
         const WORD_SUGGESTIONS = [
             'Innovation', 'Excellence', 'Global', 'Trusted',
@@ -683,24 +689,15 @@
                         return;
                     }
 
-                    // Submit using RPC function (handles schema-specific tables)
-                    const { data: result, error: submitError } = await supabaseClient
-                        .rpc('submit_tool_data', {
-                            p_schema_name: CONFIG.SCHEMA_NAME,
-                            p_user_id: userId,
-                            p_data: data,
-                            p_tool_slug: CONFIG.TOOL_SLUG
-                        });
-
-                    if (submitError) throw submitError;
-
-                    if (!result || !result.success) {
-                        throw new Error(result?.message || 'Submission failed');
-                    }
+                    const questionMappings = {
+                        dream_narrative: data.corporateKiller,
+                        dream_visualization: data.dreamAnswers,
+                        killer_conclusion: data.employeePromise,
+                        one_sentence: data.oneSentence
+                    };
+                    await ToolDB.save(userId, questionMappings);
 
                     setSubmissionStatus('success');
-                    console.log('Submission ID:', result.submission_id);
-                    localStorage.setItem('lastSubmissionId', result.submission_id);
                     setTimeout(() => setSubmissionStatus(null), 5000);
                 } catch (error) {
                     console.error('Webhook submission error:', error);
@@ -1127,10 +1124,29 @@
                             [01] THE CORPORATE KILLER
                         </div>
 
+                        {/* Fast Track Insight */}
+                        <FastTrackInsight>
+                            [PLACEHOLDER] Fast Track Principle for Dream: This foundational step drives 80% of results. Leaders who invest proper time here see the biggest transformation in their organization.
+                        </FastTrackInsight>
+
+                        {/* The Science */}
+                        <ScienceBox collapsible={true}>
+                            [PLACEHOLDER] Research from organizational psychology shows that structured dream frameworks improve decision quality by 25-40% compared to unstructured approaches (Harvard Business Review, 2023). Writing responses down activates deeper cognitive processing than thinking alone.
+                        </ScienceBox>
+
+                        {/* Common Mistake */}
+                        <WarningBox>
+                            [PLACEHOLDER] Common mistake in Dream: Leaders often rush through this with surface-level answers. <strong>Bad:</strong> Generic responses completed in under 5 minutes. <strong>Good:</strong> Specific, honest answers that require real thought and sometimes discomfort.
+                        </WarningBox>
+
+
                         {/* Company Info */}
                         <div className="grid md:grid-cols-2 gap-6 mb-8">
                             <div>
                                 <label className="block font-bold mb-2 text-lg">Company Name *</label>
+                                <ScienceBookmarkIcon>
+                                    [PLACEHOLDER] Research backs this: Studies show that structured reflection on this aspect of dream leads to significantly better outcomes than intuitive approaches alone.
+                                </ScienceBookmarkIcon>
                                 <input
                                     type="text"
                                     className="worksheet-input text-lg"
@@ -1141,6 +1157,9 @@
                             </div>
                             <div>
                                 <label className="block font-bold mb-2 text-lg">Your Email *</label>
+                                <ScienceBookmarkIcon>
+                                    [PLACEHOLDER] Research backs this: Studies show that structured reflection on this aspect of dream leads to significantly better outcomes than intuitive approaches alone.
+                                </ScienceBookmarkIcon>
                                 <input
                                     type="email"
                                     className="worksheet-input text-lg"
@@ -1161,6 +1180,9 @@
                         <div className="space-y-8 mb-8">
                             <div>
                                 <label className="block font-bold mb-2 text-lg">What will be lost if your brand ceased to exist?</label>
+                                <ScienceBookmarkIcon>
+                                    [PLACEHOLDER] Research backs this: Studies show that structured reflection on this aspect of dream leads to significantly better outcomes than intuitive approaches alone.
+                                </ScienceBookmarkIcon>
                                 <textarea
                                     className={`worksheet-input text-lg ${analysis1.strength > 50 ? 'strong' : ''}`}
                                     placeholder="e.g., A sixty-year legacy of innovation and entrepreneurship"
@@ -1279,6 +1301,17 @@
                         <div className="numbered-section mb-8">
                             [02] THE EMPLOYEE PROMISE (WIFM)
                         </div>
+
+                        {/* Fast Track Insight */}
+                        <FastTrackInsight>
+                            [PLACEHOLDER] Fast Track Insight: The second phase of Dream is where most leaders see breakthroughs. Be specific and brutally honest in your answers here.
+                        </FastTrackInsight>
+
+                        {/* The Science */}
+                        <ScienceBox collapsible={true}>
+                            [PLACEHOLDER] Behavioral science research indicates that teams using systematic dream processes make decisions 2.5x faster with 30% fewer errors (McKinsey, 2022). The structure reduces cognitive bias and forces comprehensive thinking.
+                        </ScienceBox>
+
 
                         <div className="bg-black text-white border-4 border-black p-6 mb-8">
                             <h3 className="plaak text-3xl mb-2">WHAT'S IN IT FOR ME?</h3>
@@ -1442,6 +1475,17 @@
                             [02] THE VIVID FUTURE
                         </div>
 
+                        {/* Fast Track Insight */}
+                        <FastTrackInsight>
+                            [PLACEHOLDER] Fast Track Advanced: This Dream step connects your work to the broader strategy. Look for patterns across your previous answers.
+                        </FastTrackInsight>
+
+                        {/* The Science */}
+                        <ScienceBox collapsible={true}>
+                            [PLACEHOLDER] Meta-analysis of 200+ organizations shows that completing structured exercises like this correlates with 35% higher strategic execution rates (Deloitte, 2023). Written commitments create psychological accountability.
+                        </ScienceBox>
+
+
                         <div className="bg-black text-white border-4 border-black p-6 mb-8">
                             <h3 className="plaak text-3xl mb-2">IT'S 10 YEARS FROM TODAY</h3>
                             <p className="text-xl">
@@ -1541,6 +1585,17 @@
                         <div className="numbered-section mb-8">
                             [03] ONE SENTENCE
                         </div>
+
+                        {/* Fast Track Insight */}
+                        <FastTrackInsight>
+                            [PLACEHOLDER] Fast Track Integration: At this stage of Dream, synthesis matters most. Your outputs should connect to at least 2 other Fast Track tools.
+                        </FastTrackInsight>
+
+                        {/* The Science */}
+                        <ScienceBox collapsible={true}>
+                            [PLACEHOLDER] Longitudinal studies demonstrate that organizations revisiting their dream outputs quarterly maintain 60% higher alignment scores (BCG, 2023). Regular review prevents strategic drift.
+                        </ScienceBox>
+
 
                         <div className="bg-black text-white border-4 border-black p-6 mb-8">
                             <h3 className="plaak text-3xl mb-2">DISTILL EVERYTHING INTO ONE SENTENCE</h3>
@@ -1672,6 +1727,17 @@
                         <div className="numbered-section mb-8">
                             [04] DREAM BOARD
                         </div>
+
+                        {/* Fast Track Insight */}
+                        <FastTrackInsight>
+                            [PLACEHOLDER] Fast Track Completion: The final step ties everything together. Review your Dream work holistically before moving on.
+                        </FastTrackInsight>
+
+                        {/* The Science */}
+                        <ScienceBox collapsible={true}>
+                            [PLACEHOLDER] Cross-industry research confirms that structured frameworks reduce implementation time by 40% while improving quality of outcomes across all organizational levels (Bain, 2023).
+                        </ScienceBox>
+
 
                         <div className="bg-black text-white border-4 border-black p-6 mb-8">
                             <h3 className="plaak text-3xl mb-2">MAKE YOUR DREAM VISUAL</h3>
@@ -2003,6 +2069,13 @@
                                 {submissionStatus === 'loading' ? '⏳ Submitting...' : '📤 Share with Team'}
                             </button>
                         </div>
+
+                        {/* Case Study */}
+                        <CaseStudy
+                            before={"[PLACEHOLDER] Company had no shared vision. Each department pulled in different directions."}
+                            after={"[PLACEHOLDER] One-sentence dream aligned all 50 employees. Revenue grew 40% in 12 months."}
+                            quote={"[PLACEHOLDER] When everyone knows the dream, they make decisions without waiting for the CEO."}
+                        />
                     </div>
                 </div>
             );

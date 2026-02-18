@@ -11,6 +11,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../../shared/js/tool-db.js"></script>
     <script src="../../shared/js/dependency-injection.js"></script>
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
     <script src="../../shared/js/cognitive-load.js"></script>
@@ -372,8 +373,6 @@
             SUPABASE_URL: 'https://vpfayzzjnegdefjrnyoc.supabase.co',
             SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZwZmF5enpqbmVnZGVmanJueW9jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMzAwODUsImV4cCI6MjA4NTcwNjA4NX0.7qwzd9kwyRG0Wx9DDSc8F9a1SRD0CoC6CGS-9M1sxIs',
             TOOL_SLUG: 'value-proposition',
-            SPRINT_NUMBER: 15,
-            SCHEMA_NAME: 'sprint_15_value_proposition',
             TOOL_TITLE: 'VALUE PROPOSITION DESIGN',
             TIME_ESTIMATE: '~40 min',
             COVER_IMAGE: 'cover.jpg',
@@ -395,7 +394,8 @@
         const { createClient } = supabase;
         const supabaseClient = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
         window.supabaseClient = supabaseClient;
-        DependencyInjection.init(CONFIG.TOOL_SLUG, CONFIG.SCHEMA_NAME);
+        ToolDB.init(CONFIG.TOOL_SLUG);
+        DependencyInjection.init(CONFIG.TOOL_SLUG);
         CognitiveLoad.init(CONFIG.TOOL_SLUG);
 
         /* ============================================================
@@ -637,18 +637,16 @@
                     setSubmitStatus('saving'); setSubmitMessage('');
                     const userId = localStorage.getItem('ft_user_id');
                     if (!userId) { setSubmitStatus('error'); setSubmitMessage('User not authenticated.'); return; }
-                    const submissionData = {
-                        companyId: data.companyId, userId: data.userId,
-                        customerFoundation: { targetSegment: data.targetSegment, biggestPain: data.biggestPain, painEvidence: data.painEvidence, currentSolutions: data.currentSolutions, ahaMoment: data.ahaMoment, desiredOutcome: data.desiredOutcome },
-                        competitiveLandscape: { competitors: data.competitors, uniqueValue: data.uniqueValue, whySwitchToUs: data.whySwitchToUs },
-                        valueProposition: { vpTargetSegment: data.vpTargetSegment, vpPainPoint: data.vpPainPoint, vpSolution: data.vpSolution, vpCoreBenefit: data.vpCoreBenefit, vpCompetitorWeakness: data.vpCompetitorWeakness, fullValueProp: data.fullValueProp, antiValueProp: data.antiValueProp },
-                        validation: { checklist: data.validation, score: yesCount, testingPlan: data.testingPlan, refinementNotes: data.refinementNotes }
+
+                    const questionMappings = {
+                        vp_statement: data.fullValueProp,
+                        anti_promise: data.antiValueProp,
+                        pain_mapping: { targetSegment: data.targetSegment, biggestPain: data.biggestPain, painEvidence: data.painEvidence, currentSolutions: data.currentSolutions, ahaMoment: data.ahaMoment, desiredOutcome: data.desiredOutcome },
+                        differentiators: { competitors: data.competitors, uniqueValue: data.uniqueValue, whySwitchToUs: data.whySwitchToUs }
                     };
-                    const { data: result, error: submitError } = await supabaseClient.rpc('submit_tool_data', { p_schema_name: CONFIG.SCHEMA_NAME, p_user_id: userId, p_data: submissionData, p_tool_slug: CONFIG.TOOL_SLUG });
-                    if (submitError) throw submitError;
-                    if (!result || !result.success) throw new Error(result?.message || 'Submission failed');
+                    await ToolDB.save(userId, questionMappings);
+
                     setSubmitStatus('success'); setSubmitMessage('Submission saved successfully!');
-                    localStorage.setItem('lastSubmissionId', result.submission_id);
                 } catch (error) {
                     setSubmitStatus('error'); setSubmitMessage('Failed to save: ' + error.message);
                 }

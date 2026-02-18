@@ -3,364 +3,199 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cash Flow Analysis | Fast Track</title>
-    
-    <!-- CDN Scripts -->
+    <title>Cash Flow Analysis | Fast Track Program</title>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- Supabase JS Client -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../../shared/js/tool-db.js"></script>
     <script src="../../shared/js/dependency-injection.js"></script>
+    <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
+    <script src="../../shared/js/cognitive-load.js"></script>
 
-    <!-- Custom Styles -->
     <style>
-        @font-face {
-            font-family: 'Plaak';
-            src: url('Plaak3Trial-43-Bold.woff2') format('woff2');
-            font-weight: bold;
-        }
+        @font-face { font-family: 'Plaak'; src: url('Plaak3Trial-43-Bold.woff2') format('woff2'); font-weight: bold; }
+        @font-face { font-family: 'Riforma'; src: url('RiformaLL-Regular.woff2') format('woff2'); font-weight: normal; }
+        @font-face { font-family: 'Riforma'; src: url('RiformaLL-Regular.woff2') format('woff2'); font-weight: 600; }
+        @font-face { font-family: 'Monument'; src: url('MonumentGrotesk-Mono.woff2') format('woff2'); }
 
-        @font-face {
-            font-family: 'Riforma';
-            src: url('RiformaLL-Regular.woff2') format('woff2');
-            font-weight: normal;
-        }
-
-        @font-face {
-            font-family: 'Monument';
-            src: url('MonumentGrotesk-Mono.woff2') format('woff2');
-            font-weight: normal;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Riforma', -apple-system, sans-serif;
             font-size: 16px;
-            color: #000000;
-            background: #FFFFFF;
+            color: #000;
+            background: #000;
             -webkit-font-smoothing: antialiased;
         }
 
-        .plaak {
-            font-family: 'Plaak', sans-serif;
-            font-weight: bold;
-            letter-spacing: -0.01em;
-            line-height: 1.2;
-        }
+        .plaak { font-family: 'Plaak', sans-serif; font-weight: bold; letter-spacing: -0.01em; line-height: 1.2; }
+        .monument { font-family: 'Monument', monospace; letter-spacing: 0.05em; }
 
-        .worksheet-input {
-            border: 2px solid #E0E0E0;
-            padding: 12px 16px;
-            font-family: 'Riforma', sans-serif;
-            font-size: 18px;
-            transition: all 0.2s ease;
-            width: 100%;
-        }
+        .tool-frame { background: #fff; min-height: 100vh; }
+        .tool-inner { background: #fff; min-height: 100vh; }
 
-        .worksheet-input:focus {
-            border-color: #000000;
-            border-width: 2px;
-            outline: none;
-            box-shadow: 0 0 0 1px #000000;
-        }
+        .wizard-layout { display: flex; min-height: 100vh; }
+        .wizard-main { flex: 1; display: flex; flex-direction: column; min-height: 100vh; background: #fff; padding: 0 48px; }
+        .wizard-sidebar { width: 280px; background: #000; border-left: 1px solid #000; flex-shrink: 0; }
+        .wizard-sidebar-inner { position: sticky; top: 0; padding: 32px 24px; max-height: 100vh; overflow-y: auto; }
 
-        .worksheet-input:disabled {
-            background: #F8F8F8;
-            cursor: not-allowed;
-        }
+        .step-content { max-width: 100%; padding: 40px 0; flex: 1; }
+        .step-indicator { font-family: 'Monument', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #666; margin-bottom: 8px; }
 
-        .numbered-section {
-            background: #000000;
-            color: #FFFFFF;
-            padding: 10px 16px;
-            font-size: 18px;
-            font-weight: bold;
-            letter-spacing: 0.5px;
-        }
+        .opening-box { margin-bottom: 32px; }
+        .opening-box .step-heading { font-family: 'Plaak', sans-serif; font-weight: bold; font-size: 32px; letter-spacing: -0.01em; line-height: 1.2; color: #000; margin-bottom: 6px; }
+        .opening-box .step-hint { font-size: 14px; color: #666; line-height: 1.5; margin: 0; }
 
-        .context-box {
-            background: #F8F8F8;
-            border: 4px solid #000000;
-            padding: 24px;
-        }
+        .questions-grid { display: flex; flex-direction: column; gap: 0; margin-bottom: 32px; }
+        .closing-box { border-top: 1px solid #E0E0E0; padding: 20px 0 0 0; margin-top: 8px; text-align: center; }
+        .closing-box p { font-size: 14px; color: #666; }
+        .closing-box .closing-title { font-family: 'Monument', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #000; margin-bottom: 6px; }
 
-        .smooth {
-            transition: all 0.2s ease;
-        }
+        .field-group { margin-bottom: 20px; }
+        .field-group:last-child { margin-bottom: 0; }
+        .field-label { font-weight: 600; font-size: 14px; color: #000; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+        .field-input { border: 1px solid #E0E0E0; padding: 10px 14px; font-family: 'Riforma', sans-serif; font-size: 15px; width: 100%; color: #000; background: #fff; transition: border-color 0.2s ease; }
+        .field-input:focus { outline: none; border-color: #000; }
+        .field-textarea { border: 1px solid #E0E0E0; padding: 10px 14px; font-family: 'Riforma', sans-serif; font-size: 15px; width: 100%; min-height: 80px; resize: vertical; color: #000; background: #fff; transition: border-color 0.2s ease; }
+        .field-textarea:focus { outline: none; border-color: #000; }
+        .field-help { font-size: 12px; color: #666; margin-top: 3px; }
 
-        .btn-primary {
-            background: #000000;
-            color: #FFFFFF;
-            padding: 16px 32px;
-            border: 4px solid #000000;
-            font-weight: bold;
-            font-size: 20px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
+        .help-icon-btn { width: 18px; height: 18px; border-radius: 50%; background: #E0E0E0; border: 1.5px solid #999; display: inline-flex; align-items: center; justify-content: center; cursor: help; transition: all 0.2s ease; flex-shrink: 0; font-size: 10px; font-weight: 600; color: #666; }
+        .help-icon-btn:hover { background: #000; color: #fff; border-color: #000; }
+        .help-accordion { background: #F5F5F5; border: 1px solid #E0E0E0; border-left: 3px solid #000; padding: 12px 14px; margin-bottom: 8px; font-size: 13px; color: #333; line-height: 1.5; animation: accordionOpen 0.2s ease-out; }
+        @keyframes accordionOpen { from { opacity: 0; max-height: 0; } to { opacity: 1; max-height: 300px; } }
 
-        .btn-primary:hover:not(:disabled) {
-            transform: scale(1.02);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        }
+        .learn-more-toggle { font-family: 'Monument', monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: #000; background: #F5F5F5; border: 1px solid #E0E0E0; cursor: pointer; padding: 10px 14px; display: flex; align-items: center; gap: 6px; margin-bottom: 32px; transition: background 0.15s ease; }
+        .learn-more-toggle:hover { background: #EBEBEB; }
+        .learn-more-content { border-left: 3px solid #000; background: #F5F5F5; padding: 16px 20px; margin-bottom: 24px; font-size: 14px; color: #333; line-height: 1.7; }
 
-        .btn-primary:disabled {
-            background: #E0E0E0;
-            border-color: #E0E0E0;
-            color: #9CA3AF;
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
+        .btn-footer { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; border-top: 1px solid #E0E0E0; background: #fff; width: 100%; }
+        .btn-back { background: #fff; color: #000; border: 2px solid #000; padding: 12px 24px; font-family: 'Riforma', sans-serif; font-size: 16px; cursor: pointer; transition: all 0.2s ease; }
+        .btn-back:hover { background: #F5F5F5; }
+        .btn-next { background: #000; color: #fff; border: 2px solid #000; padding: 12px 24px; font-family: 'Riforma', sans-serif; font-size: 16px; cursor: pointer; transition: all 0.2s ease; }
+        .btn-next:hover:not(:disabled) { transform: scale(1.02); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .btn-next:disabled { background: #E0E0E0; color: #9CA3AF; border-color: #E0E0E0; cursor: not-allowed; }
 
-        .btn-secondary {
-            background: #FFFFFF;
-            color: #000000;
-            padding: 16px 32px;
-            border: 4px solid #000000;
-            font-weight: bold;
-            font-size: 20px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
+        .sidebar-step-item { padding: 12px; margin-bottom: 8px; border-left: 3px solid transparent; transition: all 0.2s ease; }
+        .sidebar-step-item.active { border-left-color: #FFF469; background: #222; }
+        .sidebar-step-item.completed { background: #fff; color: #000; border-left-color: #fff; cursor: pointer; }
+        .sidebar-step-item.completed:hover { background: #E0E0E0; }
+        .sidebar-step-item.locked { opacity: 0.5; }
+        .sidebar-step-item .step-num { font-family: 'Riforma', sans-serif; font-size: 14px; }
+        .sidebar-step-item .step-name { font-family: 'Riforma', sans-serif; font-size: 14px; }
+        .sidebar-snippet { font-size: 12px; margin-top: 4px; opacity: 0.7; line-height: 1.3; }
 
-        .btn-secondary:hover {
-            transform: scale(1.02);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        }
+        .numbered-section { background: #000; color: #fff; padding: 8px 14px; font-size: 14px; font-weight: bold; letter-spacing: 0.5px; display: inline-block; font-family: 'Monument', monospace; }
 
-        .progress-dot {
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: #E0E0E0;
-            transition: all 0.3s ease;
-        }
+        .mobile-step-bar { display: none; padding: 12px 16px; border-bottom: 1px solid #E0E0E0; background: #F5F5F5; }
+        .mobile-step-bar .bar-text { font-family: 'Monument', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #666; margin-bottom: 6px; }
+        .mobile-progress { height: 3px; background: #E0E0E0; width: 100%; }
+        .mobile-progress-fill { height: 100%; background: #000; transition: width 0.3s ease; }
 
-        .progress-dot.active {
-            width: 16px;
-            height: 16px;
-            background: #000000;
-            border-radius: 50%;
-        }
+        @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-in { animation: fadeSlideIn 0.3s ease-out; }
 
-        .progress-line {
-            flex: 1;
-            height: 2px;
-            background: #E0E0E0;
-            position: relative;
-            margin: 0 16px;
-        }
+        @media print { .no-print { display: none !important; } }
 
-        .progress-line-fill {
-            height: 100%;
-            background: #000000;
-            transition: width 0.5s ease;
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .wizard-sidebar { width: 220px; }
+            .wizard-sidebar-inner { padding: 24px 16px; }
         }
-
-        .impact-high {
-            color: #059669;
-            font-weight: bold;
-        }
-
-        .impact-medium {
-            color: #D97706;
-            font-weight: bold;
-        }
-
-        .impact-low {
-            color: #DC2626;
-            font-weight: bold;
-        }
-
-        .fade-in {
-            animation: fadeIn 0.3s ease-in;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .animate-in {
-            animation: slideIn 0.4s ease-out forwards;
-            opacity: 0;
-        }
-
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .cover-page {
-            min-height: 100vh;
-            background: linear-gradient(135deg, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.65) 100%),
-                        url('cash tool cover.jpg');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-        }
-
-        .intro-screen {
-            min-height: 100vh;
-            background: #000000;
-            color: #FFFFFF;
-            padding: 80px 40px;
-        }
-
-        .section-header-bold {
-            background: #000000;
-            color: #FFFFFF;
-            border: 4px solid #000000;
-            padding: 32px;
-            margin-bottom: 32px;
-        }
-
-        .result-card-bold {
-            border: 4px solid #000000;
-            padding: 32px;
-            margin-bottom: 32px;
-            background: #FFFFFF;
-        }
-
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-10px); }
-            75% { transform: translateX(10px); }
-        }
-
-        .shake {
-            animation: shake 0.3s;
-        }
-
-        @media print {
-            .no-print { display: none; }
-            .sidebar { display: none; }
-        }
-
         @media (max-width: 768px) {
-            .plaak { font-size: 1.5rem !important; }
+            .wizard-sidebar { display: none; }
+            .mobile-step-bar { display: block; }
+            .step-content { padding: 20px 16px; }
+            .wizard-main { padding: 0 16px; }
+            .opening-box .step-heading { font-size: 24px; }
+            .btn-footer { padding: 12px 0; }
+            .two-col { grid-template-columns: 1fr !important; }
         }
 
-        .tooltip {
-            position: relative;
-            display: inline-block;
-            cursor: help;
-        }
+        /* Cash-specific styles */
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .section-divider { border-top: 1px solid #E0E0E0; padding-top: 24px; margin-top: 24px; }
+        .section-label { font-family: 'Monument', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #666; margin-bottom: 16px; }
 
-        .tooltip:hover::after {
-            content: attr(data-tooltip);
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #000000;
-            color: #FFFFFF;
-            padding: 8px 12px;
-            border-radius: 4px;
-            white-space: nowrap;
-            font-size: 14px;
-            z-index: 1000;
-        }
+        .metrics-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; padding: 16px; background: #F5F5F5; border-left: 3px solid #000; margin: 16px 0; }
+        .metric-item .metric-label { font-size: 11px; color: #666; font-family: 'Monument', monospace; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 2px; }
+        .metric-item .metric-value { font-weight: 600; font-size: 15px; }
+        .metric-badge { display: inline-block; font-size: 10px; padding: 2px 6px; font-family: 'Monument', monospace; text-transform: uppercase; letter-spacing: 0.03em; margin-left: 4px; }
+        .badge-good { background: #d1fae5; color: #065f46; }
+        .badge-avg { background: #fef3c7; color: #92400e; }
+        .badge-weak { background: #fee2e2; color: #991b1b; }
 
-        .lever-card {
-            border: 4px solid #000000;
-            padding: 24px;
-            margin-bottom: 24px;
-            transition: all 0.3s ease;
-            background: #FFFFFF;
-        }
+        .balance-ok { background: #f0fdf4; border-left: 3px solid #059669; padding: 10px 14px; margin-top: 12px; font-size: 13px; color: #166534; }
+        .balance-err { background: #fef2f2; border-left: 3px solid #DC2626; padding: 10px 14px; margin-top: 12px; font-size: 13px; color: #991b1b; }
 
-        .lever-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
-        }
+        /* Sliders */
+        .lever-slider-row { padding: 16px 0; border-bottom: 1px solid #f0f0f0; }
+        .lever-slider-row:last-child { border-bottom: none; }
+        .lever-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .lever-name { font-weight: 600; font-size: 14px; }
+        .lever-impacts { display: flex; gap: 16px; font-size: 13px; }
+        .lever-cash { color: #059669; font-weight: 600; }
+        .lever-ebit { color: #2563eb; font-weight: 600; }
+        input[type="range"] { -webkit-appearance: none; width: 100%; height: 4px; background: #E0E0E0; outline: none; border-radius: 2px; cursor: pointer; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; background: #000; cursor: pointer; border-radius: 50%; border: 2px solid #000; }
+        input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; background: #000; cursor: pointer; border-radius: 50%; border: 2px solid #000; }
+        .slider-value { font-family: 'Monument', monospace; font-size: 13px; min-width: 60px; text-align: right; }
 
-        .result-card {
-            background: #FFFFFF;
-            border: 4px solid #000000;
-            padding: 32px;
-            margin-bottom: 32px;
-        }
+        .impact-total-bar { background: #000; color: #fff; padding: 20px 24px; margin-bottom: 24px; display: flex; justify-content: space-around; text-align: center; }
+        .impact-total-item .impact-label { font-family: 'Monument', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: #999; margin-bottom: 4px; }
+        .impact-total-item .impact-number { font-family: 'Plaak', sans-serif; font-size: 28px; }
 
-        .balance-check-error {
-            background: #FEE2E2;
-            border-left: 4px solid #DC2626;
-            padding: 16px;
-            margin: 16px 0;
-        }
+        /* Action plan */
+        .idea-row { display: flex; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+        .idea-row:last-child { border-bottom: none; }
+        .score-badge { font-family: 'Monument', monospace; font-size: 12px; background: #F5F5F5; padding: 4px 8px; min-width: 32px; text-align: center; }
 
-        .balance-check-success {
-            background: #D1FAE5;
-            border-left: 4px solid #059669;
-            padding: 16px;
-            margin: 16px 0;
-        }
+        /* Canvas */
+        .canvas-section { border: 2px solid #000; padding: 24px; margin-bottom: 16px; }
+        .canvas-metric-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        .canvas-metric-box { background: #F5F5F5; padding: 14px; text-align: center; }
+        .canvas-metric-label { font-family: 'Monument', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: #666; margin-bottom: 4px; }
+        .canvas-metric-value { font-family: 'Plaak', sans-serif; font-size: 22px; font-weight: bold; }
+        @media (max-width: 768px) { .canvas-metric-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
     <div id="root"></div>
-    
+
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        // ============================================================================
-        // CONFIGURATION
-        // ============================================================================
-        
-        const TOOL_CONFIG = {
-            toolName: 'cash_flow_analysis',
-            toolDisplayName: 'Cash Flow Analysis Tool',
-            moduleNumber: '2',
-            moduleName: 'Master the Core Element of Performance',
-            sprintNumber: '8',
-            sprintName: 'Cash Flow Analysis',
-            estimatedTime: '45-60 minutes',
-            webhooks: {
-                autoSave: 'https://n8n-edge.fasttrack-diagnostic.com/webhook/cash-flow-autosave',
-                loadDraft: 'https://n8n-edge.fasttrack-diagnostic.com/webhook/cash-flow-load',
-                submit: 'https://n8n-edge.fasttrack-diagnostic.com/webhook/608b17ea-9618-4877-ae3c-85eb2e89b700'
-            }
-        };
-
-        const AUTO_SAVE_INTERVAL = 2000; // 2 seconds
-
-        // Supabase Configuration
         const CONFIG = {
             SUPABASE_URL: 'https://vpfayzzjnegdefjrnyoc.supabase.co',
             SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZwZmF5enpqbmVnZGVmanJueW9jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMzAwODUsImV4cCI6MjA4NTcwNjA4NX0.7qwzd9kwyRG0Wx9DDSc8F9a1SRD0CoC6CGS-9M1sxIs',
             TOOL_SLUG: 'cash',
-            SPRINT_NUMBER: 6,
-            SCHEMA_NAME: 'sprint_06_cash',
             AUTOSAVE_DELAY: 2000
         };
 
-        // Initialize Supabase client
         const { createClient } = supabase;
         const supabaseClient = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
-
-        // Make Supabase client globally available for dependency injection
         window.supabaseClient = supabaseClient;
+        ToolDB.init(CONFIG.TOOL_SLUG);
+        DependencyInjection.init(CONFIG.TOOL_SLUG);
+        CognitiveLoad.init('cash');
 
-        // Initialize dependency injection to load data from previous tools
-        DependencyInjection.init(CONFIG.TOOL_SLUG, CONFIG.SCHEMA_NAME);
+        const LOGO_WHITE = '../../../Designs/02. logos/FastTrack_F_White.png';
 
-        // ============================================================================
-        // FINANCIAL CALCULATION FUNCTIONS
-        // ============================================================================
+        // =========================================================================
+        // INDUSTRY TRANSLATOR — dynamic field labels per business model
+        // =========================================================================
+        const LABELS = {
+            manufacturing: { cogs: 'Cost of Goods Sold (COGS)', directLabor: 'Direct Labor', inventory: 'Inventory', daysInv: 'Days of Inventory', stockLever: 'Reduce Stock Days' },
+            service:       { cogs: 'Cost of Delivery', directLabor: 'Billable Staff Costs', inventory: 'Work in Progress (Unbilled)', daysInv: 'Days of WIP', stockLever: 'Reduce WIP Days' },
+            retail:        { cogs: 'Cost of Goods Sold (COGS)', directLabor: 'Store Staff Costs', inventory: 'Stock', daysInv: 'Days of Stock', stockLever: 'Reduce Stock Days' }
+        };
 
+        // =========================================================================
+        // FINANCIAL CALCULATIONS
+        // =========================================================================
         const calculatePL = (pl) => {
             const revenue = parseFloat(pl.revenue) || 0;
             const cogs = parseFloat(pl.cogs) || 0;
@@ -369,7 +204,6 @@
             const overheads = parseFloat(pl.overheads) || 0;
             const interest = parseFloat(pl.interest) || 0;
             const tax = parseFloat(pl.tax) || 0;
-
             const grossMargin = revenue - cogs;
             const grossMarginPct = revenue > 0 ? (grossMargin / revenue) * 100 : 0;
             const contributionMargin = grossMargin - directLabor;
@@ -379,1906 +213,840 @@
             const netProfit = ebit - interest - tax;
             const directLER = directLabor > 0 ? grossMargin / directLabor : 0;
             const managementLER = managementLabor > 0 ? contributionMargin / managementLabor : 0;
-
-            return {
-                revenue,
-                cogs,
-                directLabor,
-                managementLabor,
-                overheads,
-                interest,
-                tax,
-                grossMargin,
-                grossMarginPct,
-                contributionMargin,
-                contributionMarginPct,
-                ebit,
-                ebitPct,
-                netProfit,
-                directLER,
-                managementLER
-            };
+            return { revenue, cogs, directLabor, managementLabor, overheads, interest, tax, grossMargin, grossMarginPct, contributionMargin, contributionMarginPct, ebit, ebitPct, netProfit, directLER, managementLER };
         };
 
         const calculateBS = (bs) => {
-            const cash = parseFloat(bs.cash) || 0;
-            const ar = parseFloat(bs.ar) || 0;
-            const inventory = parseFloat(bs.inventory) || 0;
-            const otherCurrentAssets = parseFloat(bs.otherCurrentAssets) || 0;
-            const fixedAssets = parseFloat(bs.fixedAssets) || 0;
-            const otherAssets = parseFloat(bs.otherAssets) || 0;
-            
-            const ap = parseFloat(bs.ap) || 0;
-            const shortTermDebt = parseFloat(bs.shortTermDebt) || 0;
-            const otherCurrentLiabilities = parseFloat(bs.otherCurrentLiabilities) || 0;
-            const longTermDebt = parseFloat(bs.longTermDebt) || 0;
-            const otherLongTermLiabilities = parseFloat(bs.otherLongTermLiabilities) || 0;
-            const capital = parseFloat(bs.capital) || 0;
-            const retainedEarnings = parseFloat(bs.retainedEarnings) || 0;
+            const cash = parseFloat(bs.cash) || 0, ar = parseFloat(bs.ar) || 0, inventory = parseFloat(bs.inventory) || 0, otherCA = parseFloat(bs.otherCA) || 0, fixedAssets = parseFloat(bs.fixedAssets) || 0, otherAssets = parseFloat(bs.otherAssets) || 0;
+            const ap = parseFloat(bs.ap) || 0, stDebt = parseFloat(bs.stDebt) || 0, otherCL = parseFloat(bs.otherCL) || 0, ltDebt = parseFloat(bs.ltDebt) || 0, otherLTL = parseFloat(bs.otherLTL) || 0, capital = parseFloat(bs.capital) || 0, retained = parseFloat(bs.retained) || 0;
+            const totalCA = cash + ar + inventory + otherCA;
+            const totalAssets = totalCA + fixedAssets + otherAssets;
+            const totalCL = ap + stDebt + otherCL;
+            const totalLiabilities = totalCL + ltDebt + otherLTL;
+            const totalEquity = capital + retained;
+            const totalLE = totalLiabilities + totalEquity;
+            const balanceCheck = totalAssets - totalLE;
+            return { cash, ar, inventory, otherCA, fixedAssets, otherAssets, ap, stDebt, otherCL, ltDebt, otherLTL, capital, retained, totalCA, totalAssets, totalCL, totalLiabilities, totalEquity, totalLE, balanceCheck };
+        };
 
-            const totalCurrentAssets = cash + ar + inventory + otherCurrentAssets;
-            const totalAssets = totalCurrentAssets + fixedAssets + otherAssets;
-            const totalCurrentLiabilities = ap + shortTermDebt + otherCurrentLiabilities;
-            const totalLiabilities = totalCurrentLiabilities + longTermDebt + otherLongTermLiabilities;
-            const totalEquity = capital + retainedEarnings;
-            const totalLiabilitiesAndEquity = totalLiabilities + totalEquity;
-            const balanceCheck = totalAssets - totalLiabilitiesAndEquity;
+        const calculateWC = (wc) => {
+            const daysAR = parseFloat(wc.daysAR) || 0, daysAP = parseFloat(wc.daysAP) || 0, daysInv = parseFloat(wc.daysInv) || 0;
+            return { daysAR, daysAP, daysInv, ccc: daysAR + daysInv - daysAP };
+        };
 
-            return {
-                cash, ar, inventory, otherCurrentAssets, fixedAssets, otherAssets,
-                ap, shortTermDebt, otherCurrentLiabilities, longTermDebt, otherLongTermLiabilities,
-                capital, retainedEarnings,
-                totalCurrentAssets, totalAssets, totalCurrentLiabilities, totalLiabilities,
-                totalEquity, totalLiabilitiesAndEquity, balanceCheck
+        const calculatePowerOfOne = (pl, wc, imp) => {
+            if (pl.revenue <= 0) return [];
+            const r = pl.revenue, cogs = pl.cogs, cm = pl.contributionMargin;
+            return [
+                { lever: 'Price Increase', val: imp.price, unit: '%', cash: r * (imp.price/100) * (365 - wc.daysAR) / 365, ebit: r * (imp.price/100) },
+                { lever: 'Volume Increase', val: imp.volume, unit: '%', cash: cm * (imp.volume/100) - (r * (imp.volume/100) * wc.daysAR/365) - (cogs * (imp.volume/100) * wc.daysInv/365) + (cogs * (imp.volume/100) * wc.daysAP/365), ebit: cm * (imp.volume/100) },
+                { lever: 'COGS Reduction', val: imp.cogs, unit: '%', cash: cogs * (imp.cogs/100) * (1 + (wc.daysInv - wc.daysAP)/365), ebit: cogs * (imp.cogs/100) },
+                { lever: 'Direct Labor Efficiency', val: imp.directLabor, unit: '%', cash: pl.directLabor * (imp.directLabor/100), ebit: pl.directLabor * (imp.directLabor/100) },
+                { lever: 'Management Labor Efficiency', val: imp.mgmtLabor, unit: '%', cash: pl.managementLabor * (imp.mgmtLabor/100), ebit: pl.managementLabor * (imp.mgmtLabor/100) },
+                { lever: 'Overhead Reduction', val: imp.overheads, unit: '%', cash: pl.overheads * (imp.overheads/100), ebit: pl.overheads * (imp.overheads/100) },
+                { lever: 'Reduce Debtor Days', val: imp.debtorDays, unit: 'd', cash: (r / 365) * imp.debtorDays, ebit: 0 },
+                { lever: 'Reduce Stock Days', val: imp.stockDays, unit: 'd', cash: (cogs / 365) * imp.stockDays, ebit: 0 },
+                { lever: 'Increase Creditor Days', val: imp.creditorDays, unit: 'd', cash: (cogs / 365) * imp.creditorDays, ebit: 0 }
+            ];
+        };
+
+        const fmt = (v) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v || 0);
+        const fmtPct = (v) => `${(v || 0).toFixed(1)}%`;
+
+        // =========================================================================
+        // SMALL COMPONENTS
+        // =========================================================================
+        function CheckIcon({ color = "#fff", size = 16 }) {
+            return <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>;
+        }
+
+        function LearnMore({ children }) {
+            const [open, setOpen] = useState(false);
+            return (
+                <div style={{ marginBottom: open ? 0 : 12 }}>
+                    <button className="learn-more-toggle" onClick={() => setOpen(!open)}>WHY THIS MATTERS {open ? '\u2212' : '+'}</button>
+                    {open && <div className="learn-more-content">{children}</div>}
+                </div>
+            );
+        }
+
+        function ButtonFooter({ onBack, onNext, nextLabel = 'Next', canProceed, showBack = true }) {
+            return (
+                <div className="btn-footer no-print">
+                    {showBack ? <button className="btn-back" onClick={onBack}>&larr; Back</button> : <div />}
+                    <button className="btn-next" disabled={!canProceed} onClick={onNext}>{nextLabel} &rarr;</button>
+                </div>
+            );
+        }
+
+        function MobileStepBar({ currentStep }) {
+            const progress = currentStep >= 999 ? 100 : Math.round((currentStep / 4) * 100);
+            return (
+                <div className="mobile-step-bar no-print">
+                    <div className="bar-text">Step {Math.min(currentStep, 4)} of 4</div>
+                    <div className="mobile-progress"><div className="mobile-progress-fill" style={{ width: `${progress}%` }} /></div>
+                </div>
+            );
+        }
+
+        function WizardSidebar({ currentStep, year1PL, year2PL, year2WC, powerOfOne, actionsCount, onNavigate }) {
+            const steps = [
+                { num: 1, label: 'Year 1 Data' },
+                { num: 2, label: 'Year 2 Data' },
+                { num: 3, label: 'Power of One' },
+                { num: 4, label: 'Action Plan' }
+            ];
+            const y1 = calculatePL(year1PL);
+            const y2 = calculatePL(year2PL);
+            const wc2 = calculateWC(year2WC);
+            const totalCash = powerOfOne.reduce((s, l) => s + l.cash, 0);
+            const getSnippet = (n) => {
+                if (n === 1 && y1.revenue > 0) return `Rev: ${fmt(y1.revenue)}, EBIT: ${fmtPct(y1.ebitPct)}`;
+                if (n === 2 && y2.revenue > 0) return `Rev: ${fmt(y2.revenue)}, CCC: ${wc2.ccc.toFixed(0)}d`;
+                if (n === 3 && totalCash > 0) return `Impact: ${fmt(totalCash)}`;
+                if (n === 4 && actionsCount > 0) return `${actionsCount} action${actionsCount !== 1 ? 's' : ''} planned`;
+                return null;
             };
-        };
+            return (
+                <div className="wizard-sidebar no-print">
+                    <div className="wizard-sidebar-inner">
+                        <div style={{ marginBottom: 24 }}>
+                            <div className="monument" style={{ fontSize: 12, textTransform: 'uppercase', color: '#fff', marginBottom: 4 }}>CASH FLOW</div>
+                            <div style={{ fontSize: 13, color: '#999' }}>~60 min</div>
+                        </div>
+                        <div style={{ marginBottom: 16, fontFamily: "'Monument', monospace", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#999' }}>Your analysis</div>
+                        {steps.map(s => {
+                            const isCompleted = currentStep > s.num, isActive = currentStep === s.num, isLocked = currentStep < s.num;
+                            const snippet = isCompleted ? getSnippet(s.num) : null;
+                            return (
+                                <div key={s.num} className={`sidebar-step-item ${isCompleted ? 'completed' : ''} ${isActive ? 'active' : ''} ${isLocked ? 'locked' : ''}`}
+                                    onClick={() => isCompleted && onNavigate(s.num)} title={isCompleted ? 'Click to review' : ''}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                        {isCompleted ? <CheckIcon color="#000" size={14} /> : <span className="step-num" style={{ color: isActive ? '#fff' : '#ccc' }}>{String(s.num).padStart(2, '0')}</span>}
+                                        <span className="step-name" style={{ color: isLocked ? '#666' : isCompleted ? '#000' : '#fff' }}>{s.label}</span>
+                                    </div>
+                                    {snippet && <div className="sidebar-snippet">{snippet}</div>}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        }
 
-        const calculateWC = (wc, revenue, cogs) => {
-            const daysInAR = parseFloat(wc.daysInAR) || 0;
-            const daysInAP = parseFloat(wc.daysInAP) || 0;
-            const daysOfInventory = parseFloat(wc.daysOfInventory) || 0;
-            const cashConversionCycle = daysInAR + daysOfInventory - daysInAP;
+        function HelpAccordion({ id, activeHelp, setActiveHelp, children }) {
+            const isOpen = activeHelp === id;
+            return (
+                <>
+                    <button className="help-icon-btn" onClick={() => setActiveHelp(isOpen ? null : id)} title="Help">?</button>
+                    {isOpen && <div className="help-accordion" style={{ marginTop: 6 }}>{children}</div>}
+                </>
+            );
+        }
 
-            return {
-                daysInAR,
-                daysInAP,
-                daysOfInventory,
-                cashConversionCycle
-            };
-        };
+        function NumField({ label, value, onChange, placeholder, help, required }) {
+            return (
+                <div className="field-group">
+                    <label className="field-label">{label}{required && ' *'}</label>
+                    <input type="number" className="field-input" value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} />
+                    {help && <p className="field-help">{help}</p>}
+                </div>
+            );
+        }
 
-        const calculatePowerOfOne = (year2PL, year2WC) => {
-            const improvementPct = 0.01; // 1%
-            const results = [];
+        function MetricBadge({ value, good, avg }) {
+            if (value >= good) return <span className="metric-badge badge-good">Healthy</span>;
+            if (value >= avg) return <span className="metric-badge badge-avg">Average</span>;
+            return <span className="metric-badge badge-weak">Needs focus</span>;
+        }
 
-            // 1. Price Increase
-            const priceImpact = year2PL.revenue * improvementPct * year2PL.contributionMarginPct / 100;
-            results.push({
-                driver: 'Price Increase',
-                change: '1%',
-                cashFlowImpact: priceImpact,
-                ebitImpact: priceImpact,
-                explanation: 'Revenue increase flows to profit at contribution margin rate'
-            });
+        function PLMetrics({ calc }) {
+            if (calc.revenue <= 0) return null;
+            return (
+                <div className="metrics-bar">
+                    <div className="metric-item"><div className="metric-label">Gross Margin</div><div className="metric-value">{fmtPct(calc.grossMarginPct)} <MetricBadge value={calc.grossMarginPct} good={40} avg={20} /></div></div>
+                    <div className="metric-item"><div className="metric-label">Contribution</div><div className="metric-value">{fmtPct(calc.contributionMarginPct)}</div></div>
+                    <div className="metric-item"><div className="metric-label">EBIT</div><div className="metric-value">{fmtPct(calc.ebitPct)} <MetricBadge value={calc.ebitPct} good={15} avg={5} /></div></div>
+                    <div className="metric-item"><div className="metric-label">Net Profit</div><div className="metric-value">{fmt(calc.netProfit)}</div></div>
+                    {calc.directLER > 0 && <div className="metric-item"><div className="metric-label">Direct LER</div><div className="metric-value">{calc.directLER.toFixed(2)} <MetricBadge value={calc.directLER} good={3} avg={2} /></div></div>}
+                    {calc.managementLER > 0 && <div className="metric-item"><div className="metric-label">Mgmt LER</div><div className="metric-value">{calc.managementLER.toFixed(2)}</div></div>}
+                </div>
+            );
+        }
 
-            // 2. Volume Increase
-            const volumeImpact = year2PL.revenue * improvementPct * (year2PL.contributionMarginPct / 100);
-            results.push({
-                driver: 'Volume Increase',
-                change: '1%',
-                cashFlowImpact: volumeImpact * 0.7, // Adjusted for working capital
-                ebitImpact: volumeImpact,
-                explanation: 'Volume grows revenue and COGS proportionally'
-            });
-
-            // 3. COGS Reduction
-            const cogsImpact = year2PL.cogs * improvementPct;
-            results.push({
-                driver: 'COGS Reduction',
-                change: '1%',
-                cashFlowImpact: cogsImpact,
-                ebitImpact: cogsImpact,
-                explanation: 'Direct cost savings'
-            });
-
-            // 4. Direct Labor Efficiency
-            const directLaborImpact = year2PL.directLabor * improvementPct;
-            results.push({
-                driver: 'Direct Labor Efficiency',
-                change: '1%',
-                cashFlowImpact: directLaborImpact,
-                ebitImpact: directLaborImpact,
-                explanation: 'Labor productivity improvement'
-            });
-
-            // 5. Management Labor Efficiency
-            const mgmtLaborImpact = year2PL.managementLabor * improvementPct;
-            results.push({
-                driver: 'Management Labor Efficiency',
-                change: '1%',
-                cashFlowImpact: mgmtLaborImpact,
-                ebitImpact: mgmtLaborImpact,
-                explanation: 'Management productivity improvement'
-            });
-
-            // 6. Overhead Reduction
-            const overheadImpact = year2PL.overheads * improvementPct;
-            results.push({
-                driver: 'Overhead Reduction',
-                change: '1%',
-                cashFlowImpact: overheadImpact,
-                ebitImpact: overheadImpact,
-                explanation: 'Fixed cost reduction'
-            });
-
-            // 7. Reduce Debtor Days (1 day)
-            const arPerDay = year2PL.revenue / 365;
-            const arReduction = arPerDay * 1;
-            results.push({
-                driver: 'Reduce Debtor Days',
-                change: '1 day',
-                cashFlowImpact: arReduction,
-                ebitImpact: 0,
-                explanation: 'Cash freed from faster customer payments'
-            });
-
-            // 8. Reduce Stock Days (1 day)
-            const invPerDay = year2PL.cogs / 365;
-            const invReduction = invPerDay * 1;
-            results.push({
-                driver: 'Reduce Stock Days',
-                change: '1 day',
-                cashFlowImpact: invReduction,
-                ebitImpact: 0,
-                explanation: 'Cash freed from inventory reduction'
-            });
-
-            // 9. Increase Creditor Days (1 day)
-            const apPerDay = year2PL.cogs / 365;
-            const apIncrease = apPerDay * 1;
-            results.push({
-                driver: 'Increase Creditor Days',
-                change: '1 day',
-                cashFlowImpact: apIncrease,
-                ebitImpact: 0,
-                explanation: 'Cash retained by extending payment terms'
-            });
-
-            return results.sort((a, b) => b.cashFlowImpact - a.cashFlowImpact);
-        };
-
-        // ============================================================================
+        // =========================================================================
         // MAIN COMPONENT
-        // ============================================================================
+        // =========================================================================
+        function CashFlowTool() {
+            const [step, setStep] = useState(0);
+            const [questionHelp, setQuestionHelp] = useState(null);
+            const [authState, setAuthState] = useState({ loading: true, authenticated: false, user: null, progress: null, error: null });
+            const [businessModel, setBusinessModel] = useState('');
 
-        const CashFlowTool = () => {
-            const [currentStep, setCurrentStep] = useState(0); // Start at 0 for cover page
-            const [showResults, setShowResults] = useState(false);
-            const [userId, setUserId] = useState('test@garyfurniture.com');
-            const [userName, setUserName] = useState('John Smith');
-            const [companyName, setCompanyName] = useState('Gary\'s Furniture');
+            const emptyPL = { revenue: '', cogs: '', directLabor: '', managementLabor: '', overheads: '', interest: '', tax: '' };
+            const emptyBS = { cash: '', ar: '', inventory: '', otherCA: '', fixedAssets: '', otherAssets: '', ap: '', stDebt: '', otherCL: '', ltDebt: '', otherLTL: '', capital: '', retained: '' };
+            const emptyWC = { daysAR: '', daysAP: '', daysInv: '' };
 
-            // Form data - Pre-filled with Gary's Furniture test data
-            const [year1PL, setYear1PL] = useState({
-                revenue: '35000000',
-                cogs: '24500000',
-                directLabor: '3000000',
-                managementLabor: '2000000',
-                overheads: '1751140',
-                interest: '1165900',
-                tax: '930280',
-                depreciation: '820000'
-            });
+            const [year1PL, setYear1PL] = useState({...emptyPL});
+            const [year1BS, setYear1BS] = useState({...emptyBS});
+            const [year1WC, setYear1WC] = useState({...emptyWC});
+            const [year2PL, setYear2PL] = useState({...emptyPL});
+            const [year2BS, setYear2BS] = useState({...emptyBS});
+            const [year2WC, setYear2WC] = useState({...emptyWC});
 
-            const [year1BS, setYear1BS] = useState({
-                cash: '0',
-                ar: '6712330',
-                inventory: '10336960',
-                otherCurrentAssets: '0',
-                fixedAssets: '8500000',
-                otherAssets: '0',
-                ap: '4028550',
-                shortTermDebt: '5019740',
-                otherCurrentLiabilities: '0',
-                longTermDebt: '9000000',
-                otherLongTermLiabilities: '0',
-                capital: '2001000',
-                retainedEarnings: '5500000'
-            });
+            const [improvements, setImprovements] = useState({ price: 1, volume: 1, cogs: 1, directLabor: 1, mgmtLabor: 1, overheads: 1, debtorDays: 1, stockDays: 1, creditorDays: 1 });
+            const [ideas, setIdeas] = useState([]);
+            const [actions, setActions] = useState([{ what: '', who: '', when: '' }, { what: '', who: '', when: '' }, { what: '', who: '', when: '' }]);
 
-            const [year1WC, setYear1WC] = useState({
-                daysInAR: '70',
-                daysInAP: '60',
-                daysOfInventory: '154'
-            });
-
-            const [year2PL, setYear2PL] = useState({
-                revenue: '42000000',
-                cogs: '28980000',
-                directLabor: '3250000',
-                managementLabor: '2500000',
-                overheads: '2651150',
-                interest: '1363480',
-                tax: '1172348',
-                depreciation: '933000'
-            });
-
-            const [year2BS, setYear2BS] = useState({
-                cash: '0',
-                ar: '8064380',
-                inventory: '13144110',
-                otherCurrentAssets: '0',
-                fixedAssets: '8610000',
-                otherAssets: '0',
-                ap: '5109590',
-                shortTermDebt: '5769700',
-                otherCurrentLiabilities: '0',
-                longTermDebt: '8550000',
-                otherLongTermLiabilities: '0',
-                capital: '2001000',
-                retainedEarnings: '8388200'
-            });
-
-            const [year2WC, setYear2WC] = useState({
-                daysInAR: '70',
-                daysInAP: '64',
-                daysOfInventory: '165'
-            });
-
-            const [actions, setActions] = useState([]);
-            const [isSubmitting, setIsSubmitting] = useState(false);
+            const autosaveTimer = useRef(null);
 
             // Calculated values
-            const year1PLCalc = calculatePL(year1PL);
-            const year1BSCalc = calculateBS(year1BS);
-            const year1WCCalc = calculateWC(year1WC, year1PLCalc.revenue, year1PLCalc.cogs);
+            const y1PL = calculatePL(year1PL), y1BS = calculateBS(year1BS), y1WC = calculateWC(year1WC);
+            const y2PL = calculatePL(year2PL), y2BS = calculateBS(year2BS), y2WC = calculateWC(year2WC);
+            const powerOfOne = calculatePowerOfOne(y2PL, y2WC, improvements);
+            const totalCash = powerOfOne.reduce((s, l) => s + l.cash, 0);
+            const totalEbit = powerOfOne.reduce((s, l) => s + l.ebit, 0);
+            const labels = LABELS[businessModel] || LABELS.manufacturing;
 
-            const year2PLCalc = calculatePL(year2PL);
-            const year2BSCalc = calculateBS(year2BS);
-            const year2WCCalc = calculateWC(year2WC, year2PLCalc.revenue, year2PLCalc.cogs);
-
-            const powerOfOne = year2PLCalc.revenue > 0 ? calculatePowerOfOne(year2PLCalc, year2WCCalc) : [];
-            const totalCashImpact = powerOfOne.reduce((sum, item) => sum + item.cashFlowImpact, 0);
-            const totalEbitImpact = powerOfOne.reduce((sum, item) => sum + item.ebitImpact, 0);
-
-            // Auto-save
+            // Auth
             useEffect(() => {
-                const interval = setInterval(() => {
-                    const data = {
-                        userId, userName, companyName, currentStep,
-                        year1PL, year1BS, year1WC, year2PL, year2BS, year2WC, actions
-                    };
-                    localStorage.setItem('cash_flow_draft', JSON.stringify(data));
-                }, AUTO_SAVE_INTERVAL);
-                return () => clearInterval(interval);
-            }, [userId, userName, companyName, currentStep, year1PL, year1BS, year1WC, year2PL, year2BS, year2WC, actions]);
+                async function initAuth() {
+                    const isLocal = window.location.protocol === 'file:';
+                    const hasAuth = window.authManager && typeof window.authManager.initialize === 'function';
+                    if (isLocal || !hasAuth) {
+                        localStorage.setItem('ft_user_id', 'b609a543-e487-4ace-91d4-84a07402ff99');
+                        setAuthState({ loading: false, authenticated: true, user: { email: 'local@dev.test', id: 'local-dev' }, progress: { completed_tools: [], unlocked_tools: ['cash'] }, isUnlocked: true, isCompleted: false, error: null });
+                        return;
+                    }
+                    try {
+                        const result = await window.authManager.initialize();
+                        if (result.authenticated) {
+                            setAuthState({ loading: false, authenticated: true, user: result.user, progress: result.progress, isUnlocked: window.authManager.isToolUnlocked(result.progress, 'cash'), isCompleted: window.authManager.isToolCompleted(result.progress, 'cash'), error: null });
+                        } else {
+                            setAuthState({ loading: false, authenticated: false, user: null, progress: null, error: result.error || result.message });
+                            window.authManager.requireAuthentication();
+                        }
+                    } catch (error) {
+                        if (!localStorage.getItem('ft_user_id')) localStorage.setItem('ft_user_id', 'b609a543-e487-4ace-91d4-84a07402ff99');
+                        setAuthState({ loading: false, authenticated: true, user: { email: 'local@dev.test', id: 'local-dev' }, progress: { completed_tools: [], unlocked_tools: ['cash'] }, isUnlocked: true, isCompleted: false, error: null });
+                    }
+                }
+                initAuth();
+            }, []);
 
-            // Load draft
+            // Autosave
             useEffect(() => {
-                const draft = localStorage.getItem('cash_flow_draft');
-                if (draft) {
-                    const data = JSON.parse(draft);
-                    setUserId(data.userId || '');
-                    setUserName(data.userName || '');
-                    setCompanyName(data.companyName || '');
-                    setCurrentStep(data.currentStep || 1);
-                    setYear1PL(data.year1PL || year1PL);
-                    setYear1BS(data.year1BS || year1BS);
-                    setYear1WC(data.year1WC || year1WC);
-                    setYear2PL(data.year2PL || year2PL);
-                    setYear2BS(data.year2BS || year2BS);
-                    setYear2WC(data.year2WC || year2WC);
-                    setActions(data.actions || []);
+                if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+                autosaveTimer.current = setTimeout(() => {
+                    localStorage.setItem('cashFlowData', JSON.stringify({ step, businessModel, year1PL, year1BS, year1WC, year2PL, year2BS, year2WC, improvements, ideas, actions, ts: new Date().toISOString() }));
+                }, CONFIG.AUTOSAVE_DELAY);
+                return () => { if (autosaveTimer.current) clearTimeout(autosaveTimer.current); };
+            }, [step, businessModel, year1PL, year1BS, year1WC, year2PL, year2BS, year2WC, improvements, ideas, actions]);
+
+            // Load saved
+            useEffect(() => {
+                const saved = localStorage.getItem('cashFlowData');
+                if (saved) {
+                    try {
+                        const d = JSON.parse(saved);
+                        if (d.year1PL) { setYear1PL(d.year1PL); setYear1BS(d.year1BS); setYear1WC(d.year1WC); setYear2PL(d.year2PL); setYear2BS(d.year2BS); setYear2WC(d.year2WC); }
+                        if (d.businessModel) setBusinessModel(d.businessModel);
+                        if (d.improvements) setImprovements(d.improvements);
+                        if (d.ideas) setIdeas(d.ideas);
+                        if (d.actions) setActions(d.actions);
+                        if (d.step) setStep(d.step);
+                    } catch (e) { localStorage.removeItem('cashFlowData'); }
                 }
             }, []);
 
-            const formatCurrency = (value) => {
-                if (!value && value !== 0) return '$0';
-                return new Intl.NumberFormat('en-US', {
-                    style: 'currency',
-                    currency: 'USD',
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 0
-                }).format(value);
-            };
+            const canStep1 = y1PL.revenue > 0 && y1PL.cogs > 0;
+            const canStep2 = y2PL.revenue > 0 && y2PL.cogs > 0;
+            const canStep3 = true;
+            const topIdeas = [...ideas].sort((a, b) => ((b.impact * 2) + b.ease) - ((a.impact * 2) + a.ease));
+            const canStep4 = actions.filter(a => a.what.trim() && a.who.trim() && a.when).length >= 1;
 
-            const formatPercent = (value) => {
-                if (!value && value !== 0) return '0%';
-                return `${value.toFixed(1)}%`;
-            };
+            return (
+                <div className="tool-frame">
+                    <div className="tool-inner">
+                        {authState.loading && (
+                            <div style={{ position: 'fixed', inset: 0, background: '#000', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
+                                <div style={{ textAlign: 'center' }}><h1 className="plaak" style={{ fontSize: 48, marginBottom: 16 }}>AUTHENTICATING</h1><p style={{ fontSize: 18 }}>Please wait...</p></div>
+                            </div>
+                        )}
 
-            const calculateScore = (action) => {
-                return (action.impact * 2) + action.ease;
-            };
+                        {!authState.loading && !authState.authenticated && (
+                            <div style={{ position: 'fixed', inset: 0, background: '#000', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 40 }}>
+                                <div style={{ textAlign: 'center', padding: '0 32px', maxWidth: 640 }}>
+                                    <h1 className="plaak" style={{ fontSize: 48, marginBottom: 24 }}>AUTHENTICATION REQUIRED</h1>
+                                    <p style={{ fontSize: 20, marginBottom: 32 }}>Please access this tool from your LearnWorlds course.</p>
+                                    <p style={{ fontSize: 16, color: '#999' }}>{authState.error || 'No active session found'}</p>
+                                </div>
+                            </div>
+                        )}
 
-            const isStep1Complete = () => {
-                return year1PL.revenue && year1PL.cogs && year1BS.ar && year1BS.ap;
-            };
+                        {/* Cover */}
+                        {step === 0 && authState.authenticated && (
+                            <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+                                <div style={{ position: 'relative', textAlign: 'center', color: '#fff', padding: '0 32px' }} className="animate-in">
+                                    <p className="monument" style={{ fontSize: 13, color: '#999', marginBottom: 16 }}>MODULE 2 — PERFORMANCE</p>
+                                    <h1 className="plaak" style={{ fontSize: 72, marginBottom: 16 }}>CASH FLOW<br/>ANALYSIS</h1>
+                                    <p style={{ fontSize: 18, color: '#ccc', marginBottom: 48, maxWidth: 500, margin: '0 auto 48px' }}>Master the 7 levers that create dramatic cash flow improvements using the Power of One</p>
+                                    <button onClick={() => setStep(0.5)} style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 48px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                                        onMouseOver={e => e.target.style.background = '#FFF469'}
+                                        onMouseOut={e => e.target.style.background = '#fff'}>START</button>
+                                </div>
+                            </div>
+                        )}
 
-            const isStep2Complete = () => {
-                return year2PL.revenue && year2PL.cogs && year2BS.ar && year2BS.ap;
-            };
+                        {/* Setup */}
+                        {step === 0.5 && (
+                            <div style={{ minHeight: '100vh', background: '#fff', display: 'flex', flexDirection: 'column', padding: '0 48px' }}>
+                                <div className="step-content animate-in" style={{ maxWidth: 560, margin: '0 auto' }}>
+                                    <p className="step-indicator">SETUP</p>
+                                    <div className="opening-box">
+                                        <h1 className="step-heading">Before We Start</h1>
+                                        <p className="step-hint">Cash flow is the oxygen of your company. This tool shows how small 1% improvements across 7 levers create dramatic cash flow results.</p>
+                                    </div>
+
+                                    <div style={{ background: '#F5F5F5', padding: 20, marginBottom: 32, fontSize: 14, color: '#333', lineHeight: 1.7 }}>
+                                        <strong>You will need:</strong>
+                                        <ul style={{ marginTop: 8, paddingLeft: 20 }}>
+                                            <li>Profit & Loss statement for the last 2 years</li>
+                                            <li>Balance Sheet for the last 2 years</li>
+                                            <li>Days in A/R, A/P, and Inventory metrics</li>
+                                        </ul>
+                                        <p style={{ marginTop: 8, color: '#666' }}>Your finance team can help gather this data. Strategic insights matter more than decimal precision.</p>
+                                    </div>
+
+                                    <div className="field-group">
+                                        <label className="field-label" style={{ marginBottom: 12 }}>What is your business model?</label>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                            {[
+                                                { val: 'manufacturing', title: 'Manufacturing / Production', desc: 'You make physical products (inventory, COGS, direct labor)' },
+                                                { val: 'service', title: 'Service / Professional', desc: 'You sell expertise (WIP, cost of delivery, billable staff)' },
+                                                { val: 'retail', title: 'Retail / Distribution', desc: 'You buy and resell products (stock, COGS, store staff)' }
+                                            ].map(opt => (
+                                                <label key={opt.val} style={{ display: 'block', padding: '14px 16px', border: '1px solid #E0E0E0', borderRadius: 4, cursor: 'pointer', transition: 'all 0.15s ease', background: businessModel === opt.val ? '#F5F5F5' : '#fff', borderColor: businessModel === opt.val ? '#000' : '#E0E0E0' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                                                        <input type="radio" name="bm" value={opt.val} checked={businessModel === opt.val} onChange={() => setBusinessModel(opt.val)} style={{ marginTop: 3, accentColor: '#000' }} />
+                                                        <div><div style={{ fontWeight: 600, marginBottom: 2 }}>{opt.title}</div><div style={{ fontSize: 13, color: '#666' }}>{opt.desc}</div></div>
+                                                    </div>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="btn-footer no-print">
+                                    <button className="btn-back" onClick={() => setStep(0)}>&larr; Back</button>
+                                    <button className="btn-next" disabled={!businessModel} onClick={() => setStep(1)}>Let's Start &rarr;</button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Steps 1-4 */}
+                        {step >= 1 && step <= 4 && (
+                            <div className="wizard-layout">
+                                <div className="wizard-main">
+                                    <MobileStepBar currentStep={step} />
+                                    {step === 1 && <Step1Content pl={year1PL} setPL={setYear1PL} bs={year1BS} setBS={setYear1BS} wc={year1WC} setWC={setYear1WC} calc={y1PL} bsCalc={y1BS} wcCalc={y1WC} labels={labels} questionHelp={questionHelp} setQuestionHelp={setQuestionHelp} canProceed={canStep1} />}
+                                    {step === 2 && <Step2Content pl={year2PL} setPL={setYear2PL} bs={year2BS} setBS={setYear2BS} wc={year2WC} setWC={setYear2WC} calc={y2PL} bsCalc={y2BS} wcCalc={y2WC} y1WC={y1WC} labels={labels} questionHelp={questionHelp} setQuestionHelp={setQuestionHelp} canProceed={canStep2} />}
+                                    {step === 3 && <Step3Content powerOfOne={powerOfOne} improvements={improvements} setImprovements={setImprovements} totalCash={totalCash} totalEbit={totalEbit} y2PL={y2PL} labels={labels} />}
+                                    {step === 4 && <Step4Content ideas={ideas} setIdeas={setIdeas} actions={actions} setActions={setActions} powerOfOne={powerOfOne} />}
+                                    <ButtonFooter
+                                        onBack={() => setStep(step === 1 ? 0.5 : step - 1)}
+                                        onNext={() => setStep(step === 4 ? 999 : step + 1)}
+                                        canProceed={step === 1 ? canStep1 : step === 2 ? canStep2 : step === 3 ? canStep3 : canStep4}
+                                        nextLabel={step === 4 ? 'View Your Canvas' : 'Next'}
+                                    />
+                                </div>
+                                <WizardSidebar currentStep={step} year1PL={year1PL} year2PL={year2PL} year2WC={year2WC} powerOfOne={powerOfOne} actionsCount={actions.filter(a => a.what.trim()).length} onNavigate={setStep} />
+                            </div>
+                        )}
+
+                        {/* Canvas */}
+                        {step === 999 && <CanvasView y1PL={y1PL} y2PL={y2PL} y1WC={y1WC} y2WC={y2WC} powerOfOne={powerOfOne} totalCash={totalCash} totalEbit={totalEbit} actions={actions} onBack={() => setStep(4)} />}
+                    </div>
+                </div>
+            );
+        }
+
+        // =========================================================================
+        // STEP 1: YEAR 1 DATA
+        // =========================================================================
+        function FinancialDataStep({ yearLabel, pl, setPL, bs, setBS, wc, setWC, calc, bsCalc, wcCalc, labels, questionHelp, setQuestionHelp, prevWC }) {
+            const upPL = (k, v) => setPL(prev => ({ ...prev, [k]: v }));
+            const upBS = (k, v) => setBS(prev => ({ ...prev, [k]: v }));
+            const upWC = (k, v) => setWC(prev => ({ ...prev, [k]: v }));
+
+            return (
+                <div className="questions-grid">
+                    {/* P&L */}
+                    <p className="section-label">PROFIT & LOSS — {yearLabel}</p>
+                    <div className="two-col">
+                        <NumField label="Revenue" value={pl.revenue} onChange={v => upPL('revenue', v)} placeholder="35000000" required />
+                        <NumField label={labels.cogs} value={pl.cogs} onChange={v => upPL('cogs', v)} placeholder="24500000" required />
+                        <NumField label={labels.directLabor} value={pl.directLabor} onChange={v => upPL('directLabor', v)} placeholder="3000000" />
+                        <NumField label="Management Labor" value={pl.managementLabor} onChange={v => upPL('managementLabor', v)} placeholder="2000000" />
+                        <NumField label="Overheads" value={pl.overheads} onChange={v => upPL('overheads', v)} placeholder="1750000" />
+                        <NumField label="Interest Expense" value={pl.interest} onChange={v => upPL('interest', v)} placeholder="1165000" />
+                        <NumField label="Tax Expense" value={pl.tax} onChange={v => upPL('tax', v)} placeholder="930000" />
+                    </div>
+                    <PLMetrics calc={calc} />
+
+                    {/* Balance Sheet */}
+                    <div className="section-divider">
+                        <p className="section-label">BALANCE SHEET — {yearLabel}</p>
+                    </div>
+                    <div className="two-col">
+                        <div>
+                            <p className="monument" style={{ fontSize: 10, color: '#999', marginBottom: 12 }}>ASSETS</p>
+                            <NumField label="Cash" value={bs.cash} onChange={v => upBS('cash', v)} placeholder="0" />
+                            <NumField label="Accounts Receivable" value={bs.ar} onChange={v => upBS('ar', v)} placeholder="6712000" required />
+                            <NumField label={labels.inventory} value={bs.inventory} onChange={v => upBS('inventory', v)} placeholder="10337000" />
+                            <NumField label="Other Current Assets" value={bs.otherCA} onChange={v => upBS('otherCA', v)} placeholder="0" />
+                            <NumField label="Fixed Assets (Net)" value={bs.fixedAssets} onChange={v => upBS('fixedAssets', v)} placeholder="8500000" />
+                            <NumField label="Other Assets" value={bs.otherAssets} onChange={v => upBS('otherAssets', v)} placeholder="0" />
+                        </div>
+                        <div>
+                            <p className="monument" style={{ fontSize: 10, color: '#999', marginBottom: 12 }}>LIABILITIES & EQUITY</p>
+                            <NumField label="Accounts Payable" value={bs.ap} onChange={v => upBS('ap', v)} placeholder="4029000" required />
+                            <NumField label="Short-term Debt" value={bs.stDebt} onChange={v => upBS('stDebt', v)} placeholder="5020000" />
+                            <NumField label="Other Current Liabilities" value={bs.otherCL} onChange={v => upBS('otherCL', v)} placeholder="0" />
+                            <NumField label="Long-term Debt" value={bs.ltDebt} onChange={v => upBS('ltDebt', v)} placeholder="9000000" />
+                            <NumField label="Other LT Liabilities" value={bs.otherLTL} onChange={v => upBS('otherLTL', v)} placeholder="0" />
+                            <NumField label="Capital" value={bs.capital} onChange={v => upBS('capital', v)} placeholder="2001000" />
+                            <NumField label="Retained Earnings" value={bs.retained} onChange={v => upBS('retained', v)} placeholder="5500000" />
+                        </div>
+                    </div>
+                    {bsCalc.totalAssets > 0 && (
+                        Math.abs(bsCalc.balanceCheck) < 1 ?
+                            <div className="balance-ok">Balance sheet balances. Assets: {fmt(bsCalc.totalAssets)} = Liabilities + Equity: {fmt(bsCalc.totalLE)}</div> :
+                            <div className="balance-err">Does not balance. Difference: {fmt(bsCalc.balanceCheck)} — Assets ({fmt(bsCalc.totalAssets)}) must equal L+E ({fmt(bsCalc.totalLE)})</div>
+                    )}
+
+                    {/* Working Capital */}
+                    <div className="section-divider">
+                        <p className="section-label">WORKING CAPITAL — {yearLabel}</p>
+                    </div>
+                    <div className="two-col" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
+                        <NumField label="Days in A/R" value={wc.daysAR} onChange={v => upWC('daysAR', v)} placeholder="70" help="Days to collect from customers" />
+                        <NumField label="Days in A/P" value={wc.daysAP} onChange={v => upWC('daysAP', v)} placeholder="60" help="Days to pay suppliers" />
+                        <NumField label={labels.daysInv} value={wc.daysInv} onChange={v => upWC('daysInv', v)} placeholder="154" help="Days of stock on hand" />
+                    </div>
+                    {wcCalc.daysAR > 0 && (
+                        <div className="metrics-bar" style={{ gridTemplateColumns: '1fr' }}>
+                            <div className="metric-item">
+                                <div className="metric-label">Cash Conversion Cycle</div>
+                                <div className="metric-value" style={{ fontSize: 22 }}>{wcCalc.ccc.toFixed(0)} days <MetricBadge value={-wcCalc.ccc} good={-30} avg={-60} /></div>
+                                {prevWC && calculateWC(prevWC).daysAR > 0 && (
+                                    <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
+                                        Change from Year 1: {(wcCalc.ccc - calculateWC(prevWC).ccc > 0 ? '+' : '')}{(wcCalc.ccc - calculateWC(prevWC).ccc).toFixed(0)} days
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        function Step1Content({ pl, setPL, bs, setBS, wc, setWC, calc, bsCalc, wcCalc, labels, questionHelp, setQuestionHelp, canProceed }) {
+            return (
+                <div className="step-content animate-in">
+                    <p className="step-indicator">STEP 1 OF 4</p>
+                    <div className="opening-box">
+                        <h1 className="step-heading">Year 1 Financial Data</h1>
+                        <p className="step-hint">Enter your baseline financial data from your previous fiscal year. This is the foundation for your analysis.</p>
+                    </div>
+                    <LearnMore>
+                        Revenue is vanity, profit is sanity, but <strong>cash is king</strong>. Understanding your financial position across all three statements — P&L, Balance Sheet, and Working Capital — gives you the complete picture of your company's health. As Alan Miltz says: "Cash flow is the oxygen of a company."
+                    </LearnMore>
+                    <FinancialDataStep yearLabel="YEAR 1" pl={pl} setPL={setPL} bs={bs} setBS={setBS} wc={wc} setWC={setWC} calc={calc} bsCalc={bsCalc} wcCalc={wcCalc} labels={labels} questionHelp={questionHelp} setQuestionHelp={setQuestionHelp} />
+                    {canProceed && (
+                        <div className="closing-box animate-in">
+                            <p className="closing-title">YEAR 1 CAPTURED</p>
+                            <p>Baseline established. Next: enter your most recent year for comparison.</p>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        function Step2Content({ pl, setPL, bs, setBS, wc, setWC, calc, bsCalc, wcCalc, y1WC, labels, questionHelp, setQuestionHelp, canProceed }) {
+            return (
+                <div className="step-content animate-in">
+                    <p className="step-indicator">STEP 2 OF 4</p>
+                    <div className="opening-box">
+                        <h1 className="step-heading">Year 2 Financial Data</h1>
+                        <p className="step-hint">Enter your most recent fiscal year data. The year-over-year comparison reveals your trajectory.</p>
+                    </div>
+                    <LearnMore>
+                        Comparing two data points creates a narrative. Are costs growing faster than revenue? Is working capital improving or deteriorating? The trend tells you where to focus your Power of One improvements.
+                    </LearnMore>
+                    <FinancialDataStep yearLabel="YEAR 2" pl={pl} setPL={setPL} bs={bs} setBS={setBS} wc={wc} setWC={setWC} calc={calc} bsCalc={bsCalc} wcCalc={wcCalc} labels={labels} questionHelp={questionHelp} setQuestionHelp={setQuestionHelp} prevWC={y1WC} />
+                    {canProceed && (
+                        <div className="closing-box animate-in">
+                            <p className="closing-title">COMPARISON READY</p>
+                            <p>Both years captured. Next: discover the power of small improvements.</p>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // =========================================================================
+        // STEP 3: POWER OF ONE SIMULATOR
+        // =========================================================================
+        function Step3Content({ powerOfOne, improvements, setImprovements, totalCash, totalEbit, y2PL, labels }) {
+            const updateImp = (key, val) => setImprovements(prev => ({ ...prev, [key]: parseFloat(val) || 0 }));
+            const leverKeys = ['price', 'volume', 'cogs', 'directLabor', 'mgmtLabor', 'overheads', 'debtorDays', 'stockDays', 'creditorDays'];
+            const leverNames = ['Price Increase', 'Volume Increase', `${labels.cogs} Reduction`, `${labels.directLabor} Efficiency`, 'Management Labor Efficiency', 'Overhead Reduction', 'Reduce Debtor Days', labels.stockLever, 'Increase Creditor Days'];
+            const isPercent = [true, true, true, true, true, true, false, false, false];
+            const maxVals = [10, 10, 10, 10, 10, 10, 30, 30, 30];
+
+            return (
+                <div className="step-content animate-in">
+                    <p className="step-indicator">STEP 3 OF 4</p>
+                    <div className="opening-box">
+                        <h1 className="step-heading">Power of One Simulator</h1>
+                        <p className="step-hint">Drag the sliders to see how small improvements across 7 levers transform your cash flow. Start with 1% — that's the Power of One.</p>
+                    </div>
+                    <LearnMore>
+                        The Power of One framework (Alan Miltz, "Scaling Up") breaks complex cash improvement into 7 manageable levers. Companies that systematically address these levers improve cash conversion cycles by 30-50% within 12-18 months. You don't need massive changes — small 1% improvements compound into dramatic results.
+                    </LearnMore>
+
+                    {y2PL.revenue > 0 && (
+                        <div className="impact-total-bar">
+                            <div className="impact-total-item">
+                                <div className="impact-label">Cash Flow Impact</div>
+                                <div className="impact-number" style={{ color: '#4ade80' }}>{fmt(totalCash)}</div>
+                            </div>
+                            <div className="impact-total-item">
+                                <div className="impact-label">EBIT Impact</div>
+                                <div className="impact-number" style={{ color: '#60a5fa' }}>{fmt(totalEbit)}</div>
+                            </div>
+                            <div className="impact-total-item">
+                                <div className="impact-label">New EBIT</div>
+                                <div className="impact-number">{fmt(y2PL.ebit + totalEbit)}</div>
+                            </div>
+                        </div>
+                    )}
+
+                    {y2PL.revenue <= 0 && (
+                        <div style={{ background: '#fef3c7', borderLeft: '3px solid #f59e0b', padding: 16, marginBottom: 24, fontSize: 14 }}>
+                            Complete Year 2 data first to use the simulator. Go back to Step 2.
+                        </div>
+                    )}
+
+                    {/* Profitability Levers */}
+                    <p className="section-label" style={{ marginTop: 8 }}>PROFITABILITY LEVERS (1-6)</p>
+                    {leverKeys.slice(0, 6).map((key, i) => (
+                        <div key={key} className="lever-slider-row">
+                            <div className="lever-header">
+                                <span className="lever-name">{leverNames[i]}</span>
+                                <div className="lever-impacts">
+                                    <span className="lever-cash">Cash: {fmt(powerOfOne[i]?.cash || 0)}</span>
+                                    <span className="lever-ebit">EBIT: {fmt(powerOfOne[i]?.ebit || 0)}</span>
+                                </div>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <input type="range" min="0" max={maxVals[i]} step="0.5" value={improvements[key]} onChange={e => updateImp(key, e.target.value)} />
+                                <span className="slider-value">{improvements[key]}%</span>
+                            </div>
+                        </div>
+                    ))}
+
+                    {/* Working Capital Levers */}
+                    <div className="section-divider">
+                        <p className="section-label">WORKING CAPITAL LEVERS (7A-7C)</p>
+                    </div>
+                    {leverKeys.slice(6).map((key, i) => {
+                        const idx = i + 6;
+                        return (
+                            <div key={key} className="lever-slider-row">
+                                <div className="lever-header">
+                                    <span className="lever-name">{leverNames[idx]}</span>
+                                    <div className="lever-impacts">
+                                        <span className="lever-cash">Cash: {fmt(powerOfOne[idx]?.cash || 0)}</span>
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                    <input type="range" min="0" max={maxVals[idx]} step="1" value={improvements[key]} onChange={e => updateImp(key, e.target.value)} />
+                                    <span className="slider-value">{improvements[key]} days</span>
+                                </div>
+                            </div>
+                        );
+                    })}
+
+                    {totalCash > 0 && (
+                        <div className="closing-box animate-in">
+                            <p className="closing-title">IMPACT MODELED</p>
+                            <p>You've identified {fmt(totalCash)} in potential cash flow improvement. Next: turn this into action.</p>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // =========================================================================
+        // STEP 4: ACTION PLAN
+        // =========================================================================
+        function Step4Content({ ideas, setIdeas, actions, setActions, powerOfOne }) {
+            const idCounter = useRef(Date.now());
+            const addIdea = () => { idCounter.current++; setIdeas(prev => [...prev, { id: idCounter.current, text: '', impact: 2, ease: 2 }]); };
+            const updateIdea = (id, field, val) => setIdeas(prev => prev.map(idea => idea.id === id ? { ...idea, [field]: val } : idea));
+            const removeIdea = (id) => setIdeas(prev => prev.filter(idea => idea.id !== id));
+            const updateAction = (i, field, val) => setActions(prev => prev.map((a, idx) => idx === i ? { ...a, [field]: val } : a));
+
+            // Compute rank for each idea (1 = best) without reordering the list
+            const scores = ideas.map(idea => ({ id: idea.id, score: (idea.impact * 2) + idea.ease }));
+            const ranked = [...scores].sort((a, b) => b.score - a.score);
+            const rankMap = {};
+            ranked.forEach((item, i) => { rankMap[item.id] = i + 1; });
+
+            return (
+                <div className="step-content animate-in">
+                    <p className="step-indicator">STEP 4 OF 4</p>
+                    <div className="opening-box">
+                        <h1 className="step-heading">Action Plan</h1>
+                        <p className="step-hint">Brainstorm improvement ideas, score them, then commit to your Top 3 with clear Who, What, When. Strategy is sacrifice — pick 3 or do nothing.</p>
+                    </div>
+                    <LearnMore>
+                        The Impact/Ease matrix comes from Lean Six Sigma. Score each idea on Impact (1-3) and Ease (1-3). Score = (Impact x 2) + Ease. This surfaces quick wins — high-impact, easy-to-execute actions. Focus on 2-3 levers maximum per quarter to avoid diluting effort.
+                    </LearnMore>
+
+                    {/* Idea Brainstorm */}
+                    <p className="section-label">BRAINSTORM IDEAS</p>
+                    <div style={{ background: '#F5F5F5', padding: 16, marginBottom: 16, fontSize: 13, color: '#333' }}>
+                        <strong>Scoring:</strong> Impact (1=Small, 2=Medium, 3=Large) x 2 + Ease (1=Hard, 2=Medium, 3=Easy). Range: 3-9. Higher = better priority.
+                    </div>
+
+                    {ideas.map((idea) => {
+                        const score = (idea.impact * 2) + idea.ease;
+                        const rank = rankMap[idea.id] || '-';
+                        return (
+                            <div key={idea.id} className="idea-row">
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 40 }}>
+                                    <span className="score-badge" style={{ fontSize: 14, fontWeight: 700 }}>{score}</span>
+                                    <span style={{ fontSize: 10, color: '#999', fontFamily: "'Monument', monospace" }}>#{rank}</span>
+                                </div>
+                                <input type="text" className="field-input" style={{ flex: 1 }} value={idea.text} onChange={e => updateIdea(idea.id, 'text', e.target.value)} placeholder="e.g. Reduce A/R days by invoicing within 24 hours" />
+                                <select className="field-input" style={{ width: 100 }} value={idea.impact} onChange={e => updateIdea(idea.id, 'impact', parseInt(e.target.value))}>
+                                    <option value={3}>Impact: 3</option><option value={2}>Impact: 2</option><option value={1}>Impact: 1</option>
+                                </select>
+                                <select className="field-input" style={{ width: 90 }} value={idea.ease} onChange={e => updateIdea(idea.id, 'ease', parseInt(e.target.value))}>
+                                    <option value={3}>Ease: 3</option><option value={2}>Ease: 2</option><option value={1}>Ease: 1</option>
+                                </select>
+                                <button onClick={() => removeIdea(idea.id)} style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: '#999' }}>&times;</button>
+                            </div>
+                        );
+                    })}
+
+                    <button onClick={addIdea} style={{ width: '100%', padding: '12px 0', border: '2px dashed #E0E0E0', background: 'none', fontSize: 14, cursor: 'pointer', color: '#666', margin: '16px 0 32px' }}>
+                        + Add Idea
+                    </button>
+
+                    {/* Top 3 WWW */}
+                    <div className="section-divider">
+                        <p className="section-label">YOUR TOP 3 COMMITMENTS (WHO, WHAT, WHEN)</p>
+                    </div>
+                    <p style={{ fontSize: 14, color: '#666', marginBottom: 20 }}>Based on your scoring above, commit to exactly 3 actions with clear ownership and deadlines.</p>
+
+                    {actions.map((action, i) => (
+                        <div key={i} style={{ borderLeft: '3px solid #000', paddingLeft: 16, marginBottom: 24 }}>
+                            <p className="monument" style={{ fontSize: 10, textTransform: 'uppercase', color: '#666', marginBottom: 10 }}>ACTION {i + 1}</p>
+                            <div className="field-group">
+                                <label className="field-label">What (specific action)</label>
+                                <textarea className="field-textarea" style={{ minHeight: 60 }} value={action.what} onChange={e => updateAction(i, 'what', e.target.value)} placeholder={i === 0 ? "e.g. Reduce debtor days from 70 to 55 by implementing 24hr invoicing" : i === 1 ? "e.g. Negotiate 5% COGS reduction with top 3 suppliers" : "e.g. Increase prices by 2% on premium product lines"} />
+                            </div>
+                            <div className="two-col">
+                                <div className="field-group">
+                                    <label className="field-label">Who (owner)</label>
+                                    <input type="text" className="field-input" value={action.who} onChange={e => updateAction(i, 'who', e.target.value)} placeholder="Sarah Johnson (CFO)" />
+                                </div>
+                                <div className="field-group">
+                                    <label className="field-label">When (deadline)</label>
+                                    <input type="date" className="field-input" value={action.when} onChange={e => updateAction(i, 'when', e.target.value)} />
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+
+                    {actions.filter(a => a.what.trim() && a.who.trim() && a.when).length >= 1 && (
+                        <div className="closing-box animate-in">
+                            <p className="closing-title">PLAN LOCKED</p>
+                            <p>Accountability is set. Review your canvas and submit.</p>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // =========================================================================
+        // CANVAS VIEW
+        // =========================================================================
+        function CanvasView({ y1PL, y2PL, y1WC, y2WC, powerOfOne, totalCash, totalEbit, actions, onBack }) {
+            const [submitStatus, setSubmitStatus] = useState(null);
+            const [submitMessage, setSubmitMessage] = useState('');
 
             const handleSubmit = async () => {
-                setIsSubmitting(true);
-
                 try {
+                    setSubmitStatus('saving');
                     const userId = localStorage.getItem('ft_user_id');
-                    if (!userId) {
-                        alert('User not authenticated. Please return to the dashboard.');
-                        setIsSubmitting(false);
-                        return;
-                    }
-
-                    const submissionData = {
-                        userId: userId,
-                        userName: userName,
-                        companyName: companyName,
-                        toolName: "cash_flow",
-
-                        year1PL: {
-                            revenue: year1PLCalc.revenue,
-                            cogs: year1PLCalc.cogs,
-                            directLabor: year1PLCalc.directLabor,
-                            managementLabor: year1PLCalc.managementLabor,
-                            overheads: year1PLCalc.overheads,
-                            interestExpense: year1PLCalc.interest,
-                            taxExpense: year1PLCalc.tax,
-                            depreciation: parseFloat(year1PL.depreciation) || 0,
-                            grossMargin: year1PLCalc.grossMargin,
-                            contributionMargin: year1PLCalc.contributionMargin,
-                            ebit: year1PLCalc.ebit,
-                            ebitPct: year1PLCalc.ebitPct,
-                            netProfit: year1PLCalc.netProfit,
-                            directLER: year1PLCalc.directLER,
-                            managementLER: year1PLCalc.managementLER
-                        },
-
-                        year1BS: {
-                            cash: year1BSCalc.cash,
-                            accountsReceivable: year1BSCalc.ar,
-                            inventory: year1BSCalc.inventory,
-                            otherCurrentAssets: year1BSCalc.otherCurrentAssets,
-                            fixedAssets: year1BSCalc.fixedAssets,
-                            otherAssets: year1BSCalc.otherAssets,
-                            accountsPayable: year1BSCalc.ap,
-                            shortTermDebt: year1BSCalc.shortTermDebt,
-                            otherCurrentLiabilities: year1BSCalc.otherCurrentLiabilities,
-                            longTermDebt: year1BSCalc.longTermDebt,
-                            otherLongTermLiabilities: year1BSCalc.otherLongTermLiabilities,
-                            capital: year1BSCalc.capital,
-                            retainedEarnings: year1BSCalc.retainedEarnings
-                        },
-
-                        year1WC: {
-                            daysInAR: year1WCCalc.daysInAR,
-                            daysInAP: year1WCCalc.daysInAP,
-                            daysInInventory: year1WCCalc.daysOfInventory,
-                            cashConversionCycle: year1WCCalc.cashConversionCycle
-                        },
-
-                        year2PL: {
-                            revenue: year2PLCalc.revenue,
-                            cogs: year2PLCalc.cogs,
-                            directLabor: year2PLCalc.directLabor,
-                            managementLabor: year2PLCalc.managementLabor,
-                            overheads: year2PLCalc.overheads,
-                            interestExpense: year2PLCalc.interest,
-                            taxExpense: year2PLCalc.tax,
-                            depreciation: parseFloat(year2PL.depreciation) || 0,
-                            grossMargin: year2PLCalc.grossMargin,
-                            contributionMargin: year2PLCalc.contributionMargin,
-                            ebit: year2PLCalc.ebit,
-                            ebitPct: year2PLCalc.ebitPct,
-                            netProfit: year2PLCalc.netProfit,
-                            directLER: year2PLCalc.directLER,
-                            managementLER: year2PLCalc.managementLER
-                        },
-
-                        year2BS: {
-                            cash: year2BSCalc.cash,
-                            accountsReceivable: year2BSCalc.ar,
-                            inventory: year2BSCalc.inventory,
-                            otherCurrentAssets: year2BSCalc.otherCurrentAssets,
-                            fixedAssets: year2BSCalc.fixedAssets,
-                            otherAssets: year2BSCalc.otherAssets,
-                            accountsPayable: year2BSCalc.ap,
-                            shortTermDebt: year2BSCalc.shortTermDebt,
-                            otherCurrentLiabilities: year2BSCalc.otherCurrentLiabilities,
-                            longTermDebt: year2BSCalc.longTermDebt,
-                            otherLongTermLiabilities: year2BSCalc.otherLongTermLiabilities,
-                            capital: year2BSCalc.capital,
-                            retainedEarnings: year2BSCalc.retainedEarnings
-                        },
-
-                        year2WC: {
-                            daysInAR: year2WCCalc.daysInAR,
-                            daysInAP: year2WCCalc.daysInAP,
-                            daysInInventory: year2WCCalc.daysOfInventory,
-                            cashConversionCycle: year2WCCalc.cashConversionCycle
-                        },
-
-                        powerOfOne: powerOfOne.map(lever => ({
-                            rank: powerOfOne.indexOf(lever) + 1,
-                            driver: lever.driver,
-                            cashImpact: lever.cashFlowImpact,
-                            ebitImpact: lever.ebitImpact,
-                            percentChange: 1.0
-                        })),
-
-                        actions: actions.map(action => ({
-                            id: action.id,
-                            idea: action.idea,
-                            impact: action.impact,
-                            ease: action.ease,
-                            owner: action.owner,
-                            deadline: action.deadline,
-                            score: calculateScore(action)
-                        }))
+                    if (!userId) { setSubmitStatus('error'); setSubmitMessage('User not authenticated.'); return; }
+                    const questionMappings = {
+                        story_report: { year1PL: { revenue: y1PL.revenue, cogs: y1PL.cogs, grossMargin: y1PL.grossMargin, ebit: y1PL.ebit, ebitPct: y1PL.ebitPct, netProfit: y1PL.netProfit, directLER: y1PL.directLER, managementLER: y1PL.managementLER }, year2PL: { revenue: y2PL.revenue, cogs: y2PL.cogs, grossMargin: y2PL.grossMargin, ebit: y2PL.ebit, ebitPct: y2PL.ebitPct, netProfit: y2PL.netProfit, directLER: y2PL.directLER, managementLER: y2PL.managementLER } },
+                        power_of_one: powerOfOne.map(l => ({ lever: l.lever, cashImpact: l.cash, ebitImpact: l.ebit })),
+                        action_sheets: actions.filter(a => a.what.trim()),
+                        top_priority: 'Cash impact: ' + totalCash + ', EBIT impact: ' + totalEbit,
+                        ler_ratio: { year1WC: y1WC, year2WC: y2WC }
                     };
-
-                    // Submit using RPC function (handles schema-specific tables)
-                    const { data: result, error: submitError } = await supabaseClient
-                        .rpc('submit_tool_data', {
-                            p_schema_name: CONFIG.SCHEMA_NAME,
-                            p_user_id: userId,
-                            p_data: submissionData,
-                            p_tool_slug: CONFIG.TOOL_SLUG
-                        });
-
-                    if (submitError) throw submitError;
-
-                    if (!result || !result.success) {
-                        throw new Error(result?.message || 'Submission failed');
-                    }
-
-                    alert('Submission saved successfully!');
-                    console.log('Submission ID:', result.submission_id);
-                    localStorage.setItem('lastSubmissionId', result.submission_id);
-
-                    // Show results page after successful submission
-                    setShowResults(true);
-
+                    await ToolDB.save(userId, questionMappings);
+                    setSubmitStatus('success');
+                    setSubmitMessage('Saved successfully!');
                 } catch (error) {
-                    console.error('Submission error:', error);
-                    alert('Failed to save: ' + error.message);
-                } finally {
-                    setIsSubmitting(false);
+                    setSubmitStatus('error');
+                    setSubmitMessage('Failed: ' + error.message);
                 }
             };
 
-            // ============================================================================
-            // RENDER FUNCTIONS
-            // ============================================================================
-
-            const renderProgressDots = () => {
-                const steps = [1, 2, 3, 4];
-                const stepNames = ['Year 1 Data', 'Year 2 Data', 'Power of One', 'Action Plan'];
-                
-                return (
-                    <div className="flex items-center justify-between max-w-4xl mx-auto mb-12">
-                        {steps.map((step, idx) => (
-                            <React.Fragment key={step}>
-                                <div className="flex items-center gap-3">
-                                    <div className={`progress-dot ${currentStep >= step ? 'active' : ''}`}></div>
-                                    <span className={`text-sm ${currentStep === step ? 'font-bold text-black' : 'text-gray-500'}`}>
-                                        {stepNames[idx]}
-                                    </span>
-                                </div>
-                                {idx < steps.length - 1 && (
-                                    <div className="progress-line">
-                                        <div 
-                                            className="progress-line-fill" 
-                                            style={{width: currentStep > step ? '100%' : '0%'}}
-                                        ></div>
-                                    </div>
-                                )}
-                            </React.Fragment>
-                        ))}
-                    </div>
-                );
+            const handleExport = async (e) => {
+                try {
+                    const btn = e.target; btn.disabled = true; btn.textContent = 'Generating...';
+                    if (!window.jspdf || !window.html2canvas) { alert('PDF libraries loading...'); btn.disabled = false; btn.textContent = 'Export PDF'; return; }
+                    const { jsPDF } = window.jspdf;
+                    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+                    const el = document.getElementById('cash-canvas');
+                    const canvas = await html2canvas(el, { scale: 2, backgroundColor: '#fff', useCORS: false, logging: false });
+                    const imgData = canvas.toDataURL('image/png');
+                    const pw = 210, m = 10, mw = pw - m * 2;
+                    const ar = canvas.width / canvas.height;
+                    let iw = mw, ih = iw / ar;
+                    if (ih > 277) { ih = 277; iw = ih * ar; }
+                    pdf.addImage(imgData, 'PNG', (pw - iw) / 2, m, iw, ih);
+                    pdf.save(`Cash-Flow-Analysis-${new Date().toISOString().split('T')[0]}.pdf`);
+                    btn.disabled = false; btn.textContent = 'Export PDF';
+                } catch (error) { alert('PDF failed: ' + error.message); if (e?.target) { e.target.disabled = false; e.target.textContent = 'Export PDF'; } }
             };
 
-            const renderCoverPage = () => (
-                <div className="cover-page">
-                    <div className="text-center text-white animate-in">
-                        <h1 className="plaak text-9xl mb-8 leading-none">
-                            CASH FLOW<br />ANALYSIS
-                        </h1>
-                        <p className="text-3xl mb-12 font-light">
-                            Master the 9 levers that create dramatic cash flow improvements
-                        </p>
-                        <button 
-                            onClick={() => setCurrentStep(0.5)}
-                            className="btn-primary text-3xl py-6 px-16"
-                        >
-                            START
-                        </button>
-                    </div>
-                </div>
-            );
+            const sorted = [...powerOfOne].sort((a, b) => b.cash - a.cash);
 
-            const renderIntroScreen = () => (
-                <div className="intro-screen">
-                    <div className="max-w-6xl mx-auto">
-                        <div className="text-center mb-16 animate-in">
-                            <h1 className="plaak text-9xl mb-12">BEFORE WE START</h1>
-                            
-                            <div className="max-w-2xl mx-auto mb-12">
-                                <label className="block text-left text-2xl mb-4 font-bold">Your Email</label>
-                                <input
-                                    type="email"
-                                    value={userId}
-                                    onChange={(e) => setUserId(e.target.value)}
-                                    className="w-full px-6 py-4 text-2xl bg-white text-black border-4 border-white focus:outline-none"
-                                    placeholder="john@company.com"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 gap-12 mb-16">
-                            <div className="animate-in" style={{animationDelay: '0.1s'}}>
-                                <h2 className="plaak text-6xl mb-6">PURPOSE</h2>
-                                <p className="text-2xl leading-relaxed">
-                                    Elite CEOs run at 100 mph but cash flow is the oxygen of your company. 
-                                    This tool shows you how small 1% improvements across 9 levers create 
-                                    dramatic 10-20%+ cash flow improvements.
-                                </p>
-                            </div>
-
-                            <div className="animate-in" style={{animationDelay: '0.2s'}}>
-                                <h2 className="plaak text-6xl mb-6">WHAT YOU'LL GET</h2>
-                                <ul className="text-2xl space-y-4">
-                                    <li>→ Complete financial position analysis</li>
-                                    <li>→ Power of One impact analysis (9 levers)</li>
-                                    <li>→ Top 3-5 improvement opportunities ranked</li>
-                                    <li>→ Action plan with WHO, WHAT, WHEN assignments</li>
-                                </ul>
-                            </div>
-
-                            <div className="animate-in" style={{animationDelay: '0.3s'}}>
-                                <h2 className="plaak text-6xl mb-6">TIME REQUIRED</h2>
-                                <p className="text-2xl">45-60 minutes total</p>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-4 gap-6 mb-16 animate-in" style={{animationDelay: '0.4s'}}>
-                            <div className="border-4 border-white p-8 text-center">
-                                <div className="plaak text-9xl mb-4">01</div>
-                                <p className="text-xl">Year 1 Data</p>
-                            </div>
-                            <div className="border-4 border-white p-8 text-center">
-                                <div className="plaak text-9xl mb-4">02</div>
-                                <p className="text-xl">Year 2 Data</p>
-                            </div>
-                            <div className="border-4 border-white p-8 text-center">
-                                <div className="plaak text-9xl mb-4">03</div>
-                                <p className="text-xl">Power of One</p>
-                            </div>
-                            <div className="border-4 border-white p-8 text-center">
-                                <div className="plaak text-9xl mb-4">04</div>
-                                <p className="text-xl">Action Plan</p>
-                            </div>
-                        </div>
-
-                        <div className="text-center animate-in" style={{animationDelay: '0.5s'}}>
-                            <button
-                                onClick={() => {
-                                    if (userId) setCurrentStep(1);
-                                }}
-                                disabled={!userId}
-                                className="btn-primary text-3xl py-6 px-16"
-                            >
-                                LET'S START
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            );
-
-            const renderTopHeader = () => {
-                if (currentStep === 0 || currentStep === 0.5 || showResults) return null;
-                
-                return (
-                    <header className="border-b-2 border-black py-6 px-8 no-print bg-white sticky top-0 z-10">
-                        <div className="max-w-7xl mx-auto flex justify-between items-start">
+            return (
+                <div style={{ minHeight: '100vh', background: '#fff' }}>
+                    <header className="no-print" style={{ borderBottom: '2px solid #000', padding: '16px 24px' }}>
+                        <div style={{ maxWidth: 960, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
-                                <h1 className="plaak text-3xl">CASH FLOW ANALYSIS</h1>
-                                <p className="text-sm mt-2 text-gray-600">Master the 9 levers</p>
+                                <h1 className="plaak" style={{ fontSize: 28, marginBottom: 4 }}>YOUR CASH FLOW CANVAS</h1>
+                                <p style={{ fontSize: 14, color: '#666' }}>Cash is king — now you have the map</p>
                             </div>
-                            <div className="text-right">
-                                <div className="text-xs text-gray-500">Auto-saving progress</div>
-                                <div className="text-xs text-gray-400 mt-1">{userId}</div>
-                            </div>
+                            <button onClick={onBack} className="btn-back">&larr; Edit</button>
                         </div>
                     </header>
-                );
-            };
 
-            const renderStep1 = () => (
-                <div className="animate-in">
-                    <div className="section-header-bold">
-                        <h2 className="plaak text-4xl mb-2">YEAR 1 FINANCIAL DATA</h2>
-                        <p className="text-xl">
-                            Enter your baseline financial data from your previous fiscal year
-                        </p>
-                    </div>
-                    
-                    <div className="mb-12">
-                        <h3 className="plaak text-3xl mb-6">Company Information</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div>
-                                <label className="block text-lg font-bold mb-3">Your Name *</label>
-                                <input
-                                    type="text"
-                                    value={userName}
-                                    onChange={(e) => setUserName(e.target.value)}
-                                    className="worksheet-input text-lg"
-                                    placeholder="John Smith"
-                                    required
-                                />
+                    <div style={{ maxWidth: 960, margin: '0 auto', padding: '32px 24px' }}>
+                        <div id="cash-canvas">
+                            {/* Executive Summary */}
+                            <div className="canvas-section" style={{ background: '#000', color: '#fff', border: '2px solid #000' }}>
+                                <div className="numbered-section" style={{ background: '#fff', color: '#000', marginBottom: 16 }}>EXECUTIVE SUMMARY</div>
+                                <div className="canvas-metric-grid">
+                                    <div className="canvas-metric-box" style={{ background: '#111' }}>
+                                        <div className="canvas-metric-label" style={{ color: '#999' }}>Cash Flow Impact</div>
+                                        <div className="canvas-metric-value" style={{ color: '#4ade80' }}>{fmt(totalCash)}</div>
+                                    </div>
+                                    <div className="canvas-metric-box" style={{ background: '#111' }}>
+                                        <div className="canvas-metric-label" style={{ color: '#999' }}>EBIT Impact</div>
+                                        <div className="canvas-metric-value" style={{ color: '#60a5fa' }}>{fmt(totalEbit)}</div>
+                                    </div>
+                                    <div className="canvas-metric-box" style={{ background: '#111' }}>
+                                        <div className="canvas-metric-label" style={{ color: '#999' }}>Cash Conversion Cycle</div>
+                                        <div className="canvas-metric-value" style={{ color: '#fff' }}>{y2WC.ccc.toFixed(0)} days</div>
+                                    </div>
+                                </div>
                             </div>
-                            <div>
-                                <label className="block text-lg font-bold mb-3">Company Name *</label>
-                                <input
-                                    type="text"
-                                    value={companyName}
-                                    onChange={(e) => setCompanyName(e.target.value)}
-                                    className="worksheet-input text-lg"
-                                    placeholder="Your Company Inc."
-                                    required
-                                />
-                            </div>
-                        </div>
-                    </div>
 
-                    <div className="mb-12">
-                        <h3 className="plaak text-3xl mb-6">Profit & Loss Statement (Year 1)</h3>
-                        <p className="text-lg text-gray-600 mb-6">Enter your Year 1 P&L data from your income statement</p>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label className="block text-lg font-bold mb-3">Revenue *</label>
-                                <input
-                                    type="number"
-                                    value={year1PL.revenue}
-                                    onChange={(e) => setYear1PL({...year1PL, revenue: e.target.value})}
-                                    className="worksheet-input text-lg"
-                                    placeholder="35000000"
-                                    required
-                                />
+                            {/* Year-over-Year */}
+                            <div className="canvas-section">
+                                <div className="numbered-section" style={{ marginBottom: 16 }}>YEAR-OVER-YEAR</div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 8, fontSize: 14 }}>
+                                    <div style={{ fontWeight: 600, color: '#666' }}></div><div className="monument" style={{ fontSize: 10, color: '#666' }}>YEAR 1</div><div className="monument" style={{ fontSize: 10, color: '#666' }}>YEAR 2</div><div className="monument" style={{ fontSize: 10, color: '#666' }}>CHANGE</div>
+                                    {[
+                                        ['Revenue', y1PL.revenue, y2PL.revenue],
+                                        ['Gross Margin %', y1PL.grossMarginPct, y2PL.grossMarginPct],
+                                        ['EBIT %', y1PL.ebitPct, y2PL.ebitPct],
+                                        ['Net Profit', y1PL.netProfit, y2PL.netProfit]
+                                    ].map(([label, v1, v2]) => {
+                                        const isP = label.includes('%');
+                                        const d = v2 - v1;
+                                        return (
+                                            <React.Fragment key={label}>
+                                                <div style={{ fontWeight: 600 }}>{label}</div>
+                                                <div>{isP ? fmtPct(v1) : fmt(v1)}</div>
+                                                <div>{isP ? fmtPct(v2) : fmt(v2)}</div>
+                                                <div style={{ color: d >= 0 ? '#059669' : '#DC2626' }}>{d >= 0 ? '+' : ''}{isP ? fmtPct(d) : fmt(d)}</div>
+                                            </React.Fragment>
+                                        );
+                                    })}
+                                </div>
                             </div>
-                            <div>
-                                <label className="block text-lg font-bold mb-3">Cost of Goods Sold *</label>
-                                <input
-                                    type="number"
-                                    value={year1PL.cogs}
-                                    onChange={(e) => setYear1PL({...year1PL, cogs: e.target.value})}
-                                    className="worksheet-input text-lg"
-                                    placeholder="24500000"
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-lg font-bold mb-3">Direct Labor</label>
-                                <input
-                                    type="number"
-                                    value={year1PL.directLabor}
-                                    onChange={(e) => setYear1PL({...year1PL, directLabor: e.target.value})}
-                                    className="worksheet-input text-lg"
-                                    placeholder="3000000"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-lg font-bold mb-3">Management Labor</label>
-                                <input
-                                    type="number"
-                                    value={year1PL.managementLabor}
-                                    onChange={(e) => setYear1PL({...year1PL, managementLabor: e.target.value})}
-                                    className="worksheet-input text-lg"
-                                    placeholder="2000000"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-lg font-bold mb-3">Overheads</label>
-                                <input
-                                    type="number"
-                                    value={year1PL.overheads}
-                                    onChange={(e) => setYear1PL({...year1PL, overheads: e.target.value})}
-                                    className="worksheet-input text-lg"
-                                    placeholder="1751140"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-lg font-bold mb-3">Interest Expense</label>
-                                <input
-                                    type="number"
-                                    value={year1PL.interest}
-                                    onChange={(e) => setYear1PL({...year1PL, interest: e.target.value})}
-                                    className="worksheet-input text-lg"
-                                    placeholder="1165900"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-lg font-bold mb-3">Tax Expense</label>
-                                <input
-                                    type="number"
-                                    value={year1PL.tax}
-                                    onChange={(e) => setYear1PL({...year1PL, tax: e.target.value})}
-                                    className="worksheet-input text-lg"
-                                    placeholder="930280"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-lg font-bold mb-3">Depreciation</label>
-                                <input
-                                    type="number"
-                                    value={year1PL.depreciation}
-                                    onChange={(e) => setYear1PL({...year1PL, depreciation: e.target.value})}
-                                    className="worksheet-input text-lg"
-                                    placeholder="820000"
-                                />
-                            </div>
-                        </div>
 
-                        {year1PLCalc.revenue > 0 && (
-                            <div className="mt-8 border-4 border-black p-8">
-                                <h4 className="plaak text-2xl mb-6">📊 CALCULATED METRICS</h4>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-lg">
-                                    <div>
-                                        <div className="text-gray-600">Gross Margin</div>
-                                        <div className="font-bold">{formatCurrency(year1PLCalc.grossMargin)} ({formatPercent(year1PLCalc.grossMarginPct)})</div>
-                                    </div>
-                                    <div>
-                                        <div className="text-gray-600">Contribution Margin</div>
-                                        <div className="font-bold">{formatCurrency(year1PLCalc.contributionMargin)} ({formatPercent(year1PLCalc.contributionMarginPct)})</div>
-                                    </div>
-                                    <div>
-                                        <div className="text-gray-600">EBIT</div>
-                                        <div className="font-bold">{formatCurrency(year1PLCalc.ebit)} ({formatPercent(year1PLCalc.ebitPct)})</div>
-                                    </div>
-                                    <div>
-                                        <div className="text-gray-600">Net Profit</div>
-                                        <div className="font-bold">{formatCurrency(year1PLCalc.netProfit)}</div>
-                                    </div>
-                                    {year1PLCalc.directLER > 0 && (
-                                        <div>
-                                            <div className="text-gray-600">Direct LER</div>
-                                            <div className="font-bold">{year1PLCalc.directLER.toFixed(2)}</div>
+                            {/* Power of One Ranked */}
+                            <div className="canvas-section">
+                                <div className="numbered-section" style={{ marginBottom: 16 }}>POWER OF ONE — RANKED BY CASH IMPACT</div>
+                                {sorted.filter(l => l.cash > 0).map((lever, i) => (
+                                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: i < sorted.length - 1 ? '1px solid #f0f0f0' : 'none' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                            <span className="monument" style={{ fontSize: 11, color: '#666', minWidth: 24 }}>#{i + 1}</span>
+                                            <span style={{ fontWeight: 600, fontSize: 14 }}>{lever.lever}</span>
                                         </div>
-                                    )}
-                                    {year1PLCalc.managementLER > 0 && (
-                                        <div>
-                                            <div className="text-gray-600">Management LER</div>
-                                            <div className="font-bold">{year1PLCalc.managementLER.toFixed(2)}</div>
+                                        <div style={{ display: 'flex', gap: 24 }}>
+                                            <span style={{ color: '#059669', fontWeight: 600, fontSize: 14 }}>{fmt(lever.cash)}</span>
+                                            {lever.ebit > 0 && <span style={{ color: '#2563eb', fontSize: 13 }}>EBIT: {fmt(lever.ebit)}</span>}
                                         </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="mb-12">
-                        <h3 className="plaak text-3xl mb-6">Balance Sheet (Year 1)</h3>
-                        <p className="text-lg text-gray-600 mb-6">Enter your Year 1 balance sheet data</p>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <h4 className="font-bold mb-3 text-sm">ASSETS</h4>
-                                <div className="space-y-3">
-                                    <div>
-                                        <label className="block text-sm mb-1">Cash</label>
-                                        <input
-                                            type="number"
-                                            value={year1BS.cash}
-                                            onChange={(e) => setYear1BS({...year1BS, cash: e.target.value})}
-                                            className="worksheet-input"
-                                            placeholder="0"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm mb-1">Accounts Receivable *</label>
-                                        <input
-                                            type="number"
-                                            value={year1BS.ar}
-                                            onChange={(e) => setYear1BS({...year1BS, ar: e.target.value})}
-                                            className="worksheet-input"
-                                            placeholder="6712330"
-                                            required
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm mb-1">Inventory</label>
-                                        <input
-                                            type="number"
-                                            value={year1BS.inventory}
-                                            onChange={(e) => setYear1BS({...year1BS, inventory: e.target.value})}
-                                            className="worksheet-input"
-                                            placeholder="10336960"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm mb-1">Other Current Assets</label>
-                                        <input
-                                            type="number"
-                                            value={year1BS.otherCurrentAssets}
-                                            onChange={(e) => setYear1BS({...year1BS, otherCurrentAssets: e.target.value})}
-                                            className="worksheet-input"
-                                            placeholder="0"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm mb-1">Fixed Assets (Net)</label>
-                                        <input
-                                            type="number"
-                                            value={year1BS.fixedAssets}
-                                            onChange={(e) => setYear1BS({...year1BS, fixedAssets: e.target.value})}
-                                            className="worksheet-input"
-                                            placeholder="8500000"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm mb-1">Other Assets</label>
-                                        <input
-                                            type="number"
-                                            value={year1BS.otherAssets}
-                                            onChange={(e) => setYear1BS({...year1BS, otherAssets: e.target.value})}
-                                            className="worksheet-input"
-                                            placeholder="0"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div>
-                                <h4 className="font-bold mb-3 text-sm">LIABILITIES & EQUITY</h4>
-                                <div className="space-y-3">
-                                    <div>
-                                        <label className="block text-sm mb-1">Accounts Payable *</label>
-                                        <input
-                                            type="number"
-                                            value={year1BS.ap}
-                                            onChange={(e) => setYear1BS({...year1BS, ap: e.target.value})}
-                                            className="worksheet-input"
-                                            placeholder="4028550"
-                                            required
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm mb-1">Short-term Debt</label>
-                                        <input
-                                            type="number"
-                                            value={year1BS.shortTermDebt}
-                                            onChange={(e) => setYear1BS({...year1BS, shortTermDebt: e.target.value})}
-                                            className="worksheet-input"
-                                            placeholder="5019740"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm mb-1">Other Current Liabilities</label>
-                                        <input
-                                            type="number"
-                                            value={year1BS.otherCurrentLiabilities}
-                                            onChange={(e) => setYear1BS({...year1BS, otherCurrentLiabilities: e.target.value})}
-                                            className="worksheet-input"
-                                            placeholder="0"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm mb-1">Long-term Debt</label>
-                                        <input
-                                            type="number"
-                                            value={year1BS.longTermDebt}
-                                            onChange={(e) => setYear1BS({...year1BS, longTermDebt: e.target.value})}
-                                            className="worksheet-input"
-                                            placeholder="9000000"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm mb-1">Other Long-term Liabilities</label>
-                                        <input
-                                            type="number"
-                                            value={year1BS.otherLongTermLiabilities}
-                                            onChange={(e) => setYear1BS({...year1BS, otherLongTermLiabilities: e.target.value})}
-                                            className="worksheet-input"
-                                            placeholder="0"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm mb-1">Capital</label>
-                                        <input
-                                            type="number"
-                                            value={year1BS.capital}
-                                            onChange={(e) => setYear1BS({...year1BS, capital: e.target.value})}
-                                            className="worksheet-input"
-                                            placeholder="2001000"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm mb-1">Retained Earnings</label>
-                                        <input
-                                            type="number"
-                                            value={year1BS.retainedEarnings}
-                                            onChange={(e) => setYear1BS({...year1BS, retainedEarnings: e.target.value})}
-                                            className="worksheet-input"
-                                            placeholder="5500000"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {year1BSCalc.totalAssets > 0 && (
-                            <div className="mt-8">
-                                {Math.abs(year1BSCalc.balanceCheck) < 0.01 ? (
-                                    <div className="balance-check-success border-4 p-6">
-                                        <div className="plaak text-2xl mb-2">✓ BALANCE SHEET BALANCES</div>
-                                        <div className="text-lg">Total Assets: {formatCurrency(year1BSCalc.totalAssets)} = Total Liabilities + Equity: {formatCurrency(year1BSCalc.totalLiabilitiesAndEquity)}</div>
-                                    </div>
-                                ) : (
-                                    <div className="balance-check-error shake border-4 p-6">
-                                        <div className="plaak text-2xl mb-2">⚠ BALANCE SHEET DOES NOT BALANCE</div>
-                                        <div className="text-lg">Difference: {formatCurrency(year1BSCalc.balanceCheck)}</div>
-                                        <div className="text-lg mt-2">Assets ({formatCurrency(year1BSCalc.totalAssets)}) must equal Liabilities + Equity ({formatCurrency(year1BSCalc.totalLiabilitiesAndEquity)})</div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="mb-8">
-                        <h3 className="plaak text-xl mb-4">Working Capital Metrics (Year 1)</h3>
-                        <p className="text-sm text-gray-600 mb-4">Enter days metrics for cash conversion cycle</p>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <label className="block text-lg font-bold mb-3">Days in A/R</label>
-                                <input
-                                    type="number"
-                                    value={year1WC.daysInAR}
-                                    onChange={(e) => setYear1WC({...year1WC, daysInAR: e.target.value})}
-                                    className="worksheet-input text-lg"
-                                    placeholder="70"
-                                />
-                                <p className="text-xs text-gray-500 mt-1">How many days to collect from customers</p>
-                            </div>
-                            <div>
-                                <label className="block text-lg font-bold mb-3">Days in A/P</label>
-                                <input
-                                    type="number"
-                                    value={year1WC.daysInAP}
-                                    onChange={(e) => setYear1WC({...year1WC, daysInAP: e.target.value})}
-                                    className="worksheet-input text-lg"
-                                    placeholder="60"
-                                />
-                                <p className="text-xs text-gray-500 mt-1">How many days to pay suppliers</p>
-                            </div>
-                            <div>
-                                <label className="block text-lg font-bold mb-3">Days of Inventory</label>
-                                <input
-                                    type="number"
-                                    value={year1WC.daysOfInventory}
-                                    onChange={(e) => setYear1WC({...year1WC, daysOfInventory: e.target.value})}
-                                    className="worksheet-input text-lg"
-                                    placeholder="154"
-                                />
-                                <p className="text-xs text-gray-500 mt-1">How many days of inventory on hand</p>
-                            </div>
-                        </div>
-
-                        {year1WCCalc.daysInAR > 0 && (
-                            <div className="mt-4 context-box p-4">
-                                <h4 className="font-bold mb-2">Cash Conversion Cycle</h4>
-                                <div className="text-2xl plaak">{year1WCCalc.cashConversionCycle.toFixed(0)} days</div>
-                                <p className="text-xs text-gray-600 mt-1">
-                                    Time between paying suppliers and collecting from customers
-                                </p>
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="flex justify-end gap-4">
-                        <button
-                            onClick={() => setCurrentStep(2)}
-                            disabled={!isStep1Complete() || !userId || !userName || !companyName}
-                            className="btn-primary"
-                        >
-                            Continue to Year 2 →
-                        </button>
-                    </div>
-                </div>
-            );
-
-            const renderStep2 = () => (
-                <div className="animate-in">
-                    <div className="section-header-bold">
-                        <h2 className="plaak text-4xl mb-2">YEAR 2 FINANCIAL DATA</h2>
-                        <p className="text-xl">
-                            Enter your most recent fiscal year financial data for comparison
-                        </p>
-                    </div>
-                    
-                    <div className="mb-12">
-                        <h3 className="plaak text-3xl mb-6">Profit & Loss Statement (Year 2)</h3>
-                        <p className="text-lg text-gray-600 mb-6">Enter your Year 2 (most recent) P&L data</p>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label className="block text-lg font-bold mb-3">Revenue *</label>
-                                <input
-                                    type="number"
-                                    value={year2PL.revenue}
-                                    onChange={(e) => setYear2PL({...year2PL, revenue: e.target.value})}
-                                    className="worksheet-input text-lg"
-                                    placeholder="42000000"
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-lg font-bold mb-3">Cost of Goods Sold *</label>
-                                <input
-                                    type="number"
-                                    value={year2PL.cogs}
-                                    onChange={(e) => setYear2PL({...year2PL, cogs: e.target.value})}
-                                    className="worksheet-input text-lg"
-                                    placeholder="28980000"
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-lg font-bold mb-3">Direct Labor</label>
-                                <input
-                                    type="number"
-                                    value={year2PL.directLabor}
-                                    onChange={(e) => setYear2PL({...year2PL, directLabor: e.target.value})}
-                                    className="worksheet-input text-lg"
-                                    placeholder="3250000"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-lg font-bold mb-3">Management Labor</label>
-                                <input
-                                    type="number"
-                                    value={year2PL.managementLabor}
-                                    onChange={(e) => setYear2PL({...year2PL, managementLabor: e.target.value})}
-                                    className="worksheet-input text-lg"
-                                    placeholder="2500000"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-lg font-bold mb-3">Overheads</label>
-                                <input
-                                    type="number"
-                                    value={year2PL.overheads}
-                                    onChange={(e) => setYear2PL({...year2PL, overheads: e.target.value})}
-                                    className="worksheet-input text-lg"
-                                    placeholder="2651150"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-lg font-bold mb-3">Interest Expense</label>
-                                <input
-                                    type="number"
-                                    value={year2PL.interest}
-                                    onChange={(e) => setYear2PL({...year2PL, interest: e.target.value})}
-                                    className="worksheet-input text-lg"
-                                    placeholder="1363480"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-lg font-bold mb-3">Tax Expense</label>
-                                <input
-                                    type="number"
-                                    value={year2PL.tax}
-                                    onChange={(e) => setYear2PL({...year2PL, tax: e.target.value})}
-                                    className="worksheet-input text-lg"
-                                    placeholder="1172348"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-lg font-bold mb-3">Depreciation</label>
-                                <input
-                                    type="number"
-                                    value={year2PL.depreciation}
-                                    onChange={(e) => setYear2PL({...year2PL, depreciation: e.target.value})}
-                                    className="worksheet-input text-lg"
-                                    placeholder="933000"
-                                />
-                            </div>
-                        </div>
-
-                        {year2PLCalc.revenue > 0 && (
-                            <div className="mt-6 context-box p-4">
-                                <h4 className="font-bold mb-3">📊 Calculated Metrics</h4>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                                    <div>
-                                        <div className="text-gray-600">Gross Margin</div>
-                                        <div className="font-bold">{formatCurrency(year2PLCalc.grossMargin)} ({formatPercent(year2PLCalc.grossMarginPct)})</div>
-                                    </div>
-                                    <div>
-                                        <div className="text-gray-600">Contribution Margin</div>
-                                        <div className="font-bold">{formatCurrency(year2PLCalc.contributionMargin)} ({formatPercent(year2PLCalc.contributionMarginPct)})</div>
-                                    </div>
-                                    <div>
-                                        <div className="text-gray-600">EBIT</div>
-                                        <div className="font-bold">{formatCurrency(year2PLCalc.ebit)} ({formatPercent(year2PLCalc.ebitPct)})</div>
-                                    </div>
-                                    <div>
-                                        <div className="text-gray-600">Net Profit</div>
-                                        <div className="font-bold">{formatCurrency(year2PLCalc.netProfit)}</div>
-                                    </div>
-                                    {year2PLCalc.directLER > 0 && (
-                                        <div>
-                                            <div className="text-gray-600">Direct LER</div>
-                                            <div className="font-bold">{year2PLCalc.directLER.toFixed(2)}</div>
-                                        </div>
-                                    )}
-                                    {year2PLCalc.managementLER > 0 && (
-                                        <div>
-                                            <div className="text-gray-600">Management LER</div>
-                                            <div className="font-bold">{year2PLCalc.managementLER.toFixed(2)}</div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="mb-12">
-                        <h3 className="plaak text-3xl mb-6">Balance Sheet (Year 2)</h3>
-                        <p className="text-lg text-gray-600 mb-6">Enter your Year 2 balance sheet data</p>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <h4 className="font-bold mb-3 text-sm">ASSETS</h4>
-                                <div className="space-y-3">
-                                    <div>
-                                        <label className="block text-sm mb-1">Cash</label>
-                                        <input
-                                            type="number"
-                                            value={year2BS.cash}
-                                            onChange={(e) => setYear2BS({...year2BS, cash: e.target.value})}
-                                            className="worksheet-input"
-                                            placeholder="0"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm mb-1">Accounts Receivable *</label>
-                                        <input
-                                            type="number"
-                                            value={year2BS.ar}
-                                            onChange={(e) => setYear2BS({...year2BS, ar: e.target.value})}
-                                            className="worksheet-input"
-                                            placeholder="8630137"
-                                            required
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm mb-1">Inventory</label>
-                                        <input
-                                            type="number"
-                                            value={year2BS.inventory}
-                                            onChange={(e) => setYear2BS({...year2BS, inventory: e.target.value})}
-                                            className="worksheet-input"
-                                            placeholder="14291507"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm mb-1">Other Current Assets</label>
-                                        <input
-                                            type="number"
-                                            value={year2BS.otherCurrentAssets}
-                                            onChange={(e) => setYear2BS({...year2BS, otherCurrentAssets: e.target.value})}
-                                            className="worksheet-input"
-                                            placeholder="0"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm mb-1">Fixed Assets (Net)</label>
-                                        <input
-                                            type="number"
-                                            value={year2BS.fixedAssets}
-                                            onChange={(e) => setYear2BS({...year2BS, fixedAssets: e.target.value})}
-                                            className="worksheet-input"
-                                            placeholder="9500000"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm mb-1">Other Assets</label>
-                                        <input
-                                            type="number"
-                                            value={year2BS.otherAssets}
-                                            onChange={(e) => setYear2BS({...year2BS, otherAssets: e.target.value})}
-                                            className="worksheet-input"
-                                            placeholder="0"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div>
-                                <h4 className="font-bold mb-3 text-sm">LIABILITIES & EQUITY</h4>
-                                <div className="space-y-3">
-                                    <div>
-                                        <label className="block text-sm mb-1">Accounts Payable *</label>
-                                        <input
-                                            type="number"
-                                            value={year2BS.ap}
-                                            onChange={(e) => setYear2BS({...year2BS, ap: e.target.value})}
-                                            className="worksheet-input"
-                                            placeholder="5557808"
-                                            required
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm mb-1">Short-term Debt</label>
-                                        <input
-                                            type="number"
-                                            value={year2BS.shortTermDebt}
-                                            onChange={(e) => setYear2BS({...year2BS, shortTermDebt: e.target.value})}
-                                            className="worksheet-input"
-                                            placeholder="7279813"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm mb-1">Other Current Liabilities</label>
-                                        <input
-                                            type="number"
-                                            value={year2BS.otherCurrentLiabilities}
-                                            onChange={(e) => setYear2BS({...year2BS, otherCurrentLiabilities: e.target.value})}
-                                            className="worksheet-input"
-                                            placeholder="0"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm mb-1">Long-term Debt</label>
-                                        <input
-                                            type="number"
-                                            value={year2BS.longTermDebt}
-                                            onChange={(e) => setYear2BS({...year2BS, longTermDebt: e.target.value})}
-                                            className="worksheet-input"
-                                            placeholder="10000000"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm mb-1">Other Long-term Liabilities</label>
-                                        <input
-                                            type="number"
-                                            value={year2BS.otherLongTermLiabilities}
-                                            onChange={(e) => setYear2BS({...year2BS, otherLongTermLiabilities: e.target.value})}
-                                            className="worksheet-input"
-                                            placeholder="0"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm mb-1">Capital</label>
-                                        <input
-                                            type="number"
-                                            value={year2BS.capital}
-                                            onChange={(e) => setYear2BS({...year2BS, capital: e.target.value})}
-                                            className="worksheet-input"
-                                            placeholder="2001000"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm mb-1">Retained Earnings</label>
-                                        <input
-                                            type="number"
-                                            value={year2BS.retainedEarnings}
-                                            onChange={(e) => setYear2BS({...year2BS, retainedEarnings: e.target.value})}
-                                            className="worksheet-input"
-                                            placeholder="7583023"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {year2BSCalc.totalAssets > 0 && (
-                            <div className="mt-6">
-                                {Math.abs(year2BSCalc.balanceCheck) < 0.01 ? (
-                                    <div className="balance-check-success">
-                                        <div className="font-bold mb-1">✓ Balance Sheet Balances</div>
-                                        <div className="text-sm">Total Assets: {formatCurrency(year2BSCalc.totalAssets)} = Total Liabilities + Equity: {formatCurrency(year2BSCalc.totalLiabilitiesAndEquity)}</div>
-                                    </div>
-                                ) : (
-                                    <div className="balance-check-error shake">
-                                        <div className="font-bold mb-1">⚠ Balance Sheet Does Not Balance</div>
-                                        <div className="text-sm">Difference: {formatCurrency(year2BSCalc.balanceCheck)}</div>
-                                        <div className="text-sm mt-2">Assets ({formatCurrency(year2BSCalc.totalAssets)}) must equal Liabilities + Equity ({formatCurrency(year2BSCalc.totalLiabilitiesAndEquity)})</div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="mb-8">
-                        <h3 className="plaak text-xl mb-4">Working Capital Metrics (Year 2)</h3>
-                        <p className="text-sm text-gray-600 mb-4">Enter current days metrics</p>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <label className="block text-lg font-bold mb-3">Days in A/R</label>
-                                <input
-                                    type="number"
-                                    value={year2WC.daysInAR}
-                                    onChange={(e) => setYear2WC({...year2WC, daysInAR: e.target.value})}
-                                    className="worksheet-input text-lg"
-                                    placeholder="75"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-lg font-bold mb-3">Days in A/P</label>
-                                <input
-                                    type="number"
-                                    value={year2WC.daysInAP}
-                                    onChange={(e) => setYear2WC({...year2WC, daysInAP: e.target.value})}
-                                    className="worksheet-input text-lg"
-                                    placeholder="70"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-lg font-bold mb-3">Days of Inventory</label>
-                                <input
-                                    type="number"
-                                    value={year2WC.daysOfInventory}
-                                    onChange={(e) => setYear2WC({...year2WC, daysOfInventory: e.target.value})}
-                                    className="worksheet-input text-lg"
-                                    placeholder="180"
-                                />
-                            </div>
-                        </div>
-
-                        {year2WCCalc.daysInAR > 0 && (
-                            <div className="mt-4 context-box p-4">
-                                <h4 className="font-bold mb-2">Cash Conversion Cycle</h4>
-                                <div className="text-2xl plaak">{year2WCCalc.cashConversionCycle.toFixed(0)} days</div>
-                                {year1WCCalc.daysInAR > 0 && (
-                                    <p className="text-xs text-gray-600 mt-1">
-                                        Change from Year 1: {(year2WCCalc.cashConversionCycle - year1WCCalc.cashConversionCycle > 0 ? '+' : '')}{(year2WCCalc.cashConversionCycle - year1WCCalc.cashConversionCycle).toFixed(0)} days
-                                    </p>
-                                )}
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="flex justify-between">
-                        <button onClick={() => setCurrentStep(1)} className="btn-secondary">
-                            ← Back to Year 1
-                        </button>
-                        <button
-                            onClick={() => setCurrentStep(3)}
-                            disabled={!isStep2Complete()}
-                            className="btn-primary"
-                        >
-                            Continue to Analysis →
-                        </button>
-                    </div>
-                </div>
-            );
-
-            const renderStep3 = () => (
-                <div className="animate-in">
-                    <div className="section-header-bold">
-                        <h2 className="plaak text-4xl mb-2">POWER OF ONE ANALYSIS</h2>
-                        <p className="text-xl">
-                            See what happens when you improve each lever by just 1%
-                        </p>
-                    </div>
-                    
-                    <div className="mb-12">
-                        <div className="border-4 border-black p-8 mb-8">
-                            <h3 className="plaak text-3xl mb-6">THE POWER OF ONE</h3>
-                            <p className="text-xl mb-6">
-                                Small 1% improvements across key levers create dramatic cash flow impact. 
-                                Here's where YOU should focus:
-                            </p>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                                <div className="context-box p-6">
-                                    <div className="text-sm text-gray-600 mb-1">Total Cash Flow Impact</div>
-                                    <div className="plaak text-4xl">{formatCurrency(totalCashImpact)}</div>
-                                    <div className="text-sm text-gray-600 mt-2">
-                                        From 1% improvements across all 9 levers
-                                    </div>
-                                </div>
-                                <div className="context-box p-6">
-                                    <div className="text-sm text-gray-600 mb-1">Total EBIT Impact</div>
-                                    <div className="plaak text-4xl">{formatCurrency(totalEbitImpact)}</div>
-                                    <div className="text-sm text-gray-600 mt-2">
-                                        Current EBIT: {formatCurrency(year2PLCalc.ebit)} → New: {formatCurrency(year2PLCalc.ebit + totalEbitImpact)}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <h4 className="font-bold text-lg mb-4">9 Levers Ranked by Impact</h4>
-                            <div className="space-y-3">
-                                {powerOfOne.map((lever, idx) => (
-                                    <div key={idx} className="lever-card">
-                                        <div className="flex items-start justify-between mb-4">
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="plaak text-5xl text-black">#{idx + 1}</div>
-                                                    <div>
-                                                        <div className="plaak text-2xl mb-2">{lever.driver}</div>
-                                                        <div className="text-lg text-gray-600">{lever.explanation}</div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="text-right">
-                                                <div className={`plaak text-4xl ${
-                                                    idx < 3 ? 'impact-high' : idx < 6 ? 'impact-medium' : 'impact-low'
-                                                }`}>
-                                                    {formatCurrency(lever.cashFlowImpact)}
-                                                </div>
-                                                <div className="text-lg text-gray-600 mt-2">
-                                                    Change: {lever.change}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        {lever.ebitImpact > 0 && (
-                                            <div className="text-sm text-gray-600 mt-2 pt-2 border-t border-gray-200">
-                                                EBIT Impact: {formatCurrency(lever.ebitImpact)}
-                                            </div>
-                                        )}
                                     </div>
                                 ))}
                             </div>
 
-                            <div className="mt-12 border-4 border-black p-8">
-                                <h4 className="plaak text-2xl mb-4">💡 FOCUS RECOMMENDATION</h4>
-                                <p className="text-xl mb-6">
-                                    Focus on the <strong>top 3-5 levers</strong> (green). These deliver 80% of total impact with minimal effort.
-                                </p>
-                                <div className="space-y-2 text-sm">
-                                    {powerOfOne.slice(0, 3).map((lever, idx) => (
-                                        <div key={idx} className="flex items-center gap-2">
-                                            <span className="font-bold">#{idx + 1}</span>
-                                            <span>{lever.driver}</span>
-                                            <span className="ml-auto font-bold impact-high">{formatCurrency(lever.cashFlowImpact)}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="flex justify-between">
-                        <button onClick={() => setCurrentStep(2)} className="btn-secondary">
-                            ← Back to Year 2
-                        </button>
-                        <button onClick={() => setCurrentStep(4)} className="btn-primary">
-                            Create Action Plan →
-                        </button>
-                    </div>
-                </div>
-            );
-
-            const renderStep4 = () => {
-                const addAction = () => {
-                    setActions([...actions, {
-                        id: Date.now(),
-                        idea: '',
-                        impact: 3,
-                        ease: 3,
-                        owner: '',
-                        deadline: '',
-                        status: 'pending'
-                    }]);
-                };
-
-                const updateAction = (id, field, value) => {
-                    setActions(actions.map(a => a.id === id ? {...a, [field]: value} : a));
-                };
-
-                const removeAction = (id) => {
-                    setActions(actions.filter(a => a.id !== id));
-                };
-
-                const sortedActions = [...actions].sort((a, b) => calculateScore(b) - calculateScore(a));
-
-                return (
-                    <div className="animate-in">
-                        <div className="section-header-bold">
-                            <h2 className="plaak text-4xl mb-2">ACTION PLAN</h2>
-                            <p className="text-xl">
-                                Turn insights into action with clear ownership and deadlines
-                            </p>
-                        </div>
-                        
-                        <div className="mb-12">
-                            <h3 className="plaak text-3xl mb-6">Turn Insights Into Action</h3>
-                            <p className="text-lg text-gray-600 mb-8">
-                                Based on your Power of One analysis, create 5-7 specific actions with clear ownership and deadlines.
-                            </p>
-
-                            <div className="border-4 border-black p-8 mb-8">
-                                <h4 className="plaak text-2xl mb-6">SCORING SYSTEM</h4>
-                                <div className="grid grid-cols-2 gap-8 text-lg">
-                                    <div>
-                                        <div className="font-bold mb-3 text-xl">Impact (1-5)</div>
-                                        <div className="space-y-2 text-base">
-                                            <div>5 = Massive ($500K+ cash impact)</div>
-                                            <div>4 = Large ($200K-$500K)</div>
-                                            <div>3 = Medium ($50K-$200K)</div>
-                                            <div>2 = Small ($10K-$50K)</div>
-                                            <div>1 = Minimal (&lt;$10K)</div>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div className="font-bold mb-3 text-xl">Ease (1-5)</div>
-                                        <div className="space-y-2 text-base">
-                                            <div>5 = Very Easy (1-2 weeks)</div>
-                                            <div>4 = Easy (1 month)</div>
-                                            <div>3 = Medium (2-3 months)</div>
-                                            <div>2 = Hard (3-6 months)</div>
-                                            <div>1 = Very Hard (6+ months)</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="mt-6 pt-6 border-t-2 border-gray-300">
-                                    <div className="plaak text-xl mb-2">Score = (Impact × 2) + Ease</div>
-                                    <div className="text-base text-gray-600">
-                                        Range: 3-15 (higher = better priority)
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="mb-6">
-                                <button onClick={addAction} className="btn-primary">
-                                    + Add Action
-                                </button>
-                            </div>
-
-                            {sortedActions.length === 0 ? (
-                                <div className="border-4 border-black p-12 text-center text-gray-500 bg-gray-50">
-                                    <p className="text-2xl mb-4">No actions added yet</p>
-                                    <p className="text-xl">Click "+ Add Action" to start building your plan</p>
-                                </div>
-                            ) : (
-                                <div className="space-y-4">
-                                    {sortedActions.map((action, idx) => (
-                                        <div key={action.id} className="lever-card">
-                                            <div className="flex items-center gap-4 mb-6">
-                                                <div className="plaak text-5xl text-black">#{idx + 1}</div>
-                                                <div className="flex-1">
-                                                    <div className="plaak text-2xl">Score: {calculateScore(action)}</div>
-                                                </div>
-                                                <button
-                                                    onClick={() => removeAction(action.id)}
-                                                    className="text-red-500 hover:text-red-700 font-bold"
-                                                >
-                                                    Remove
-                                                </button>
-                                            </div>
-
-                                            <div className="space-y-4">
-                                                <div>
-                                                    <label className="block text-lg font-bold mb-3">What (Specific Action) *</label>
-                                                    <textarea
-                                                        value={action.idea}
-                                                        onChange={(e) => updateAction(action.id, 'idea', e.target.value)}
-                                                        className="worksheet-input"
-                                                        placeholder="e.g., Reduce A/R days by invoicing within 24 hours (currently 7-10 days)"
-                                                        rows="2"
-                                                        required
-                                                    />
-                                                </div>
-
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div>
-                                                        <label className="block text-sm font-bold mb-1">Impact (1-5) *</label>
-                                                        <select
-                                                            value={action.impact}
-                                                            onChange={(e) => updateAction(action.id, 'impact', parseInt(e.target.value))}
-                                                            className="worksheet-input"
-                                                        >
-                                                            {[5,4,3,2,1].map(n => (
-                                                                <option key={n} value={n}>{n} - {
-                                                                    n === 5 ? 'Massive' :
-                                                                    n === 4 ? 'Large' :
-                                                                    n === 3 ? 'Medium' :
-                                                                    n === 2 ? 'Small' : 'Minimal'
-                                                                }</option>
-                                                            ))}
-                                                        </select>
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-sm font-bold mb-1">Ease (1-5) *</label>
-                                                        <select
-                                                            value={action.ease}
-                                                            onChange={(e) => updateAction(action.id, 'ease', parseInt(e.target.value))}
-                                                            className="worksheet-input"
-                                                        >
-                                                            {[5,4,3,2,1].map(n => (
-                                                                <option key={n} value={n}>{n} - {
-                                                                    n === 5 ? 'Very Easy' :
-                                                                    n === 4 ? 'Easy' :
-                                                                    n === 3 ? 'Medium' :
-                                                                    n === 2 ? 'Hard' : 'Very Hard'
-                                                                }</option>
-                                                            ))}
-                                                        </select>
-                                                    </div>
-                                                </div>
-
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div>
-                                                        <label className="block text-sm font-bold mb-1">Who (Owner) *</label>
-                                                        <input
-                                                            type="text"
-                                                            value={action.owner}
-                                                            onChange={(e) => updateAction(action.id, 'owner', e.target.value)}
-                                                            className="worksheet-input"
-                                                            placeholder="Sarah Johnson (CFO)"
-                                                            required
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-sm font-bold mb-1">When (Deadline) *</label>
-                                                        <input
-                                                            type="date"
-                                                            value={action.deadline}
-                                                            onChange={(e) => updateAction(action.id, 'deadline', e.target.value)}
-                                                            className="worksheet-input"
-                                                            required
-                                                        />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-
-                            {sortedActions.length > 0 && (
-                                <div className="mt-8 context-box p-6">
-                                    <h4 className="font-bold mb-3">🎯 Action Summary</h4>
-                                    <div className="space-y-2 text-sm">
-                                        <div className="flex justify-between">
-                                            <span>Total Actions:</span>
-                                            <span className="font-bold">{sortedActions.length}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span>High Priority (Score 11-15):</span>
-                                            <span className="font-bold impact-high">
-                                                {sortedActions.filter(a => calculateScore(a) >= 11).length}
-                                            </span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span>Medium Priority (Score 7-10):</span>
-                                            <span className="font-bold impact-medium">
-                                                {sortedActions.filter(a => calculateScore(a) >= 7 && calculateScore(a) < 11).length}
-                                            </span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span>Low Priority (Score 3-6):</span>
-                                            <span className="font-bold impact-low">
-                                                {sortedActions.filter(a => calculateScore(a) < 7).length}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="flex justify-between">
-                            <button onClick={() => setCurrentStep(3)} className="btn-secondary">
-                                ← Back to Analysis
-                            </button>
-                            <button
-                                onClick={handleSubmit}
-                                disabled={isSubmitting || sortedActions.length < 3 || sortedActions.some(a => !a.idea || !a.owner || !a.deadline)}
-                                className="btn-primary"
-                            >
-                                {isSubmitting ? '⏳ Generating AI Report...' : 'Complete & View Results →'}
-                            </button>
-                        </div>
-                    </div>
-                );
-            };
-
-            const renderResults = () => {
-                const handleExport = () => {
-                    window.print();
-                };
-
-                const handleShare = async () => {
-                    alert('Results will be shared with your team via email');
-                };
-
-                return (
-                    <div className="animate-in max-w-7xl mx-auto px-8 py-12">
-                        <div className="no-print mb-12 flex justify-between items-center">
-                            <h1 className="plaak text-5xl">CASH FLOW ANALYSIS - RESULTS</h1>
-                            <div className="flex gap-6">
-                                <button onClick={handleExport} className="btn-secondary">
-                                    Export PDF
-                                </button>
-                                <button onClick={handleShare} className="btn-primary">
-                                    Share with Team
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="space-y-8">
-                            {/* AI Report Notice */}
-                            <div className="bg-black text-white p-12 border-4 border-black animate-in">
-                                <div className="flex items-center gap-6 mb-6">
-                                    <div className="plaak text-9xl">🤖</div>
-                                    <div>
-                                        <h2 className="plaak text-4xl mb-3">AI-POWERED ACTION PLAN</h2>
-                                        <p className="text-2xl">Your personalized report is being generated...</p>
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
-                                    <div className="border-4 border-white p-6">
-                                        <div className="text-6xl mb-3">📧</div>
-                                        <div className="plaak text-xl mb-2">EMAIL DELIVERY</div>
-                                        <div className="text-lg">Check {userId} in 30 seconds</div>
-                                    </div>
-                                    <div className="border-4 border-white p-6">
-                                        <div className="text-6xl mb-3">🎯</div>
-                                        <div className="plaak text-xl mb-2">TACTICAL MOVES</div>
-                                        <div className="text-lg">Top 3 levers + quick wins</div>
-                                    </div>
-                                    <div className="border-4 border-white p-6">
-                                        <div className="text-6xl mb-3">🗓️</div>
-                                        <div className="plaak text-xl mb-2">90-DAY ROADMAP</div>
-                                        <div className="text-lg">Month-by-month game plan</div>
-                                    </div>
-                                </div>
-                                <div className="mt-8 text-center">
-                                    <p className="text-xl">💡 Below is your financial analysis. The AI coach report will arrive via email with personalized recommendations based on your numbers.</p>
-                                </div>
-                            </div>
-
-                            {/* Company Header */}
-                            <div className="result-card-bold">
-                                <h2 className="plaak text-4xl mb-4">{companyName}</h2>
-                                <div className="text-xl text-gray-600">
-                                    Completed by {userName} on {new Date().toLocaleDateString()}
-                                </div>
-                            </div>
-
-                            {/* Executive Summary */}
-                            <div className="result-card-bold">
-                                <h3 className="plaak text-3xl mb-8">EXECUTIVE SUMMARY</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                    <div>
-                                        <div className="text-lg text-gray-600 mb-2">Potential Cash Flow Improvement</div>
-                                        <div className="plaak text-5xl impact-high mb-2">{formatCurrency(totalCashImpact)}</div>
-                                        <div className="text-lg text-gray-600">From 1% improvements</div>
-                                    </div>
-                                    <div>
-                                        <div className="text-lg text-gray-600 mb-2">Current EBIT</div>
-                                        <div className="plaak text-5xl mb-2">{formatCurrency(year2PLCalc.ebit)}</div>
-                                        <div className="text-lg text-gray-600">
-                                            {formatPercent(year2PLCalc.ebitPct)} margin
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div className="text-lg text-gray-600 mb-2">Cash Conversion Cycle</div>
-                                        <div className="plaak text-5xl mb-2">{year2WCCalc.cashConversionCycle.toFixed(0)} days</div>
-                                        <div className="text-lg text-gray-600">
-                                            {year1WCCalc.daysInAR > 0 && (
-                                                <span>{(year2WCCalc.cashConversionCycle - year1WCCalc.cashConversionCycle > 0 ? '+' : '')}{(year2WCCalc.cashConversionCycle - year1WCCalc.cashConversionCycle).toFixed(0)} days vs last year</span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Top 3 Opportunities */}
-                            <div className="result-card-bold">
-                                <h3 className="plaak text-3xl mb-8">TOP 3 CASH FLOW OPPORTUNITIES</h3>
-                                <div className="space-y-6">
-                                    {powerOfOne.slice(0, 3).map((lever, idx) => (
-                                        <div key={idx} className="flex items-center justify-between p-6 border-4 border-black bg-gray-50">
-                                            <div className="flex items-center gap-6">
-                                                <div className="plaak text-5xl text-black">#{idx + 1}</div>
-                                                <div>
-                                                    <div className="plaak text-2xl mb-2">{lever.driver}</div>
-                                                    <div className="text-lg text-gray-600">{lever.explanation}</div>
-                                                </div>
-                                            </div>
-                                            <div className="text-right">
-                                                <div className="plaak text-4xl impact-high mb-2">{formatCurrency(lever.cashFlowImpact)}</div>
-                                                <div className="text-lg text-gray-600">{lever.change}</div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
                             {/* Action Plan */}
-                            <div className="result-card-bold">
-                                <h3 className="plaak text-3xl mb-8">YOUR ACTION PLAN ({actions.length} ACTIONS)</h3>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-lg">
-                                        <thead>
-                                            <tr className="border-b-2 border-black">
-                                                <th className="text-left p-2">#</th>
-                                                <th className="text-left p-2">Action</th>
-                                                <th className="text-left p-2">Owner</th>
-                                                <th className="text-left p-2">Deadline</th>
-                                                <th className="text-right p-2">Score</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {[...actions].sort((a, b) => calculateScore(b) - calculateScore(a)).map((action, idx) => (
-                                                <tr key={action.id} className="border-b border-gray-200">
-                                                    <td className="p-2 font-bold">{idx + 1}</td>
-                                                    <td className="p-2">{action.idea}</td>
-                                                    <td className="p-2">{action.owner}</td>
-                                                    <td className="p-2">{new Date(action.deadline).toLocaleDateString()}</td>
-                                                    <td className="p-2 text-right font-bold">{calculateScore(action)}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
+                            <div className="canvas-section">
+                                <div className="numbered-section" style={{ marginBottom: 16 }}>ACTION PLAN (WHO, WHAT, WHEN)</div>
+                                {actions.filter(a => a.what.trim()).map((action, i) => (
+                                    <div key={i} style={{ borderLeft: '3px solid #000', paddingLeft: 16, marginBottom: 16 }}>
+                                        <p className="monument" style={{ fontSize: 10, color: '#666', marginBottom: 4 }}>ACTION {i + 1}</p>
+                                        <p style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>{action.what}</p>
+                                        <div style={{ display: 'flex', gap: 24, fontSize: 13, color: '#666' }}>
+                                            <span>Owner: {action.who || '—'}</span>
+                                            <span>Deadline: {action.when ? new Date(action.when).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                                {actions.filter(a => a.what.trim()).length === 0 && <p style={{ fontSize: 14, color: '#999' }}>No actions defined.</p>}
                             </div>
 
-                            {/* Next Steps */}
-                            <div className="result-card">
-                                <h3 className="plaak text-xl mb-4">Next Steps</h3>
-                                <ol className="list-decimal list-inside space-y-2">
-                                    <li>Share this report with your executive team</li>
-                                    <li>Schedule a 60-minute team meeting to discuss top 3 opportunities</li>
-                                    <li>Assign action owners and set deadlines (use WWW document)</li>
-                                    <li>Review progress weekly in Fast Track meetings</li>
-                                    <li>Re-run this analysis quarterly to track improvements</li>
-                                </ol>
-                            </div>
-
-                            <div className="no-print text-center pt-8">
-                                <button onClick={() => {
-                                    setShowResults(false);
-                                    setCurrentStep(1);
-                                }} className="btn-secondary">
-                                    ← Back to Tool
-                                </button>
+                            {/* Quote */}
+                            <div style={{ textAlign: 'center', padding: '24px 0', borderTop: '1px solid #E0E0E0' }}>
+                                <p style={{ fontSize: 14, fontStyle: 'italic', color: '#666' }}>"Mind the gap between profit and cash flow; it's where the real financial health of your business lies."</p>
+                                <p className="monument" style={{ fontSize: 10, color: '#999', marginTop: 4 }}>ALAN MILTZ</p>
                             </div>
                         </div>
-                    </div>
-                );
-            };
 
-            // ============================================================================
-            // MAIN RENDER
-            // ============================================================================
-
-            // Handle different screens
-            if (currentStep === 0) {
-                return renderCoverPage();
-            }
-
-            if (currentStep === 0.5) {
-                return renderIntroScreen();
-            }
-
-            if (showResults) {
-                return renderResults();
-            }
-
-            // Main tool screens (1-4)
-            return (
-                <div className="min-h-screen bg-white">
-                    {renderTopHeader()}
-                    <div className="max-w-7xl mx-auto px-8 py-12">
-                        {renderProgressDots()}
-                        
-                        {currentStep === 1 && renderStep1()}
-                        {currentStep === 2 && renderStep2()}
-                        {currentStep === 3 && renderStep3()}
-                        {currentStep === 4 && renderStep4()}
+                        {/* Action buttons */}
+                        <div className="no-print" style={{ display: 'flex', gap: 12, marginTop: 24 }}>
+                            <button onClick={handleExport} className="btn-back" style={{ flex: 1 }}>Export PDF</button>
+                            <button onClick={handleSubmit} className="btn-next" style={{ flex: 1 }} disabled={submitStatus === 'saving'}>
+                                {submitStatus === 'saving' ? 'Saving...' : 'Final Submit'}
+                            </button>
+                        </div>
+                        {submitStatus && (
+                            <div style={{ marginTop: 16, padding: '12px 16px', textAlign: 'center', background: submitStatus === 'success' ? '#f0fdf4' : submitStatus === 'error' ? '#fef2f2' : '#f5f5f5', border: `1px solid ${submitStatus === 'success' ? '#bbf7d0' : submitStatus === 'error' ? '#fecaca' : '#e0e0e0'}`, fontSize: 14 }}>
+                                <span style={{ color: submitStatus === 'success' ? '#166534' : submitStatus === 'error' ? '#991b1b' : '#333' }}>{submitMessage}</span>
+                            </div>
+                        )}
+                        <div style={{ marginTop: 24, textAlign: 'center' }}><p className="monument" style={{ fontSize: 11, color: '#999' }}>CASH IS KING — NOW EXECUTE</p></div>
                     </div>
                 </div>
             );
-        };
+        }
 
-        // Render the app
         ReactDOM.render(<CashFlowTool />, document.getElementById('root'));
     </script>
 </body>
