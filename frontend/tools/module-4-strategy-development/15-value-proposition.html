@@ -1,1728 +1,1270 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Value Proposition Design | Fast Track Program</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Value Proposition Design | Fast Track Program</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../../shared/js/dependency-injection.js"></script>
+    <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
+    <script src="../../shared/js/cognitive-load.js"></script>
 
-  <!-- React & ReactDOM from CDN -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <style>
+        @font-face { font-family: 'Plaak'; src: url('Plaak3Trial-43-Bold.woff2') format('woff2'); font-weight: bold; }
+        @font-face { font-family: 'Riforma'; src: url('RiformaLL-Regular.woff2') format('woff2'); font-weight: normal; }
+        @font-face { font-family: 'Riforma'; src: url('RiformaLL-Regular.woff2') format('woff2'); font-weight: 600; }
+        @font-face { font-family: 'Monument'; src: url('MonumentGrotesk-Mono.woff2') format('woff2'); }
 
-  <!-- Babel Standalone for JSX -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
+        body {
+            font-family: 'Riforma', -apple-system, sans-serif;
+            font-size: 16px;
+            color: #000;
+            background: #000;
+            -webkit-font-smoothing: antialiased;
+        }
 
-  <!-- Supabase -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="../../shared/js/dependency-injection.js"></script>
+        .plaak { font-family: 'Plaak', sans-serif; font-weight: bold; letter-spacing: -0.01em; line-height: 1.2; }
+        .monument { font-family: 'Monument', monospace; letter-spacing: 0.05em; }
 
-  <!-- jsPDF + html2canvas for PDF export -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+        .tool-frame { background: #fff; min-height: 100vh; }
+        .tool-inner { background: #fff; min-height: 100vh; }
 
-  <style>
-    /* Font Face Declarations */
-    @font-face {
-      font-family: 'Plaak';
-      src: url('Plaak3Trial-43-Bold.woff2') format('woff2');
-      font-weight: bold;
-      font-style: normal;
-    }
+        .wizard-layout { display: flex; min-height: 100vh; }
+        .wizard-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background: #fff;
+            padding: 0 48px;
+        }
+        .wizard-sidebar {
+            width: 280px;
+            background: #000;
+            border-left: 1px solid #000;
+            flex-shrink: 0;
+        }
+        .wizard-sidebar-inner {
+            position: sticky;
+            top: 0;
+            padding: 32px 24px;
+            max-height: 100vh;
+            overflow-y: auto;
+        }
 
-    @font-face {
-      font-family: 'Riforma';
-      src: url('RiformaLL-Regular.woff2') format('woff2');
-      font-weight: normal;
-      font-style: normal;
-    }
+        .step-content { max-width: 100%; padding: 40px 0; flex: 1; }
+        .step-indicator {
+            font-family: 'Monument', monospace;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #666;
+            margin-bottom: 8px;
+        }
 
-    @font-face {
-      font-family: 'Monument';
-      src: url('MonumentGrotesk-Mono.woff2') format('woff2');
-      font-weight: normal;
-      font-style: normal;
-    }
+        .opening-box { margin-bottom: 32px; }
+        .opening-box .step-heading {
+            font-family: 'Plaak', sans-serif;
+            font-weight: bold;
+            font-size: 32px;
+            letter-spacing: -0.01em;
+            line-height: 1.2;
+            color: #000;
+            margin-bottom: 6px;
+        }
+        .opening-box .step-hint {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.5;
+            margin: 0;
+        }
 
-    /* Global Styles */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+        .questions-grid { display: flex; flex-direction: column; gap: 0; margin-bottom: 32px; }
+        .fields-row { display: grid; gap: 20px; margin-bottom: 20px; }
+        .fields-row-3 { grid-template-columns: repeat(3, 1fr); }
+        .fields-row-2 { grid-template-columns: 1fr 1fr; }
+        .fields-row .field-card { background: #FAFAFA; border: 1px solid #E0E0E0; padding: 16px; }
+        .fields-row .field-card label.field-label { font-size: 13px; margin-bottom: 6px; }
+        .fields-row .field-card .field-textarea,
+        .fields-row .field-card .field-input { font-size: 14px; padding: 10px 12px; }
+        .fields-row .field-card .field-textarea { min-height: 64px; }
+        .fields-row .field-card .field-help { font-size: 11px; margin-top: 3px; }
 
-    body {
-      font-family: 'Riforma', sans-serif;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-    }
+        .closing-box {
+            border-top: 1px solid #E0E0E0;
+            padding: 20px 0 0 0;
+            margin-top: 8px;
+            text-align: center;
+        }
+        .closing-box p { font-size: 14px; color: #666; }
+        .closing-box .closing-title {
+            font-family: 'Monument', monospace;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #000;
+            margin-bottom: 6px;
+        }
 
-    .plaak {
-      font-family: 'Plaak', sans-serif;
-      text-transform: uppercase;
-      font-weight: bold;
-      letter-spacing: -0.02em;
-    }
+        .field-group { margin-bottom: 40px; }
+        .field-group:last-child { margin-bottom: 0; }
+        .field-label {
+            font-weight: 600;
+            font-size: 16px;
+            color: #000;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .field-input {
+            border: 1px solid #E0E0E0;
+            padding: 12px 16px;
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
+            width: 100%;
+            color: #000;
+            background: #fff;
+            transition: border-color 0.2s ease;
+        }
+        .field-input:focus { outline: none; border-color: #000; }
+        .field-textarea {
+            border: 1px solid #E0E0E0;
+            padding: 12px 16px;
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
+            width: 100%;
+            min-height: 100px;
+            resize: vertical;
+            color: #000;
+            background: #fff;
+            transition: border-color 0.2s ease;
+        }
+        .field-textarea:focus { outline: none; border-color: #000; }
+        .field-help { font-size: 13px; color: #666; margin-top: 4px; }
+        .field-error { font-size: 13px; color: #DC2626; margin-top: 4px; }
 
-    .riforma-bold {
-      font-family: 'Riforma', sans-serif;
-      font-weight: bold;
-    }
+        .help-icon-btn {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #E0E0E0;
+            border: 1.5px solid #999;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: help;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+            font-size: 11px;
+            font-weight: 600;
+            color: #666;
+        }
+        .help-icon-btn:hover { background: #000; color: #fff; border-color: #000; }
 
-    .monument {
-      font-family: 'Monument', monospace;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
+        .help-accordion {
+            background: #F5F5F5;
+            border: 1px solid #E0E0E0;
+            border-left: 3px solid #000;
+            padding: 14px 16px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: #333;
+            line-height: 1.5;
+            animation: accordionOpen 0.2s ease-out;
+        }
+        @keyframes accordionOpen {
+            from { opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0; }
+            to { opacity: 1; max-height: 300px; }
+        }
 
-    /* Animations */
-    @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
+        .learn-more-toggle {
+            font-family: 'Monument', monospace;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #000;
+            background: #F5F5F5;
+            border: 1px solid #E0E0E0;
+            cursor: pointer;
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 32px;
+            transition: background 0.15s ease;
+        }
+        .learn-more-toggle:hover { background: #EBEBEB; }
+        .learn-more-content {
+            border-left: 3px solid #000;
+            background: #F5F5F5;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            font-size: 14px;
+            color: #333;
+            line-height: 1.7;
+        }
 
-    .animate-in {
-      animation: slideIn 0.3s ease-out;
-    }
+        .ft-insight {
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+            background: #F5F5F5;
+            border: 1px solid #E0E0E0;
+            border-left: 4px solid #FFF469;
+            padding: 16px 20px;
+            margin-bottom: 32px;
+        }
+        .ft-insight-icon {
+            flex-shrink: 0;
+            width: 28px;
+            height: 28px;
+            background: #FFF469;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .ft-insight-label {
+            font-family: 'Monument', monospace;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #000;
+            margin-bottom: 4px;
+        }
+        .ft-insight-text {
+            font-size: 14px;
+            color: #333;
+            line-height: 1.6;
+        }
 
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
+        .btn-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-top: 1px solid #E0E0E0;
+            background: #fff;
+            width: 100%;
+        }
+        .btn-back {
+            background: #fff;
+            color: #000;
+            border: 2px solid #000;
+            padding: 12px 24px;
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-back:hover { background: #F5F5F5; }
+        .btn-next {
+            background: #000;
+            color: #fff;
+            border: 2px solid #000;
+            padding: 12px 24px;
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-next:hover:not(:disabled) { transform: scale(1.02); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .btn-next:disabled { background: #E0E0E0; color: #9CA3AF; border-color: #E0E0E0; cursor: not-allowed; }
 
-    .fade-in {
-      animation: fadeIn 0.4s ease-out;
-    }
+        .sidebar-step-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            border-left: 3px solid transparent;
+            transition: all 0.2s ease;
+        }
+        .sidebar-step-item.active { border-left-color: #FFF469; background: #222; }
+        .sidebar-step-item.completed { background: #fff; color: #000; border-left-color: #fff; cursor: pointer; }
+        .sidebar-step-item.completed:hover { background: #E0E0E0; }
+        .sidebar-step-item.locked { opacity: 0.5; }
+        .sidebar-step-item .step-num { font-family: 'Riforma', sans-serif; font-size: 14px; }
+        .sidebar-step-item .step-name { font-family: 'Riforma', sans-serif; font-size: 14px; }
+        .sidebar-snippet { font-size: 12px; margin-top: 4px; opacity: 0.7; line-height: 1.3; }
 
-    .transition-animate-in {
-      animation: slideIn 0.6s ease-out;
-    }
+        .numbered-section { background: #000; color: #fff; padding: 8px 14px; font-size: 14px; font-weight: bold; letter-spacing: 0.5px; display: inline-block; font-family: 'Monument', monospace; }
+        .canvas-section-box { background: #FAFAFA; border-left: 4px solid #000; padding: 20px; margin-bottom: 16px; }
 
-    /* Button Styles */
-    .btn-primary {
-      background: #000000;
-      color: #FFFFFF;
-      padding: 16px 32px;
-      border: 2px solid #000000;
-      font-size: 18px;
-      font-family: 'Riforma', sans-serif;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      font-weight: normal;
-    }
+        .mobile-step-bar { display: none; padding: 12px 16px; border-bottom: 1px solid #E0E0E0; background: #F5F5F5; }
+        .mobile-step-bar .bar-text { font-family: 'Monument', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #666; margin-bottom: 6px; }
+        .mobile-progress { height: 3px; background: #E0E0E0; width: 100%; }
+        .mobile-progress-fill { height: 100%; background: #000; transition: width 0.3s ease; }
 
-    .btn-primary:hover:not(:disabled) {
-      transform: scale(1.02);
-    }
+        /* VP formula preview */
+        .vp-preview {
+            background: #000;
+            color: #fff;
+            padding: 24px 28px;
+            margin-bottom: 32px;
+            font-size: 18px;
+            line-height: 1.6;
+        }
+        .vp-preview .vp-slot {
+            background: #FFF469;
+            color: #000;
+            padding: 2px 8px;
+            font-weight: 600;
+        }
+        .vp-preview .vp-slot.empty {
+            background: #333;
+            color: #999;
+        }
 
-    .btn-primary:disabled {
-      background: #E0E0E0;
-      border-color: #E0E0E0;
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
+        /* Validation item */
+        .validation-item {
+            padding: 16px;
+            border: 1px solid #E0E0E0;
+            margin-bottom: 8px;
+            transition: all 0.2s ease;
+        }
+        .validation-item.answered-yes { background: #f0fdf4; border-color: #bbf7d0; }
+        .validation-item.answered-no { background: #fef2f2; border-color: #fecaca; }
 
-    .btn-secondary {
-      background: #FFFFFF;
-      color: #000000;
-      padding: 12px 24px;
-      border: 2px solid #000000;
-      font-size: 16px;
-      font-family: 'Riforma', sans-serif;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
+        @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-in { animation: fadeSlideIn 0.3s ease-out; }
 
-    .btn-secondary:hover {
-      background: #F8F8F8;
-    }
+        @media print { .no-print { display: none !important; } }
 
-    /* Form Styles */
-    input[type="text"],
-    input[type="number"],
-    input[type="email"],
-    textarea,
-    select {
-      border: 1px solid #E0E0E0;
-      padding: 12px 16px;
-      font-size: 18px;
-      font-family: 'Riforma', sans-serif;
-      width: 100%;
-      transition: border-color 0.2s ease;
-    }
-
-    input:focus,
-    textarea:focus,
-    select:focus {
-      outline: none;
-      border-color: #000000;
-    }
-
-    textarea {
-      min-height: 120px;
-      resize: vertical;
-    }
-
-    textarea::placeholder {
-      white-space: pre-line;
-    }
-
-    /* Numbered Section Badge */
-    .numbered-section {
-      background: #000000;
-      color: #FFFFFF;
-      padding: 10px 16px;
-      font-family: 'Plaak', sans-serif;
-      font-size: 26px;
-      display: inline-block;
-      text-transform: uppercase;
-      letter-spacing: -0.02em;
-    }
-
-    /* Help Button */
-    .help-button {
-      position: fixed;
-      top: 24px;
-      right: 24px;
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
-      background: #000000;
-      color: #FFFFFF;
-      font-size: 28px;
-      border: none;
-      cursor: pointer;
-      z-index: 40;
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: 'Riforma', sans-serif;
-    }
-
-    .help-button:hover {
-      background: #FFF469;
-      color: #000000;
-      transform: scale(1.1);
-    }
-
-    /* Progress Indicator */
-    .progress-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: #E0E0E0;
-      transition: all 0.3s ease;
-    }
-
-    .progress-dot.active {
-      background: #000000;
-      transform: scale(1.3);
-    }
-
-    .progress-dot.completed {
-      background: #000000;
-    }
-
-    .progress-line {
-      height: 2px;
-      background: #E0E0E0;
-      flex: 1;
-    }
-
-    /* Print Styles */
-    @media print {
-      .no-print {
-        display: none !important;
-      }
-    }
-
-    /* Character Counter */
-    .char-counter {
-      font-size: 14px;
-      color: #666;
-      margin-top: 4px;
-    }
-
-    .char-counter.invalid {
-      color: #EF4444;
-    }
-  </style>
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .wizard-sidebar { width: 220px; }
+            .wizard-sidebar-inner { padding: 24px 16px; }
+        }
+        @media (max-width: 1024px) {
+            .competitors-grid-3 { grid-template-columns: repeat(2, 1fr) !important; }
+            .fields-row-3 { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 768px) {
+            .wizard-sidebar { display: none; }
+            .mobile-step-bar { display: block; }
+            .step-content { padding: 20px 16px; }
+            .opening-box .step-heading { font-size: 24px; }
+            .btn-footer { padding: 12px 16px; }
+            .wizard-main { padding: 0 16px; }
+            .vp-preview { font-size: 15px; padding: 16px; }
+            .competitors-grid-3 { grid-template-columns: 1fr !important; }
+            .fields-row-3 { grid-template-columns: 1fr; }
+            .fields-row-2 { grid-template-columns: 1fr; }
+        }
+    </style>
 </head>
 <body>
-  <div id="root"></div>
+    <div id="root"></div>
 
-  <script type="text/babel">
-    const { useState, useEffect, useRef, Fragment } = React;
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
 
-    // Configuration
-    const CONFIG = {
-      SUPABASE_URL: 'https://vpfayzzjnegdefjrnyoc.supabase.co',
-      SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZwZmF5enpqbmVnZGVmanJueW9jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMzAwODUsImV4cCI6MjA4NTcwNjA4NX0.7qwzd9kwyRG0Wx9DDSc8F9a1SRD0CoC6CGS-9M1sxIs',
-      TOOL_SLUG: 'value-proposition',
-      SPRINT_NUMBER: 15,
-      SCHEMA_NAME: 'sprint_15_value_proposition',
-      AUTOSAVE_DELAY: 2000
-    };
-
-    const { createClient } = supabase;
-    const supabaseClient = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
-
-    // Make Supabase client globally available for dependency injection
-    window.supabaseClient = supabaseClient;
-
-    // Initialize dependency injection to load data from previous tools
-    DependencyInjection.init(CONFIG.TOOL_SLUG, CONFIG.SCHEMA_NAME);
-
-    // Main App Component
-    function ValuePropApp() {
-      const [step, setStep] = useState(0);
-      const [showHelp, setShowHelp] = useState(false);
-      const [showTransition, setShowTransition] = useState(false);
-      const [transitionMessage, setTransitionMessage] = useState('');
-      const [transitionProgress, setTransitionProgress] = useState(0);
-
-      const [data, setData] = useState({
-        // User details
-        name: '',
-        email: '',
-        company: '',
-        role: '',
-
-        // Step 1: Customer Pain & Gain Analysis
-        targetSegment: '',
-        biggestPain: '',
-        painEvidence: '',
-        currentSolutions: '',
-        ahaMoment: '',
-        desiredOutcome: '',
-
-        // Step 2: Competitive Analysis
-        competitors: [
-          { name: '', strength: '', weakness: '', differentiation: '' }
-        ],
-        uniqueValue: '',
-        whySwitchToUs: '',
-
-        // Step 3: Value Proposition Crafting
-        valuePropTargetSegment: '',
-        valuePropPainPoint: '',
-        valuePropSolution: '',
-        valuePropCoreBenefit: '',
-        valuePropCompetitorWeakness: '',
-        fullValueProp: '',
-
-        // Step 4: Validation Checklist
-        validation: {
-          painkiller: '',
-          differentiated: '',
-          highValue: '',
-          hardToCopy: '',
-          notPriceOnly: '',
-          crystalClear: '',
-          customerNeedsBased: '',
-          decisionFilter: ''
-        },
-        testingPlan: '',
-        refinementNotes: ''
-      });
-
-      // Auto-save
-      useEffect(() => {
-        const interval = setInterval(() => {
-          localStorage.setItem('valuePropData', JSON.stringify({
-            data,
-            timestamp: new Date().toISOString()
-          }));
-        }, 2000);
-
-        return () => clearInterval(interval);
-      }, [data]);
-
-      // Load saved data
-      useEffect(() => {
-        const saved = localStorage.getItem('valuePropData');
-        if (saved) {
-          try {
-            const parsed = JSON.parse(saved);
-            if (parsed.data) {
-              setData(parsed.data);
+        /* ============================================================
+           CONFIG
+           ============================================================ */
+        const CONFIG = {
+            SUPABASE_URL: 'https://vpfayzzjnegdefjrnyoc.supabase.co',
+            SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZwZmF5enpqbmVnZGVmanJueW9jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMzAwODUsImV4cCI6MjA4NTcwNjA4NX0.7qwzd9kwyRG0Wx9DDSc8F9a1SRD0CoC6CGS-9M1sxIs',
+            TOOL_SLUG: 'value-proposition',
+            SPRINT_NUMBER: 15,
+            SCHEMA_NAME: 'sprint_15_value_proposition',
+            TOOL_TITLE: 'VALUE PROPOSITION DESIGN',
+            TIME_ESTIMATE: '~40 min',
+            COVER_IMAGE: 'cover.jpg',
+            AUTOSAVE_DELAY: 2000,
+            STEPS: [
+                { num: 1, label: 'Customer Foundation' },
+                { num: 2, label: 'Competitive Landscape' },
+                { num: 3, label: 'Craft Your VP' },
+                { num: 4, label: 'Validate & Test' }
+            ],
+            CLOSING_MESSAGES: {
+                1: { title: 'CUSTOMER FOUNDATION SET', text: 'You understand the pain. Next: map your competitive landscape.' },
+                2: { title: 'LANDSCAPE MAPPED', text: 'Differentiation is clear. Next: craft your one-sentence value proposition.' },
+                3: { title: 'VALUE PROPOSITION CRAFTED', text: 'Your message is taking shape. Next: validate it against 8 criteria.' },
+                4: { title: 'ALL STEPS COMPLETE', text: 'Your value proposition is validated and ready. View your canvas.' }
             }
-          } catch (e) {
-            console.error('Failed to parse saved data');
-          }
+        };
+
+        const { createClient } = supabase;
+        const supabaseClient = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+        window.supabaseClient = supabaseClient;
+        DependencyInjection.init(CONFIG.TOOL_SLUG, CONFIG.SCHEMA_NAME);
+        CognitiveLoad.init(CONFIG.TOOL_SLUG);
+
+        /* ============================================================
+           REUSABLE COMPONENTS
+           ============================================================ */
+
+        function CheckIcon({ color = "#fff", size = 16 }) {
+            return <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>;
         }
-      }, []);
 
-      const updateData = (field, value) => {
-        setData(prev => ({ ...prev, [field]: value }));
-      };
-
-      const updateValidation = (field, value) => {
-        setData(prev => ({
-          ...prev,
-          validation: { ...prev.validation, [field]: value }
-        }));
-      };
-
-      // Competitor management
-      const addCompetitor = () => {
-        setData(prev => ({
-          ...prev,
-          competitors: [...prev.competitors, { name: '', strength: '', weakness: '', differentiation: '' }]
-        }));
-      };
-
-      const removeCompetitor = (index) => {
-        if (data.competitors.length > 1) {
-          setData(prev => ({
-            ...prev,
-            competitors: prev.competitors.filter((_, i) => i !== index)
-          }));
+        function LightbulbIcon({ size = 16 }) {
+            return <svg width={size} height={size} viewBox="0 0 24 24" fill="#000"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>;
         }
-      };
 
-      const updateCompetitor = (index, field, value) => {
-        setData(prev => ({
-          ...prev,
-          competitors: prev.competitors.map((c, i) =>
-            i === index ? { ...c, [field]: value } : c
-          )
-        }));
-      };
-
-      // Auto-generate full value proposition
-      useEffect(() => {
-        if (data.valuePropTargetSegment && data.valuePropPainPoint && data.valuePropSolution && data.valuePropCoreBenefit) {
-          const vp = `For ${data.valuePropTargetSegment} who struggle with ${data.valuePropPainPoint}, we provide ${data.valuePropSolution} that ${data.valuePropCoreBenefit}${data.valuePropCompetitorWeakness ? `, unlike ${data.valuePropCompetitorWeakness}` : ''}.`;
-          setData(prev => ({ ...prev, fullValueProp: vp }));
+        function LearnMore({ children }) {
+            const [open, setOpen] = useState(false);
+            return (
+                <div style={{ marginBottom: open ? 0 : 12 }}>
+                    <button className="learn-more-toggle" onClick={() => setOpen(!open)}>WHY THIS MATTERS {open ? '\u2212' : '+'}</button>
+                    {open && <div className="learn-more-content">{children}</div>}
+                </div>
+            );
         }
-      }, [data.valuePropTargetSegment, data.valuePropPainPoint, data.valuePropSolution, data.valuePropCoreBenefit, data.valuePropCompetitorWeakness]);
 
-      const goNext = () => {
-        if (step === 0.5) {
-          setStep(1);
-        } else if (step >= 1 && step < 4) {
-          const messages = ['25% COMPLETE', '50% COMPLETE', '75% COMPLETE', '100% COMPLETE'];
-          const progressValues = [25, 50, 75, 100];
-
-          setTransitionMessage(messages[step - 1]);
-          setTransitionProgress(progressValues[step - 1]);
-          setShowTransition(true);
-
-          setTimeout(() => {
-            setShowTransition(false);
-            setStep(step + 1);
-          }, 2000);
-        } else if (step === 4) {
-          setTransitionMessage('100% COMPLETE');
-          setTransitionProgress(100);
-          setShowTransition(true);
-
-          setTimeout(() => {
-            setShowTransition(false);
-            setStep(5);
-          }, 2000);
-        } else if (step === 0) {
-          setStep(0.5);
+        function FastTrackInsight({ children, label = 'Fast Track Insight' }) {
+            return (
+                <div className="ft-insight">
+                    <div className="ft-insight-icon"><LightbulbIcon size={16} /></div>
+                    <div>
+                        <div className="ft-insight-label">{label}</div>
+                        <div className="ft-insight-text">{children}</div>
+                    </div>
+                </div>
+            );
         }
-      };
 
-      const goBack = () => {
-        if (step === 5) {
-          setStep(4);
-        } else if (step > 1) {
-          setStep(step - 1);
-        } else if (step === 1) {
-          setStep(0.5);
+        function HelpAccordion({ id, activeHelp, setActiveHelp, children }) {
+            const isOpen = activeHelp === id;
+            return (
+                <>
+                    <button className="help-icon-btn" onClick={() => setActiveHelp(isOpen ? null : id)} title="Help">?</button>
+                    {isOpen && <div className="help-accordion" style={{ marginTop: 6 }}>{children}</div>}
+                </>
+            );
         }
-      };
 
-      // Validation functions
-      const canProceedFromIntro = () => {
-        return data.name.length > 0 && data.email.length > 0 && data.company.length > 0;
-      };
-
-      const canProceedFromStep1 = () => {
-        return data.targetSegment.length >= 30 &&
-               data.biggestPain.length >= 50 &&
-               data.ahaMoment.length >= 30;
-      };
-
-      const canProceedFromStep2 = () => {
-        return data.competitors.every(c => c.name.length >= 3 && c.weakness.length >= 20) &&
-               data.uniqueValue.length >= 50;
-      };
-
-      const canProceedFromStep3 = () => {
-        return data.valuePropTargetSegment.length >= 10 &&
-               data.valuePropPainPoint.length >= 15 &&
-               data.valuePropSolution.length >= 15 &&
-               data.valuePropCoreBenefit.length >= 15 &&
-               data.fullValueProp.length >= 30;
-      };
-
-      const canProceedFromStep4 = () => {
-        const validations = Object.values(data.validation);
-        return validations.filter(v => v === 'yes').length >= 6;
-      };
-
-      const exportPDF = async () => {
-        try {
-          console.log('Starting PDF export...');
-
-          // Check if libraries are loaded
-          if (!window.jspdf) {
-            alert('PDF library not loaded. Please refresh the page and try again.');
-            return;
-          }
-          if (!window.html2canvas) {
-            alert('Canvas library not loaded. Please refresh the page and try again.');
-            return;
-          }
-
-          const { jsPDF } = window.jspdf;
-          const pdf = new jsPDF('p', 'mm', 'a4');
-
-          const canvas = document.getElementById('canvas-content');
-          if (!canvas) {
-            alert('Canvas element not found. Please make sure you are on the summary page.');
-            return;
-          }
-
-          // Temporarily hide images to avoid CORS issues
-          const images = canvas.querySelectorAll('img');
-          const imageStates = [];
-          images.forEach(img => {
-            imageStates.push({ img, display: img.style.display });
-            img.style.display = 'none';
-          });
-
-          console.log('Generating PDF...');
-          const canvasImage = await html2canvas(canvas, {
-            scale: 2,
-            logging: false,
-            allowTaint: false,
-            useCORS: false
-          });
-
-          // Restore images
-          imageStates.forEach(({ img, display }) => {
-            img.style.display = display;
-          });
-
-          const imgData = canvasImage.toDataURL('image/png');
-          const imgWidth = 190;
-          const imgHeight = (canvasImage.height * imgWidth) / canvasImage.width;
-
-          pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
-
-          const filename = `Value-Proposition-${new Date().toISOString().split('T')[0]}.pdf`;
-          pdf.save(filename);
-
-          console.log('PDF exported successfully!');
-        } catch (error) {
-          console.error('PDF Export Error:', error);
-          alert('Failed to export PDF: ' + error.message);
+        function ButtonFooter({ onBack, onNext, nextLabel = 'Next', canProceed, showBack = true }) {
+            return (
+                <div className="btn-footer no-print">
+                    {showBack ? <button className="btn-back" onClick={onBack}>&larr; Back</button> : <div />}
+                    <button className="btn-next" disabled={!canProceed} onClick={onNext}>{nextLabel} &rarr;</button>
+                </div>
+            );
         }
-      };
 
-      const handleSubmit = async () => {
-        try {
-          const userId = localStorage.getItem('ft_user_id');
-          if (!userId) {
-            alert('User not authenticated. Please return to the dashboard.');
-            return;
-          }
+        function MobileStepBar({ currentStep, totalSteps }) {
+            const progress = currentStep >= 999 ? 100 : Math.round((currentStep / totalSteps) * 100);
+            return (
+                <div className="mobile-step-bar no-print">
+                    <div className="bar-text">Step {Math.min(currentStep, totalSteps)} of {totalSteps}</div>
+                    <div className="mobile-progress"><div className="mobile-progress-fill" style={{ width: `${progress}%` }} /></div>
+                </div>
+            );
+        }
 
-          // Submit using RPC function (handles schema-specific tables)
-          const { data: result, error: submitError } = await supabaseClient
-            .rpc('submit_tool_data', {
-              p_schema_name: CONFIG.SCHEMA_NAME,
-              p_user_id: userId,
-              p_data: data,
-              p_tool_slug: CONFIG.TOOL_SLUG
+        function WizardSidebar({ currentStep, steps, toolTitle, timeEstimate, getSnippet, onNavigate }) {
+            return (
+                <div className="wizard-sidebar no-print">
+                    <div className="wizard-sidebar-inner">
+                        <div style={{ marginBottom: 24 }}>
+                            <div className="monument" style={{ fontSize: 12, textTransform: 'uppercase', color: '#fff', marginBottom: 4 }}>{toolTitle}</div>
+                            <div style={{ fontSize: 13, color: '#999' }}>{timeEstimate}</div>
+                        </div>
+                        <div style={{ marginBottom: 16, fontFamily: "'Monument', monospace", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#999' }}>Your journey</div>
+                        {steps.map(s => {
+                            const isCompleted = currentStep > s.num, isActive = currentStep === s.num, isLocked = currentStep < s.num;
+                            const snippet = isCompleted && getSnippet ? getSnippet(s.num) : null;
+                            return (
+                                <div key={s.num} className={`sidebar-step-item ${isCompleted ? 'completed' : ''} ${isActive ? 'active' : ''} ${isLocked ? 'locked' : ''}`}
+                                    onClick={() => isCompleted && onNavigate && onNavigate(s.num)}
+                                    title={isCompleted ? 'Click to review this step' : ''}
+                                >
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                        {isCompleted ? <CheckIcon color="#000" size={14} /> : <span className="step-num" style={{ color: isActive ? '#fff' : '#ccc' }}>{String(s.num).padStart(2, '0')}</span>}
+                                        <span className="step-name" style={{ color: isLocked ? '#666' : isCompleted ? '#000' : '#fff' }}>{s.label}</span>
+                                    </div>
+                                    {snippet && <div className="sidebar-snippet">{snippet}</div>}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        }
+
+        /* ============================================================
+           MAIN TOOL
+           ============================================================ */
+
+        function ToolApp() {
+            const [step, setStep] = useState(0);
+            const [questionHelp, setQuestionHelp] = useState(null);
+            const [authState, setAuthState] = useState({ loading: true, authenticated: false, user: null, progress: null, error: null });
+            const [submitStatus, setSubmitStatus] = useState(null);
+            const [submitMessage, setSubmitMessage] = useState('');
+
+            /* ── Data state ── */
+            const [data, setData] = useState({
+                companyId: '', userId: '',
+                // Step 1: Customer Foundation
+                targetSegment: '',
+                biggestPain: '',
+                painEvidence: '',
+                currentSolutions: '',
+                ahaMoment: '',
+                desiredOutcome: '',
+                // Step 2: Competitive Landscape
+                competitors: [{ name: '', strength: '', weakness: '', differentiation: '' }],
+                uniqueValue: '',
+                whySwitchToUs: '',
+                // Step 3: Craft VP
+                vpTargetSegment: '',
+                vpPainPoint: '',
+                vpSolution: '',
+                vpCoreBenefit: '',
+                vpCompetitorWeakness: '',
+                fullValueProp: '',
+                antiValueProp: '',
+                // Step 4: Validate
+                validation: {
+                    painkiller: '', differentiated: '', highValue: '', hardToCopy: '',
+                    notPriceOnly: '', crystalClear: '', customerNeedsBased: '', decisionFilter: ''
+                },
+                testingPlan: '',
+                refinementNotes: ''
             });
 
-          if (submitError) throw submitError;
+            const autosaveTimer = useRef(null);
+            const updateData = (key, value) => setData(prev => ({ ...prev, [key]: value }));
+            const updateValidation = (key, value) => setData(prev => ({ ...prev, validation: { ...prev.validation, [key]: value } }));
 
-          if (!result || !result.success) {
-            throw new Error(result?.message || 'Submission failed');
-          }
+            /* ── Auto-generate VP from components ── */
+            useEffect(() => {
+                if (data.vpTargetSegment && data.vpPainPoint && data.vpSolution && data.vpCoreBenefit) {
+                    const vp = `For ${data.vpTargetSegment} who struggle with ${data.vpPainPoint}, we provide ${data.vpSolution} that ${data.vpCoreBenefit}${data.vpCompetitorWeakness ? `, unlike ${data.vpCompetitorWeakness}` : ''}.`;
+                    setData(prev => ({ ...prev, fullValueProp: vp }));
+                }
+            }, [data.vpTargetSegment, data.vpPainPoint, data.vpSolution, data.vpCoreBenefit, data.vpCompetitorWeakness]);
 
-          console.log('Submission ID:', result.submission_id);
-          localStorage.setItem('lastSubmissionId', result.submission_id);
-          alert('Value proposition submitted successfully!');
-        } catch (error) {
-          console.error('Submit error:', error);
-          alert('Submission failed: ' + error.message);
+            /* ── Validation ── */
+            const totalSteps = CONFIG.STEPS.length;
+            const canProceedStep1 = data.targetSegment.length >= 20 && data.biggestPain.length >= 30 && data.ahaMoment.length >= 20;
+            const canProceedStep2 = data.competitors.length >= 1 && data.competitors.every(c => c.name.length >= 2 && c.weakness.length >= 10) && data.uniqueValue.length >= 30;
+            const canProceedStep3 = data.vpTargetSegment.length >= 10 && data.vpPainPoint.length >= 10 && data.vpSolution.length >= 10 && data.vpCoreBenefit.length >= 10 && data.fullValueProp.length >= 30;
+            const yesCount = Object.values(data.validation).filter(v => v === 'yes').length;
+            const canProceedStep4 = yesCount >= 6;
+
+            /* ── Competitor helpers ── */
+            const updateCompetitor = (index, field, value) => {
+                setData(prev => ({ ...prev, competitors: prev.competitors.map((c, i) => i === index ? { ...c, [field]: value } : c) }));
+            };
+            const addCompetitor = () => {
+                if (data.competitors.length >= 5) return;
+                setData(prev => ({ ...prev, competitors: [...prev.competitors, { name: '', strength: '', weakness: '', differentiation: '' }] }));
+            };
+            const removeCompetitor = (index) => {
+                if (data.competitors.length <= 1) return;
+                setData(prev => ({ ...prev, competitors: prev.competitors.filter((_, i) => i !== index) }));
+            };
+
+            /* ── Sidebar snippets ── */
+            const getSnippet = (n) => {
+                if (n === 1 && data.targetSegment) return '"' + data.targetSegment.substring(0, 50) + (data.targetSegment.length > 50 ? '...' : '') + '"';
+                if (n === 2) return data.competitors.filter(c => c.name).length + ' competitor' + (data.competitors.filter(c => c.name).length !== 1 ? 's' : '') + ' mapped';
+                if (n === 3 && data.fullValueProp) return '"' + data.fullValueProp.substring(0, 60) + '..."';
+                if (n === 4) return yesCount + '/8 validated';
+                return null;
+            };
+
+            /* ── Auth ── */
+            useEffect(() => {
+                async function initAuth() {
+                    const isLocalFile = window.location.protocol === 'file:';
+                    const hasAuthManager = window.authManager && typeof window.authManager.initialize === 'function';
+                    if (isLocalFile || !hasAuthManager) {
+                        localStorage.setItem('ft_user_id', 'b609a543-e487-4ace-91d4-84a07402ff99');
+                        setAuthState({ loading: false, authenticated: true, user: { email: 'local@dev.test', id: 'local-dev' }, progress: { completed_tools: [], unlocked_tools: [CONFIG.TOOL_SLUG] }, isUnlocked: true, isCompleted: false, error: null });
+                        return;
+                    }
+                    try {
+                        const result = await window.authManager.initialize();
+                        if (result.authenticated) {
+                            setAuthState({ loading: false, authenticated: true, user: result.user, progress: result.progress, isUnlocked: window.authManager.isToolUnlocked(result.progress, CONFIG.TOOL_SLUG), isCompleted: window.authManager.isToolCompleted(result.progress, CONFIG.TOOL_SLUG), error: null });
+                        } else {
+                            setAuthState({ loading: false, authenticated: false, user: null, progress: null, error: result.error || result.message });
+                            window.authManager.requireAuthentication();
+                        }
+                    } catch (error) {
+                        if (!localStorage.getItem('ft_user_id')) localStorage.setItem('ft_user_id', 'b609a543-e487-4ace-91d4-84a07402ff99');
+                        setAuthState({ loading: false, authenticated: true, user: { email: 'local@dev.test', id: 'local-dev' }, progress: { completed_tools: [], unlocked_tools: [CONFIG.TOOL_SLUG] }, isUnlocked: true, isCompleted: false, error: null });
+                    }
+                }
+                initAuth();
+            }, []);
+
+            useEffect(() => {
+                if (authState.authenticated && authState.progress && window.toolAccessControl) {
+                    window.toolAccessControl.initialize(authState.progress, CONFIG.TOOL_SLUG, CONFIG.SPRINT_NUMBER);
+                }
+            }, [authState.authenticated]);
+
+            /* ── Auto-save ── */
+            useEffect(() => {
+                if (step < 1) return;
+                clearTimeout(autosaveTimer.current);
+                autosaveTimer.current = setTimeout(() => {
+                    localStorage.setItem(`ft_${CONFIG.TOOL_SLUG}_autosave`, JSON.stringify({ step, data, savedAt: new Date().toISOString() }));
+                }, CONFIG.AUTOSAVE_DELAY);
+                return () => clearTimeout(autosaveTimer.current);
+            }, [data, step]);
+
+            /* ── Load saved ── */
+            useEffect(() => {
+                try {
+                    const saved = localStorage.getItem(`ft_${CONFIG.TOOL_SLUG}_autosave`);
+                    if (saved) {
+                        const parsed = JSON.parse(saved);
+                        if (parsed.data) {
+                            setData(prev => ({ ...prev, ...parsed.data }));
+                            if (parsed.step) setStep(parsed.step);
+                        }
+                    }
+                } catch (e) { console.warn('Failed to restore auto-save:', e); }
+            }, []);
+
+            /* ── Submit ── */
+            const handleSubmit = async () => {
+                try {
+                    setSubmitStatus('saving'); setSubmitMessage('');
+                    const userId = localStorage.getItem('ft_user_id');
+                    if (!userId) { setSubmitStatus('error'); setSubmitMessage('User not authenticated.'); return; }
+                    const submissionData = {
+                        companyId: data.companyId, userId: data.userId,
+                        customerFoundation: { targetSegment: data.targetSegment, biggestPain: data.biggestPain, painEvidence: data.painEvidence, currentSolutions: data.currentSolutions, ahaMoment: data.ahaMoment, desiredOutcome: data.desiredOutcome },
+                        competitiveLandscape: { competitors: data.competitors, uniqueValue: data.uniqueValue, whySwitchToUs: data.whySwitchToUs },
+                        valueProposition: { vpTargetSegment: data.vpTargetSegment, vpPainPoint: data.vpPainPoint, vpSolution: data.vpSolution, vpCoreBenefit: data.vpCoreBenefit, vpCompetitorWeakness: data.vpCompetitorWeakness, fullValueProp: data.fullValueProp, antiValueProp: data.antiValueProp },
+                        validation: { checklist: data.validation, score: yesCount, testingPlan: data.testingPlan, refinementNotes: data.refinementNotes }
+                    };
+                    const { data: result, error: submitError } = await supabaseClient.rpc('submit_tool_data', { p_schema_name: CONFIG.SCHEMA_NAME, p_user_id: userId, p_data: submissionData, p_tool_slug: CONFIG.TOOL_SLUG });
+                    if (submitError) throw submitError;
+                    if (!result || !result.success) throw new Error(result?.message || 'Submission failed');
+                    setSubmitStatus('success'); setSubmitMessage('Submission saved successfully!');
+                    localStorage.setItem('lastSubmissionId', result.submission_id);
+                } catch (error) {
+                    setSubmitStatus('error'); setSubmitMessage('Failed to save: ' + error.message);
+                }
+            };
+
+            /* ── PDF ── */
+            const handleExport = async (e) => {
+                try {
+                    const btn = e.target; btn.disabled = true; btn.textContent = 'Generating...';
+                    const { jsPDF } = window.jspdf;
+                    const el = document.getElementById('canvas-content');
+                    if (!el) throw new Error('Canvas not found.');
+                    const canvas = await html2canvas(el, { scale: 2, useCORS: false, backgroundColor: '#fff', logging: false });
+                    const imgData = canvas.toDataURL('image/png');
+                    const pdf = new jsPDF('p', 'mm', 'a4');
+                    const pdfW = pdf.internal.pageSize.getWidth(), pdfH = pdf.internal.pageSize.getHeight();
+                    const imgW = pdfW - 20, imgH = (canvas.height * imgW) / canvas.width;
+                    if (imgH <= pdfH - 20) { pdf.addImage(imgData, 'PNG', 10, 10, imgW, imgH); }
+                    else {
+                        let srcY = 0;
+                        while (srcY < canvas.height) {
+                            const sliceH = Math.min(canvas.height - srcY, (canvas.width * (pdfH - 20)) / imgW);
+                            const sliceCanvas = document.createElement('canvas'); sliceCanvas.width = canvas.width; sliceCanvas.height = sliceH;
+                            sliceCanvas.getContext('2d').drawImage(canvas, 0, srcY, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+                            pdf.addImage(sliceCanvas.toDataURL('image/png'), 'PNG', 10, 10, imgW, (sliceH * imgW) / canvas.width);
+                            srcY += sliceH;
+                            if (srcY < canvas.height) pdf.addPage();
+                        }
+                    }
+                    pdf.save(`${CONFIG.TOOL_SLUG}-canvas.pdf`);
+                    btn.disabled = false; btn.textContent = 'Export PDF';
+                } catch (err) { alert('PDF export failed: ' + err.message); e.target.disabled = false; e.target.textContent = 'Export PDF'; }
+            };
+
+            /* ============================================================
+               RENDER
+               ============================================================ */
+            return (
+                <div className="tool-frame">
+                    <div className="tool-inner">
+
+                        {authState.loading && (
+                            <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000' }}>
+                                <div style={{ textAlign: 'center', color: '#fff' }}>
+                                    <div className="plaak" style={{ fontSize: 32, marginBottom: 12 }}>Loading...</div>
+                                </div>
+                            </div>
+                        )}
+
+                        {!authState.loading && !authState.authenticated && (
+                            <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000' }}>
+                                <div style={{ textAlign: 'center', color: '#fff', padding: '0 32px', maxWidth: 640 }}>
+                                    <h1 className="plaak" style={{ fontSize: 48, marginBottom: 24 }}>AUTHENTICATION REQUIRED</h1>
+                                    <p style={{ fontSize: 20, marginBottom: 32 }}>Please access this tool from your LearnWorlds course.</p>
+                                    <p style={{ fontSize: 16, color: '#999' }}>{authState.error || 'No active session found'}</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ── STEP 0: Cover ── */}
+                        {step === 0 && authState.authenticated && (
+                            <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+                                <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${CONFIG.COVER_IMAGE})`, backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.5 }} />
+                                <div style={{ position: 'relative', textAlign: 'center', color: '#fff', padding: '0 32px' }} className="animate-in">
+                                    <h1 className="plaak" style={{ fontSize: 80, marginBottom: 16 }}>{CONFIG.TOOL_TITLE}</h1>
+                                    <p style={{ fontSize: 18, color: '#ccc', marginBottom: 48 }}>Craft a message that makes customers say "I need this NOW"</p>
+                                    <button onClick={() => setStep(0.5)} style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 48px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                                        onMouseOver={e => { e.target.style.background = '#FFF469'; }}
+                                        onMouseOut={e => { e.target.style.background = '#fff'; }}
+                                    >START</button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ── STEP 0.5: Setup ── */}
+                        {step === 0.5 && (
+                            <div style={{ minHeight: '100vh', background: '#fff', display: 'flex', flexDirection: 'column', padding: '0 48px' }}>
+                                <div className="step-content animate-in" style={{ maxWidth: 560, margin: '0 auto' }}>
+                                    <p className="step-indicator">SETUP</p>
+                                    <div className="opening-box">
+                                        <h1 className="step-heading">Before We Start</h1>
+                                        <p className="step-hint">Your value proposition is the backbone of your entire strategy. It determines who you attract, how much you can charge, and whether customers stick with you. This tool will help you craft a precise, powerful statement that makes your offer impossible to ignore.</p>
+                                    </div>
+
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+                                        <div className="field-group">
+                                            <label className="field-label">Company ID</label>
+                                            <input type="text" className="field-input" value={data.companyId} onChange={e => updateData('companyId', e.target.value)} placeholder="Enter company ID" />
+                                        </div>
+                                        <div className="field-group">
+                                            <label className="field-label">Username ID</label>
+                                            <input type="text" className="field-input" value={data.userId} onChange={e => updateData('userId', e.target.value)} placeholder="Enter username ID" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="btn-footer no-print">
+                                    <button className="btn-back" onClick={() => setStep(0)}>&larr; Back</button>
+                                    <button className="btn-next" disabled={!data.companyId || !data.userId} onClick={() => setStep(1)}>Let's Start &rarr;</button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ── STEPS 1-4: Wizard ── */}
+                        {step >= 1 && step <= totalSteps && (
+                            <div className="wizard-layout">
+                                <div className="wizard-main">
+                                    <MobileStepBar currentStep={step} totalSteps={totalSteps} />
+
+                                    {/* ── STEP 1: Customer Foundation ── */}
+                                    {step === 1 && (
+                                        <div className="step-content animate-in">
+                                            <p className="step-indicator">STEP 1 OF {totalSteps}</p>
+                                            <div className="opening-box">
+                                                <h1 className="step-heading">Customer Foundation</h1>
+                                                <p className="step-hint">Understand what keeps your customers awake at night. Without this, your value proposition is just guessing.</p>
+                                            </div>
+
+                                            <LearnMore>
+                                                90% of startups fail because they misjudge product-market fit (CB Insights). People make purchase decisions emotionally first and rationalize them later (Harvard Business Review). Understanding what keeps your customers awake at night is the foundation of a compelling value proposition.
+                                            </LearnMore>
+
+                                            <FastTrackInsight>
+                                                A strong value proposition must be a painkiller for your target segment — not just a nice-to-have vitamin. If you're not solving a pain that keeps them up at night, you don't have a compelling value proposition.
+                                            </FastTrackInsight>
+
+                                            <div className="questions-grid">
+                                                {/* Row 1: 3 cards */}
+                                                <div className="fields-row fields-row-3">
+                                                    <div className="field-card">
+                                                        <label className="field-label">
+                                                            Target Segment
+                                                            <HelpAccordion id="targetSeg" activeHelp={questionHelp} setActiveHelp={setQuestionHelp}>
+                                                                Be brutally specific: industry, company size, revenue range, growth stage, decision-maker role.
+                                                            </HelpAccordion>
+                                                        </label>
+                                                        <textarea className="field-textarea" value={data.targetSegment} onChange={e => updateData('targetSegment', e.target.value)} placeholder="e.g. High-growth SaaS startups (20-100 employees) with $5M-$30M ARR..." maxLength={500} />
+                                                        <p className="field-help">{data.targetSegment.length}/500 (min 20)</p>
+                                                    </div>
+                                                    <div className="field-card">
+                                                        <label className="field-label">
+                                                            Biggest Pain Point
+                                                            <HelpAccordion id="pain" activeHelp={questionHelp} setActiveHelp={setQuestionHelp}>
+                                                                What is the #1 problem costing them time, money, or stress? Must be a painkiller, not a vitamin.
+                                                            </HelpAccordion>
+                                                        </label>
+                                                        <textarea className="field-textarea" value={data.biggestPain} onChange={e => updateData('biggestPain', e.target.value)} placeholder="e.g. Teams spend 40%+ of time on repetitive manual tasks across disconnected tools..." maxLength={800} />
+                                                        <p className="field-help">{data.biggestPain.length}/800 (min 30)</p>
+                                                    </div>
+                                                    <div className="field-card">
+                                                        <label className="field-label">Evidence of Pain</label>
+                                                        <textarea className="field-textarea" value={data.painEvidence} onChange={e => updateData('painEvidence', e.target.value)} placeholder="Numbers, quotes, behaviors: '67% said manual data entry is their top frustration.'" maxLength={500} />
+                                                    </div>
+                                                </div>
+
+                                                {/* Row 2: 3 cards */}
+                                                <div className="fields-row fields-row-3">
+                                                    <div className="field-card">
+                                                        <label className="field-label">Current Solutions & Workarounds</label>
+                                                        <textarea className="field-textarea" value={data.currentSolutions} onChange={e => updateData('currentSolutions', e.target.value)} placeholder="What are they doing now? Why isn't it working?" maxLength={500} />
+                                                    </div>
+                                                    <div className="field-card">
+                                                        <label className="field-label">
+                                                            The "Aha!" Moment
+                                                            <HelpAccordion id="aha" activeHelp={questionHelp} setActiveHelp={setQuestionHelp}>
+                                                                When do customers realize they NEED your solution? What triggers urgency?
+                                                            </HelpAccordion>
+                                                        </label>
+                                                        <textarea className="field-textarea" value={data.ahaMoment} onChange={e => updateData('ahaMoment', e.target.value)} placeholder="e.g. When they hire their 50th employee and manual processes start breaking..." maxLength={500} />
+                                                        <p className="field-help">{data.ahaMoment.length}/500 (min 20)</p>
+                                                    </div>
+                                                    <div className="field-card">
+                                                        <label className="field-label">Desired Outcome (Gain)</label>
+                                                        <textarea className="field-textarea" value={data.desiredOutcome} onChange={e => updateData('desiredOutcome', e.target.value)} placeholder="What transformation do they want? What does success look like for them?" maxLength={500} />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {canProceedStep1 && (
+                                                <div className="closing-box animate-in">
+                                                    <p className="closing-title">{CONFIG.CLOSING_MESSAGES[1].title}</p>
+                                                    <p>{CONFIG.CLOSING_MESSAGES[1].text}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* ── STEP 2: Competitive Landscape ── */}
+                                    {step === 2 && (
+                                        <div className="step-content animate-in">
+                                            <p className="step-indicator">STEP 2 OF {totalSteps}</p>
+                                            <div className="opening-box">
+                                                <h1 className="step-heading">Competitive Landscape</h1>
+                                                <p className="step-hint">Identify what makes you uniquely valuable. If you can't explain why you're different, customers choose on price alone.</p>
+                                            </div>
+
+                                            <LearnMore>
+                                                Companies with a clear, differentiated value proposition grow 3x faster than competitors (McKinsey). Winning brands don't try to serve everyone — they dominate specific high-value segments. Your value proposition must align with what you are best at, not just what you do.
+                                            </LearnMore>
+
+                                            <FastTrackInsight>
+                                                Differentiate or die. A strong value proposition is not about being slightly better — it's about being unique. If you can't explain why you're different, customers will choose based on price alone.
+                                            </FastTrackInsight>
+
+                                            <div className="questions-grid">
+                                                {/* Competitor cards — 3 per row */}
+                                                <div className="competitors-grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginBottom: 24 }}>
+                                                    {data.competitors.map((comp, idx) => (
+                                                        <div key={idx} style={{ border: '1px solid #E0E0E0', padding: 20, background: '#FAFAFA' }}>
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                                                                <span className="monument" style={{ fontSize: 10, textTransform: 'uppercase', color: '#666' }}>COMPETITOR {idx + 1}</span>
+                                                                {data.competitors.length > 1 && (
+                                                                    <button onClick={() => removeCompetitor(idx)} style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: '#999', lineHeight: 1 }}>&times;</button>
+                                                                )}
+                                                            </div>
+                                                            <div style={{ marginBottom: 12 }}>
+                                                                <label className="field-label" style={{ fontSize: 13 }}>Name</label>
+                                                                <input type="text" className="field-input" style={{ padding: '8px 12px', fontSize: 14 }} value={comp.name} onChange={e => updateCompetitor(idx, 'name', e.target.value)} placeholder="Competitor name" />
+                                                            </div>
+                                                            <div style={{ marginBottom: 12 }}>
+                                                                <label className="field-label" style={{ fontSize: 13 }}>Their Strength</label>
+                                                                <input type="text" className="field-input" style={{ padding: '8px 12px', fontSize: 14 }} value={comp.strength} onChange={e => updateCompetitor(idx, 'strength', e.target.value)} placeholder="What do they do well?" />
+                                                            </div>
+                                                            <div style={{ marginBottom: 12 }}>
+                                                                <label className="field-label" style={{ fontSize: 13 }}>Their Weakness</label>
+                                                                <textarea className="field-textarea" style={{ minHeight: 48, fontSize: 14, padding: '8px 12px' }} value={comp.weakness} onChange={e => updateCompetitor(idx, 'weakness', e.target.value)} placeholder="Where do they fall short?" />
+                                                                <p className="field-help">{comp.weakness.length} (min 10)</p>
+                                                            </div>
+                                                            <div>
+                                                                <label className="field-label" style={{ fontSize: 13 }}>How We're Different</label>
+                                                                <textarea className="field-textarea" style={{ minHeight: 48, fontSize: 14, padding: '8px 12px' }} value={comp.differentiation} onChange={e => updateCompetitor(idx, 'differentiation', e.target.value)} placeholder="What do we do that they can't?" />
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+
+                                                {data.competitors.length < 5 && (
+                                                    <button onClick={addCompetitor} style={{ width: '100%', padding: '12px 0', border: '2px dashed #E0E0E0', background: 'none', fontSize: 14, cursor: 'pointer', color: '#666', marginBottom: 32 }}>
+                                                        + Add Competitor ({data.competitors.length}/5)
+                                                    </button>
+                                                )}
+
+                                                {/* Unique Value + Why Switch */}
+                                                <div className="fields-row fields-row-2">
+                                                    <div className="field-card">
+                                                        <label className="field-label">
+                                                            Our Unique Value
+                                                            <HelpAccordion id="uniqueVal" activeHelp={questionHelp} setActiveHelp={setQuestionHelp}>
+                                                                What do YOU offer that competitors don't? Focus on meaningful differentiation customers actually care about.
+                                                            </HelpAccordion>
+                                                        </label>
+                                                        <textarea className="field-textarea" value={data.uniqueValue} onChange={e => updateData('uniqueValue', e.target.value)} placeholder="e.g. We're the ONLY platform that combines AI-powered workflow design with zero-code setup AND scales from 20 to 500+ employees without IT resources." maxLength={800} />
+                                                        <p className="field-help">{data.uniqueValue.length}/800 (min 30)</p>
+                                                    </div>
+                                                    <div className="field-card">
+                                                        <label className="field-label">Why Customers Should Switch</label>
+                                                        <textarea className="field-textarea" value={data.whySwitchToUs} onChange={e => updateData('whySwitchToUs', e.target.value)} placeholder="What compelling reason would make a customer leave their current solution for yours?" maxLength={500} />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {canProceedStep2 && (
+                                                <div className="closing-box animate-in">
+                                                    <p className="closing-title">{CONFIG.CLOSING_MESSAGES[2].title}</p>
+                                                    <p>{CONFIG.CLOSING_MESSAGES[2].text}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* ── STEP 3: Craft Your VP ── */}
+                                    {step === 3 && (
+                                        <div className="step-content animate-in">
+                                            <p className="step-indicator">STEP 3 OF {totalSteps}</p>
+                                            <div className="opening-box">
+                                                <h1 className="step-heading">Craft Your Value Proposition</h1>
+                                                <p className="step-hint">Use the Fast Track Formula to create one sentence that makes your offer impossible to ignore.</p>
+                                            </div>
+
+                                            <LearnMore>
+                                                The Fast Track Value Proposition Formula forces clarity and differentiation into a single sentence. A value proposition is the clear promise of value you deliver — it must address their biggest pain, differentiate from competitors, and be so compelling they'd be crazy to ignore it.
+                                            </LearnMore>
+
+                                            <FastTrackInsight>
+                                                If it takes more than one sentence to explain, it's not clear enough. A great value proposition is like a great movie trailer — it grabs attention, builds excitement, and makes people want more.
+                                            </FastTrackInsight>
+
+                                            {/* Formula display */}
+                                            <div style={{ background: '#000', color: '#fff', padding: '20px 24px', marginBottom: 32, fontSize: 15, lineHeight: 1.8 }}>
+                                                <div className="monument" style={{ fontSize: 10, color: '#999', marginBottom: 8 }}>THE FAST TRACK FORMULA</div>
+                                                For <span style={{ background: data.vpTargetSegment ? '#FFF469' : '#333', color: data.vpTargetSegment ? '#000' : '#999', padding: '2px 8px', fontWeight: 600 }}>{data.vpTargetSegment || '[target segment]'}</span> who struggle with <span style={{ background: data.vpPainPoint ? '#FFF469' : '#333', color: data.vpPainPoint ? '#000' : '#999', padding: '2px 8px', fontWeight: 600 }}>{data.vpPainPoint || '[pain point]'}</span>, we provide <span style={{ background: data.vpSolution ? '#FFF469' : '#333', color: data.vpSolution ? '#000' : '#999', padding: '2px 8px', fontWeight: 600 }}>{data.vpSolution || '[solution]'}</span> that <span style={{ background: data.vpCoreBenefit ? '#FFF469' : '#333', color: data.vpCoreBenefit ? '#000' : '#999', padding: '2px 8px', fontWeight: 600 }}>{data.vpCoreBenefit || '[core benefit]'}</span>{data.vpCompetitorWeakness ? <>, unlike <span style={{ background: '#FFF469', color: '#000', padding: '2px 8px', fontWeight: 600 }}>{data.vpCompetitorWeakness}</span></> : ''}.
+                                            </div>
+
+                                            <div className="questions-grid">
+                                                {/* Row 1: 3 formula components */}
+                                                <div className="fields-row fields-row-3">
+                                                    <div className="field-card">
+                                                        <label className="field-label">Target Segment</label>
+                                                        <input type="text" className="field-input" value={data.vpTargetSegment} onChange={e => updateData('vpTargetSegment', e.target.value)} placeholder="high-growth SaaS startups (20-100 employees)" />
+                                                        <p className="field-help">{data.vpTargetSegment.length} (min 10)</p>
+                                                    </div>
+                                                    <div className="field-card">
+                                                        <label className="field-label">Pain Point</label>
+                                                        <input type="text" className="field-input" value={data.vpPainPoint} onChange={e => updateData('vpPainPoint', e.target.value)} placeholder="wasting 40% of team time on manual workflows" />
+                                                        <p className="field-help">{data.vpPainPoint.length} (min 10)</p>
+                                                    </div>
+                                                    <div className="field-card">
+                                                        <label className="field-label">Solution (what we provide)</label>
+                                                        <input type="text" className="field-input" value={data.vpSolution} onChange={e => updateData('vpSolution', e.target.value)} placeholder="an AI-powered, zero-code automation platform" />
+                                                        <p className="field-help">{data.vpSolution.length} (min 10)</p>
+                                                    </div>
+                                                </div>
+
+                                                {/* Row 2: 2 remaining components */}
+                                                <div className="fields-row fields-row-3">
+                                                    <div className="field-card">
+                                                        <label className="field-label">Core Benefit (what they get)</label>
+                                                        <input type="text" className="field-input" value={data.vpCoreBenefit} onChange={e => updateData('vpCoreBenefit', e.target.value)} placeholder="eliminates 80% of manual work in 24 hours" />
+                                                        <p className="field-help">{data.vpCoreBenefit.length} (min 10)</p>
+                                                    </div>
+                                                    <div className="field-card">
+                                                        <label className="field-label">Competitor Weakness (optional)</label>
+                                                        <input type="text" className="field-input" value={data.vpCompetitorWeakness} onChange={e => updateData('vpCompetitorWeakness', e.target.value)} placeholder="competitors who require 6-month implementations" />
+                                                    </div>
+                                                    <div className="field-card">
+                                                        <label className="field-label">
+                                                            Anti-Value Proposition
+                                                            <HelpAccordion id="antiVP" activeHelp={questionHelp} setActiveHelp={setQuestionHelp}>
+                                                                What do you explicitly NOT promise? Prevents overpromising. "Strategy is sacrifice."
+                                                            </HelpAccordion>
+                                                        </label>
+                                                        <textarea className="field-textarea" value={data.antiValueProp} onChange={e => updateData('antiValueProp', e.target.value)} placeholder="We do NOT promise:&#10;- Enterprise-level customization&#10;- Replacing your entire tech stack" maxLength={500} />
+                                                    </div>
+                                                </div>
+
+                                                {/* Live preview */}
+                                                {data.fullValueProp && data.fullValueProp.length > 30 && (
+                                                    <div style={{ background: '#FFF469', border: '3px solid #000', padding: 20, marginBottom: 8 }}>
+                                                        <div className="monument" style={{ fontSize: 10, marginBottom: 8 }}>YOUR VALUE PROPOSITION</div>
+                                                        <p style={{ fontSize: 17, fontWeight: 600, lineHeight: 1.5 }}>{data.fullValueProp}</p>
+                                                        <p style={{ fontSize: 12, color: '#666', marginTop: 8, fontStyle: 'italic' }}>Read it out loud. Does it make customers say "I need this NOW"?</p>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {canProceedStep3 && (
+                                                <div className="closing-box animate-in">
+                                                    <p className="closing-title">{CONFIG.CLOSING_MESSAGES[3].title}</p>
+                                                    <p>{CONFIG.CLOSING_MESSAGES[3].text}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* ── STEP 4: Validate & Test ── */}
+                                    {step === 4 && (
+                                        <div className="step-content animate-in">
+                                            <p className="step-indicator">STEP 4 OF {totalSteps}</p>
+                                            <div className="opening-box">
+                                                <h1 className="step-heading">Validate & Test</h1>
+                                                <p className="step-hint">Run your value proposition through the 8-point checklist. You need at least 6 "Yes" answers.</p>
+                                            </div>
+
+                                            <LearnMore>
+                                                Your value proposition is a hypothesis until tested with real customers. Companies that validate early and iterate quickly are 3x more likely to succeed. The 8-point checklist ensures your VP is a painkiller, differentiated, and crystal clear before you invest in scaling.
+                                            </LearnMore>
+
+                                            <FastTrackInsight>
+                                                If customers don't instantly get it, refine it. If they don't care, you're solving the wrong problem. Test with real target customers, not friends and family.
+                                            </FastTrackInsight>
+
+                                            {/* Display current VP */}
+                                            {data.fullValueProp && (
+                                                <div style={{ background: '#000', color: '#fff', padding: '16px 20px', marginBottom: 24, fontSize: 15 }}>
+                                                    <div className="monument" style={{ fontSize: 10, color: '#999', marginBottom: 6 }}>YOUR VALUE PROPOSITION</div>
+                                                    <p style={{ lineHeight: 1.5 }}>{data.fullValueProp}</p>
+                                                </div>
+                                            )}
+
+                                            {/* 8-point checklist */}
+                                            <div style={{ marginBottom: 32 }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                                                    <span className="monument" style={{ fontSize: 12 }}>8-POINT VALIDATION</span>
+                                                    <span style={{ fontSize: 14, fontWeight: 600, color: yesCount >= 6 ? '#16A34A' : yesCount >= 4 ? '#000' : '#DC2626' }}>{yesCount}/8</span>
+                                                </div>
+
+                                                {[
+                                                    { key: 'painkiller', text: 'Our VP solves a critical pain (painkiller, not vitamin) — the 1-2 most important needs of our core customer' },
+                                                    { key: 'differentiated', text: 'Our VP differentiates us from competitors in a meaningful way' },
+                                                    { key: 'highValue', text: 'Our VP focuses on needs/pains that many customers have OR a small number is willing to pay a lot for' },
+                                                    { key: 'hardToCopy', text: 'Our VP is difficult to copy' },
+                                                    { key: 'notPriceOnly', text: 'Our VP does NOT rely on lower price only, but on unique value we create' },
+                                                    { key: 'crystalClear', text: 'Our VP is sharp, to the point, and crystal clear to the customer' },
+                                                    { key: 'customerNeedsBased', text: 'Our VP is based on what the target customer needs (not just what we do now)' },
+                                                    { key: 'decisionFilter', text: 'Our VP serves as a filter for management to make day-to-day strategic decisions' }
+                                                ].map((q, idx) => (
+                                                    <div key={q.key} className={`validation-item ${data.validation[q.key] === 'yes' ? 'answered-yes' : data.validation[q.key] === 'no' ? 'answered-no' : ''}`}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
+                                                            <p style={{ fontSize: 14, lineHeight: 1.5, flex: 1 }}><strong>{idx + 1}.</strong> {q.text}</p>
+                                                            <div style={{ display: 'flex', gap: 12, flexShrink: 0 }}>
+                                                                <label style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', fontSize: 14 }}>
+                                                                    <input type="radio" name={q.key} value="yes" checked={data.validation[q.key] === 'yes'} onChange={() => updateValidation(q.key, 'yes')} style={{ accentColor: '#000' }} /> Yes
+                                                                </label>
+                                                                <label style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', fontSize: 14 }}>
+                                                                    <input type="radio" name={q.key} value="no" checked={data.validation[q.key] === 'no'} onChange={() => updateValidation(q.key, 'no')} style={{ accentColor: '#000' }} /> No
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+
+                                                {/* Score feedback */}
+                                                {Object.values(data.validation).filter(v => v).length >= 8 && (
+                                                    <div style={{ marginTop: 12, padding: '12px 16px', background: yesCount >= 6 ? '#f0fdf4' : '#fef2f2', border: `2px solid ${yesCount >= 6 ? '#16A34A' : '#DC2626'}`, fontSize: 14 }}>
+                                                        {yesCount >= 6 ? (
+                                                            <p><strong>Strong foundation.</strong> Your VP passes the validation checklist. Now test it with real customers.</p>
+                                                        ) : (
+                                                            <p><strong>Needs work.</strong> You scored {yesCount}/8 — review your VP and strengthen the weak areas before proceeding. Go back to Steps 1-3 to refine.</p>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="questions-grid">
+                                                <div className="fields-row fields-row-2">
+                                                    <div className="field-card">
+                                                        <label className="field-label">
+                                                            Customer Testing Plan
+                                                            <HelpAccordion id="testPlan" activeHelp={questionHelp} setActiveHelp={setQuestionHelp}>
+                                                                Share with 10-20 target customers. Measure instant comprehension, urgency, and follow-up interest.
+                                                            </HelpAccordion>
+                                                        </label>
+                                                        <textarea className="field-textarea" value={data.testingPlan} onChange={e => updateData('testingPlan', e.target.value)} placeholder="e.g. Send to 20 target customers via email. Schedule 5 phone calls to read it aloud and watch reactions." maxLength={500} />
+                                                    </div>
+                                                    <div className="field-card">
+                                                        <label className="field-label">Refinement Notes</label>
+                                                        <textarea className="field-textarea" value={data.refinementNotes} onChange={e => updateData('refinementNotes', e.target.value)} placeholder="What might you change based on feedback? What variations will you test?" maxLength={500} />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {canProceedStep4 && (
+                                                <div className="closing-box animate-in">
+                                                    <p className="closing-title">{CONFIG.CLOSING_MESSAGES[4].title}</p>
+                                                    <p>{CONFIG.CLOSING_MESSAGES[4].text}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    <ButtonFooter
+                                        onBack={() => setStep(step === 1 ? 0.5 : step - 1)}
+                                        onNext={() => setStep(step === totalSteps ? 999 : step + 1)}
+                                        canProceed={step === 1 ? canProceedStep1 : step === 2 ? canProceedStep2 : step === 3 ? canProceedStep3 : canProceedStep4}
+                                        nextLabel={step === totalSteps ? 'View Your Canvas' : 'Next'}
+                                        showBack={true}
+                                    />
+                                </div>
+                                <WizardSidebar
+                                    currentStep={step}
+                                    steps={CONFIG.STEPS}
+                                    toolTitle={CONFIG.TOOL_TITLE}
+                                    timeEstimate={CONFIG.TIME_ESTIMATE}
+                                    getSnippet={getSnippet}
+                                    onNavigate={setStep}
+                                />
+                            </div>
+                        )}
+
+                        {/* ── STEP 999: Canvas ── */}
+                        {step === 999 && (
+                            <div style={{ minHeight: '100vh', background: '#fff' }}>
+                                <header className="no-print" style={{ borderBottom: '2px solid #000', padding: '16px 24px' }}>
+                                    <div style={{ maxWidth: 960, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div>
+                                            <h1 className="plaak" style={{ fontSize: 28, marginBottom: 4 }}>YOUR VALUE PROPOSITION CANVAS</h1>
+                                            <p style={{ fontSize: 14, color: '#666' }}>If you confuse, you lose. The clearer your VP, the faster you win.</p>
+                                        </div>
+                                        <button onClick={() => setStep(totalSteps)} className="btn-back">&larr; Edit</button>
+                                    </div>
+                                </header>
+
+                                <div style={{ maxWidth: 960, margin: '0 auto', padding: '32px 24px' }}>
+                                    <div id="canvas-content" style={{ border: '2px solid #000', padding: 32, marginBottom: 24 }}>
+
+                                        {/* THE VP — hero block */}
+                                        <div style={{ background: '#FFF469', border: '3px solid #000', padding: 28, marginBottom: 32, textAlign: 'center' }}>
+                                            <div className="monument" style={{ fontSize: 10, marginBottom: 8 }}>YOUR VALUE PROPOSITION</div>
+                                            <p style={{ fontSize: 22, fontWeight: 600, lineHeight: 1.5 }}>{data.fullValueProp}</p>
+                                        </div>
+
+                                        {/* Section 1: Customer Foundation */}
+                                        <div style={{ marginBottom: 32 }}>
+                                            <div className="numbered-section" style={{ marginBottom: 12 }}>01 — CUSTOMER FOUNDATION</div>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                                                <div className="canvas-section-box">
+                                                    <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 4, color: '#666' }}>TARGET SEGMENT</p>
+                                                    <p style={{ fontSize: 14 }}>{data.targetSegment}</p>
+                                                </div>
+                                                <div className="canvas-section-box">
+                                                    <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 4, color: '#666' }}>AHA! MOMENT</p>
+                                                    <p style={{ fontSize: 14 }}>{data.ahaMoment}</p>
+                                                </div>
+                                            </div>
+                                            <div className="canvas-section-box">
+                                                <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 4, color: '#666' }}>BIGGEST PAIN</p>
+                                                <p style={{ fontSize: 14 }}>{data.biggestPain}</p>
+                                            </div>
+                                            {data.desiredOutcome && (
+                                                <div className="canvas-section-box">
+                                                    <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 4, color: '#666' }}>DESIRED OUTCOME</p>
+                                                    <p style={{ fontSize: 14 }}>{data.desiredOutcome}</p>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Section 2: Competitive Landscape */}
+                                        <div style={{ marginBottom: 32 }}>
+                                            <div className="numbered-section" style={{ marginBottom: 12 }}>02 — COMPETITIVE LANDSCAPE</div>
+                                            <div className="canvas-section-box">
+                                                <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 4, color: '#666' }}>OUR UNIQUE VALUE</p>
+                                                <p style={{ fontSize: 14 }}>{data.uniqueValue}</p>
+                                            </div>
+                                            {data.competitors.filter(c => c.name).length > 0 && (
+                                                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(data.competitors.filter(c => c.name).length, 3)}, 1fr)`, gap: 12 }}>
+                                                    {data.competitors.filter(c => c.name).map((c, i) => (
+                                                        <div key={i} style={{ background: '#FAFAFA', border: '1px solid #E0E0E0', padding: 16 }}>
+                                                            <p style={{ fontWeight: 600, fontSize: 14, marginBottom: 8 }}>{c.name}</p>
+                                                            {c.strength && <p style={{ fontSize: 12, color: '#16A34A', marginBottom: 4 }}>+ {c.strength}</p>}
+                                                            {c.weakness && <p style={{ fontSize: 12, color: '#DC2626', marginBottom: 4 }}>- {c.weakness}</p>}
+                                                            {c.differentiation && <p style={{ fontSize: 12, color: '#2563EB' }}>We: {c.differentiation}</p>}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Section 3: VP Formula */}
+                                        <div style={{ marginBottom: 32 }}>
+                                            <div className="numbered-section" style={{ marginBottom: 12 }}>03 — VP COMPONENTS</div>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                                                <div className="canvas-section-box">
+                                                    <p style={{ fontWeight: 600, fontSize: 12, marginBottom: 4, color: '#666' }}>FOR (TARGET)</p>
+                                                    <p style={{ fontSize: 14 }}>{data.vpTargetSegment}</p>
+                                                </div>
+                                                <div className="canvas-section-box">
+                                                    <p style={{ fontWeight: 600, fontSize: 12, marginBottom: 4, color: '#666' }}>WHO STRUGGLE WITH (PAIN)</p>
+                                                    <p style={{ fontSize: 14 }}>{data.vpPainPoint}</p>
+                                                </div>
+                                                <div className="canvas-section-box">
+                                                    <p style={{ fontWeight: 600, fontSize: 12, marginBottom: 4, color: '#666' }}>WE PROVIDE (SOLUTION)</p>
+                                                    <p style={{ fontSize: 14 }}>{data.vpSolution}</p>
+                                                </div>
+                                                <div className="canvas-section-box">
+                                                    <p style={{ fontWeight: 600, fontSize: 12, marginBottom: 4, color: '#666' }}>THAT (BENEFIT)</p>
+                                                    <p style={{ fontSize: 14 }}>{data.vpCoreBenefit}</p>
+                                                </div>
+                                            </div>
+                                            {data.antiValueProp && (
+                                                <div className="canvas-section-box" style={{ borderLeftColor: '#DC2626' }}>
+                                                    <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 4, color: '#DC2626' }}>ANTI-VALUE PROPOSITION (WHAT WE DON'T PROMISE)</p>
+                                                    <p style={{ fontSize: 14, whiteSpace: 'pre-line' }}>{data.antiValueProp}</p>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Section 4: Validation Score */}
+                                        <div style={{ marginBottom: 16 }}>
+                                            <div className="numbered-section" style={{ marginBottom: 12 }}>04 — VALIDATION</div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+                                                <div style={{ textAlign: 'center', minWidth: 80 }}>
+                                                    <div style={{ fontSize: 40, fontWeight: 700 }}>{yesCount}/8</div>
+                                                    <p style={{ fontSize: 12, color: '#666' }}>Score</p>
+                                                </div>
+                                                <div style={{ flex: 1, padding: '12px 16px', background: yesCount >= 6 ? '#f0fdf4' : '#fef2f2', border: `1px solid ${yesCount >= 6 ? '#bbf7d0' : '#fecaca'}` }}>
+                                                    {yesCount >= 6 ? (
+                                                        <p style={{ fontSize: 14 }}><strong>Strong Value Proposition</strong> — Passed validation. Ready for customer testing.</p>
+                                                    ) : (
+                                                        <p style={{ fontSize: 14 }}><strong>Needs Refinement</strong> — Score below threshold. Strengthen weak areas.</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            {data.testingPlan && (
+                                                <div className="canvas-section-box" style={{ marginTop: 12 }}>
+                                                    <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 4, color: '#666' }}>TESTING PLAN</p>
+                                                    <p style={{ fontSize: 14 }}>{data.testingPlan}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Action buttons */}
+                                    <div className="no-print" style={{ display: 'flex', gap: 12 }}>
+                                        <button onClick={() => setStep(totalSteps)} className="btn-back" style={{ flex: 1 }}>&larr; Back to editing</button>
+                                        <button onClick={handleExport} className="btn-back" style={{ flex: 1 }}>Export PDF</button>
+                                        <button id="submit-button" onClick={handleSubmit} className="btn-next" style={{ flex: 1 }} disabled={submitStatus === 'saving'}>
+                                            {submitStatus === 'saving' ? 'Saving...' : 'Final Submit'}
+                                        </button>
+                                    </div>
+                                    {submitStatus && (
+                                        <div style={{ marginTop: 16, padding: '12px 16px', textAlign: 'center', background: submitStatus === 'success' ? '#f0fdf4' : submitStatus === 'error' ? '#fef2f2' : '#f5f5f5', border: `1px solid ${submitStatus === 'success' ? '#bbf7d0' : submitStatus === 'error' ? '#fecaca' : '#e0e0e0'}`, fontSize: 14 }}>
+                                            <span style={{ color: submitStatus === 'success' ? '#166534' : submitStatus === 'error' ? '#991b1b' : '#333' }}>{submitMessage}</span>
+                                        </div>
+                                    )}
+                                    <div style={{ marginTop: 24, textAlign: 'center' }}>
+                                        <p className="monument" style={{ fontSize: 11, color: '#999' }}>IF YOU CONFUSE, YOU LOSE — CLARITY WINS</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                    </div>
+                </div>
+            );
         }
-      };
 
-      // Render different pages based on step
-      if (showTransition) {
-        return <TransitionScreen message={transitionMessage} progress={transitionProgress} />;
-      }
-
-      if (step === 0) {
-        return <CoverPage onStart={goNext} />;
-      }
-
-      if (step === 0.5) {
-        return <IntroPage data={data} updateData={updateData} onNext={goNext} canProceed={canProceedFromIntro()} />;
-      }
-
-      if (step === 1) {
-        return (
-          <Fragment>
-            <Step1Page
-              data={data}
-              updateData={updateData}
-              onNext={goNext}
-              onBack={goBack}
-              canProceed={canProceedFromStep1()}
-              setShowHelp={setShowHelp}
-            />
-            {showHelp && <HelpModal onClose={() => setShowHelp(false)} stepNumber={1} />}
-          </Fragment>
-        );
-      }
-
-      if (step === 2) {
-        return (
-          <Fragment>
-            <Step2Page
-              data={data}
-              updateData={updateData}
-              onNext={goNext}
-              onBack={goBack}
-              canProceed={canProceedFromStep2()}
-              setShowHelp={setShowHelp}
-              addCompetitor={addCompetitor}
-              removeCompetitor={removeCompetitor}
-              updateCompetitor={updateCompetitor}
-            />
-            {showHelp && <HelpModal onClose={() => setShowHelp(false)} stepNumber={2} />}
-          </Fragment>
-        );
-      }
-
-      if (step === 3) {
-        return (
-          <Fragment>
-            <Step3Page
-              data={data}
-              updateData={updateData}
-              onNext={goNext}
-              onBack={goBack}
-              canProceed={canProceedFromStep3()}
-              setShowHelp={setShowHelp}
-            />
-            {showHelp && <HelpModal onClose={() => setShowHelp(false)} stepNumber={3} />}
-          </Fragment>
-        );
-      }
-
-      if (step === 4) {
-        return (
-          <Fragment>
-            <Step4Page
-              data={data}
-              updateData={updateData}
-              updateValidation={updateValidation}
-              onNext={goNext}
-              onBack={goBack}
-              canProceed={canProceedFromStep4()}
-              setShowHelp={setShowHelp}
-            />
-            {showHelp && <HelpModal onClose={() => setShowHelp(false)} stepNumber={4} />}
-          </Fragment>
-        );
-      }
-
-      if (step === 5) {
-        return (
-          <CanvasPage
-            data={data}
-            onBack={goBack}
-            onExport={exportPDF}
-            onSubmit={handleSubmit}
-          />
-        );
-      }
-
-      return null;
-    }
-
-    // Cover Page Component
-    function CoverPage({ onStart }) {
-      return (
-        <div className="relative min-h-screen flex items-center justify-center bg-black">
-          <div
-            className="absolute inset-0 w-full h-full"
-            style={{
-              backgroundImage: 'url("https://images.unsplash.com/photo-1557804506-669a67965ba0?w=1920&q=80")',
-              backgroundSize: 'cover',
-              backgroundPosition: 'center'
-            }}
-          ></div>
-          <div className="absolute inset-0" style={{background: 'linear-gradient(to bottom, rgba(0,0,0,0.6), rgba(0,0,0,0.85))'}}></div>
-
-          <div className="relative z-10 text-center text-white px-8 max-w-5xl mx-auto">
-            <h1 className="plaak animate-in" style={{fontSize: '100px', lineHeight: '1', marginBottom: '32px'}}>
-              VALUE PROPOSITION DESIGN
-            </h1>
-            <p className="text-4xl mb-12 animate-in" style={{animationDelay: '0.2s'}}>
-              Craft a message that makes customers say &quot;I need this NOW&quot;
-            </p>
-            <button
-              onClick={onStart}
-              className="bg-white text-black plaak px-16 py-6 border-4 border-white hover:bg-black hover:text-white transition-all text-3xl animate-in"
-              style={{animationDelay: '0.4s'}}
-            >
-              START
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    // Intro Page Component
-    function IntroPage({ data, updateData, onNext, canProceed }) {
-      return (
-        <div className="bg-black text-white min-h-screen p-16">
-          <div className="max-w-5xl mx-auto">
-            <h1 className="plaak mb-16 animate-in" style={{fontSize: '100px'}}>
-              BEFORE WE START
-            </h1>
-
-            {/* User Details */}
-            <div className="mb-12 animate-in" style={{animationDelay: '0.05s'}}>
-              <h2 className="plaak text-6xl mb-6">YOUR DETAILS</h2>
-              <div className="space-y-6 bg-white text-black p-8">
-                <div>
-                  <label className="monument text-sm block mb-2">NAME <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    value={data.name}
-                    onChange={(e) => updateData('name', e.target.value)}
-                    placeholder="Michael Rodriguez"
-                    className="w-full"
-                  />
-                </div>
-                <div>
-                  <label className="monument text-sm block mb-2">EMAIL <span className="text-red-500">*</span></label>
-                  <input
-                    type="email"
-                    value={data.email}
-                    onChange={(e) => updateData('email', e.target.value)}
-                    placeholder="michael.rodriguez@company.com"
-                    className="w-full"
-                  />
-                </div>
-                <div>
-                  <label className="monument text-sm block mb-2">COMPANY <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    value={data.company}
-                    onChange={(e) => updateData('company', e.target.value)}
-                    placeholder="GrowthTech Solutions"
-                    className="w-full"
-                  />
-                </div>
-                <div>
-                  <label className="monument text-sm block mb-2">ROLE</label>
-                  <input
-                    type="text"
-                    value={data.role}
-                    onChange={(e) => updateData('role', e.target.value)}
-                    placeholder="Chief Marketing Officer"
-                    className="w-full"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Sprint Info */}
-            <div className="mb-12 animate-in" style={{animationDelay: '0.08s'}}>
-              <h2 className="plaak text-6xl mb-6" style={{color: '#FFF469'}}>SPRINT INFO</h2>
-              <div className="bg-white text-black p-8">
-                <p className="text-2xl font-bold mb-4">Sprint 15: Value Proposition Design</p>
-                <p className="text-xl leading-relaxed mb-4">
-                  A weak value proposition leads to low conversion rates, price sensitivity, and lost customers. A powerful value proposition creates clarity, differentiation, and urgency.
-                </p>
-                <div className="border-l-4 border-black pl-4 italic text-lg">
-                  "People don't buy products. They buy better versions of themselves." — Samuel Hulme
-                </div>
-              </div>
-            </div>
-
-            {/* Purpose */}
-            <div className="mb-12 animate-in" style={{animationDelay: '0.1s'}}>
-              <h2 className="plaak text-6xl mb-6">PURPOSE</h2>
-
-              <div className="border-l-4 border-white pl-6 mb-6">
-                <p className="text-3xl italic mb-2">&quot;Companies with a clear, differentiated value proposition grow 3x faster than competitors.&quot;</p>
-                <p className="text-xl text-gray-400">— McKINSEY</p>
-              </div>
-
-              <p className="text-3xl leading-relaxed mb-4">
-                Your value proposition is the backbone of your entire business strategy. It determines who you attract, how much you can charge, and whether customers stick with you.
-              </p>
-              <p className="text-2xl text-gray-400">
-                This sprint will help you craft a precise, powerful statement that makes your offer impossible to ignore.
-              </p>
-            </div>
-
-            {/* Mistakes to Avoid */}
-            <div className="mb-12 animate-in" style={{animationDelay: '0.2s'}}>
-              <h2 className="plaak text-6xl mb-6" style={{color: '#FFF469'}}>MISTAKES TO AVOID</h2>
-
-              <div className="bg-white text-black p-6 mb-6 border-4 border-yellow-400">
-                <p className="riforma-bold text-2xl mb-4">COMMON VALUE PROPOSITION FAILURES:</p>
-                <ul className="text-xl space-y-3">
-                  <li className="flex items-start">
-                    <span className="text-3xl mr-3">1.</span>
-                    <span><strong>Being too generic:</strong> &quot;We provide high-quality service&quot; is meaningless because everyone says it</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-3xl mr-3">2.</span>
-                    <span><strong>Focusing on features, not outcomes:</strong> Customers don&apos;t care about AI-driven analytics. They care about making smarter decisions faster</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-3xl mr-3">3.</span>
-                    <span><strong>Targeting too many people:</strong> If your value proposition speaks to everyone, it resonates with no one</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-3xl mr-3">4.</span>
-                    <span><strong>Forgetting differentiation:</strong> If you&apos;re not explaining why you&apos;re better than alternatives, you&apos;re invisible</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-3xl mr-3">5.</span>
-                    <span><strong>The vitamin trap:</strong> Nice-to-have features don&apos;t sell. You need to be a painkiller, not a vitamin</span>
-                  </li>
-                </ul>
-              </div>
-
-              <ul className="text-2xl space-y-4">
-                <li className="flex items-start">
-                  <span className="text-4xl mr-4">•</span>
-                  <span>Making assumptions instead of using validated customer data. 90% of startups fail because they misjudge product-market fit.</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="text-4xl mr-4">•</span>
-                  <span>Using complex language or jargon. If it takes more than one sentence to explain, it&apos;s not clear enough.</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="text-4xl mr-4">•</span>
-                  <span>Skipping validation. Test with real customers before scaling. If they don&apos;t instantly get it, refine it.</span>
-                </li>
-              </ul>
-            </div>
-
-            {/* The Journey */}
-            <div className="mb-16 animate-in" style={{animationDelay: '0.3s'}}>
-              <h2 className="plaak text-6xl mb-8">THE JOURNEY</h2>
-              <div className="grid grid-cols-4 gap-6 text-center">
-                <div className="border-2 border-white p-6">
-                  <div className="text-8xl plaak mb-4">01</div>
-                  <p className="text-xl font-bold mb-2">ANALYZE</p>
-                  <p className="text-base text-gray-400">Customer pains & gains</p>
-                </div>
-                <div className="border-2 border-white p-6">
-                  <div className="text-8xl plaak mb-4">02</div>
-                  <p className="text-xl font-bold mb-2">DIFFERENTIATE</p>
-                  <p className="text-base text-gray-400">Competitive positioning</p>
-                </div>
-                <div className="border-2 border-white p-6">
-                  <div className="text-8xl plaak mb-4">03</div>
-                  <p className="text-xl font-bold mb-2">CRAFT</p>
-                  <p className="text-base text-gray-400">One-sentence formula</p>
-                </div>
-                <div className="border-2 border-white p-6">
-                  <div className="text-8xl plaak mb-4">04</div>
-                  <p className="text-xl font-bold mb-2">VALIDATE</p>
-                  <p className="text-base text-gray-400">Test & refine</p>
-                </div>
-              </div>
-            </div>
-
-            <button
-              onClick={onNext}
-              disabled={!canProceed}
-              className="btn-primary w-full text-3xl py-8 plaak"
-            >
-              LET&apos;S START →
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    // Transition Screen Component
-    function TransitionScreen({ message, progress }) {
-      return (
-        <div className="fixed inset-0 bg-black text-white flex items-center justify-center z-50 fade-in">
-          <div className="text-center px-8">
-            <h1 className="plaak transition-animate-in" style={{fontSize: '120px', marginBottom: '32px'}}>
-              SECTION COMPLETE
-            </h1>
-
-            <div className="max-w-2xl mx-auto mb-8 transition-animate-in" style={{animationDelay: '0.2s'}}>
-              <div className="h-2 bg-gray-800 mb-4">
-                <div
-                  className="h-full bg-white transition-all duration-1000"
-                  style={{width: `${progress}%`}}
-                ></div>
-              </div>
-              <p className="monument text-xl tracking-wider">{message}</p>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // Step 1: Customer Pain & Gain Analysis
-    function Step1Page({ data, updateData, onNext, onBack, canProceed, setShowHelp }) {
-      return (
-        <div className="bg-white min-h-screen p-16 pb-32">
-          <div className="max-w-5xl mx-auto">
-            <ProgressIndicator currentStep={1} />
-            <HelpButton onClick={() => setShowHelp(true)} />
-
-            <div className="numbered-section mb-8 animate-in">01. CUSTOMER PAIN & GAIN ANALYSIS</div>
-
-            <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
-              Understand what keeps customers awake at night
-            </h3>
-
-            <div className="border-l-4 border-yellow-400 pl-6 mb-12 animate-in" style={{animationDelay: '0.1s'}}>
-              <p className="text-2xl italic">
-                &quot;A strong value proposition must be a painkiller for your target segment - not just a nice-to-have vitamin. If you&apos;re not solving a pain that keeps them up at night, you don&apos;t have a compelling value proposition.&quot;
-              </p>
-              <p className="text-lg text-gray-600 mt-2">— The Painkiller vs. Vitamin Principle</p>
-            </div>
-
-            {/* Target Segment */}
-            <div className="mb-12 animate-in" style={{animationDelay: '0.15s'}}>
-              <label className="monument text-sm block mb-3">TARGET SEGMENT <span className="text-red-500">*</span></label>
-              <p className="text-base text-gray-600 mb-3">Who exactly is this value proposition for? Be specific.</p>
-              <textarea
-                value={data.targetSegment}
-                onChange={(e) => updateData('targetSegment', e.target.value)}
-                placeholder="High-growth SaaS startups (20-100 employees) with $5M-$30M ARR, scaling operations rapidly, experiencing growing pains with workflow inefficiency"
-                className="w-full"
-                rows={3}
-              />
-              <div className={`char-counter ${data.targetSegment.length < 30 ? 'invalid' : ''}`}>
-                {data.targetSegment.length}/500 (min 30 characters)
-              </div>
-            </div>
-
-            {/* Biggest Pain */}
-            <div className="mb-12 animate-in" style={{animationDelay: '0.2s'}}>
-              <label className="monument text-sm block mb-3">BIGGEST PAIN POINT <span className="text-red-500">*</span></label>
-              <p className="text-base text-gray-600 mb-3">What is the #1 problem that keeps them awake at night? What is costing them time, money, or stress?</p>
-              <textarea
-                value={data.biggestPain}
-                onChange={(e) => updateData('biggestPain', e.target.value)}
-                placeholder="Teams spend 40%+ of their time on repetitive manual tasks across disconnected tools. This slows down growth, causes errors, frustrates employees, and prevents focus on high-value strategic work. Last quarter alone, they lost 3 key hires due to operational chaos."
-                className="w-full"
-                rows={4}
-              />
-              <div className={`char-counter ${data.biggestPain.length < 50 ? 'invalid' : ''}`}>
-                {data.biggestPain.length}/800 (min 50 characters)
-              </div>
-            </div>
-
-            {/* Pain Evidence */}
-            <div className="mb-12 animate-in" style={{animationDelay: '0.25s'}}>
-              <label className="monument text-sm block mb-3">EVIDENCE OF PAIN</label>
-              <p className="text-base text-gray-600 mb-3">What concrete evidence proves this pain exists? Numbers, quotes, behaviors.</p>
-              <textarea
-                value={data.painEvidence}
-                onChange={(e) => updateData('painEvidence', e.target.value)}
-                placeholder="Customer interviews revealed teams use average 11 different tools daily. 67% said manual data entry is their top frustration. Observed COO spending 15 hours/week on status updates. Lost $120K deal because couldn&apos;t deliver client report fast enough."
-                className="w-full"
-                rows={4}
-              />
-            </div>
-
-            {/* Current Solutions */}
-            <div className="mb-12 animate-in" style={{animationDelay: '0.3s'}}>
-              <label className="monument text-sm block mb-3">CURRENT SOLUTIONS & WORKAROUNDS</label>
-              <p className="text-base text-gray-600 mb-3">What are they doing now to solve this problem? Why isn&apos;t it working?</p>
-              <textarea
-                value={data.currentSolutions}
-                onChange={(e) => updateData('currentSolutions', e.target.value)}
-                placeholder="Using Zapier but requires constant maintenance and breaks frequently. Hiring VAs to do manual work but quality inconsistent. Built internal tools but can&apos;t scale. Tried enterprise solutions but too complex and expensive."
-                className="w-full"
-                rows={4}
-              />
-            </div>
-
-            {/* Aha Moment */}
-            <div className="mb-12 animate-in" style={{animationDelay: '0.35s'}}>
-              <label className="monument text-sm block mb-3">THE &quot;AHA!&quot; MOMENT <span className="text-red-500">*</span></label>
-              <p className="text-base text-gray-600 mb-3">When do customers realize they NEED your solution? What triggers urgency?</p>
-              <textarea
-                value={data.ahaMoment}
-                onChange={(e) => updateData('ahaMoment', e.target.value)}
-                placeholder="When they hire their 50th employee and realize manual processes that worked at 20 people are now breaking everything. When they lose a major deal because they can&apos;t respond fast enough. When their best operations person quits due to repetitive work."
-                className="w-full"
-                rows={4}
-              />
-              <div className={`char-counter ${data.ahaMoment.length < 30 ? 'invalid' : ''}`}>
-                {data.ahaMoment.length}/500 (min 30 characters)
-              </div>
-            </div>
-
-            {/* Desired Outcome */}
-            <div className="mb-12 animate-in" style={{animationDelay: '0.4s'}}>
-              <label className="monument text-sm block mb-3">DESIRED OUTCOME (GAIN)</label>
-              <p className="text-base text-gray-600 mb-3">What transformation do they want? What does success look like?</p>
-              <textarea
-                value={data.desiredOutcome}
-                onChange={(e) => updateData('desiredOutcome', e.target.value)}
-                placeholder="Team members focus 80% of time on strategic, high-value work instead of repetitive tasks. Operations run smoothly without constant firefighting. Can scale to 200+ employees without proportionally increasing ops headcount. Close deals 40% faster with instant data access."
-                className="w-full"
-                rows={4}
-              />
-            </div>
-
-            {/* Navigation */}
-            <div className="flex gap-6">
-              <button onClick={onBack} className="btn-secondary flex-1">
-                ← BACK
-              </button>
-              <button
-                onClick={onNext}
-                disabled={!canProceed}
-                className="btn-primary flex-1"
-              >
-                NEXT: COMPETITIVE ANALYSIS →
-              </button>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // Step 2: Competitive Analysis
-    function Step2Page({ data, updateData, onNext, onBack, canProceed, setShowHelp, addCompetitor, removeCompetitor, updateCompetitor }) {
-      return (
-        <div className="bg-white min-h-screen p-16 pb-32">
-          <div className="max-w-5xl mx-auto">
-            <ProgressIndicator currentStep={2} />
-            <HelpButton onClick={() => setShowHelp(true)} />
-
-            <div className="numbered-section mb-8 animate-in">02. COMPETITIVE DIFFERENTIATION</div>
-
-            <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
-              Identify what makes you uniquely valuable
-            </h3>
-
-            <div className="border-l-4 border-yellow-400 pl-6 mb-12 animate-in" style={{animationDelay: '0.1s'}}>
-              <p className="text-2xl italic">
-                &quot;A strong value proposition is not about being slightly better - it&apos;s about being unique. Differentiate or die.&quot;
-              </p>
-              <p className="text-lg text-gray-600 mt-2">— Value Proposition Design Principle</p>
-            </div>
-
-            <p className="text-xl mb-8 text-gray-700">
-              Map out your top 2-3 competitors. What do they do well? Where do they fall short? How are you different?
-            </p>
-
-            {/* Competitor Analysis */}
-            <div className="mb-12 animate-in" style={{animationDelay: '0.15s'}}>
-              <h3 className="riforma-bold text-3xl mb-6">Competitor Analysis</h3>
-
-              {data.competitors.map((competitor, index) => (
-                <div key={index} className="bg-gray-50 border-2 border-gray-200 p-6 mb-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <h4 className="riforma-bold text-xl">Competitor {index + 1}</h4>
-                    {data.competitors.length > 1 && (
-                      <button
-                        onClick={() => removeCompetitor(index)}
-                        className="text-red-600 hover:text-red-800 text-sm"
-                      >
-                        Remove
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="space-y-4">
-                    <div>
-                      <label className="monument text-xs block mb-2">COMPETITOR NAME <span className="text-red-500">*</span></label>
-                      <input
-                        type="text"
-                        value={competitor.name}
-                        onChange={(e) => updateCompetitor(index, 'name', e.target.value)}
-                        placeholder="AutomationHub"
-                        className="w-full"
-                      />
-                      <div className={`char-counter ${competitor.name.length < 3 ? 'invalid' : ''}`}>
-                        {competitor.name.length}/100 (min 3 characters)
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="monument text-xs block mb-2">THEIR STRENGTH</label>
-                      <textarea
-                        value={competitor.strength}
-                        onChange={(e) => updateCompetitor(index, 'strength', e.target.value)}
-                        placeholder="Well-established brand, 10K+ customers, extensive integration library, strong enterprise sales team"
-                        className="w-full"
-                        rows={2}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="monument text-xs block mb-2">THEIR WEAKNESS <span className="text-red-500">*</span></label>
-                      <textarea
-                        value={competitor.weakness}
-                        onChange={(e) => updateCompetitor(index, 'weakness', e.target.value)}
-                        placeholder="Requires heavy IT resources and 6-month implementation. Complex pricing. Doesn&apos;t work well for non-technical users. Limited support for SMBs."
-                        className="w-full"
-                        rows={3}
-                      />
-                      <div className={`char-counter ${competitor.weakness.length < 20 ? 'invalid' : ''}`}>
-                        {competitor.weakness.length}/500 (min 20 characters)
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="monument text-xs block mb-2">HOW WE&apos;RE DIFFERENT</label>
-                      <textarea
-                        value={competitor.differentiation}
-                        onChange={(e) => updateCompetitor(index, 'differentiation', e.target.value)}
-                        placeholder="We offer plug-and-play setup in 24 hours with zero IT required. Transparent pricing. Built specifically for high-growth SMBs, not enterprises."
-                        className="w-full"
-                        rows={2}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              <button onClick={addCompetitor} className="btn-secondary w-full">
-                + Add Another Competitor
-              </button>
-            </div>
-
-            {/* Unique Value */}
-            <div className="mb-12 animate-in" style={{animationDelay: '0.2s'}}>
-              <label className="monument text-sm block mb-3">OUR UNIQUE VALUE <span className="text-red-500">*</span></label>
-              <p className="text-base text-gray-600 mb-3">What do YOU offer that competitors don&apos;t? What&apos;s your single biggest differentiator?</p>
-              <textarea
-                value={data.uniqueValue}
-                onChange={(e) => updateData('uniqueValue', e.target.value)}
-                placeholder="We&apos;re the ONLY automation platform that combines AI-powered workflow design with zero-code setup AND scales seamlessly from 20 to 500+ employees without requiring IT resources. Our customers go live in 24 hours vs. competitors&apos; 6 months."
-                className="w-full"
-                rows={4}
-              />
-              <div className={`char-counter ${data.uniqueValue.length < 50 ? 'invalid' : ''}`}>
-                {data.uniqueValue.length}/800 (min 50 characters)
-              </div>
-            </div>
-
-            {/* Why Switch */}
-            <div className="mb-12 animate-in" style={{animationDelay: '0.25s'}}>
-              <label className="monument text-sm block mb-3">WHY CUSTOMERS SHOULD SWITCH TO US</label>
-              <p className="text-base text-gray-600 mb-3">What compelling reason would make a customer leave their current solution for yours?</p>
-              <textarea
-                value={data.whySwitchToUs}
-                onChange={(e) => updateData('whySwitchToUs', e.target.value)}
-                placeholder="Stop wasting 6 months on implementation. Get 80% of manual work automated in the first week. No IT team needed. No complex pricing surprises. Built for teams like yours who are growing fast and need results NOW, not next quarter."
-                className="w-full"
-                rows={4}
-              />
-            </div>
-
-            {/* Navigation */}
-            <div className="flex gap-6">
-              <button onClick={onBack} className="btn-secondary flex-1">
-                ← BACK
-              </button>
-              <button
-                onClick={onNext}
-                disabled={!canProceed}
-                className="btn-primary flex-1"
-              >
-                NEXT: CRAFT VALUE PROP →
-              </button>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // Step 3: Value Proposition Crafting
-    function Step3Page({ data, updateData, onNext, onBack, canProceed, setShowHelp }) {
-      return (
-        <div className="bg-white min-h-screen p-16 pb-32">
-          <div className="max-w-5xl mx-auto">
-            <ProgressIndicator currentStep={3} />
-            <HelpButton onClick={() => setShowHelp(true)} />
-
-            <div className="numbered-section mb-8 animate-in">03. CRAFT YOUR VALUE PROPOSITION</div>
-
-            <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
-              Create your one-sentence value proposition
-            </h3>
-
-            <div className="border-l-4 border-yellow-400 pl-6 mb-12 animate-in" style={{animationDelay: '0.1s'}}>
-              <p className="text-2xl italic">
-                &quot;A great value proposition is like a great movie trailer - it grabs attention, builds excitement, and makes people want more.&quot;
-              </p>
-              <p className="text-lg text-gray-600 mt-2">— Fast Track Value Proposition Principle</p>
-            </div>
-
-            {/* Formula Display */}
-            <div className="bg-black text-white p-8 mb-12 animate-in" style={{animationDelay: '0.15s'}}>
-              <h3 className="riforma-bold text-3xl mb-6">The Fast Track Formula</h3>
-              <p className="text-2xl font-mono leading-relaxed">
-                For <span className="bg-white text-black px-2">[TARGET SEGMENT]</span> who struggle with <span className="bg-white text-black px-2">[PAIN POINT]</span>, we provide <span className="bg-white text-black px-2">[SOLUTION]</span> that <span className="bg-white text-black px-2">[CORE BENEFIT]</span>, unlike <span className="bg-white text-black px-2">[COMPETITOR WEAKNESS]</span>.
-              </p>
-            </div>
-
-            {/* Fill in the Formula */}
-            <div className="mb-12 animate-in" style={{animationDelay: '0.2s'}}>
-              <h3 className="riforma-bold text-3xl mb-6">Fill in Each Component</h3>
-
-              <div className="space-y-8">
-                {/* Target Segment */}
-                <div>
-                  <label className="monument text-sm block mb-3">TARGET SEGMENT <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    value={data.valuePropTargetSegment}
-                    onChange={(e) => updateData('valuePropTargetSegment', e.target.value)}
-                    placeholder="high-growth SaaS startups (20-100 employees)"
-                    className="w-full"
-                  />
-                  <div className={`char-counter ${data.valuePropTargetSegment.length < 10 ? 'invalid' : ''}`}>
-                    {data.valuePropTargetSegment.length}/200 (min 10 characters)
-                  </div>
-                </div>
-
-                {/* Pain Point */}
-                <div>
-                  <label className="monument text-sm block mb-3">PAIN POINT <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    value={data.valuePropPainPoint}
-                    onChange={(e) => updateData('valuePropPainPoint', e.target.value)}
-                    placeholder="wasting 40% of team time on manual, repetitive workflows"
-                    className="w-full"
-                  />
-                  <div className={`char-counter ${data.valuePropPainPoint.length < 15 ? 'invalid' : ''}`}>
-                    {data.valuePropPainPoint.length}/200 (min 15 characters)
-                  </div>
-                </div>
-
-                {/* Solution */}
-                <div>
-                  <label className="monument text-sm block mb-3">SOLUTION (WHAT WE PROVIDE) <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    value={data.valuePropSolution}
-                    onChange={(e) => updateData('valuePropSolution', e.target.value)}
-                    placeholder="an AI-powered, zero-code workflow automation platform"
-                    className="w-full"
-                  />
-                  <div className={`char-counter ${data.valuePropSolution.length < 15 ? 'invalid' : ''}`}>
-                    {data.valuePropSolution.length}/200 (min 15 characters)
-                  </div>
-                </div>
-
-                {/* Core Benefit */}
-                <div>
-                  <label className="monument text-sm block mb-3">CORE BENEFIT (WHAT THEY GET) <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    value={data.valuePropCoreBenefit}
-                    onChange={(e) => updateData('valuePropCoreBenefit', e.target.value)}
-                    placeholder="eliminates 80% of manual work in 24 hours with zero IT resources required"
-                    className="w-full"
-                  />
-                  <div className={`char-counter ${data.valuePropCoreBenefit.length < 15 ? 'invalid' : ''}`}>
-                    {data.valuePropCoreBenefit.length}/200 (min 15 characters)
-                  </div>
-                </div>
-
-                {/* Competitor Weakness */}
-                <div>
-                  <label className="monument text-sm block mb-3">COMPETITOR WEAKNESS (OPTIONAL)</label>
-                  <input
-                    type="text"
-                    value={data.valuePropCompetitorWeakness}
-                    onChange={(e) => updateData('valuePropCompetitorWeakness', e.target.value)}
-                    placeholder="competitors who require 6-month implementations and dedicated IT teams"
-                    className="w-full"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Generated Value Proposition */}
-            {data.fullValueProp && (
-              <div className="mb-12 animate-in">
-                <h3 className="riforma-bold text-3xl mb-6">Your Value Proposition</h3>
-                <div className="bg-yellow-100 border-4 border-black p-8">
-                  <p className="text-3xl leading-relaxed font-bold">
-                    {data.fullValueProp}
-                  </p>
-                </div>
-                <p className="text-lg text-gray-600 mt-4 italic">
-                  Read it out loud. Does it make customers say &quot;I need this NOW&quot;? If not, refine the components above.
-                </p>
-              </div>
-            )}
-
-            {/* Navigation */}
-            <div className="flex gap-6">
-              <button onClick={onBack} className="btn-secondary flex-1">
-                ← BACK
-              </button>
-              <button
-                onClick={onNext}
-                disabled={!canProceed}
-                className="btn-primary flex-1"
-              >
-                NEXT: VALIDATE →
-              </button>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // Step 4: Validation & Testing
-    function Step4Page({ data, updateData, updateValidation, onNext, onBack, canProceed, setShowHelp }) {
-      const validationQuestions = [
-        { key: 'painkiller', label: 'Our value proposition solves a critical pain (painkiller, not vitamin) that 1-2 most important needs of our core customer' },
-        { key: 'differentiated', label: 'Our value proposition differentiates us from competitors in a meaningful way' },
-        { key: 'highValue', label: 'Our value proposition focuses on needs/pains that many customers have OR a small number is willing to pay a lot for' },
-        { key: 'hardToCopy', label: 'Our value proposition is difficult to copy' },
-        { key: 'notPriceOnly', label: 'Our value proposition does NOT rely on lower price only, but on unique value we create' },
-        { key: 'crystalClear', label: 'Our value proposition is sharp, to the point, and crystal clear to the customer' },
-        { key: 'customerNeedsBased', label: 'Our value proposition is based on what the target customer needs (not just what we do now)' },
-        { key: 'decisionFilter', label: 'Our value proposition serves as a filter for management to make day-to-day strategic decisions' }
-      ];
-
-      const yesCount = Object.values(data.validation).filter(v => v === 'yes').length;
-
-      return (
-        <div className="bg-white min-h-screen p-16 pb-32">
-          <div className="max-w-5xl mx-auto">
-            <ProgressIndicator currentStep={4} />
-            <HelpButton onClick={() => setShowHelp(true)} />
-
-            <div className="numbered-section mb-8 animate-in">04. VALIDATION & TESTING</div>
-
-            <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
-              Test your value proposition
-            </h3>
-
-            <div className="border-l-4 border-yellow-400 pl-6 mb-12 animate-in" style={{animationDelay: '0.1s'}}>
-              <p className="text-2xl italic">
-                &quot;If customers don&apos;t instantly get it, refine it. If they don&apos;t care, you&apos;re solving the wrong problem.&quot;
-              </p>
-              <p className="text-lg text-gray-600 mt-2">— Value Proposition Testing Principle</p>
-            </div>
-
-            {/* Display Current Value Prop */}
-            {data.fullValueProp && (
-              <div className="mb-12 bg-black text-white p-8 animate-in" style={{animationDelay: '0.15s'}}>
-                <h3 className="riforma-bold text-2xl mb-4">Your Value Proposition:</h3>
-                <p className="text-2xl leading-relaxed">
-                  {data.fullValueProp}
-                </p>
-              </div>
-            )}
-
-            {/* Validation Checklist */}
-            <div className="mb-12 animate-in" style={{animationDelay: '0.2s'}}>
-              <h3 className="riforma-bold text-3xl mb-6">8-Point Validation Checklist</h3>
-              <p className="text-lg mb-6 text-gray-700">
-                Answer honestly. You need at least 6 &quot;Yes&quot; answers to have a strong value proposition. Current score: <strong>{yesCount}/8</strong>
-              </p>
-
-              <div className="space-y-4">
-                {validationQuestions.map((q, index) => (
-                  <div key={q.key} className="bg-gray-50 border-2 border-gray-200 p-6">
-                    <p className="text-lg mb-4 font-bold">{index + 1}. {q.label}</p>
-                    <div className="flex gap-4">
-                      <label className="flex items-center cursor-pointer">
-                        <input
-                          type="radio"
-                          name={q.key}
-                          value="yes"
-                          checked={data.validation[q.key] === 'yes'}
-                          onChange={(e) => updateValidation(q.key, e.target.value)}
-                          className="mr-2 w-5 h-5"
-                        />
-                        <span className="text-lg">Yes</span>
-                      </label>
-                      <label className="flex items-center cursor-pointer">
-                        <input
-                          type="radio"
-                          name={q.key}
-                          value="no"
-                          checked={data.validation[q.key] === 'no'}
-                          onChange={(e) => updateValidation(q.key, e.target.value)}
-                          className="mr-2 w-5 h-5"
-                        />
-                        <span className="text-lg">No</span>
-                      </label>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {yesCount < 6 && (
-                <div className="bg-red-100 border-4 border-red-600 p-6 mt-6">
-                  <p className="riforma-bold text-2xl mb-2">⚠️ Your value proposition needs work</p>
-                  <p className="text-lg">You need at least 6 &quot;Yes&quot; answers. Review your responses and refine your value proposition before proceeding.</p>
-                </div>
-              )}
-
-              {yesCount >= 6 && (
-                <div className="bg-gray-100 border-4 border-black p-6 mt-6">
-                  <p className="riforma-bold text-2xl mb-2">✓ Strong foundation!</p>
-                  <p className="text-lg">Your value proposition passes the validation checklist. Now test it with real customers.</p>
-                </div>
-              )}
-            </div>
-
-            {/* Testing Plan */}
-            <div className="mb-12 animate-in" style={{animationDelay: '0.25s'}}>
-              <label className="monument text-sm block mb-3">CUSTOMER TESTING PLAN</label>
-              <p className="text-base text-gray-600 mb-3">How will you test this value proposition with real customers? What will you measure?</p>
-              <textarea
-                value={data.testingPlan}
-                onChange={(e) => updateData('testingPlan', e.target.value)}
-                placeholder="Send to 20 target customers via email. Measure: Do they immediately understand it? Do they ask for a demo? Schedule 5 phone calls to read it aloud and watch their reaction. Test on landing page and measure conversion rate vs. current messaging."
-                className="w-full"
-                rows={5}
-              />
-            </div>
-
-            {/* Refinement Notes */}
-            <div className="mb-12 animate-in" style={{animationDelay: '0.3s'}}>
-              <label className="monument text-sm block mb-3">REFINEMENT NOTES</label>
-              <p className="text-base text-gray-600 mb-3">What might you change based on customer feedback? What variations will you test?</p>
-              <textarea
-                value={data.refinementNotes}
-                onChange={(e) => updateData('refinementNotes', e.target.value)}
-                placeholder="If customers don&apos;t react to &quot;80% reduction&quot;, try &quot;save 30 hours per week&quot;. Test emphasizing speed (24 hours) vs. ease (zero IT). Consider adding social proof from similar companies."
-                className="w-full"
-                rows={4}
-              />
-            </div>
-
-            {/* Navigation */}
-            <div className="flex gap-6">
-              <button onClick={onBack} className="btn-secondary flex-1">
-                ← BACK
-              </button>
-              <button
-                onClick={onNext}
-                disabled={!canProceed}
-                className="btn-primary flex-1"
-              >
-                VIEW COMPLETE SUMMARY →
-              </button>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // Canvas Page Component
-    function CanvasPage({ data, onBack, onExport, onSubmit }) {
-      const yesCount = Object.values(data.validation).filter(v => v === 'yes').length;
-
-      return (
-        <div className="bg-white min-h-screen p-16">
-          <div className="max-w-6xl mx-auto">
-            <h1 className="plaak text-6xl mb-12 text-center animate-in">YOUR VALUE PROPOSITION</h1>
-
-            <div id="canvas-content" className="border-8 border-black p-12 mb-12">
-              {/* Header */}
-              <div className="text-center mb-12">
-                <img src="FastTrack_F_White.png" alt="Fast Track" className="h-16 mx-auto mb-4 invert" />
-                <h2 className="plaak text-4xl mb-2">VALUE PROPOSITION DESIGN</h2>
-                <p className="text-xl text-gray-600">Sprint 15: Customer-Centric Messaging</p>
-                <p className="text-lg text-gray-600 mt-2">{data.name} • {data.company}</p>
-              </div>
-
-              {/* The Value Proposition */}
-              <div className="mb-10 bg-yellow-100 border-4 border-black p-8">
-                <h3 className="riforma-bold text-2xl mb-4 text-center">YOUR VALUE PROPOSITION</h3>
-                <p className="text-3xl leading-relaxed font-bold text-center">
-                  {data.fullValueProp}
-                </p>
-              </div>
-
-              {/* Target Segment & Pain */}
-              <div className="mb-10">
-                <h3 className="riforma-bold text-3xl mb-4 border-b-2 border-black pb-2">Customer Pain Analysis</h3>
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <p className="monument text-xs mb-2 text-gray-600">TARGET SEGMENT</p>
-                    <p className="text-lg leading-relaxed">{data.targetSegment}</p>
-                  </div>
-                  <div>
-                    <p className="monument text-xs mb-2 text-gray-600">AHA MOMENT</p>
-                    <p className="text-lg leading-relaxed">{data.ahaMoment}</p>
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <p className="monument text-xs mb-2 text-gray-600">BIGGEST PAIN</p>
-                  <p className="text-lg leading-relaxed">{data.biggestPain}</p>
-                </div>
-              </div>
-
-              {/* Competitive Differentiation */}
-              <div className="mb-10">
-                <h3 className="riforma-bold text-3xl mb-4 border-b-2 border-black pb-2">Competitive Differentiation</h3>
-                <div className="mb-4">
-                  <p className="monument text-xs mb-2 text-gray-600">OUR UNIQUE VALUE</p>
-                  <p className="text-lg leading-relaxed">{data.uniqueValue}</p>
-                </div>
-                {data.competitors.length > 0 && (
-                  <div className="grid grid-cols-3 gap-4 mt-4">
-                    {data.competitors.map((c, i) => (
-                      <div key={i} className="bg-gray-100 p-4">
-                        <p className="monument text-xs mb-2">{c.name}</p>
-                        <p className="text-sm mb-2"><strong>Weakness:</strong> {c.weakness.substring(0, 100)}{c.weakness.length > 100 ? '...' : ''}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Validation Score */}
-              <div className="mb-10">
-                <h3 className="riforma-bold text-3xl mb-4 border-b-2 border-black pb-2">Validation Score</h3>
-                <div className="flex items-center gap-6">
-                  <div className="text-center">
-                    <div className="text-7xl font-bold">{yesCount}/8</div>
-                    <p className="text-lg text-gray-600">Validation Score</p>
-                  </div>
-                  <div className="flex-1">
-                    {yesCount >= 6 ? (
-                      <div className="bg-gray-100 border-2 border-black p-4">
-                        <p className="riforma-bold text-xl">✓ Strong Value Proposition</p>
-                        <p className="text-base">Passed validation checklist. Ready for customer testing.</p>
-                      </div>
-                    ) : (
-                      <div className="bg-red-100 border-2 border-red-600 p-4">
-                        <p className="riforma-bold text-xl">⚠️ Needs Refinement</p>
-                        <p className="text-base">Score below threshold. Review and strengthen weak areas.</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Testing Plan */}
-              {data.testingPlan && (
-                <div className="mb-10">
-                  <h3 className="riforma-bold text-3xl mb-4 border-b-2 border-black pb-2">Customer Testing Plan</h3>
-                  <p className="text-lg leading-relaxed whitespace-pre-line">{data.testingPlan}</p>
-                </div>
-              )}
-
-              <div className="text-center text-sm text-gray-500 mt-12 pt-6 border-t border-gray-300">
-                Generated on {new Date().toLocaleDateString()} • Fast Track Program Sprint 15
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="grid grid-cols-3 gap-6 mb-8 no-print">
-              <button onClick={onBack} className="btn-secondary text-xl py-6">
-                ← EDIT
-              </button>
-              <button onClick={onExport} className="btn-primary text-xl py-6">
-                EXPORT PDF
-              </button>
-              <button onClick={onSubmit} className="btn-primary text-xl py-6">
-                SUBMIT
-              </button>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // Help Modal Component
-    function HelpModal({ onClose, stepNumber }) {
-      const helpContent = {
-        1: {
-          title: "CUSTOMER PAIN & GAIN ANALYSIS",
-          why: "Without understanding your customer's biggest pain, you cannot create a compelling value proposition. 90% of startups fail because they misjudge product-market fit. This step ensures you're solving a real, urgent problem.",
-          what: "Identify the specific pain that keeps your target segment awake at night. Not a minor inconvenience - a painkiller, not a vitamin. Document evidence that proves this pain exists and understand the 'Aha!' moment when customers realize they need your solution.",
-          how: [
-            "Be brutally specific about your target segment - industry, size, revenue, growth stage",
-            "Describe the pain with concrete evidence: numbers, quotes, behaviors you've observed",
-            "Ask: What is this costing them? Time? Money? Customers? Employees?",
-            "Identify the trigger moment - when does this pain become unbearable?",
-            "Map the desired transformation - what does success look like?",
-            "Remember: If you're not solving a pain that causes urgency, you're just a vitamin"
-          ]
-        },
-        2: {
-          title: "COMPETITIVE DIFFERENTIATION",
-          why: "If you can't explain why you're different from competitors, customers will choose based on price alone. A strong value proposition requires clear differentiation - not just being slightly better, but being unique in a way that matters to customers.",
-          what: "Analyze your top 2-3 competitors to understand their strengths and weaknesses. Identify what makes you uniquely valuable - the single biggest reason customers should choose you over alternatives.",
-          how: [
-            "List real competitors (not just 'we have no competitors' - alternatives always exist)",
-            "Be honest about their strengths - what do they do well?",
-            "Identify their critical weaknesses - where do they fall short?",
-            "Find your unique angle - what do YOU do that they don't?",
-            "Focus on meaningful differentiation, not trivial features",
-            "Ask: Why would a customer switch from them to us? What's the compelling reason?"
-          ]
-        },
-        3: {
-          title: "CRAFT VALUE PROPOSITION",
-          why: "A confused customer won't buy. Your value proposition must be crystal clear, compelling, and instantly understandable. This is the single most important sentence in your business - it determines who you attract and how fast you grow.",
-          what: "Use the Fast Track Formula to craft a one-sentence value proposition that addresses customer pain, highlights your solution and benefits, and differentiates you from competitors. Make it sharp, specific, and memorable.",
-          how: [
-            "Follow the formula: For [segment] who struggle with [pain], we provide [solution] that [benefit], unlike [competitor weakness]",
-            "Keep it to one sentence - if you can't explain it simply, it's not clear enough",
-            "Focus on customer outcomes, not your features - what do THEY get?",
-            "Use specific numbers when possible: '80% faster' beats 'much faster'",
-            "Read it out loud - does it sound natural? Would a customer say this?",
-            "Test: Would your target customer immediately say 'I need this NOW'? If not, refine it"
-          ]
-        },
-        4: {
-          title: "VALIDATION & TESTING",
-          why: "Even the best value proposition is just a hypothesis until you test it with real customers. Companies that validate early and iterate quickly are 3x more likely to succeed. If customers don't instantly get it, you need to refine it.",
-          what: "Run your value proposition through the 8-point validation checklist to ensure it's strong. Then create a plan to test it with real target customers and measure their reactions.",
-          how: [
-            "Complete the 8-point checklist honestly - you need 6+ 'Yes' answers",
-            "If you scored below 6, go back and strengthen weak areas before testing",
-            "Test with at least 10-20 target customers - not friends or family",
-            "Watch for instant comprehension - do they immediately understand what you do?",
-            "Measure urgency - do they ask for more info, a demo, pricing?",
-            "Iterate based on feedback - if multiple people don't get it, change it",
-            "Don't defend your value prop - listen and learn from customer reactions"
-          ]
-        }
-      };
-
-      const content = helpContent[stepNumber];
-
-      return (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-8 fade-in"
-          onClick={onClose}
-        >
-          <div
-            className="bg-white max-w-4xl max-h-[90vh] overflow-y-auto p-12 border-8 border-black"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 className="plaak text-5xl mb-8">{content.title}</h2>
-
-            <div className="mb-8">
-              <h3 className="riforma-bold text-2xl mb-3">WHY THIS MATTERS</h3>
-              <p className="text-xl leading-relaxed">{content.why}</p>
-            </div>
-
-            <div className="mb-8">
-              <h3 className="riforma-bold text-2xl mb-3">WHAT TO DO</h3>
-              <p className="text-xl leading-relaxed">{content.what}</p>
-            </div>
-
-            <div className="mb-12">
-              <h3 className="riforma-bold text-2xl mb-3">HOW TO DO IT</h3>
-              <ul className="space-y-3">
-                {content.how.map((item, index) => (
-                  <li key={index} className="flex items-start text-lg">
-                    <span className="text-2xl mr-3">•</span>
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <button onClick={onClose} className="btn-primary w-full text-2xl py-4">
-              GOT IT
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    // Progress Indicator Component
-    function ProgressIndicator({ currentStep }) {
-      const steps = [
-        { number: 1, label: 'Analyze' },
-        { number: 2, label: 'Differentiate' },
-        { number: 3, label: 'Craft' },
-        { number: 4, label: 'Validate' }
-      ];
-
-      return (
-        <div className="flex items-center justify-center mb-12 animate-in">
-          {steps.map((step, index) => (
-            <Fragment key={step.number}>
-              <div className="flex flex-col items-center">
-                <div
-                  className={`progress-dot mb-2 ${
-                    step.number === currentStep
-                      ? 'active'
-                      : step.number < currentStep
-                      ? 'completed'
-                      : ''
-                  }`}
-                ></div>
-                <span
-                  className={`monument text-xs ${
-                    step.number <= currentStep ? 'text-black' : 'text-gray-400'
-                  }`}
-                >
-                  {step.label}
-                </span>
-              </div>
-              {index < steps.length - 1 && (
-                <div className="progress-line mx-4" style={{ width: '80px' }}></div>
-              )}
-            </Fragment>
-          ))}
-        </div>
-      );
-    }
-
-    // Help Button Component
-    function HelpButton({ onClick }) {
-      return (
-        <button
-          onClick={onClick}
-          className="help-button no-print"
-          aria-label="Help"
-        >
-          ?
-        </button>
-      );
-    }
-
-    // Render App
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<ValuePropApp />);
-  </script>
+        ReactDOM.render(<ToolApp />, document.getElementById('root'));
+    </script>
 </body>
 </html>
