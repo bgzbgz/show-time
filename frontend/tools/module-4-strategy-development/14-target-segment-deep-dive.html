@@ -512,31 +512,9 @@
                 return null;
             };
 
-            /* ── Auth ── */
+            /* ── Auth (handled by ToolDB.init → identifyUser) ── */
             useEffect(() => {
-                async function initAuth() {
-                    const isLocalFile = window.location.protocol === 'file:';
-                    const hasAuthManager = window.authManager && typeof window.authManager.initialize === 'function';
-                    if (isLocalFile || !hasAuthManager) {
-                        localStorage.setItem('ft_user_id', 'b609a543-e487-4ace-91d4-84a07402ff99');
-                        console.log(`[${CONFIG.TOOL_SLUG} Auth] Local dev mode`);
-                        setAuthState({ loading: false, authenticated: true, user: { email: 'local@dev.test', id: 'local-dev' }, progress: { completed_tools: [], unlocked_tools: [CONFIG.TOOL_SLUG] }, isUnlocked: true, isCompleted: false, error: null });
-                        return;
-                    }
-                    try {
-                        const result = await window.authManager.initialize();
-                        if (result.authenticated) {
-                            setAuthState({ loading: false, authenticated: true, user: result.user, progress: result.progress, isUnlocked: window.authManager.isToolUnlocked(result.progress, CONFIG.TOOL_SLUG), isCompleted: window.authManager.isToolCompleted(result.progress, CONFIG.TOOL_SLUG), error: null });
-                        } else {
-                            setAuthState({ loading: false, authenticated: false, user: null, progress: null, error: result.error || result.message });
-                            window.authManager.requireAuthentication();
-                        }
-                    } catch (error) {
-                        if (!localStorage.getItem('ft_user_id')) localStorage.setItem('ft_user_id', 'b609a543-e487-4ace-91d4-84a07402ff99');
-                        setAuthState({ loading: false, authenticated: true, user: { email: 'local@dev.test', id: 'local-dev' }, progress: { completed_tools: [], unlocked_tools: [CONFIG.TOOL_SLUG] }, isUnlocked: true, isCompleted: false, error: null });
-                    }
-                }
-                initAuth();
+                setAuthState({ loading: false, authenticated: true, user: null, progress: { completed_tools: [], unlocked_tools: [CONFIG.TOOL_SLUG] }, isUnlocked: true, isCompleted: false, error: null });
             }, []);
 
             /* ── Tool access control ── */
