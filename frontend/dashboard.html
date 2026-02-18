@@ -192,60 +192,72 @@
     ];
 
     // ── Auth: LearnWorlds URL params ──
-    // LearnWorlds external link format:
-    //   https://yourdomain.com/frontend/dashboard.html?lw_user_id={{USER_ID}}&lw_email={{USER_EMAIL}}
+    // LearnWorlds external link variables:
+    //   {{USER_ID}}, {{USER_NAME}}, {{USER_EMAIL}}, {{COURSE_ID}}, {{UNIT_ID}}
+    // Dashboard URL in LearnWorlds:
+    //   https://fasttracktools.up.railway.app/dashboard.html?lw_user_id={{USER_ID}}&lw_email={{USER_EMAIL}}&lw_name={{USER_NAME}}
     async function identifyUser() {
       const params = new URLSearchParams(window.location.search);
       const lwUserId = params.get('lw_user_id');
       const lwEmail = params.get('lw_email');
+      const lwName = params.get('lw_name');
 
       // Clean URL after extracting params
       if (lwUserId || lwEmail) {
         window.history.replaceState({}, document.title, window.location.pathname);
       }
 
-      // 1. Try LearnWorlds params from URL
-      if (lwUserId) {
-        const { data: existing } = await sb
-          .from('users')
-          .select('id, full_name, email, learnworlds_user_id')
-          .eq('learnworlds_user_id', lwUserId)
-          .single();
+      // 1. Try LearnWorlds params from URL (auto-identify, no login needed)
+      if (lwUserId || lwEmail) {
+        // Try by LearnWorlds user ID first
+        if (lwUserId) {
+          const { data: existing } = await sb
+            .from('users')
+            .select('id, full_name, email, learnworlds_user_id')
+            .eq('learnworlds_user_id', lwUserId)
+            .single();
 
-        if (existing) {
-          // Update last_login
-          await sb.from('users').update({ last_login: new Date().toISOString() }).eq('id', existing.id);
-          storeSession(existing);
-          return existing;
+          if (existing) {
+            // Update name if LearnWorlds provides it and we don't have one
+            const updates = { last_login: new Date().toISOString() };
+            if (lwName && (!existing.full_name || existing.full_name === existing.email.split('@')[0])) {
+              updates.full_name = lwName;
+            }
+            await sb.from('users').update(updates).eq('id', existing.id);
+            if (updates.full_name) existing.full_name = updates.full_name;
+            storeSession(existing);
+            return existing;
+          }
         }
 
-        // Not found by LW ID — try by email
+        // Try by email
         if (lwEmail) {
           const { data: byEmail } = await sb
             .from('users')
             .select('id, full_name, email, learnworlds_user_id')
-            .eq('email', lwEmail)
+            .eq('email', lwEmail.toLowerCase())
             .single();
 
           if (byEmail) {
-            // Link LearnWorlds ID to existing user
-            await sb.from('users').update({
-              learnworlds_user_id: lwUserId,
-              last_login: new Date().toISOString()
-            }).eq('id', byEmail.id);
-            byEmail.learnworlds_user_id = lwUserId;
+            const updates = { last_login: new Date().toISOString() };
+            if (lwUserId && !byEmail.learnworlds_user_id) updates.learnworlds_user_id = lwUserId;
+            if (lwName && (!byEmail.full_name || byEmail.full_name === byEmail.email.split('@')[0])) updates.full_name = lwName;
+            await sb.from('users').update(updates).eq('id', byEmail.id);
+            if (updates.learnworlds_user_id) byEmail.learnworlds_user_id = lwUserId;
+            if (updates.full_name) byEmail.full_name = updates.full_name;
             storeSession(byEmail);
             return byEmail;
           }
         }
 
-        // Create new user
-        const { data: newUser, error } = await sb
+        // Create new user from LearnWorlds data
+        const email = lwEmail ? lwEmail.toLowerCase() : `${lwUserId}@learnworlds.user`;
+        const { data: newUser } = await sb
           .from('users')
           .insert({
-            email: lwEmail || `${lwUserId}@learnworlds.user`,
-            learnworlds_user_id: lwUserId,
-            full_name: lwEmail ? lwEmail.split('@')[0] : 'Fast Track User',
+            email,
+            learnworlds_user_id: lwUserId || null,
+            full_name: lwName || (lwEmail ? lwEmail.split('@')[0] : 'Fast Track User'),
             role: 'participant',
             last_login: new Date().toISOString()
           })
@@ -258,21 +270,21 @@
         }
       }
 
-      // 2. Try stored session
+      // 2. Try stored session (same browser tab)
       const stored = getStoredSession();
       if (stored) return stored;
 
-      // 3. Try ft_user_id from localStorage (set by test page)
-      const testUserId = localStorage.getItem('ft_user_id');
-      if (testUserId) {
-        const { data: testUser } = await sb
+      // 3. Try ft_user_id from localStorage (persists across tabs/sessions)
+      const storedUserId = localStorage.getItem('ft_user_id');
+      if (storedUserId) {
+        const { data: storedUser } = await sb
           .from('users')
           .select('id, full_name, email, learnworlds_user_id')
-          .eq('id', testUserId)
+          .eq('id', storedUserId)
           .single();
-        if (testUser) {
-          storeSession(testUser);
-          return testUser;
+        if (storedUser) {
+          storeSession(storedUser);
+          return storedUser;
         }
       }
 

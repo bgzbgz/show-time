@@ -33,6 +33,9 @@ const ToolDB = (function() {
             return;
         }
 
+        // Auto-identify user from LearnWorlds URL params (sets localStorage ft_user_id)
+        await identifyUser();
+
         const { data, error } = await client
             .from('tool_questions')
             .select('id, question_key, question_type, reference_key')
@@ -210,6 +213,86 @@ const ToolDB = (function() {
     }
 
     /**
+     * Identify the current user from LearnWorlds URL params or localStorage.
+     * LearnWorlds passes ?lw_user_id={{USER_ID}}&lw_email={{USER_EMAIL}}&lw_name={{USER_NAME}}
+     * Returns the user UUID (for use as ft_user_id) or null.
+     */
+    async function identifyUser() {
+        const client = window.supabaseClient;
+        if (!client) return localStorage.getItem('ft_user_id') || null;
+
+        const params = new URLSearchParams(window.location.search);
+        const lwUserId = params.get('lw_user_id');
+        const lwEmail = params.get('lw_email');
+        const lwName = params.get('lw_name');
+
+        // Clean URL after extracting params (avoid leaking tokens in browser history)
+        if (lwUserId || lwEmail) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
+        // 1. Try LearnWorlds params
+        if (lwUserId || lwEmail) {
+            let user = null;
+
+            // Look up by learnworlds_user_id
+            if (lwUserId) {
+                const { data } = await client
+                    .from('users')
+                    .select('id, full_name, email, learnworlds_user_id')
+                    .eq('learnworlds_user_id', lwUserId)
+                    .single();
+                user = data;
+            }
+
+            // Fall back to email lookup
+            if (!user && lwEmail) {
+                const { data } = await client
+                    .from('users')
+                    .select('id, full_name, email, learnworlds_user_id')
+                    .eq('email', lwEmail.toLowerCase())
+                    .single();
+                if (data) {
+                    // Backfill learnworlds_user_id if missing
+                    if (lwUserId && !data.learnworlds_user_id) {
+                        await client.from('users').update({ learnworlds_user_id: lwUserId }).eq('id', data.id);
+                    }
+                    user = data;
+                }
+            }
+
+            // Create new user if not found
+            if (!user) {
+                const email = lwEmail ? lwEmail.toLowerCase() : `${lwUserId}@learnworlds.user`;
+                const { data: newUser } = await client
+                    .from('users')
+                    .insert({
+                        email,
+                        learnworlds_user_id: lwUserId || null,
+                        full_name: lwName || (lwEmail ? lwEmail.split('@')[0] : 'Fast Track User'),
+                        role: 'participant',
+                        last_login: new Date().toISOString()
+                    })
+                    .select('id')
+                    .single();
+                user = newUser;
+            }
+
+            if (user) {
+                localStorage.setItem('ft_user_id', user.id);
+                console.log(`[ToolDB] Identified user from LearnWorlds: ${user.id}`);
+                return user.id;
+            }
+        }
+
+        // 2. Fall back to localStorage
+        const storedId = localStorage.getItem('ft_user_id');
+        if (storedId) return storedId;
+
+        return null;
+    }
+
+    /**
      * Mark a tool as completed for a user.
      * Upserts into tool_completions — safe to call multiple times.
      */
@@ -245,6 +328,7 @@ const ToolDB = (function() {
         load,
         getDependency,
         ensureUser,
+        identifyUser,
         getQuestionCache,
         markComplete
     };
