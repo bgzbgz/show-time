@@ -598,20 +598,96 @@
       </section>
     ));
 
-    const NoAccess = memo(() => (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="text-center max-w-lg px-6">
-          <img src="shared/images/FastTrack_F_White.png" alt="Fast Track" className="h-16 mx-auto mb-8" />
-          <h1 className="text-4xl mb-6" style={{fontFamily: 'var(--font-plaak)'}}>ACCESS REQUIRED</h1>
-          <p className="text-lg text-gray-300 mb-8" style={{fontFamily: 'var(--font-riforma)'}}>
-            Open this dashboard from your LearnWorlds course to get started.
-          </p>
-          <a href={LEARNWORLDS_URL} className="inline-block bg-ft-yellow text-black px-8 py-3 rounded font-bold uppercase hover:opacity-90 transition" style={{fontFamily: 'var(--font-monument)'}}>
-            Go to LearnWorlds
-          </a>
+    const EmailLogin = memo(({ onLogin }) => {
+      const [email, setEmail] = useState('');
+      const [name, setName] = useState('');
+      const [loading, setLoading] = useState(false);
+      const [error, setError] = useState('');
+
+      const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!email.trim()) return;
+        setLoading(true);
+        setError('');
+
+        try {
+          // Look up by email
+          const { data: existing } = await sb
+            .from('users')
+            .select('id, full_name, email, learnworlds_user_id')
+            .eq('email', email.trim().toLowerCase())
+            .single();
+
+          if (existing) {
+            await sb.from('users').update({ last_login: new Date().toISOString() }).eq('id', existing.id);
+            storeSession(existing);
+            onLogin(existing);
+            return;
+          }
+
+          // Create new user
+          const { data: newUser, error: insertErr } = await sb
+            .from('users')
+            .insert({
+              email: email.trim().toLowerCase(),
+              full_name: name.trim() || email.split('@')[0],
+              role: 'participant',
+              last_login: new Date().toISOString()
+            })
+            .select('id, full_name, email, learnworlds_user_id')
+            .single();
+
+          if (insertErr) throw insertErr;
+          storeSession(newUser);
+          onLogin(newUser);
+        } catch (err) {
+          console.error('Login error:', err);
+          setError('Something went wrong. Try again.');
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      return (
+        <div className="min-h-screen bg-black text-white flex items-center justify-center">
+          <div className="text-center max-w-md px-6 w-full">
+            <img src="shared/images/FastTrack_F_White.png" alt="Fast Track" className="h-16 mx-auto mb-8" />
+            <h1 className="text-4xl mb-4" style={{fontFamily: 'var(--font-plaak)'}}>YOUR JOURNEY STARTS HERE</h1>
+            <p className="text-lg text-gray-300 mb-8" style={{fontFamily: 'var(--font-riforma)'}}>
+              Enter your email to access your tools dashboard.
+            </p>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Your name"
+                className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded text-white text-lg focus:border-yellow-300 focus:outline-none"
+                style={{fontFamily: 'var(--font-riforma)'}}
+              />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Your email"
+                required
+                className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded text-white text-lg focus:border-yellow-300 focus:outline-none"
+                style={{fontFamily: 'var(--font-riforma)'}}
+              />
+              {error && <p className="text-red-400 text-sm">{error}</p>}
+              <button
+                type="submit"
+                disabled={loading || !email.trim()}
+                className="w-full bg-ft-yellow text-black px-8 py-3 rounded font-bold uppercase hover:opacity-90 transition disabled:opacity-50"
+                style={{fontFamily: 'var(--font-monument)'}}
+              >
+                {loading ? 'Loading...' : 'Enter Dashboard'}
+              </button>
+            </form>
+          </div>
         </div>
-      </div>
-    ));
+      );
+    });
 
     const Footer = memo(() => (
       <footer className="bg-black text-white py-8 px-6 border-t border-gray-800">
@@ -692,7 +768,7 @@
         );
       }
 
-      if (noAccess) return <NoAccess />;
+      if (noAccess) return <EmailLogin onLogin={async (u) => { setUser(u); await loadData(u.id); setNoAccess(false); }} />;
 
       return (
         <div className="min-h-screen bg-black">
