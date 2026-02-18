@@ -4,23 +4,26 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Fast Track Tools Dashboard</title>
-  <link rel="icon" type="image/png" href="../designs for tools and landing page/01. favicon/favicon-16x16.png">
+  <link rel="icon" type="image/png" href="shared/images/favicon-16x16.png">
 
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
 
   <!-- React 18 CDN -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 
   <!-- Babel Standalone for JSX -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
     /* Fast Track Brand Fonts */
     @font-face {
       font-family: 'Plaak';
-      src: url('../designs for tools and landing page/03. Fonts/woff2/Plaak3Trial-43-Bold.woff2') format('woff2');
+      src: url('shared/fonts/Plaak3Trial-43-Bold.woff2') format('woff2');
       font-weight: bold;
       font-style: normal;
       font-display: swap;
@@ -28,7 +31,7 @@
 
     @font-face {
       font-family: 'Riforma';
-      src: url('../designs for tools and landing page/03. Fonts/woff2/RiformaLL-Regular.woff2') format('woff2');
+      src: url('shared/fonts/RiformaLL-Regular.woff2') format('woff2');
       font-weight: normal;
       font-style: normal;
       font-display: swap;
@@ -36,7 +39,7 @@
 
     @font-face {
       font-family: 'Monument Grotesk';
-      src: url('../designs for tools and landing page/03. Fonts/woff2/MonumentGrotesk-Mono.woff2') format('woff2');
+      src: url('shared/fonts/MonumentGrotesk-Mono.woff2') format('woff2');
       font-weight: normal;
       font-style: normal;
       font-display: swap;
@@ -85,9 +88,6 @@
     h1 { font-size: 3rem; }
     h2 { font-size: 2rem; }
     h3 { font-size: 1.5rem; }
-    h4 { font-size: 1.25rem; }
-    h5 { font-size: 1rem; }
-    h6 { font-size: 0.875rem; }
 
     p {
       font-family: var(--font-riforma);
@@ -102,23 +102,10 @@
     }
 
     /* Scrollbar */
-    ::-webkit-scrollbar {
-      width: 10px;
-      background-color: var(--color-black);
-    }
-
-    ::-webkit-scrollbar-track {
-      background: var(--color-black);
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: var(--color-grey);
-      border-radius: 5px;
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-      background: var(--color-yellow);
-    }
+    ::-webkit-scrollbar { width: 10px; background-color: var(--color-black); }
+    ::-webkit-scrollbar-track { background: var(--color-black); }
+    ::-webkit-scrollbar-thumb { background: var(--color-grey); border-radius: 5px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--color-yellow); }
 
     /* Animations */
     @keyframes fadeIn {
@@ -136,126 +123,280 @@
     }
 
     /* Fast Track Brand Color Classes */
-    .bg-ft-yellow {
-      background-color: #FFF469 !important;
-    }
-
-    .text-ft-yellow {
-      color: #FFF469 !important;
-    }
-
-    .border-ft-yellow {
-      border-color: #FFF469 !important;
-    }
-
-    .bg-ft-grey {
-      background-color: #B2B2B2 !important;
-    }
-
-    .text-ft-grey {
-      color: #B2B2B2 !important;
-    }
-
-    .bg-ft-dark {
-      background-color: #1F1F1F !important;
-    }
+    .bg-ft-yellow { background-color: #FFF469 !important; }
+    .text-ft-yellow { color: #FFF469 !important; }
+    .border-ft-yellow { border-color: #FFF469 !important; }
+    .bg-ft-grey { background-color: #B2B2B2 !important; }
+    .text-ft-grey { color: #B2B2B2 !important; }
+    .bg-ft-dark { background-color: #1F1F1F !important; }
   </style>
 </head>
 <body>
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect, useMemo, memo, useCallback, useRef } = React;
+    const { useState, useEffect, useMemo, memo, useCallback } = React;
 
-    // Base64 Logo
-    const LOGO_BASE64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABJ0AAAUgCAMAAADdTdZqAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAA/RpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuNi1jMTQ4IDc5LjE2NDAzNiwgMjAxOS8wOC8xMy0wMTowNjo1NyAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0UmVmPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtbG5zOmRjPSJodHRwOi8vcHVybC5vcmcvZGMvZWxlbWVudHMvMS4xLyIgeG1wTU06T3JpZ2luYWxEb2N1bWVudElEPSJ1dWlkOjVEMjA4OTI0OTNCRkRCMTE5MTRBODU5MEQzMTUwOEM4IiB4bXBNTTpEb2N1bWVudElEPSJ4bXAuZGlkOjFBMTg0ODkzM0M1MjExRUFCN0NBOEQ3NjcwMzgwQ0I5IiB4bXBNTTpJbnN0YW5jZUlEPSJ4bXAuaWlkOjFBMTg0ODkyM0M1MjExRUFCN0NBOEQ3NjcwMzgwQ0I5IiB4bXA6Q3JlYXRvclRvb2w9IkFkb2JlIElsbHVzdHJhdG9yIDI0LjAgKE1hY2ludG9zaCkiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDoxYWY3MTIwZC1lNjVmLTQ4NTktYjBhMi05MWIxZjE4MWRjYzYiIHN0UmVmOmRvY3VtZW50SUQ9InhtcC5kaWQ6MWFmNzEyMGQtZTY1Zi00ODU5LWIwYTItOTFiMWYxODFkY2M2Ii8+IDxkYzp0aXRsZT4gPHJkZjpBbHQ+IDxyZGY6bGkgeG1sOmxhbmc9IngtZGVmYXVsdCI+UHJpbnQ8L3JkZjpsaT4gPC9yZGY6QWx0PiA8L2RjOnRpdGxlPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PvI1kiAAAAAGUExURf///////1V89WwAAAACdFJOU/8A5bcwSgAADl1JREFUeNrs1LEJADAMA0Fn/6WDy+AulTB3IwjxVQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMByCROgHqBKBOgDoBqBOgTgDqBKBOgDoBqBOgTgDqBKgTgDoBqBOgTgDqBKgTgDoBqBOgTgDqBKgTgDoB6gSgTgDqBKgTgDoB6gSgTgDqBKgTgDoB6gSgToA6AagTgDoB6gSgToA6AagTgDoB6gSgToA6AagToE4A6gSgToA6AagToE4A6gSoE4A6AagToE4A6gSoE4A6AagToE4An3UCXrKgTqBOqBOokzqBOqFOoE7qBOqEOoE6oU6gTuoE6oQ6gTqpE6gT6gTqpE6gTqgTqBPqBOqkTqBOqBOokzqBOqFOoE7qBKiTOoE6oU6gTuoE6oQ6gTqpE6gT6gTqhDqBOqkTqBPqBOqkTqBOqBOokzoB6qROoE6oE6iTOoE6oU6gTuoE6oQ6gTqhTqBO6gTqhDqBOqkTqBPqBOqkToAsqBOoE+oE6qROoE6oE6iTOoE6oU6gTqgTqJM6gTqhTqBO6gTqhDqBOqkTqBPqBOqEOoE6qROoE+oE6qROoE6oE6iTOgHqpE6gTqgTqJM6gTqhTqBO6gTqhDqBOqFOoE7qBOqEOoE6qROoE+oE6qROgDqpE6gT6gTqpE6gTqgTqJM6gTqhTqBOqBOokzqBOqFOoE7qBOqEOoE6qRMgC+oE6oQ6gTqpE6gT6gTqpE6gTqgTqBPqBOqkTqBOqBOokzqBOqFOoE7qBOqEOoE6oU6gTuoE6oQ6gTqpE6gT6gTqpE6AOqkTqBPqBOqkTqBOqBOokzqBOqFOoE6oE6iTOoE6oU6gTuoE6oQ6gTqpE6BO6gTqhDqBOqkTqBPqBOqkTqBOqBOoE+oE6qROoE6oE6iTOoE6oU6gTuoEyII6gTqhTqBO6gTqhDqBOqkTqBPqBOqEOoE6qROoE+oE6qROoE6oE6iTOoE6oU6gTqgTqJM6gTqhTqBO6gTqhDqBOqkToE7qBOqEOoE6qROoE+oE6qROoE6oE6gT6gTqpE6gTqgTqJM6gTqhTqBO6gSokzqBOqFOoE7qBOqEOoE6qROoE+oE6oQ6gTqpE6gT6gTqpE6gTqgTqJM6AbKgTqBOqBOokzqBOqFOoE7qBOqEOoE6oU6gTuoE6oQ6gTqpE6gT6gTqpE6gTqgTqBPqBOqkTqBOqBOokzqBOqFOoE7qBKiTOoE6oU6gTuoE6oQ6gTqpE6gT6gTqhDqBOqkTqBPqBOqkTqBOqBOokzoB6qROoE6oE6iTOoE6oU6gTuoE6oQ6gTqhTqBO6gTqhDqBOqkTqBPqBOqkToAsqBOoE+oE6qROoE6oE6iTOoE6oU6gTqgTqJM6gTqhTqBO6gTqhDqBOqkTqBPqBOqEOoE6qROoE+oE6qROoE6oE6iTOgHqpE6gTqgTqJM6gTqhTqBO6gTqhDqBOqFOoE7qBOqEOoE6qROoE+oE6qROgDqpE6gT6gTqpE6gTqgTqJM6gTqhTqBOqBOokzqBOqFOoE7qBOqEOoE6qRMgC+oE6oQ6gTqpE6gT6gTqpE6gTqgTqBPqBOqkTqBOqBOokzqBOqFOoE7qBOqEOoE6oU6gTuoE6oQ6gTqpE6gT6gTqpE6AOqkTqBPqBOqkTqBOqBOokzqBOqFOoE6oE6iTOoE6oU6gTuoE6oQ6gTqpE6BO6gTqhDqBOqkTqBPqBOqkTqBOqBOoE+oE6qROoE6oE6iTOoE6oU6gTuoEyII6gTqhTqBO6gTqhDqBOqkTqBPqBOqEOoE6qROoE+oE6qROoE6oE6iTOoE6oU6gTqgTqJM6gTqhTqBO6gTqhDqBOqkToE7qBOqEOoE6qROoE+oE6qROoE6oE6gT6gTqpE6gTqgTqJM6gTqhTqBO6gSokzqBOqFOoE7qBOqEOoE6qROoE+oE6oQ6gTqpE6gT6gTqpE6gTqgTqJM6AbKgTqBOqBOokzqBOqFOoE7qBOqEOoE6oU6gTuoE6oQ6gTqpE6gT6gTqpE6gTqgTqBPqBOqkTqBOqBOokzqBOqFOoE7qBKiTOoE6oU6gTuoE6oQ6gTqpE6gT6gTqhDqBOqkTqBPqBOqkTqBOqBOokzoB6qROoE6oE6iTOoE6oU6gTuoE6oQ6gTqhTqBO6gTqhDqBOqkTqBPqBOqkToAsqBOoE+oE6qROoE6oE6iTOoE6oU6gTnSdTACoE4A6AeoEoE6AOgGoE4A6AeoEoE6AOgGoE6BOAOoEoE6AOgGoE6BOAOoEoE6AOgGoE6BOAOoEqBOAOgGoE6BOAOoEqBOAOgGoE6BOAOoEqBOAOgHqBKBOAOoEqBOAOgHqBKBOgDqZAFAnAHUC1AlAnQB1AlAnAHUC1AlAnQB1AlAnQJ0A1AlAnQB1AlAnQJ0A1AlAnQB1AlAnYFOdSOGMoE7qBOqEOoE6qROoE+oE6qROoE6oE6gT6gTqpE6gTqgTqJM6gTqhTqBO6gSokzqBOqFOoE7qBOqEOoE6qROoE+oE6oQ6gTqpE6gT6gTqpE6gTqgTqJM6AeqkTqBOqBOokzqBOqFOoE7qBOqEOoE6oU6gTuoE6oQ6gTqpE6gT6gTqpE6gTqgTqBPqBOqkTqBOqBOokzqBOqFOoE44I6iTOoE6oU6gTuoE6oQ6gTqpE6gT6gTqhDqBOqkTqBPqBOqkTqBOqBOokzoB6qROoE6oE6iTOoE6oU6gTuoE6oQ6gTqhTqBO6gTqhDqBOqkTqBPqBOqkToA6qROoE+oE6qROoE6oE6iTOoE6oU6gTqgTqJM6gTqhTqBO6gTqhDqBOqkTqBPqBOqEOoE6qROoE+oE6qROoE6oE6gTzgjqpE6gTqgTqJM6gTqhTqBO6gTqhDqBOqFOoE7qBOqEOoE6qROoE+oE6qROgDqpE6gT6gTqpE6gTqgTqJM6gTqhTqBOqBOokzqBOqFOoE7qBOqEOoE6qROgTuoE6oQ6gTqpE6gT6gTqpE6gTqgTqBPqBOqkTqBOqBOokzqBOqFOoE7qBOqEOoE6oU6gTuoE6oQ6gTqpE6gT6gTqhDOCOqkTqBPqBOqkTqBOqBOokzqBOqFOoE6oE6iTOoE6oU6gTuoE6oQ6gTqpE6BO6gTqhDqBOqkTqBPqBOqkTqBOqBOoE+oE6qROoE6oE6iTOoE6oU6gTuoEqJM6gTqhTqBO6gTqhDqBOqkTqBPqBOqEOoE6qROoE+oE6qROoE6oE6iTOoE6oU6gTqgTqJM6gTqhTqBO6gTqhDqBOuGMoE7qBOqEOoE6qROoE+oE6qROoE6oE6gT6gTqpE6gTqgTqJM6gTqhTqBO6gSokzqBOqFOoE7qBOqEOoE6qROoE+oE6oQ6gTqpE6gT6gTqpE6gTqgTqJM6AeqkTqBOqBOokzqBOqFOoE7qBOqEOoE6oU6gTuoE6oQ6gTqpE6gT6gTqpE6gTqgTqBPqBOqkTqBOqBOokzqBOqFOoE44I6iTOoE6oU6gTuoE6oQ6gTqpE6gT6gTqhDqBOqkTqBPqBOqkTqBOqBOokzoB6qROoE6oE6iTOoE6oU6gTuoE6oQ6gTqhTqBO6gTqhDqBOqkTqBPqBOqkToA6qROoE+oE6qROoE6oE6iTOoE6oU6gTqgTqJM6gTqhTqBO6gTqhDqBOqkTqBPqBOqEOoE6qROoE+oE6qROoE6oE6gTzgjqpE6gTqgTqJM6gTqhTqBO6gTqhDqBOqFOoE7qBOqEOoE6qROoE+oE6qROgDqpE6gT6gTqpE6gTqgTqJM6gTqhTqBOqBOokzqBOqFOoE7qBOqEOoE6qROgTuoE6oQ6gTqpE6gT6gTqpE6gTqgTqBPqBOqkTqBOqBOokzqBOqFOoE7qBOqEOoE6oU6gTuoE6oQ6gTqpE6gT6gTqhDOCOqkTqBPqBOqkTqBOqBOokzqBOqFOoE6oE6iTOoE6oU6gTuoE6oQ6gTqpE6BO6gTqhDqBOqkTqBPqBOqkTqBOqBOoE+oE6qROoE6oE6iTOoE6oU6gTuoEqJM6gTqhTqBO6gTqhDqBOqkTqBPqBOqEOoE6qROoE+oE6qROoE6oE6iTOoE6oU6gTqgTqJM6gTqhTqBO6gTqhDqBOuGMoE7qBOqEOoE6qROoE+oE6qROoE6oE6gT6gTqpE6gTqgTqJM6gTqhTqBO6gSokzqBOqFOoE7qBOqEOoE6qROoE+oE6oQ6gTqpE6gT6gTqpE6gTqgTqJM6AeqkTqBOqBOokzqBOqFOoE7qBOqEOoE6oU6gTuoE6oQ6gTqpE6gT6gTqpE6gTqgTqBPqBOqkTqBOqBOokzqBOqFOoE44I6iTOoE6oU6gTuoE6oQ6gTqpE6gT6gRBrgADACv1cFqooT5RAAAAAElFTkSuQmCC';
+    // ── Supabase Client ──
+    const SUPABASE_URL = 'https://lutzzfaedkbsmbobmrzx.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1dHp6ZmFlZGtic21ib2Jtcnp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MDA0MDQsImV4cCI6MjA4NjM3NjQwNH0.o2gJba85vDl4NLS-C8Mq3OudWKxet-b0IqO9kazqb8U';
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Config
-    const CONFIG = {
-      apiBaseURL: window.location.hostname === 'localhost' ? 'http://localhost:3000' : window.location.origin,
-      learnWorldsLoginURL: 'https://fasttrack.learnworlds.com/login',
-      tokenKey: 'ft_token',
-      pollingInterval: 30000,
-    };
+    // ── LearnWorlds Config ──
+    const LEARNWORLDS_URL = 'https://fasttrack.learnworlds.com';
 
-    // Demo mode disabled - using real backend API
-    const DEMO_MODE = false;
-
-    // Module definitions - aligned with tool-registry.json
-    const MODULES = [
-      { id: 0, name: 'Intro Sprint', sprints: [0] },
-      { id: 1, name: 'Individual & Company Identity', sprints: [1,2,3,4,5] },
-      { id: 2, name: 'Core Elements of Performance', sprints: [6,7,8,9,10,11] },
-      { id: 3, name: 'Understanding the Market', sprints: [12,13] },
-      { id: 4, name: 'Strategy Development', sprints: [14,15,16] },
-      { id: 5, name: 'Strategy Execution', sprints: [17,18,19,20,21] },
-      { id: 6, name: 'Organizational Structure', sprints: [22,23,24,25] },
-      { id: 7, name: 'People & Leadership', sprints: [26,27] },
-      { id: 8, name: 'Tech & AI', sprints: [28,29,30] }
+    // ── Tool Registry (30 tools) ──
+    const TOOLS = [
+      { sprint: 0,  slug: 'woop',                       name: 'WOOP',                        file: 'module-0-intro-sprint/00-woop.html' },
+      { sprint: 1,  slug: 'know-thyself',                name: 'Know Thyself',                 file: 'module-1-identity/01-know-thyself.html' },
+      { sprint: 2,  slug: 'dream',                       name: 'Dream',                        file: 'module-1-identity/02-dream.html' },
+      { sprint: 3,  slug: 'values',                      name: 'Values',                       file: 'module-1-identity/03-values.html' },
+      { sprint: 4,  slug: 'team',                        name: 'Team',                         file: 'module-1-identity/04-team.html' },
+      { sprint: 5,  slug: 'fit',                         name: 'Fit',                          file: 'module-1-identity/05-fit.html' },
+      { sprint: 6,  slug: 'cash',                        name: 'Cash',                         file: 'module-2-performance/06-cash.html' },
+      { sprint: 7,  slug: 'energy',                      name: 'Energy',                       file: 'module-2-performance/07-energy.html' },
+      { sprint: 8,  slug: 'goals',                       name: 'Goals',                        file: 'module-2-performance/08-goals.html' },
+      { sprint: 9,  slug: 'focus',                       name: 'Focus',                        file: 'module-2-performance/09-focus.html' },
+      { sprint: 10, slug: 'performance',                 name: 'Performance Analysis',          file: 'module-2-performance/10-performance.html' },
+      { sprint: 11, slug: 'meeting-rhythm',              name: 'Meeting Rhythm',                file: 'module-2-performance/11-meeting-rhythm.html' },
+      { sprint: 12, slug: 'market-size',                 name: 'Market Size',                   file: 'module-3-market/12-market-size.html' },
+      { sprint: 13, slug: 'segmentation-target-market',  name: 'Segmentation & Target Market',  file: 'module-3-market/13-segmentation-target-market.html' },
+      { sprint: 14, slug: 'target-segment-deep-dive',    name: 'Target Segment Deep Dive',      file: 'module-4-strategy-development/14-target-segment-deep-dive.html' },
+      { sprint: 15, slug: 'value-proposition',           name: 'Value Proposition',             file: 'module-4-strategy-development/15-value-proposition.html' },
+      { sprint: 16, slug: 'value-proposition-testing',   name: 'Value Proposition Testing',     file: 'module-4-strategy-development/16-value-proposition-testing.html' },
+      { sprint: 17, slug: 'product-development',         name: 'Product Development',           file: 'module-5-strategy-execution/17-product-development.html' },
+      { sprint: 18, slug: 'pricing',                     name: 'Pricing',                       file: 'module-5-strategy-execution/18-pricing.html' },
+      { sprint: 19, slug: 'brand-marketing',             name: 'Brand & Marketing',             file: 'module-5-strategy-execution/19-brand-marketing.html' },
+      { sprint: 20, slug: 'customer-service',            name: 'Customer Service',              file: 'module-5-strategy-execution/20-customer-service.html' },
+      { sprint: 21, slug: 'route-to-market',             name: 'Route to Market',               file: 'module-5-strategy-execution/21-route-to-market.html' },
+      { sprint: 22, slug: 'core-activities',             name: 'Core Activities',               file: 'module-6-org-structure/22-core-activities.html' },
+      { sprint: 23, slug: 'processes-decisions',         name: 'Processes & Decisions',         file: 'module-6-org-structure/23-processes-decisions.html' },
+      { sprint: 24, slug: 'fit-abc-analysis',            name: 'Fit ABC Analysis',              file: 'module-6-org-structure/24-fit-abc-analysis.html' },
+      { sprint: 25, slug: 'org-redesign',                name: 'Organizational Redesign',       file: 'module-6-org-structure/25-org-redesign.html' },
+      { sprint: 26, slug: 'employer-branding',           name: 'Employer Branding',             file: 'module-7-people-leadership/26-employer-branding.html' },
+      { sprint: 27, slug: 'agile-teams',                 name: 'Agile Teams',                   file: 'module-7-people-leadership/27-agile-teams.html' },
+      { sprint: 28, slug: 'digitalization',              name: 'Digitalization',                file: 'module-8-tech-ai/28-digitalization.html' },
+      { sprint: 29, slug: 'digital-heart',               name: 'Digital Heart',                 file: 'module-8-tech-ai/29-digital-heart.html' },
     ];
 
-    // Auth utilities
-    const auth = {
-      extractTokenFromURL: () => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const token = urlParams.get('token');
-        if (token) {
-          localStorage.setItem(CONFIG.tokenKey, token);
-          window.history.replaceState({}, document.title, window.location.pathname);
+    const MODULES = [
+      { id: 0, name: 'Intro Sprint',                    sprints: [0] },
+      { id: 1, name: 'Individual & Company Identity',   sprints: [1,2,3,4,5] },
+      { id: 2, name: 'Core Elements of Performance',    sprints: [6,7,8,9,10,11] },
+      { id: 3, name: 'Understanding the Market',        sprints: [12,13] },
+      { id: 4, name: 'Strategy Development',            sprints: [14,15,16] },
+      { id: 5, name: 'Strategy Execution',              sprints: [17,18,19,20,21] },
+      { id: 6, name: 'Organizational Structure',        sprints: [22,23,24,25] },
+      { id: 7, name: 'People & Leadership',             sprints: [26,27] },
+      { id: 8, name: 'Tech & AI',                       sprints: [28,29] },
+    ];
+
+    // ── Auth: LearnWorlds URL params ──
+    // LearnWorlds external link format:
+    //   https://yourdomain.com/frontend/dashboard.html?lw_user_id={{USER_ID}}&lw_email={{USER_EMAIL}}
+    async function identifyUser() {
+      const params = new URLSearchParams(window.location.search);
+      const lwUserId = params.get('lw_user_id');
+      const lwEmail = params.get('lw_email');
+
+      // Clean URL after extracting params
+      if (lwUserId || lwEmail) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+
+      // 1. Try LearnWorlds params from URL
+      if (lwUserId) {
+        const { data: existing } = await sb
+          .from('users')
+          .select('id, full_name, email, learnworlds_user_id')
+          .eq('learnworlds_user_id', lwUserId)
+          .single();
+
+        if (existing) {
+          // Update last_login
+          await sb.from('users').update({ last_login: new Date().toISOString() }).eq('id', existing.id);
+          storeSession(existing);
+          return existing;
         }
-        return token;
-      },
-      getToken: () => localStorage.getItem(CONFIG.tokenKey),
-      logout: (message = '') => {
-        if (message) alert(message);
-        localStorage.removeItem(CONFIG.tokenKey);
-        setTimeout(() => window.location.href = CONFIG.learnWorldsLoginURL, 2000);
-      },
-      enforceHTTPS: () => {
-        if (window.location.hostname !== 'localhost' && window.location.protocol !== 'https:') {
-          window.location.href = 'https:' + window.location.href.substring(window.location.protocol.length);
+
+        // Not found by LW ID — try by email
+        if (lwEmail) {
+          const { data: byEmail } = await sb
+            .from('users')
+            .select('id, full_name, email, learnworlds_user_id')
+            .eq('email', lwEmail)
+            .single();
+
+          if (byEmail) {
+            // Link LearnWorlds ID to existing user
+            await sb.from('users').update({
+              learnworlds_user_id: lwUserId,
+              last_login: new Date().toISOString()
+            }).eq('id', byEmail.id);
+            byEmail.learnworlds_user_id = lwUserId;
+            storeSession(byEmail);
+            return byEmail;
+          }
+        }
+
+        // Create new user
+        const { data: newUser, error } = await sb
+          .from('users')
+          .insert({
+            email: lwEmail || `${lwUserId}@learnworlds.user`,
+            learnworlds_user_id: lwUserId,
+            full_name: lwEmail ? lwEmail.split('@')[0] : 'Fast Track User',
+            role: 'participant',
+            last_login: new Date().toISOString()
+          })
+          .select('id, full_name, email, learnworlds_user_id')
+          .single();
+
+        if (newUser) {
+          storeSession(newUser);
+          return newUser;
         }
       }
-    };
 
-    // API Client
-    const api = {
-      baseURL: CONFIG.apiBaseURL,
-      request: async (endpoint, options = {}) => {
-        const token = auth.getToken();
-        const headers = {
-          'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` }),
-          ...options.headers,
-        };
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), options.timeout || 30000);
-        try {
-          const response = await fetch(`${api.baseURL}${endpoint}`, {...options, headers, signal: controller.signal});
-          clearTimeout(timeoutId);
-          if (response.status === 401) { auth.logout('Session expired.'); throw new Error('Unauthorized'); }
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          return await response.json();
-        } catch (error) {
-          clearTimeout(timeoutId);
-          throw error;
+      // 2. Try stored session
+      const stored = getStoredSession();
+      if (stored) return stored;
+
+      // 3. Try ft_user_id from localStorage (set by test page)
+      const testUserId = localStorage.getItem('ft_user_id');
+      if (testUserId) {
+        const { data: testUser } = await sb
+          .from('users')
+          .select('id, full_name, email, learnworlds_user_id')
+          .eq('id', testUserId)
+          .single();
+        if (testUser) {
+          storeSession(testUser);
+          return testUser;
         }
-      },
-      getTools: () => api.request('/api/tools'),
-      getUserProgress: () => api.request('/api/user/progress'),
-      getUserInfo: () => api.request('/api/auth/me'),
-      getToolData: (slug) => api.request(`/api/tools/${slug}/data`),
-    };
+      }
 
-    // Launch tool helper
-    function launchTool(tool) {
-      const token = auth.getToken();
-      // Use the file path from tool registry (now includes module folder)
-      const url = `/frontend/tools/${tool.file}?token=${token}`;
-      window.location.href = url;
+      return null;
     }
 
-    // Components
+    function storeSession(user) {
+      sessionStorage.setItem('ft_dashboard_user', JSON.stringify(user));
+      // Also set ft_user_id so tools can pick it up
+      localStorage.setItem('ft_user_id', user.id);
+    }
+
+    function getStoredSession() {
+      try {
+        const stored = sessionStorage.getItem('ft_dashboard_user');
+        return stored ? JSON.parse(stored) : null;
+      } catch { return null; }
+    }
+
+    // ── Data Fetching ──
+    async function fetchToolProgress(userId) {
+      // 1. Get completions
+      const { data: completions } = await sb
+        .from('tool_completions')
+        .select('tool_slug, completed_at')
+        .eq('user_id', userId);
+
+      const completedSlugs = new Set((completions || []).map(c => c.tool_slug));
+      const completionMap = {};
+      (completions || []).forEach(c => { completionMap[c.tool_slug] = c.completed_at; });
+
+      // 2. Get all question IDs grouped by tool_slug
+      const { data: questions } = await sb
+        .from('tool_questions')
+        .select('id, tool_slug')
+        .in('tool_slug', TOOLS.map(t => t.slug));
+
+      const questionsByTool = {};
+      (questions || []).forEach(q => {
+        if (!questionsByTool[q.tool_slug]) questionsByTool[q.tool_slug] = [];
+        questionsByTool[q.tool_slug].push(q.id);
+      });
+
+      // 3. Get user's responses
+      const allQuestionIds = (questions || []).map(q => q.id);
+      const { data: responses } = await sb
+        .from('user_responses')
+        .select('question_id')
+        .eq('user_id', userId)
+        .in('question_id', allQuestionIds);
+
+      const answeredIds = new Set((responses || []).map(r => r.question_id));
+
+      // 4. Build tool list with status
+      return TOOLS.map((tool, index) => {
+        const totalQ = (questionsByTool[tool.slug] || []).length;
+        const answeredQ = (questionsByTool[tool.slug] || []).filter(qid => answeredIds.has(qid)).length;
+
+        let status;
+        let progress = 0;
+
+        if (completedSlugs.has(tool.slug)) {
+          status = 'completed';
+          progress = 100;
+        } else if (answeredQ > 0) {
+          status = 'in_progress';
+          progress = totalQ > 0 ? Math.round((answeredQ / totalQ) * 100) : 0;
+        } else if (index === 0) {
+          // First tool always unlocked
+          status = 'unlocked';
+        } else {
+          // Unlocked if previous tool is completed
+          const prevSlug = TOOLS[index - 1].slug;
+          status = completedSlugs.has(prevSlug) ? 'unlocked' : 'locked';
+        }
+
+        return {
+          ...tool,
+          id: tool.slug,
+          status,
+          progress,
+          completedAt: completionMap[tool.slug] || null,
+        };
+      });
+    }
+
+    async function fetchToolSubmission(userId, toolSlug) {
+      // Get questions for this tool
+      const { data: questions } = await sb
+        .from('tool_questions')
+        .select('id, question_key, question_text, section_name, question_type')
+        .eq('tool_slug', toolSlug)
+        .order('step_number', { ascending: true })
+        .order('display_order', { ascending: true });
+
+      if (!questions || questions.length === 0) return [];
+
+      // Get user's responses
+      const questionIds = questions.map(q => q.id);
+      const { data: responses } = await sb
+        .from('user_responses')
+        .select('question_id, response_value, response_data')
+        .eq('user_id', userId)
+        .in('question_id', questionIds);
+
+      const responseMap = {};
+      (responses || []).forEach(r => { responseMap[r.question_id] = r; });
+
+      // Merge
+      return questions.map(q => ({
+        question: q.question_text || q.question_key,
+        section: q.section_name,
+        type: q.question_type,
+        answer: responseMap[q.id]?.response_value || '',
+        data: responseMap[q.id]?.response_data || null,
+      }));
+    }
+
+    // ── Launch Tool ──
+    function launchTool(tool) {
+      window.location.href = `tools/${tool.file}`;
+    }
+
+    // ── Components ──
     const ProgressBar = memo(({ progress = 0, className = '' }) => (
       <div className={`w-full bg-ft-dark h-2 rounded-full overflow-hidden ${className}`}>
         <div className="h-full bg-ft-yellow transition-all duration-300" style={{ width: `${Math.max(0, Math.min(100, progress))}%` }}></div>
@@ -264,29 +405,19 @@
 
     const StatusBadge = memo(({ status }) => {
       const styles = {
-        locked: 'text-ft-grey text-xs uppercase',
-        unlocked: 'text-white text-xs uppercase',
+        locked:      'text-ft-grey text-xs uppercase',
+        unlocked:    'text-white text-xs uppercase',
         in_progress: 'text-ft-yellow text-xs uppercase font-bold',
-        completed: 'text-white text-xs uppercase font-bold'
+        completed:   'text-white text-xs uppercase font-bold'
       };
       const labels = {
-        locked: 'LOCKED',
-        unlocked: 'UNLOCKED',
+        locked:      'LOCKED',
+        unlocked:    'UNLOCKED',
         in_progress: 'IN PROGRESS',
-        completed: 'DONE'
+        completed:   'DONE'
       };
       return <span className={styles[status] || styles.locked} style={{fontFamily: 'var(--font-monument)'}}>{labels[status] || 'LOCKED'}</span>;
     });
-
-    const LaunchButton = memo(({ tool, disabled }) => (
-      <button onClick={() => !disabled && launchTool(tool)} disabled={disabled} className={`px-6 py-2 rounded font-bold uppercase transition ${disabled ? 'bg-gray-600 text-gray-400 cursor-not-allowed' : 'bg-black text-white hover:bg-gray-800 cursor-pointer'}`} style={{fontFamily: 'var(--font-monument)', fontSize: '0.75rem'}} aria-disabled={disabled}>
-        {tool.status === 'in_progress' ? 'CONTINUE' : 'LAUNCH'}
-      </button>
-    ));
-
-    const ViewSummaryButton = memo(({ onClick }) => (
-      <button onClick={onClick} className="px-6 py-2 rounded bg-ft-yellow text-black font-bold uppercase transition" style={{fontFamily: 'var(--font-monument)', fontSize: '0.75rem'}} onMouseEnter={(e) => e.target.style.backgroundColor = '#FFED7A'} onMouseLeave={(e) => e.target.style.backgroundColor = '#FFF469'}>VIEW SUMMARY</button>
-    ));
 
     const ToolCard = memo(({ tool, onViewSummary }) => {
       const isLocked = tool.status === 'locked';
@@ -306,21 +437,39 @@
           {showProgress && (
             <div className="mb-4">
               <ProgressBar progress={tool.progress} />
-              <span className="text-xs text-gray-600 mt-1">{tool.progress}%</span>
+              <span className="text-xs text-gray-600 mt-1 block">{tool.progress}%</span>
             </div>
           )}
           <div className="flex gap-2">
             {isCompleted ? (
-              <ViewSummaryButton onClick={() => onViewSummary(tool)} />
+              <button onClick={() => onViewSummary(tool)} className="px-6 py-2 rounded bg-ft-yellow text-black font-bold uppercase transition" style={{fontFamily: 'var(--font-monument)', fontSize: '0.75rem'}} onMouseEnter={(e) => e.target.style.backgroundColor = '#FFED7A'} onMouseLeave={(e) => e.target.style.backgroundColor = '#FFF469'}>
+                VIEW SUMMARY
+              </button>
             ) : (
-              <LaunchButton tool={tool} disabled={isLocked} />
+              <button
+                onClick={() => !isLocked && launchTool(tool)}
+                disabled={isLocked}
+                className={`px-6 py-2 rounded font-bold uppercase transition ${isLocked ? 'bg-gray-600 text-gray-400 cursor-not-allowed' : 'bg-black text-white hover:bg-gray-800 cursor-pointer'}`}
+                style={{fontFamily: 'var(--font-monument)', fontSize: '0.75rem'}}
+              >
+                {tool.status === 'in_progress' ? 'CONTINUE' : 'LAUNCH'}
+              </button>
+            )}
+            {isCompleted && (
+              <button
+                onClick={() => launchTool(tool)}
+                className="px-6 py-2 rounded bg-gray-200 text-black font-bold uppercase transition hover:bg-gray-300"
+                style={{fontFamily: 'var(--font-monument)', fontSize: '0.75rem'}}
+              >
+                REDO
+              </button>
             )}
           </div>
         </div>
       );
     });
 
-    const Module = memo(({ module, tools, collapsed, onToggle, onViewSummary }) => {
+    const ModuleSection = memo(({ module, tools, collapsed, onToggle, onViewSummary }) => {
       const moduleTools = tools.filter(t => module.sprints.includes(t.sprint));
       const completed = moduleTools.filter(t => t.status === 'completed').length;
       const total = moduleTools.length;
@@ -329,10 +478,12 @@
         <div className="mb-8">
           <div onClick={onToggle} className="flex items-center justify-between cursor-pointer bg-gray-900 p-4 rounded-lg hover:bg-gray-800 transition">
             <div>
-              <h2 className="text-2xl text-white mb-1" style={{fontFamily: 'var(--font-plaak)'}}>{module.name}</h2>
-              <span className="text-sm text-gray-400" style={{fontFamily: 'var(--font-monument)'}}>SPRINTS {module.sprints[0]}-{module.sprints[module.sprints.length-1]} • {completed}/{total} COMPLETE</span>
+              <h2 className="text-2xl text-white mb-1" style={{fontFamily: 'var(--font-plaak)'}}>Module {module.id}: {module.name}</h2>
+              <span className="text-sm text-gray-400" style={{fontFamily: 'var(--font-monument)'}}>
+                {total === 1 ? `SPRINT ${module.sprints[0]}` : `SPRINTS ${module.sprints[0]}-${module.sprints[module.sprints.length-1]}`} &bull; {completed}/{total} COMPLETE
+              </span>
             </div>
-            <span className="text-ft-yellow text-2xl">{collapsed ? '+' : '−'}</span>
+            <span className="text-ft-yellow text-2xl select-none">{collapsed ? '+' : '\u2212'}</span>
           </div>
           {!collapsed && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
@@ -343,20 +494,18 @@
       );
     });
 
-    const SummaryModal = memo(({ tool, onClose }) => {
+    const SummaryModal = memo(({ tool, userId, onClose }) => {
       const [data, setData] = useState(null);
       const [loading, setLoading] = useState(true);
-      const [error, setError] = useState(null);
 
       useEffect(() => {
-        if (tool) {
+        if (tool && userId) {
           setLoading(true);
-          api.getToolData(tool.slug)
+          fetchToolSubmission(userId, tool.slug)
             .then(setData)
-            .catch(err => setError(err.message))
             .finally(() => setLoading(false));
         }
-      }, [tool]);
+      }, [tool, userId]);
 
       useEffect(() => {
         const handleEscape = (e) => e.key === 'Escape' && onClose();
@@ -366,6 +515,14 @@
 
       if (!tool) return null;
 
+      // Group answers by section
+      const sections = {};
+      (data || []).forEach(item => {
+        const sec = item.section || 'Responses';
+        if (!sections[sec]) sections[sec] = [];
+        sections[sec].push(item);
+      });
+
       return (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4" onClick={onClose} role="dialog" aria-modal="true">
           <div className="bg-white text-black rounded-lg max-w-4xl w-full max-h-[80vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
@@ -373,17 +530,40 @@
               <div>
                 <h2 className="text-3xl" style={{fontFamily: 'var(--font-plaak)'}}>{tool.name}</h2>
                 <span className="text-sm text-gray-500" style={{fontFamily: 'var(--font-monument)'}}>SPRINT {String(tool.sprint).padStart(2, '0')}</span>
+                {tool.completedAt && (
+                  <span className="text-sm text-green-600 ml-4">Completed {new Date(tool.completedAt).toLocaleDateString()}</span>
+                )}
               </div>
               <button onClick={onClose} className="text-3xl hover:text-gray-600">&times;</button>
             </div>
             <div className="p-6">
-              {loading && <p>Loading summary...</p>}
-              {error && <p className="text-red-500">Error: {error}</p>}
-              {data && <pre className="whitespace-pre-wrap">{JSON.stringify(data, null, 2)}</pre>}
+              {loading && <p className="text-gray-500">Loading submission...</p>}
+              {!loading && (!data || data.length === 0) && <p className="text-gray-500">No submission data found.</p>}
+              {!loading && data && data.length > 0 && (
+                <div className="space-y-6">
+                  {Object.entries(sections).map(([sectionName, items]) => (
+                    <div key={sectionName}>
+                      <h3 className="text-lg font-bold mb-3 pb-2 border-b border-gray-200" style={{fontFamily: 'var(--font-plaak)'}}>{sectionName}</h3>
+                      <div className="space-y-3">
+                        {items.map((item, i) => (
+                          <div key={i}>
+                            <p className="text-sm text-gray-500 mb-1">{item.question}</p>
+                            {item.type === 'json' || item.data ? (
+                              <pre className="text-sm bg-gray-50 p-3 rounded whitespace-pre-wrap">{JSON.stringify(item.data || item.answer, null, 2)}</pre>
+                            ) : (
+                              <p className="text-base">{item.answer || <span className="text-gray-400 italic">No response</span>}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="p-6 border-t flex justify-end gap-3">
-              <button onClick={() => launchTool(tool)} className="px-6 py-2 bg-black text-white rounded hover:bg-gray-800">RELAUNCH TOOL</button>
-              <button onClick={onClose} className="px-6 py-2 bg-gray-200 rounded hover:bg-gray-300">CLOSE</button>
+              <button onClick={() => launchTool(tool)} className="px-6 py-2 bg-black text-white rounded hover:bg-gray-800 uppercase text-sm font-bold" style={{fontFamily: 'var(--font-monument)'}}>Relaunch Tool</button>
+              <button onClick={onClose} className="px-6 py-2 bg-gray-200 rounded hover:bg-gray-300 uppercase text-sm font-bold" style={{fontFamily: 'var(--font-monument)'}}>Close</button>
             </div>
           </div>
         </div>
@@ -394,12 +574,11 @@
       <header className="bg-black text-white p-6 border-b border-gray-800">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <img src={LOGO_BASE64} alt="Fast Track Logo" className="h-12" />
-            {DEMO_MODE && <span className="bg-ft-yellow text-black px-3 py-1 rounded text-xs font-bold uppercase" style={{fontFamily: 'var(--font-monument)'}}>DEMO MODE</span>}
+            <img src="shared/images/FastTrack_F_White.png" alt="Fast Track" className="h-12" />
           </div>
           <div className="flex items-center gap-6">
             <div className="text-right">
-              <p className="text-sm" style={{fontFamily: 'var(--font-riforma)'}}>{user?.name || 'User'}</p>
+              <p className="text-sm" style={{fontFamily: 'var(--font-riforma)'}}>{user?.full_name || user?.email || 'User'}</p>
               <div className="w-40">
                 <ProgressBar progress={overallProgress} className="mt-1" />
               </div>
@@ -409,33 +588,51 @@
       </header>
     ));
 
-    const Hero = memo(({ completed, currentSprint }) => (
+    const Hero = memo(({ completed, total, currentTool }) => (
       <section className="bg-black text-white py-16 px-6">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-6xl mb-4" style={{fontFamily: 'var(--font-plaak)'}}>YOUR TRANSFORMATION JOURNEY</h1>
-          <p className="text-2xl text-gray-300 mb-2" style={{fontFamily: 'var(--font-riforma)'}}>{completed} of 30 tools complete</p>
-          {currentSprint != null && <p className="text-lg text-ft-yellow" style={{fontFamily: 'var(--font-monument)'}}>CURRENT SPRINT: {currentSprint}</p>}
+          <h1 className="text-5xl md:text-6xl mb-4" style={{fontFamily: 'var(--font-plaak)'}}>YOUR TRANSFORMATION JOURNEY</h1>
+          <p className="text-2xl text-gray-300 mb-2" style={{fontFamily: 'var(--font-riforma)'}}>{completed} of {total} tools complete</p>
+          {currentTool && <p className="text-lg text-ft-yellow" style={{fontFamily: 'var(--font-monument)'}}>CURRENT: SPRINT {String(currentTool.sprint).padStart(2, '0')} &mdash; {currentTool.name}</p>}
         </div>
       </section>
+    ));
+
+    const NoAccess = memo(() => (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-center max-w-lg px-6">
+          <img src="shared/images/FastTrack_F_White.png" alt="Fast Track" className="h-16 mx-auto mb-8" />
+          <h1 className="text-4xl mb-6" style={{fontFamily: 'var(--font-plaak)'}}>ACCESS REQUIRED</h1>
+          <p className="text-lg text-gray-300 mb-8" style={{fontFamily: 'var(--font-riforma)'}}>
+            Open this dashboard from your LearnWorlds course to get started.
+          </p>
+          <a href={LEARNWORLDS_URL} className="inline-block bg-ft-yellow text-black px-8 py-3 rounded font-bold uppercase hover:opacity-90 transition" style={{fontFamily: 'var(--font-monument)'}}>
+            Go to LearnWorlds
+          </a>
+        </div>
+      </div>
     ));
 
     const Footer = memo(() => (
       <footer className="bg-black text-white py-8 px-6 border-t border-gray-800">
         <div className="max-w-7xl mx-auto text-center">
           <p className="text-3xl mb-2" style={{fontFamily: 'var(--font-plaak)'}}>NO GRIT. NO GROWTH.</p>
-          <p className="text-sm text-gray-400" style={{fontFamily: 'var(--font-riforma)'}}>© {new Date().getFullYear()} Fast Track Ltd. All rights reserved.</p>
+          <p className="text-sm text-gray-400" style={{fontFamily: 'var(--font-riforma)'}}>&copy; {new Date().getFullYear()} Fast Track Ltd. All rights reserved.</p>
         </div>
       </footer>
     ));
 
+    // ── Main Dashboard ──
     function Dashboard() {
       const [user, setUser] = useState(null);
       const [tools, setTools] = useState([]);
       const [loading, setLoading] = useState(true);
-      const [error, setError] = useState(null);
+      const [noAccess, setNoAccess] = useState(false);
       const [collapsedModules, setCollapsedModules] = useState(() => {
-        const saved = localStorage.getItem('collapsed_modules');
-        return saved ? JSON.parse(saved) : [];
+        try {
+          const saved = localStorage.getItem('ft_collapsed_modules');
+          return saved ? JSON.parse(saved) : [];
+        } catch { return []; }
       });
       const [modalTool, setModalTool] = useState(null);
 
@@ -446,60 +643,75 @@
 
       const completedCount = useMemo(() => tools.filter(t => t.status === 'completed').length, [tools]);
 
-      const currentSprint = useMemo(() => {
+      const currentTool = useMemo(() => {
         const inProgress = tools.find(t => t.status === 'in_progress');
-        if (inProgress) return inProgress.sprint;
-        const unlocked = tools.find(t => t.status === 'unlocked');
-        return unlocked ? unlocked.sprint : null;
+        if (inProgress) return inProgress;
+        return tools.find(t => t.status === 'unlocked') || null;
       }, [tools]);
 
-      const fetchData = useCallback(async () => {
-        try {
-          const [toolsData, userData] = await Promise.all([api.getTools(), api.getUserInfo()]);
-          setTools(toolsData);
-          setUser(userData);
-          setError(null);
-        } catch (err) {
-          setError(err.message);
-        } finally {
-          setLoading(false);
-        }
+      const loadData = useCallback(async (userId) => {
+        const toolData = await fetchToolProgress(userId);
+        setTools(toolData);
       }, []);
 
       useEffect(() => {
-        auth.enforceHTTPS();
-        auth.extractTokenFromURL();
-        if (!auth.getToken()) {
-          auth.logout('Please log in.');
-          return;
-        }
-        fetchData();
-        const interval = setInterval(fetchData, CONFIG.pollingInterval);
-        return () => clearInterval(interval);
-      }, [fetchData]);
+        (async () => {
+          try {
+            const identified = await identifyUser();
+            if (!identified) {
+              setNoAccess(true);
+              setLoading(false);
+              return;
+            }
+            setUser(identified);
+            await loadData(identified.id);
+          } catch (err) {
+            console.error('Dashboard init error:', err);
+          } finally {
+            setLoading(false);
+          }
+        })();
+      }, [loadData]);
 
       const toggleModule = useCallback((moduleId) => {
         setCollapsedModules(prev => {
-          const newState = prev.includes(moduleId) ? prev.filter(id => id !== moduleId) : [...prev, moduleId];
-          localStorage.setItem('collapsed_modules', JSON.stringify(newState));
-          return newState;
+          const next = prev.includes(moduleId) ? prev.filter(id => id !== moduleId) : [...prev, moduleId];
+          localStorage.setItem('ft_collapsed_modules', JSON.stringify(next));
+          return next;
         });
       }, []);
 
-      if (loading) return <div className="min-h-screen bg-black text-white flex items-center justify-center"><p className="text-2xl">Loading...</p></div>;
-      if (error) return <div className="min-h-screen bg-black text-white flex items-center justify-center"><p className="text-red-500">Error: {error}</p></div>;
+      if (loading) {
+        return (
+          <div className="min-h-screen bg-black text-white flex items-center justify-center">
+            <div className="text-center">
+              <div className="w-10 h-10 border-3 border-gray-700 border-t-yellow-300 rounded-full animate-spin mx-auto mb-4" style={{borderTopColor: '#FFF469'}}></div>
+              <p className="text-xl" style={{fontFamily: 'var(--font-riforma)'}}>Loading your journey...</p>
+            </div>
+          </div>
+        );
+      }
+
+      if (noAccess) return <NoAccess />;
 
       return (
         <div className="min-h-screen bg-black">
           <Header user={user} overallProgress={overallProgress} />
-          <Hero completed={completedCount} currentSprint={currentSprint} />
+          <Hero completed={completedCount} total={TOOLS.length} currentTool={currentTool} />
           <main className="max-w-7xl mx-auto px-6 py-12">
             {MODULES.map(module => (
-              <Module key={module.id} module={module} tools={tools} collapsed={collapsedModules.includes(module.id)} onToggle={() => toggleModule(module.id)} onViewSummary={setModalTool} />
+              <ModuleSection
+                key={module.id}
+                module={module}
+                tools={tools}
+                collapsed={collapsedModules.includes(module.id)}
+                onToggle={() => toggleModule(module.id)}
+                onViewSummary={setModalTool}
+              />
             ))}
           </main>
           <Footer />
-          {modalTool && <SummaryModal tool={modalTool} onClose={() => setModalTool(null)} />}
+          {modalTool && <SummaryModal tool={modalTool} userId={user.id} onClose={() => setModalTool(null)} />}
         </div>
       );
     }

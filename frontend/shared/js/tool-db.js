@@ -210,6 +210,28 @@ const ToolDB = (function() {
     }
 
     /**
+     * Mark a tool as completed for a user.
+     * Upserts into tool_completions — safe to call multiple times.
+     */
+    async function markComplete(userId) {
+        const client = window.supabaseClient;
+        if (!client || !userId || !toolSlug) return;
+
+        const { error } = await client
+            .from('tool_completions')
+            .upsert(
+                { user_id: userId, tool_slug: toolSlug },
+                { onConflict: 'user_id,tool_slug' }
+            );
+
+        if (error) {
+            console.error('[ToolDB] markComplete error:', error);
+        } else {
+            console.log(`[ToolDB] Marked "${toolSlug}" complete for user ${userId}`);
+        }
+    }
+
+    /**
      * Get the cached question metadata.
      */
     function getQuestionCache() {
@@ -223,7 +245,8 @@ const ToolDB = (function() {
         load,
         getDependency,
         ensureUser,
-        getQuestionCache
+        getQuestionCache,
+        markComplete
     };
 })();
 

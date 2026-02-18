@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{TOOL_TITLE}} | Fast Track Program</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../../shared/js/dependency-injection.js"></script>
+    <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
+    <script src="../../shared/js/cognitive-load.js"></script>
+
+    <style>
+        /* ============================================================
+           FAST TRACK TOOL BLUEPRINT — STYLES
+           Brand: Black/White/Grey. Yellow (#FFF469) accent ONLY.
+           Fonts: Plaak (1x per page heading), Monument (labels/indicators), Riforma (body)
+           ============================================================ */
+
+        @font-face { font-family: 'Plaak'; src: url('Plaak3Trial-43-Bold.woff2') format('woff2'); font-weight: bold; }
+        @font-face { font-family: 'Riforma'; src: url('RiformaLL-Regular.woff2') format('woff2'); font-weight: normal; }
+        @font-face { font-family: 'Riforma'; src: url('RiformaLL-Regular.woff2') format('woff2'); font-weight: 600; }
+        @font-face { font-family: 'Monument'; src: url('MonumentGrotesk-Mono.woff2') format('woff2'); }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Riforma', -apple-system, sans-serif;
+            font-size: 16px;
+            color: #000;
+            background: #000;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .plaak { font-family: 'Plaak', sans-serif; font-weight: bold; letter-spacing: -0.01em; line-height: 1.2; }
+        .monument { font-family: 'Monument', monospace; letter-spacing: 0.05em; }
+
+        /* ── Outer frame ── */
+        .tool-frame { background: #fff; min-height: 100vh; }
+        .tool-inner { background: #fff; min-height: 100vh; }
+
+        /* ── Wizard layout ── */
+        .wizard-layout { display: flex; min-height: 100vh; }
+        .wizard-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background: #fff;
+            padding: 0 48px;
+        }
+        .wizard-sidebar {
+            width: 280px;
+            background: #000;
+            border-left: 1px solid #000;
+            flex-shrink: 0;
+        }
+        .wizard-sidebar-inner {
+            position: sticky;
+            top: 0;
+            padding: 32px 24px;
+            max-height: 100vh;
+            overflow-y: auto;
+        }
+
+        /* ── Step content area ── */
+        .step-content { max-width: 100%; padding: 40px 0; flex: 1; }
+        .step-indicator {
+            font-family: 'Monument', monospace;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        /* ── Opening area — the ONE Plaak heading per page ── */
+        .opening-box { margin-bottom: 32px; }
+        .opening-box .step-heading {
+            font-family: 'Plaak', sans-serif;
+            font-weight: bold;
+            font-size: 32px;
+            letter-spacing: -0.01em;
+            line-height: 1.2;
+            color: #000;
+            margin-bottom: 6px;
+        }
+        .opening-box .step-hint {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        /* ── Questions layout ── */
+        .questions-grid { display: flex; flex-direction: column; gap: 0; margin-bottom: 32px; }
+        .question-box { /* clean, no border */ }
+
+        /* ── Closing area (appears when step is complete) ── */
+        .closing-box {
+            border-top: 1px solid #E0E0E0;
+            padding: 20px 0 0 0;
+            margin-top: 8px;
+            text-align: center;
+        }
+        .closing-box p { font-size: 14px; color: #666; }
+        .closing-box .closing-title {
+            font-family: 'Monument', monospace;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #000;
+            margin-bottom: 6px;
+        }
+
+        /* ── Form elements ── */
+        .field-group { margin-bottom: 40px; }
+        .field-group:last-child { margin-bottom: 0; }
+        .field-label {
+            font-weight: 600;
+            font-size: 16px;
+            color: #000;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .field-input {
+            border: 1px solid #E0E0E0;
+            padding: 12px 16px;
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
+            width: 100%;
+            color: #000;
+            background: #fff;
+            transition: border-color 0.2s ease;
+        }
+        .field-input:focus { outline: none; border-color: #000; }
+        .field-textarea {
+            border: 1px solid #E0E0E0;
+            padding: 12px 16px;
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
+            width: 100%;
+            min-height: 100px;
+            resize: vertical;
+            color: #000;
+            background: #fff;
+            transition: border-color 0.2s ease;
+        }
+        .field-textarea:focus { outline: none; border-color: #000; }
+        .field-help { font-size: 13px; color: #666; margin-top: 4px; }
+        .field-error { font-size: 13px; color: #DC2626; margin-top: 4px; }
+
+        /* ── Help icon (?) ── */
+        .help-icon-btn {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #E0E0E0;
+            border: 1.5px solid #999;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: help;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+            font-size: 11px;
+            font-weight: 600;
+            color: #666;
+        }
+        .help-icon-btn:hover { background: #000; color: #fff; border-color: #000; }
+
+        /* ── Help accordion — drops between label and field ── */
+        .help-accordion {
+            background: #F5F5F5;
+            border: 1px solid #E0E0E0;
+            border-left: 3px solid #000;
+            padding: 14px 16px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: #333;
+            line-height: 1.5;
+            animation: accordionOpen 0.2s ease-out;
+        }
+        @keyframes accordionOpen {
+            from { opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0; }
+            to { opacity: 1; max-height: 300px; }
+        }
+
+        /* ── LearnMore expandable — prominent, read before answering ── */
+        .learn-more-toggle {
+            font-family: 'Monument', monospace;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #000;
+            background: #F5F5F5;
+            border: 1px solid #E0E0E0;
+            cursor: pointer;
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 32px;
+            transition: background 0.15s ease;
+        }
+        .learn-more-toggle:hover { background: #EBEBEB; }
+        .learn-more-content {
+            border-left: 3px solid #000;
+            background: #F5F5F5;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            font-size: 14px;
+            color: #333;
+            line-height: 1.7;
+        }
+
+        /* ── Fast Track Insight box — extracted content highlight ── */
+        .ft-insight {
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+            background: #F5F5F5;
+            border: 1px solid #E0E0E0;
+            border-left: 4px solid #FFF469;
+            padding: 16px 20px;
+            margin-bottom: 32px;
+        }
+        .ft-insight-icon {
+            flex-shrink: 0;
+            width: 28px;
+            height: 28px;
+            background: #FFF469;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .ft-insight-label {
+            font-family: 'Monument', monospace;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #000;
+            margin-bottom: 4px;
+        }
+        .ft-insight-text {
+            font-size: 14px;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* ── Button footer ── */
+        .btn-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-top: 1px solid #E0E0E0;
+            background: #fff;
+            width: 100%;
+        }
+        .btn-back {
+            background: #fff;
+            color: #000;
+            border: 2px solid #000;
+            padding: 12px 24px;
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-back:hover { background: #F5F5F5; }
+        .btn-next {
+            background: #000;
+            color: #fff;
+            border: 2px solid #000;
+            padding: 12px 24px;
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-next:hover:not(:disabled) { transform: scale(1.02); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .btn-next:disabled { background: #E0E0E0; color: #9CA3AF; border-color: #E0E0E0; cursor: not-allowed; }
+
+        /* ── Sidebar step items ── */
+        .sidebar-step-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            border-left: 3px solid transparent;
+            transition: all 0.2s ease;
+        }
+        .sidebar-step-item.active { border-left-color: #FFF469; background: #222; }
+        .sidebar-step-item.completed { background: #fff; color: #000; border-left-color: #fff; cursor: pointer; }
+        .sidebar-step-item.completed:hover { background: #E0E0E0; }
+        .sidebar-step-item.locked { opacity: 0.5; }
+        .sidebar-step-item .step-num { font-family: 'Riforma', sans-serif; font-size: 14px; }
+        .sidebar-step-item .step-name { font-family: 'Riforma', sans-serif; font-size: 14px; }
+        .sidebar-snippet { font-size: 12px; margin-top: 4px; opacity: 0.7; line-height: 1.3; }
+
+        /* ── Canvas / results styles ── */
+        .numbered-section { background: #000; color: #fff; padding: 8px 14px; font-size: 14px; font-weight: bold; letter-spacing: 0.5px; display: inline-block; font-family: 'Monument', monospace; }
+        .canvas-section-box { background: #FAFAFA; border-left: 4px solid #000; padding: 20px; margin-bottom: 16px; }
+
+        /* ── Mobile step indicator ── */
+        .mobile-step-bar { display: none; padding: 12px 16px; border-bottom: 1px solid #E0E0E0; background: #F5F5F5; }
+        .mobile-step-bar .bar-text { font-family: 'Monument', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #666; margin-bottom: 6px; }
+        .mobile-progress { height: 3px; background: #E0E0E0; width: 100%; }
+        .mobile-progress-fill { height: 100%; background: #000; transition: width 0.3s ease; }
+
+        /* ── Animations ── */
+        @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-in { animation: fadeSlideIn 0.3s ease-out; }
+
+        @media print { .no-print { display: none !important; } }
+
+        /* ── Responsive ── */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .wizard-sidebar { width: 220px; }
+            .wizard-sidebar-inner { padding: 24px 16px; }
+        }
+        @media (max-width: 768px) {
+            .wizard-sidebar { display: none; }
+            .mobile-step-bar { display: block; }
+            .step-content { padding: 20px 16px; }
+            .opening-box .step-heading { font-size: 24px; }
+            .btn-footer { padding: 12px 16px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        /* ============================================================
+           CONFIG — Change these per tool
+           ============================================================ */
+        const CONFIG = {
+            SUPABASE_URL: 'https://lutzzfaedkbsmbobmrzx.supabase.co',
+            SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1dHp6ZmFlZGtic21ib2Jtcnp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MDA0MDQsImV4cCI6MjA4NjM3NjQwNH0.o2gJba85vDl4NLS-C8Mq3OudWKxet-b0IqO9kazqb8U',
+            TOOL_SLUG: '{{tool_slug}}',           // e.g. 'know-thyself'
+            SPRINT_NUMBER: 0,                       // e.g. 1
+            SCHEMA_NAME: '{{schema_name}}',         // e.g. 'sprint_01_know_thyself'
+            TOOL_TITLE: '{{TOOL TITLE}}',           // e.g. 'KNOW THYSELF'
+            TIME_ESTIMATE: '~20 min',               // shown in sidebar
+            COVER_IMAGE: 'cover.jpg',               // relative path to cover image
+            AUTOSAVE_DELAY: 2000,
+            /* Step definitions — adapt per tool */
+            STEPS: [
+                { num: 1, label: 'Step One' },
+                { num: 2, label: 'Step Two' },
+                { num: 3, label: 'Step Three' },
+                // Add more as needed
+            ],
+            /* Closing messages shown when a step is fully complete */
+            CLOSING_MESSAGES: {
+                1: { title: 'STEP ONE COMPLETE', text: 'Great progress. Next: dive deeper.' },
+                2: { title: 'STEP TWO COMPLETE', text: 'Insights locked in. Next: strategy.' },
+                3: { title: 'ALL STEPS COMPLETE', text: 'Your canvas is ready to view.' },
+            }
+        };
+
+        const { createClient } = supabase;
+        const supabaseClient = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+        window.supabaseClient = supabaseClient;
+        DependencyInjection.init(CONFIG.TOOL_SLUG, CONFIG.SCHEMA_NAME);
+        CognitiveLoad.init(CONFIG.TOOL_SLUG);
+
+        /* ============================================================
+           REUSABLE COMPONENTS — Do not modify
+           ============================================================ */
+
+        function CheckIcon({ color = "#fff", size = 16 }) {
+            return <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>;
+        }
+
+        function LightbulbIcon({ size = 16 }) {
+            return <svg width={size} height={size} viewBox="0 0 24 24" fill="#000"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>;
+        }
+
+        /** WHY THIS MATTERS — expandable context block */
+        function LearnMore({ children }) {
+            const [open, setOpen] = useState(false);
+            return (
+                <div style={{ marginBottom: open ? 0 : 12 }}>
+                    <button className="learn-more-toggle" onClick={() => setOpen(!open)}>WHY THIS MATTERS {open ? '\u2212' : '+'}</button>
+                    {open && <div className="learn-more-content">{children}</div>}
+                </div>
+            );
+        }
+
+        /** Fast Track Insight — highlighted content extraction with icon */
+        function FastTrackInsight({ children, label = 'Fast Track Insight' }) {
+            return (
+                <div className="ft-insight">
+                    <div className="ft-insight-icon"><LightbulbIcon size={16} /></div>
+                    <div>
+                        <div className="ft-insight-label">{label}</div>
+                        <div className="ft-insight-text">{children}</div>
+                    </div>
+                </div>
+            );
+        }
+
+        /** Help (?) accordion — drops between label and input field */
+        function HelpAccordion({ id, activeHelp, setActiveHelp, children }) {
+            const isOpen = activeHelp === id;
+            return (
+                <>
+                    <button className="help-icon-btn" onClick={() => setActiveHelp(isOpen ? null : id)} title="Help">?</button>
+                    {isOpen && <div className="help-accordion" style={{ marginTop: 6 }}>{children}</div>}
+                </>
+            );
+        }
+
+        /** Back / Next button row */
+        function ButtonFooter({ onBack, onNext, nextLabel = 'Next', canProceed, showBack = true }) {
+            return (
+                <div className="btn-footer no-print">
+                    {showBack ? <button className="btn-back" onClick={onBack}>&larr; Back</button> : <div />}
+                    <button className="btn-next" disabled={!canProceed} onClick={onNext}>{nextLabel} &rarr;</button>
+                </div>
+            );
+        }
+
+        /** Mobile-only top bar with progress */
+        function MobileStepBar({ currentStep, totalSteps }) {
+            const progress = currentStep >= 999 ? 100 : Math.round((currentStep / totalSteps) * 100);
+            return (
+                <div className="mobile-step-bar no-print">
+                    <div className="bar-text">Step {Math.min(currentStep, totalSteps)} of {totalSteps}</div>
+                    <div className="mobile-progress"><div className="mobile-progress-fill" style={{ width: `${progress}%` }} /></div>
+                </div>
+            );
+        }
+
+        /** Right sidebar with step navigation */
+        function WizardSidebar({ currentStep, steps, toolTitle, timeEstimate, getSnippet, onNavigate }) {
+            return (
+                <div className="wizard-sidebar no-print">
+                    <div className="wizard-sidebar-inner">
+                        <div style={{ marginBottom: 24 }}>
+                            <div className="monument" style={{ fontSize: 12, textTransform: 'uppercase', color: '#fff', marginBottom: 4 }}>{toolTitle}</div>
+                            <div style={{ fontSize: 13, color: '#999' }}>{timeEstimate}</div>
+                        </div>
+                        <div style={{ marginBottom: 16, fontFamily: "'Monument', monospace", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#999' }}>Your journey</div>
+                        {steps.map(s => {
+                            const isCompleted = currentStep > s.num, isActive = currentStep === s.num, isLocked = currentStep < s.num;
+                            const snippet = isCompleted && getSnippet ? getSnippet(s.num) : null;
+                            return (
+                                <div key={s.num} className={`sidebar-step-item ${isCompleted ? 'completed' : ''} ${isActive ? 'active' : ''} ${isLocked ? 'locked' : ''}`}
+                                    onClick={() => isCompleted && onNavigate && onNavigate(s.num)}
+                                    title={isCompleted ? 'Click to review this step' : ''}
+                                >
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                        {isCompleted ? <CheckIcon color="#000" size={14} /> : <span className="step-num" style={{ color: isActive ? '#fff' : '#ccc' }}>{String(s.num).padStart(2, '0')}</span>}
+                                        <span className="step-name" style={{ color: isLocked ? '#666' : isCompleted ? '#000' : '#fff' }}>{s.label}</span>
+                                    </div>
+                                    {snippet && <div className="sidebar-snippet">{snippet}</div>}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        }
+
+
+        /* ============================================================
+           MAIN TOOL — Customise everything below
+           ============================================================ */
+
+        function ToolApp() {
+            const [step, setStep] = useState(0);
+            const [questionHelp, setQuestionHelp] = useState(null);
+            const [authState, setAuthState] = useState({ loading: true, authenticated: false, user: null, progress: null, error: null });
+            const [submitStatus, setSubmitStatus] = useState(null);
+            const [submitMessage, setSubmitMessage] = useState('');
+
+            /* ── Data state — define all fields for this tool ── */
+            const [data, setData] = useState({
+                companyId: '', userId: '',
+                // Add your tool's fields here:
+                // field1: '', field2: '', field3: '',
+            });
+
+            const autosaveTimer = useRef(null);
+            const updateData = (key, value) => setData(prev => ({ ...prev, [key]: value }));
+
+            /* ── Validation — one per step ── */
+            const totalSteps = CONFIG.STEPS.length;
+            // const canProceedStep1 = data.field1.length >= 10;
+            // const canProceedStep2 = data.field2.length >= 10;
+            // const canProceedStep3 = data.field3.length >= 10;
+
+            /* ── Sidebar snippets — shown on completed steps ── */
+            const getSnippet = (n) => {
+                // if (n === 1 && data.field1) return '"' + data.field1.substring(0, 50) + '..."';
+                return null;
+            };
+
+            /* ── Auth ── */
+            useEffect(() => {
+                async function initAuth() {
+                    const isLocalFile = window.location.protocol === 'file:';
+                    const hasAuthManager = window.authManager && typeof window.authManager.initialize === 'function';
+                    if (isLocalFile || !hasAuthManager) {
+                        localStorage.setItem('ft_user_id', 'b609a543-e487-4ace-91d4-84a07402ff99');
+                        console.log(`[${CONFIG.TOOL_SLUG} Auth] Local dev mode`);
+                        setAuthState({ loading: false, authenticated: true, user: { email: 'local@dev.test', id: 'local-dev' }, progress: { completed_tools: [], unlocked_tools: [CONFIG.TOOL_SLUG] }, isUnlocked: true, isCompleted: false, error: null });
+                        return;
+                    }
+                    try {
+                        const result = await window.authManager.initialize();
+                        if (result.authenticated) {
+                            setAuthState({ loading: false, authenticated: true, user: result.user, progress: result.progress, isUnlocked: window.authManager.isToolUnlocked(result.progress, CONFIG.TOOL_SLUG), isCompleted: window.authManager.isToolCompleted(result.progress, CONFIG.TOOL_SLUG), error: null });
+                        } else {
+                            setAuthState({ loading: false, authenticated: false, user: null, progress: null, error: result.error || result.message });
+                            window.authManager.requireAuthentication();
+                        }
+                    } catch (error) {
+                        localStorage.setItem('ft_user_id', 'b609a543-e487-4ace-91d4-84a07402ff99');
+                        setAuthState({ loading: false, authenticated: true, user: { email: 'local@dev.test', id: 'local-dev' }, progress: { completed_tools: [], unlocked_tools: [CONFIG.TOOL_SLUG] }, isUnlocked: true, isCompleted: false, error: null });
+                    }
+                }
+                initAuth();
+            }, []);
+
+            /* ── Tool access control ── */
+            useEffect(() => {
+                if (authState.authenticated && authState.progress && window.toolAccessControl) {
+                    window.toolAccessControl.initialize(authState.progress, CONFIG.TOOL_SLUG, CONFIG.SPRINT_NUMBER);
+                }
+            }, [authState.authenticated]);
+
+            /* ── Auto-save to localStorage ── */
+            useEffect(() => {
+                if (step < 1) return;
+                clearTimeout(autosaveTimer.current);
+                autosaveTimer.current = setTimeout(() => {
+                    localStorage.setItem(`ft_${CONFIG.TOOL_SLUG}_autosave`, JSON.stringify({ step, data, savedAt: new Date().toISOString() }));
+                    console.log(`[${CONFIG.TOOL_SLUG}] Auto-saved`);
+                }, CONFIG.AUTOSAVE_DELAY);
+                return () => clearTimeout(autosaveTimer.current);
+            }, [data, step]);
+
+            /* ── Load saved data ── */
+            useEffect(() => {
+                try {
+                    const saved = localStorage.getItem(`ft_${CONFIG.TOOL_SLUG}_autosave`);
+                    if (saved) {
+                        const parsed = JSON.parse(saved);
+                        if (parsed.data) {
+                            setData(prev => ({ ...prev, ...parsed.data }));
+                            if (parsed.step) setStep(parsed.step);
+                            console.log(`[${CONFIG.TOOL_SLUG}] Restored from auto-save`);
+                        }
+                    }
+                } catch (e) { console.warn('Failed to restore auto-save:', e); }
+            }, []);
+
+            /* ── Submit to Supabase ── */
+            const handleSubmit = async () => {
+                try {
+                    setSubmitStatus('saving');
+                    setSubmitMessage('');
+                    const userId = localStorage.getItem('ft_user_id');
+                    if (!userId) { setSubmitStatus('error'); setSubmitMessage('User not authenticated.'); return; }
+                    console.log(`[${CONFIG.TOOL_SLUG} Submit] userId:`, userId);
+
+                    const submissionData = {
+                        companyId: data.companyId,
+                        userId: data.userId,
+                        // Map your fields here for Supabase storage
+                    };
+
+                    console.log(`[${CONFIG.TOOL_SLUG} Submit] Calling RPC...`);
+                    const { data: result, error: submitError } = await supabaseClient.rpc('submit_tool_data', {
+                        p_schema_name: CONFIG.SCHEMA_NAME,
+                        p_user_id: userId,
+                        p_data: submissionData,
+                        p_tool_slug: CONFIG.TOOL_SLUG
+                    });
+                    console.log(`[${CONFIG.TOOL_SLUG} Submit] Result:`, result, 'Error:', submitError);
+                    if (submitError) throw submitError;
+                    if (!result || !result.success) throw new Error(result?.message || 'Submission failed');
+                    setSubmitStatus('success');
+                    setSubmitMessage('Submission saved successfully!');
+                    localStorage.setItem('lastSubmissionId', result.submission_id);
+                } catch (error) {
+                    console.error(`[${CONFIG.TOOL_SLUG} Submit] Error:`, error);
+                    setSubmitStatus('error');
+                    setSubmitMessage('Failed to save: ' + error.message);
+                }
+            };
+
+            /* ── PDF Export ── */
+            const handleExport = async (e) => {
+                try {
+                    const btn = e.target; btn.disabled = true; btn.textContent = 'Generating...';
+                    const { jsPDF } = window.jspdf;
+                    const canvas = await html2canvas(document.querySelector('.canvas-content'), { scale: 2, useCORS: true, backgroundColor: '#fff' });
+                    const imgData = canvas.toDataURL('image/png');
+                    const pdf = new jsPDF('p', 'mm', 'a4');
+                    const pdfW = pdf.internal.pageSize.getWidth(), pdfH = pdf.internal.pageSize.getHeight();
+                    const imgW = pdfW - 20, imgH = (canvas.height * imgW) / canvas.width;
+                    let y = 10;
+                    if (imgH <= pdfH - 20) { pdf.addImage(imgData, 'PNG', 10, y, imgW, imgH); }
+                    else {
+                        let srcY = 0;
+                        while (srcY < canvas.height) {
+                            const sliceH = Math.min(canvas.height - srcY, (canvas.width * (pdfH - 20)) / imgW);
+                            const sliceCanvas = document.createElement('canvas'); sliceCanvas.width = canvas.width; sliceCanvas.height = sliceH;
+                            sliceCanvas.getContext('2d').drawImage(canvas, 0, srcY, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+                            pdf.addImage(sliceCanvas.toDataURL('image/png'), 'PNG', 10, 10, imgW, (sliceH * imgW) / canvas.width);
+                            srcY += sliceH;
+                            if (srcY < canvas.height) pdf.addPage();
+                        }
+                    }
+                    pdf.save(`${CONFIG.TOOL_SLUG}-canvas.pdf`);
+                    btn.disabled = false; btn.textContent = 'Export PDF';
+                } catch (err) { alert('PDF export failed: ' + err.message); e.target.disabled = false; e.target.textContent = 'Export PDF'; }
+            };
+
+
+            /* ============================================================
+               RENDER
+               ============================================================ */
+            return (
+                <div className="tool-frame">
+                    <div className="tool-inner">
+
+                        {/* Loading */}
+                        {authState.loading && (
+                            <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000' }}>
+                                <div style={{ textAlign: 'center', color: '#fff' }}>
+                                    <div className="plaak" style={{ fontSize: 32, marginBottom: 12 }}>Loading...</div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Auth error */}
+                        {!authState.loading && !authState.authenticated && (
+                            <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000' }}>
+                                <div style={{ textAlign: 'center', color: '#fff' }}>
+                                    <h1 className="plaak" style={{ fontSize: 32, marginBottom: 12 }}>Access Required</h1>
+                                    <p style={{ fontSize: 16, color: '#999' }}>{authState.error || 'No active session found'}</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ── STEP 0: Cover ── */}
+                        {step === 0 && authState.authenticated && (
+                            <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+                                <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${CONFIG.COVER_IMAGE})`, backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.5 }} />
+                                <div style={{ position: 'relative', textAlign: 'center', color: '#fff', padding: '0 32px' }} className="animate-in">
+                                    <h1 className="plaak" style={{ fontSize: 80, marginBottom: 16 }}>{CONFIG.TOOL_TITLE}</h1>
+                                    <p style={{ fontSize: 18, color: '#ccc', marginBottom: 48 }}>{{Subtitle — one-line tool description}}</p>
+                                    <button onClick={() => setStep(0.5)} style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 48px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                                        onMouseOver={e => { e.target.style.background = '#FFF469'; }}
+                                        onMouseOut={e => { e.target.style.background = '#fff'; }}
+                                    >START</button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ── STEP 0.5: Setup ── */}
+                        {step === 0.5 && (
+                            <div style={{ minHeight: '100vh', background: '#fff', display: 'flex', flexDirection: 'column', padding: '0 48px' }}>
+                                <div className="step-content animate-in" style={{ maxWidth: 560, margin: '0 auto' }}>
+                                    <p className="step-indicator">SETUP</p>
+                                    <div className="opening-box">
+                                        <h1 className="step-heading">Before We Start</h1>
+                                        <p className="step-hint">{{Brief explanation of what this tool does and why it matters.}}</p>
+                                    </div>
+
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+                                        <div className="field-group">
+                                            <label className="field-label">Company ID</label>
+                                            <input type="text" className="field-input" value={data.companyId} onChange={e => updateData('companyId', e.target.value)} placeholder="Enter company ID" />
+                                        </div>
+                                        <div className="field-group">
+                                            <label className="field-label">Username ID</label>
+                                            <input type="text" className="field-input" value={data.userId} onChange={e => updateData('userId', e.target.value)} placeholder="Enter username ID" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="btn-footer no-print">
+                                    <button className="btn-back" onClick={() => setStep(0)}>&larr; Back</button>
+                                    <button className="btn-next" disabled={!data.companyId || !data.userId} onClick={() => setStep(1)}>Let's Start &rarr;</button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ── STEPS 1–N: Wizard ── */}
+                        {step >= 1 && step <= totalSteps && (
+                            <div className="wizard-layout">
+                                <div className="wizard-main">
+                                    <MobileStepBar currentStep={step} totalSteps={totalSteps} />
+
+                                    {/* ────────────────────────────────────
+                                         STEP 1 — Example step template
+                                         Copy this block for each step.
+                                         ──────────────────────────────────── */}
+                                    {step === 1 && (
+                                        <div className="step-content animate-in">
+                                            <p className="step-indicator">STEP 1 OF {totalSteps}</p>
+                                            <div className="opening-box">
+                                                <h1 className="step-heading">{{Step 1 Heading}}</h1>
+                                                <p className="step-hint">{{One-line context for this step.}}</p>
+                                            </div>
+
+                                            <LearnMore>
+                                                {{Science/context content that helps users understand WHY this step matters. 2-3 sentences.}}
+                                            </LearnMore>
+
+                                            {/* Fast Track Insight — use when extracting content from program material */}
+                                            <FastTrackInsight>
+                                                {{Key insight extracted from Fast Track content. A specific, actionable piece of wisdom.}}
+                                            </FastTrackInsight>
+
+                                            <div className="questions-grid single-col">
+                                                <div className="field-group">
+                                                    <label className="field-label">
+                                                        {{Question label}}
+                                                        <HelpAccordion id="q1" activeHelp={questionHelp} setActiveHelp={setQuestionHelp}>
+                                                            {{Help text explaining how to answer this question well.}}
+                                                        </HelpAccordion>
+                                                    </label>
+                                                    <textarea className="field-textarea" value={data.field1 || ''} onChange={e => updateData('field1', e.target.value)} placeholder="{{Placeholder text...}}" maxLength={300} />
+                                                    <p className="field-help">{(data.field1 || '').length}/300 (min 20)</p>
+                                                </div>
+
+                                                <div className="field-group">
+                                                    <label className="field-label">
+                                                        {{Second question label}}
+                                                        <HelpAccordion id="q2" activeHelp={questionHelp} setActiveHelp={setQuestionHelp}>
+                                                            {{Help text for second question.}}
+                                                        </HelpAccordion>
+                                                    </label>
+                                                    <input type="text" className="field-input" value={data.field2 || ''} onChange={e => updateData('field2', e.target.value)} placeholder="{{Placeholder...}}" />
+                                                </div>
+                                            </div>
+
+                                            {/* Closing message — only shows when step is complete
+                                            {canProceedStep1 && (
+                                                <div className="closing-box animate-in">
+                                                    <p className="closing-title">{CONFIG.CLOSING_MESSAGES[1].title}</p>
+                                                    <p>{CONFIG.CLOSING_MESSAGES[1].text}</p>
+                                                </div>
+                                            )} */}
+                                        </div>
+                                    )}
+
+                                    {/* ── Add more steps here: step === 2, step === 3, etc. ── */}
+
+                                    <ButtonFooter
+                                        onBack={() => setStep(step === 1 ? 0.5 : step - 1)}
+                                        onNext={() => setStep(step === totalSteps ? 999 : step + 1)}
+                                        canProceed={true /* Replace with: step === 1 ? canProceedStep1 : canProceedStep2 etc. */}
+                                        nextLabel={step === totalSteps ? 'View Your Canvas' : 'Next'}
+                                        showBack={true}
+                                    />
+                                </div>
+                                <WizardSidebar
+                                    currentStep={step}
+                                    steps={CONFIG.STEPS}
+                                    toolTitle={CONFIG.TOOL_TITLE}
+                                    timeEstimate={CONFIG.TIME_ESTIMATE}
+                                    getSnippet={getSnippet}
+                                    onNavigate={setStep}
+                                />
+                            </div>
+                        )}
+
+                        {/* ── STEP 999: Canvas / Results ── */}
+                        {step === 999 && (
+                            <div style={{ minHeight: '100vh', background: '#fff', padding: 48 }}>
+                                <div className="canvas-content" style={{ maxWidth: 900, margin: '0 auto' }}>
+                                    <h1 className="plaak" style={{ fontSize: 40, marginBottom: 8 }}>{CONFIG.TOOL_TITLE}</h1>
+                                    <p style={{ color: '#666', marginBottom: 32 }}>Your completed canvas</p>
+
+                                    {/* ── Build your canvas layout here ── */}
+                                    <div style={{ marginBottom: 32 }}>
+                                        <div className="numbered-section">01 — STEP ONE</div>
+                                        <div className="canvas-section-box" style={{ marginTop: 12 }}>
+                                            <p>{{Display data.field1 here}}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Action buttons */}
+                                <div className="no-print" style={{ maxWidth: 900, margin: '24px auto 0', display: 'flex', gap: 12 }}>
+                                    <button onClick={() => setStep(totalSteps)} className="btn-back" style={{ flex: 1 }}>&larr; Back to editing</button>
+                                    <button onClick={handleExport} className="btn-back" style={{ flex: 1 }}>Export PDF</button>
+                                    <button id="submit-button" onClick={handleSubmit} className="btn-next" style={{ flex: 1 }} disabled={submitStatus === 'saving'}>
+                                        {submitStatus === 'saving' ? 'Saving...' : 'Final Submit'}
+                                    </button>
+                                </div>
+                                {submitStatus && (
+                                    <div style={{ maxWidth: 900, margin: '16px auto 0', padding: '12px 16px', textAlign: 'center', background: submitStatus === 'success' ? '#f0fdf4' : submitStatus === 'error' ? '#fef2f2' : '#f5f5f5', border: `1px solid ${submitStatus === 'success' ? '#bbf7d0' : submitStatus === 'error' ? '#fecaca' : '#e0e0e0'}`, fontSize: 14 }}>
+                                        <span style={{ color: submitStatus === 'success' ? '#166534' : submitStatus === 'error' ? '#991b1b' : '#333' }}>{submitMessage}</span>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<ToolApp />, document.getElementById('root'));
+    </script>
+</body>
+</html>

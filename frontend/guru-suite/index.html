@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guru Suite - Fast Track</title>
+
+    <!-- React & ReactDOM CDN -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        /* Font Faces */
+        @font-face {
+            font-family: 'Plaak3';
+            src: url('./fonts/Plaak3Trial-43-Bold.woff2') format('woff2');
+            font-weight: bold;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: 'Riforma';
+            src: url('./fonts/RiformaLL-Regular.woff2') format('woff2');
+            font-weight: normal;
+            font-display: swap;
+        }
+
+        /* CSS Custom Properties */
+        :root {
+            --bg-primary: #1A1A1A;
+            --bg-secondary: #2A2A2A;
+            --bg-tertiary: #3A3A3A;
+            --accent-yellow: #FFF469;
+            --success-green: #22C55E;
+            --text-primary: #FFFFFF;
+            --text-secondary: #9CA3AF;
+            --gray: #6B7280;
+            --border: #3A3A3A;
+        }
+
+        /* Global Reset & Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Riforma', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        h1, h2, h3, h4 {
+            font-family: 'Plaak3', sans-serif;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 32px;
+        }
+
+        /* Code Entry Styles */
+        .code-entry {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .code-entry__card {
+            background: var(--bg-secondary);
+            padding: 48px;
+            border-radius: 0;
+            text-align: center;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .code-entry__title {
+            font-size: 48px;
+            margin-bottom: 32px;
+            color: var(--accent-yellow);
+        }
+
+        .code-entry__input {
+            width: 100%;
+            padding: 16px;
+            font-size: 18px;
+            background: var(--bg-primary);
+            border: 2px solid var(--border);
+            border-radius: 0;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            text-align: center;
+            letter-spacing: 2px;
+            margin-bottom: 16px;
+        }
+
+        .code-entry__input:focus {
+            outline: none;
+            border-color: var(--accent-yellow);
+        }
+
+        .code-entry__button {
+            width: 100%;
+            padding: 16px 32px;
+            font-size: 16px;
+            font-weight: 600;
+            background: var(--accent-yellow);
+            color: var(--bg-primary);
+            border: none;
+            border-radius: 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Riforma', sans-serif;
+        }
+
+        .code-entry__button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 244, 105, 0.3);
+        }
+
+        .code-entry__button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .code-entry__error {
+            color: #EF4444;
+            margin-top: 16px;
+            font-size: 14px;
+        }
+
+        /* Dashboard Header */
+        .dashboard__header {
+            background: var(--bg-secondary);
+            padding: 24px;
+            border-radius: 0;
+            margin-bottom: 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .dashboard__org-name {
+            font-size: 42px;
+            margin-bottom: 8px;
+        }
+
+        .dashboard__tool-badge {
+            display: inline-block;
+            background: var(--accent-yellow);
+            color: var(--bg-primary);
+            padding: 6px 16px;
+            border-radius: 0;
+            font-size: 14px;
+            font-weight: 600;
+            margin-left: 16px;
+        }
+
+        .dashboard__guru {
+            color: var(--text-secondary);
+            font-size: 16px;
+        }
+
+        .dashboard__exit {
+            padding: 12px 24px;
+            background: transparent;
+            border: 2px solid var(--border);
+            color: var(--text-primary);
+            border-radius: 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .dashboard__exit:hover {
+            border-color: var(--accent-yellow);
+            color: var(--accent-yellow);
+        }
+
+        /* Progress Overview */
+        .progress-overview {
+            background: var(--bg-secondary);
+            padding: 24px;
+            border-radius: 0;
+            margin-bottom: 32px;
+        }
+
+        .progress-bar {
+            height: 24px;
+            background: var(--bg-tertiary);
+            border-radius: 0;
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+
+        .progress-bar__fill {
+            height: 100%;
+            background: var(--success-green);
+            transition: width 0.5s ease;
+        }
+
+        .stat-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        .stat-card {
+            padding: 24px;
+            border-radius: 0;
+            text-align: center;
+        }
+
+        .stat-card--completed {
+            background: var(--success-green);
+            color: #000;
+        }
+
+        .stat-card--in-progress {
+            background: var(--accent-yellow);
+            color: #000;
+        }
+
+        .stat-card--not-started {
+            background: var(--gray);
+            color: #fff;
+        }
+
+        .stat-card__label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .stat-card__value {
+            font-size: 32px;
+            font-family: 'Plaak3', sans-serif;
+        }
+
+        /* Team Table */
+        .team-table {
+            background: var(--bg-secondary);
+            border-radius: 0;
+            overflow: hidden;
+            margin-bottom: 32px;
+        }
+
+        .team-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .team-table th {
+            background: var(--bg-tertiary);
+            padding: 16px;
+            text-align: left;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .team-table th:hover {
+            background: #444;
+        }
+
+        .team-table td {
+            padding: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .team-table tr:nth-child(even) {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 0;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-badge--completed {
+            background: var(--success-green);
+            color: #000;
+        }
+
+        .status-badge--in-progress {
+            background: var(--accent-yellow);
+            color: #000;
+        }
+
+        .status-badge--not-started {
+            background: var(--gray);
+            color: #fff;
+        }
+
+        .btn-view {
+            padding: 8px 16px;
+            background: var(--accent-yellow);
+            color: var(--bg-primary);
+            border: none;
+            border-radius: 0;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .btn-view:hover {
+            transform: translateY(-1px);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal {
+            background: #fff;
+            color: #000;
+            border-radius: 0;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .modal__header {
+            padding: 24px;
+            border-bottom: 2px solid #eee;
+            position: sticky;
+            top: 0;
+            background: #fff;
+            z-index: 10;
+        }
+
+        .modal__close {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            background: transparent;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .modal__body {
+            padding: 24px;
+        }
+
+        .submission-section {
+            margin-bottom: 24px;
+        }
+
+        .submission-section__label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #666;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .submission-section__content {
+            padding: 16px;
+            background: #f9f9f9;
+            border-radius: 0;
+            line-height: 1.6;
+            border-left: 4px solid var(--accent-yellow);
+        }
+
+        .submission-section__content--json {
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 13px;
+        }
+
+        /* Guru Guide */
+        .guru-guide {
+            background: var(--bg-secondary);
+            padding: 24px;
+            border-radius: 0;
+            margin-bottom: 32px;
+        }
+
+        .guru-guide__title {
+            font-size: 24px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .guru-guide__actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn-guide {
+            padding: 12px 24px;
+            background: var(--accent-yellow);
+            color: var(--bg-primary);
+            border: none;
+            border-radius: 0;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .btn-guide:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Meeting Notes */
+        .meeting-notes {
+            background: var(--bg-secondary);
+            border-radius: 0;
+            margin-bottom: 32px;
+            overflow: hidden;
+        }
+
+        .meeting-notes__header {
+            padding: 24px;
+            background: var(--bg-tertiary);
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .meeting-notes__body {
+            padding: 24px;
+        }
+
+        .meeting-notes__field {
+            margin-bottom: 24px;
+        }
+
+        .meeting-notes__label {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .meeting-notes__input,
+        .meeting-notes__textarea {
+            width: 100%;
+            padding: 12px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 0;
+            color: var(--text-primary);
+            font-family: 'Riforma', sans-serif;
+        }
+
+        .meeting-notes__textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .action-items {
+            margin-top: 24px;
+        }
+
+        .action-item {
+            padding: 12px;
+            background: var(--bg-primary);
+            border-radius: 0;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .action-item__checkbox {
+            width: 20px;
+            height: 20px;
+        }
+
+        .action-item__content {
+            flex: 1;
+        }
+
+        .action-item--completed {
+            opacity: 0.6;
+            text-decoration: line-through;
+        }
+
+        .action-item__add {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .action-item__add input {
+            flex: 1;
+            padding: 8px 12px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            font-family: 'Riforma', sans-serif;
+        }
+
+        .action-item__add button {
+            padding: 8px 16px;
+            background: var(--accent-yellow);
+            color: var(--bg-primary);
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-save {
+            padding: 12px 24px;
+            background: var(--accent-yellow);
+            color: var(--bg-primary);
+            border: none;
+            border-radius: 0;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 16px;
+        }
+
+        .last-saved {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-top: 8px;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 48px;
+            color: var(--text-secondary);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .stat-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .dashboard__header {
+                flex-direction: column;
+                gap: 16px;
+                text-align: center;
+            }
+
+            .team-table {
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useCallback } = React;
+
+        // ── Supabase client (same project as all 30 tools) ──
+        const SUPABASE_URL = 'https://lutzzfaedkbsmbobmrzx.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1dHp6ZmFlZGtic21ib2Jtcnp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MDA0MDQsImV4cCI6MjA4NjM3NjQwNH0.o2gJba85vDl4NLS-C8Mq3OudWKxet-b0IqO9kazqb8U';
+        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // ── Tool slug → display name mapping ──
+        const TOOL_NAMES = {
+            'woop': 'WOOP',
+            'know-thyself': 'Know Thyself',
+            'dream': 'Dream',
+            'values': 'Values',
+            'team': 'Team',
+            'fit': 'FIT',
+            'cash': 'Cash',
+            'energy': 'Energy',
+            'goals': 'Goals & Priorities',
+            'focus': 'Focus',
+            'performance': 'Performance Monitoring',
+            'meeting-rhythm': 'Meeting Rhythm',
+            'market-size': 'Market Size',
+            'segmentation-target-market': 'Segmentation & Target Market',
+            'target-segment-deep-dive': 'Target Segment Deep Dive',
+            'value-proposition': 'Value Proposition',
+            'value-proposition-testing': 'VP Testing',
+            'product-development': 'Product Development',
+            'pricing': 'Pricing',
+            'brand-marketing': 'Brand & Marketing',
+            'customer-service': 'Customer Service',
+            'route-to-market': 'Route to Market',
+            'core-activities': 'Core Activities',
+            'processes-decisions': 'Core Decisions & Processes',
+            'fit-abc-analysis': 'FIT & ABC Analysis',
+            'org-redesign': 'Org Redesign',
+            'employer-branding': 'Employer Branding',
+            'agile-teams': 'Agile Teams',
+            'digitalization': 'Digitalization',
+            'digital-heart': 'Digital Heart'
+        };
+
+        // Helper functions
+        const formatDate = (date) => {
+            if (!date) return '—';
+            return new Date(date).toLocaleDateString();
+        };
+
+        // ── CodeEntry Component ──
+        function CodeEntry({ onAuthenticated }) {
+            const [code, setCode] = useState('');
+            const [error, setError] = useState('');
+            const [loading, setLoading] = useState(false);
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                setError('');
+                setLoading(true);
+
+                try {
+                    const trimmedCode = code.trim().toUpperCase();
+                    const { data, error: sbErr } = await sb
+                        .from('guru_access_codes')
+                        .select('*, organizations(id, name, slug)')
+                        .eq('code', trimmedCode)
+                        .eq('is_active', true)
+                        .single();
+
+                    if (sbErr || !data) {
+                        setError('Invalid or expired access code.');
+                        return;
+                    }
+
+                    // Check expiry
+                    if (data.expires_at && new Date(data.expires_at) < new Date()) {
+                        setError('This access code has expired.');
+                        return;
+                    }
+
+                    const sessionData = {
+                        codeId: data.id,
+                        code: data.code,
+                        toolSlug: data.tool_slug,
+                        toolName: TOOL_NAMES[data.tool_slug] || data.tool_slug,
+                        guruName: data.guru_name,
+                        guruEmail: data.guru_email,
+                        orgId: data.organizations.id,
+                        orgName: data.organizations.name,
+                        orgSlug: data.organizations.slug
+                    };
+
+                    sessionStorage.setItem('guru_code', trimmedCode);
+                    sessionStorage.setItem('guru_session', JSON.stringify(sessionData));
+                    onAuthenticated(sessionData);
+                } catch (err) {
+                    console.error('Validation error:', err);
+                    setError('Connection error. Please try again.');
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            return (
+                <div className="code-entry">
+                    <div className="code-entry__card">
+                        <h1 className="code-entry__title">Guru Suite</h1>
+                        <form onSubmit={handleSubmit}>
+                            <input
+                                type="text"
+                                className="code-entry__input"
+                                placeholder="Enter Access Code"
+                                value={code}
+                                onChange={(e) => setCode(e.target.value)}
+                                maxLength={20}
+                                disabled={loading}
+                            />
+                            <button
+                                type="submit"
+                                className="code-entry__button"
+                                disabled={loading || code.trim().length < 4}
+                            >
+                                {loading ? 'Validating...' : 'Access Dashboard'}
+                            </button>
+                            {error && <div className="code-entry__error">{error}</div>}
+                        </form>
+                    </div>
+                </div>
+            );
+        }
+
+        // ── Dashboard Component ──
+        function Dashboard({ session, onExit }) {
+            const [members, setMembers] = useState([]);
+            const [memberStatuses, setMemberStatuses] = useState({});
+            const [loading, setLoading] = useState(true);
+            const [selectedMember, setSelectedMember] = useState(null);
+            const [guruGuide, setGuruGuide] = useState(null);
+            const [existingNotes, setExistingNotes] = useState(null);
+            const [sortBy, setSortBy] = useState('full_name');
+            const [sortDir, setSortDir] = useState('asc');
+
+            const loadDashboard = useCallback(async () => {
+                try {
+                    // 1. Get team members by organization
+                    const { data: teamMembers, error: mErr } = await sb
+                        .from('users')
+                        .select('id, full_name, email, created_at')
+                        .eq('organization_id', session.orgId);
+
+                    if (mErr) { console.error('Members error:', mErr); return; }
+                    const mList = teamMembers || [];
+                    setMembers(mList);
+
+                    if (mList.length === 0) { setLoading(false); return; }
+
+                    const memberIds = mList.map(m => m.id);
+
+                    // 2. Get completions for this tool
+                    const { data: completions } = await sb
+                        .from('tool_completions')
+                        .select('user_id, completed_at')
+                        .eq('tool_slug', session.toolSlug)
+                        .in('user_id', memberIds);
+
+                    const completionMap = {};
+                    (completions || []).forEach(c => { completionMap[c.user_id] = c.completed_at; });
+
+                    // 3. Get question IDs for this tool
+                    const { data: questions } = await sb
+                        .from('tool_questions')
+                        .select('id')
+                        .eq('tool_slug', session.toolSlug);
+
+                    const questionIds = (questions || []).map(q => q.id);
+
+                    // 4. Get response counts per user (to detect in-progress)
+                    let responseCounts = {};
+                    if (questionIds.length > 0) {
+                        const { data: responses } = await sb
+                            .from('user_responses')
+                            .select('user_id, question_id')
+                            .in('user_id', memberIds)
+                            .in('question_id', questionIds);
+
+                        (responses || []).forEach(r => {
+                            responseCounts[r.user_id] = (responseCounts[r.user_id] || 0) + 1;
+                        });
+                    }
+
+                    // 5. Derive status for each member
+                    const statuses = {};
+                    mList.forEach(m => {
+                        if (completionMap[m.id]) {
+                            statuses[m.id] = { status: 'completed', completedAt: completionMap[m.id] };
+                        } else if (responseCounts[m.id] > 0) {
+                            statuses[m.id] = { status: 'in-progress', responseCount: responseCounts[m.id], totalQuestions: questionIds.length };
+                        } else {
+                            statuses[m.id] = { status: 'not-started' };
+                        }
+                    });
+                    setMemberStatuses(statuses);
+
+                    // 6. Load guru guide
+                    const { data: guide } = await sb
+                        .from('guru_guides')
+                        .select('*')
+                        .eq('tool_slug', session.toolSlug)
+                        .single();
+
+                    if (guide) setGuruGuide(guide);
+
+                    // 7. Load meeting notes
+                    const { data: notes } = await sb
+                        .from('guru_meeting_notes')
+                        .select('*')
+                        .eq('organization_id', session.orgId)
+                        .eq('tool_slug', session.toolSlug)
+                        .single();
+
+                    if (notes) setExistingNotes(notes);
+
+                } catch (err) {
+                    console.error('Dashboard load error:', err);
+                } finally {
+                    setLoading(false);
+                }
+            }, [session]);
+
+            useEffect(() => {
+                loadDashboard();
+            }, [loadDashboard]);
+
+            const handleSort = (field) => {
+                if (sortBy === field) {
+                    setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
+                } else {
+                    setSortBy(field);
+                    setSortDir('asc');
+                }
+            };
+
+            const getSortValue = (member, field) => {
+                if (field === 'status') return memberStatuses[member.id]?.status || 'z';
+                if (field === 'completed_at') return memberStatuses[member.id]?.completedAt || '';
+                return member[field] || '';
+            };
+
+            const sortedMembers = [...members].sort((a, b) => {
+                const aVal = getSortValue(a, sortBy);
+                const bVal = getSortValue(b, sortBy);
+                if (sortDir === 'asc') return aVal > bVal ? 1 : -1;
+                return aVal < bVal ? 1 : -1;
+            });
+
+            if (loading) {
+                return <div className="loading">Loading dashboard...</div>;
+            }
+
+            const completed = members.filter(m => memberStatuses[m.id]?.status === 'completed').length;
+            const inProgress = members.filter(m => memberStatuses[m.id]?.status === 'in-progress').length;
+            const notStarted = members.filter(m => memberStatuses[m.id]?.status === 'not-started').length;
+            const total = members.length;
+            const completionPercentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+            return (
+                <div className="container">
+                    <div className="dashboard__header">
+                        <div>
+                            <h1 className="dashboard__org-name">
+                                {session.orgName}
+                                <span className="dashboard__tool-badge">{session.toolName}</span>
+                            </h1>
+                            <div className="dashboard__guru">Facilitator: {session.guruName}</div>
+                        </div>
+                        <button className="dashboard__exit" onClick={onExit}>Exit</button>
+                    </div>
+
+                    <div className="progress-overview">
+                        <div className="progress-bar">
+                            <div className="progress-bar__fill" style={{ width: `${completionPercentage}%` }}></div>
+                        </div>
+                        <div className="stat-cards">
+                            <div className="stat-card stat-card--completed">
+                                <div className="stat-card__label">Completed</div>
+                                <div className="stat-card__value">
+                                    {completed} ({completionPercentage}%)
+                                </div>
+                            </div>
+                            <div className="stat-card stat-card--in-progress">
+                                <div className="stat-card__label">In Progress</div>
+                                <div className="stat-card__value">{inProgress}</div>
+                            </div>
+                            <div className="stat-card stat-card--not-started">
+                                <div className="stat-card__label">Not Started</div>
+                                <div className="stat-card__value">{notStarted}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="team-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th onClick={() => handleSort('full_name')}>Name {sortBy === 'full_name' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</th>
+                                    <th onClick={() => handleSort('email')}>Email {sortBy === 'email' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</th>
+                                    <th onClick={() => handleSort('status')}>Status {sortBy === 'status' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</th>
+                                    <th onClick={() => handleSort('completed_at')}>Completed {sortBy === 'completed_at' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {sortedMembers.map(member => {
+                                    const info = memberStatuses[member.id] || { status: 'not-started' };
+                                    return (
+                                        <tr key={member.id}>
+                                            <td>{member.full_name || member.email}</td>
+                                            <td>{member.email}</td>
+                                            <td>
+                                                <span className={`status-badge status-badge--${info.status}`}>
+                                                    {info.status.replace('-', ' ')}
+                                                </span>
+                                            </td>
+                                            <td>{info.status === 'completed' ? formatDate(info.completedAt) : '—'}</td>
+                                            <td>
+                                                {(info.status === 'completed' || info.status === 'in-progress') && (
+                                                    <button
+                                                        className="btn-view"
+                                                        onClick={() => setSelectedMember(member)}
+                                                    >
+                                                        {info.status === 'completed' ? 'View Submission' : 'View Progress'}
+                                                    </button>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {guruGuide && (
+                        <GuruGuide guide={guruGuide} />
+                    )}
+
+                    <MeetingNotes session={session} existingNotes={existingNotes} />
+
+                    {selectedMember && (
+                        <SubmissionModal
+                            session={session}
+                            member={selectedMember}
+                            onClose={() => setSelectedMember(null)}
+                        />
+                    )}
+                </div>
+            );
+        }
+
+        // ── SubmissionModal Component (dynamic — works for any tool) ──
+        function SubmissionModal({ session, member, onClose }) {
+            const [sections, setSections] = useState([]);
+            const [loading, setLoading] = useState(true);
+
+            useEffect(() => {
+                loadSubmission();
+            }, []);
+
+            const loadSubmission = async () => {
+                try {
+                    // Get all questions for this tool
+                    const { data: questions, error: qErr } = await sb
+                        .from('tool_questions')
+                        .select('id, question_key, question_text, section_name, question_type, step_number, display_order')
+                        .eq('tool_slug', session.toolSlug)
+                        .order('step_number', { ascending: true })
+                        .order('display_order', { ascending: true });
+
+                    if (qErr || !questions || questions.length === 0) {
+                        setLoading(false);
+                        return;
+                    }
+
+                    const questionIds = questions.map(q => q.id);
+
+                    // Get user's responses
+                    const { data: responses } = await sb
+                        .from('user_responses')
+                        .select('question_id, response_value, response_data')
+                        .eq('user_id', member.id)
+                        .in('question_id', questionIds);
+
+                    const responseMap = {};
+                    (responses || []).forEach(r => {
+                        responseMap[r.question_id] = r.response_data !== null ? r.response_data : r.response_value;
+                    });
+
+                    // Build display sections
+                    const result = questions
+                        .filter(q => responseMap[q.id] !== undefined)
+                        .map(q => ({
+                            key: q.question_key,
+                            label: q.section_name || q.question_text || q.question_key,
+                            value: responseMap[q.id],
+                            type: q.question_type
+                        }));
+
+                    setSections(result);
+                } catch (err) {
+                    console.error('Submission load error:', err);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const handleOverlayClick = (e) => {
+                if (e.target === e.currentTarget) onClose();
+            };
+
+            const renderValue = (section) => {
+                const val = section.value;
+                if (val === null || val === undefined) return <em>No answer</em>;
+                if (typeof val === 'object') {
+                    return (
+                        <div className="submission-section__content submission-section__content--json">
+                            {JSON.stringify(val, null, 2)}
+                        </div>
+                    );
+                }
+                return <div className="submission-section__content">{String(val)}</div>;
+            };
+
+            return (
+                <div className="modal-overlay" onClick={handleOverlayClick}>
+                    <div className="modal">
+                        <div className="modal__header">
+                            <h2>{member.full_name || member.email}</h2>
+                            <div style={{ color: '#666', fontSize: '14px', marginTop: '4px' }}>
+                                {session.toolName} — {sections.length} answer{sections.length !== 1 ? 's' : ''}
+                            </div>
+                            <button className="modal__close" onClick={onClose}>&times;</button>
+                        </div>
+                        <div className="modal__body">
+                            {loading ? (
+                                <div>Loading submission...</div>
+                            ) : sections.length > 0 ? (
+                                sections.map((section, i) => (
+                                    <div key={section.key} className="submission-section">
+                                        <div className="submission-section__label">{section.label}</div>
+                                        {renderValue(section)}
+                                    </div>
+                                ))
+                            ) : (
+                                <div>No responses recorded yet.</div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ── GuruGuide Component ──
+        function GuruGuide({ guide }) {
+            const handleDownload = () => {
+                const link = document.createElement('a');
+                link.href = guide.file_path;
+                link.download = guide.file_name;
+                link.click();
+            };
+
+            const handleOpenTab = () => {
+                window.open(guide.file_path, '_blank');
+            };
+
+            return (
+                <div className="guru-guide">
+                    <div className="guru-guide__title">
+                        <span>{guide.file_name}</span>
+                    </div>
+                    <div className="guru-guide__actions">
+                        <button className="btn-guide" onClick={handleDownload}>
+                            Download Guide
+                        </button>
+                        <button className="btn-guide" onClick={handleOpenTab}>
+                            Open in New Tab
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        // ── MeetingNotes Component ──
+        function MeetingNotes({ session, existingNotes }) {
+            const [expanded, setExpanded] = useState(true);
+            const [notes, setNotes] = useState(existingNotes?.notes_content || {});
+            const [actionItems, setActionItems] = useState(existingNotes?.action_items || []);
+            const [meetingDate, setMeetingDate] = useState(existingNotes?.meeting_date || '');
+            const [saving, setSaving] = useState(false);
+            const [lastSaved, setLastSaved] = useState(null);
+            const [newTask, setNewTask] = useState('');
+
+            const handleSave = async () => {
+                setSaving(true);
+                try {
+                    const { error } = await sb.from('guru_meeting_notes').upsert({
+                        organization_id: session.orgId,
+                        tool_slug: session.toolSlug,
+                        guru_code_id: session.codeId,
+                        notes_content: notes,
+                        action_items: actionItems,
+                        meeting_date: meetingDate || null,
+                        updated_at: new Date().toISOString()
+                    }, { onConflict: 'organization_id,tool_slug' });
+
+                    if (error) {
+                        console.error('Save notes error:', error);
+                    } else {
+                        setLastSaved(new Date());
+                    }
+                } catch (err) {
+                    console.error('Failed to save notes:', err);
+                } finally {
+                    setSaving(false);
+                }
+            };
+
+            const toggleActionItem = (index) => {
+                const updated = [...actionItems];
+                updated[index] = {
+                    ...updated[index],
+                    status: updated[index].status === 'completed' ? 'pending' : 'completed'
+                };
+                setActionItems(updated);
+            };
+
+            const addActionItem = () => {
+                if (!newTask.trim()) return;
+                setActionItems([...actionItems, {
+                    task: newTask.trim(),
+                    assignee: session.guruName,
+                    due: '',
+                    status: 'pending'
+                }]);
+                setNewTask('');
+            };
+
+            return (
+                <div className="meeting-notes">
+                    <div className="meeting-notes__header" onClick={() => setExpanded(!expanded)}>
+                        <h2>Meeting Notes</h2>
+                        <span>{expanded ? '▼' : '▶'}</span>
+                    </div>
+                    {expanded && (
+                        <div className="meeting-notes__body">
+                            <div className="meeting-notes__field">
+                                <label className="meeting-notes__label">Meeting Date</label>
+                                <input
+                                    type="date"
+                                    className="meeting-notes__input"
+                                    value={meetingDate}
+                                    onChange={(e) => setMeetingDate(e.target.value)}
+                                />
+                            </div>
+
+                            <div className="meeting-notes__field">
+                                <label className="meeting-notes__label">Discussion Points</label>
+                                <textarea
+                                    className="meeting-notes__textarea"
+                                    value={notes.discussion_points || ''}
+                                    onChange={(e) => setNotes({...notes, discussion_points: e.target.value})}
+                                />
+                            </div>
+
+                            <div className="meeting-notes__field">
+                                <label className="meeting-notes__label">Key Insights</label>
+                                <textarea
+                                    className="meeting-notes__textarea"
+                                    value={notes.key_insights || ''}
+                                    onChange={(e) => setNotes({...notes, key_insights: e.target.value})}
+                                />
+                            </div>
+
+                            <div className="meeting-notes__field">
+                                <label className="meeting-notes__label">Concerns</label>
+                                <textarea
+                                    className="meeting-notes__textarea"
+                                    value={notes.concerns || ''}
+                                    onChange={(e) => setNotes({...notes, concerns: e.target.value})}
+                                />
+                            </div>
+
+                            <div className="meeting-notes__field">
+                                <label className="meeting-notes__label">Next Steps</label>
+                                <textarea
+                                    className="meeting-notes__textarea"
+                                    value={notes.next_steps || ''}
+                                    onChange={(e) => setNotes({...notes, next_steps: e.target.value})}
+                                />
+                            </div>
+
+                            <div className="action-items">
+                                <h3>Action Items</h3>
+                                {actionItems.map((item, index) => (
+                                    <div key={index} className={`action-item ${item.status === 'completed' ? 'action-item--completed' : ''}`}>
+                                        <input
+                                            type="checkbox"
+                                            className="action-item__checkbox"
+                                            checked={item.status === 'completed'}
+                                            onChange={() => toggleActionItem(index)}
+                                        />
+                                        <div className="action-item__content">
+                                            <div><strong>{item.task}</strong></div>
+                                            <div><small>Assignee: {item.assignee || '—'} | Due: {item.due || '—'}</small></div>
+                                        </div>
+                                    </div>
+                                ))}
+                                <div className="action-item__add">
+                                    <input
+                                        type="text"
+                                        placeholder="New action item..."
+                                        value={newTask}
+                                        onChange={(e) => setNewTask(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && addActionItem()}
+                                    />
+                                    <button onClick={addActionItem}>Add</button>
+                                </div>
+                            </div>
+
+                            <button className="btn-save" onClick={handleSave} disabled={saving}>
+                                {saving ? 'Saving...' : 'Save Notes'}
+                            </button>
+
+                            {lastSaved && (
+                                <div className="last-saved">
+                                    Last saved: {lastSaved.toLocaleTimeString()}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // ── Main App Component ──
+        function App() {
+            const [session, setSession] = useState(null);
+
+            useEffect(() => {
+                // Restore session from sessionStorage
+                const savedSession = sessionStorage.getItem('guru_session');
+                if (savedSession) {
+                    try {
+                        setSession(JSON.parse(savedSession));
+                    } catch (e) {
+                        sessionStorage.removeItem('guru_session');
+                        sessionStorage.removeItem('guru_code');
+                    }
+                }
+            }, []);
+
+            const handleAuthenticated = (sessionData) => {
+                setSession(sessionData);
+            };
+
+            const handleExit = () => {
+                sessionStorage.removeItem('guru_code');
+                sessionStorage.removeItem('guru_session');
+                setSession(null);
+            };
+
+            return session ? (
+                <Dashboard session={session} onExit={handleExit} />
+            ) : (
+                <CodeEntry onAuthenticated={handleAuthenticated} />
+            );
+        }
+
+        // Render App
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
