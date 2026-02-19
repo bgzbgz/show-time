@@ -5,12 +5,21 @@ var AIChallenge = (function () {
 
     var API_BASE = 'https://backend-production-639c.up.railway.app';
 
+    // Track review attempts per step (resets on page load)
+    var stepAttempts = {};
+
+    function getAttempt(stepKey) {
+        if (!stepAttempts[stepKey]) stepAttempts[stepKey] = 0;
+        stepAttempts[stepKey]++;
+        return stepAttempts[stepKey];
+    }
+
     // Call backend AI challenge endpoint
-    function review(userId, toolSlug, answers) {
+    function review(userId, toolSlug, answers, attempt) {
         return fetch(API_BASE + '/api/ai/challenge', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: userId, tool_slug: toolSlug, answers: answers }),
+            body: JSON.stringify({ user_id: userId, tool_slug: toolSlug, answers: answers, attempt: attempt || 1 }),
         }).then(function (resp) {
             if (!resp.ok) {
                 return resp.json().catch(function () { return {}; }).then(function (err) {
@@ -132,8 +141,10 @@ var AIChallenge = (function () {
 
     // Gate a step transition: review answers, block if challenges found.
     // Returns true if user can proceed, false if blocked.
+    // Tracks attempts per stepName so re-reviews are more lenient.
     function reviewStep(userId, toolSlug, stepAnswers, stepName) {
-        return review(userId, toolSlug, stepAnswers)
+        var attempt = getAttempt(toolSlug + ':' + stepName);
+        return review(userId, toolSlug, stepAnswers, attempt)
             .then(function (feedback) {
                 if (feedback.has_challenges && feedback.challenges.length > 0) {
                     return showModal(feedback, { allowSkip: false, stepName: stepName })
@@ -160,7 +171,8 @@ var AIChallenge = (function () {
 
         if (onReviewStart) onReviewStart();
 
-        return review(userId, toolSlug, questionMappings)
+        var attempt = getAttempt(toolSlug + ':final');
+        return review(userId, toolSlug, questionMappings, attempt)
             .catch(function (err) {
                 console.warn('[AIChallenge] Review failed, proceeding to save:', err.message);
                 return { has_challenges: false, challenges: [], encouragement: '' };

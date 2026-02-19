@@ -95,6 +95,7 @@ const AIChallengeRequestSchema = z.object({
   user_id: z.string().uuid(),
   tool_slug: z.string().min(1),
   answers: z.record(z.unknown()),
+  attempt: z.number().int().min(1).max(10).optional().default(1),
 });
 
 const AIChallengeActionSchema = z.object({
@@ -137,7 +138,7 @@ router.post(
     }
 
     // Validate request
-    const { user_id, tool_slug, answers } = AIChallengeRequestSchema.parse(req.body);
+    const { user_id, tool_slug, answers, attempt } = AIChallengeRequestSchema.parse(req.body);
 
     // Validate user exists
     const { data: user } = await supabase
@@ -154,7 +155,7 @@ router.post(
     }
 
     // Call challenge service
-    const result = await challengeService.reviewAnswers(user_id, tool_slug, answers);
+    const result = await challengeService.reviewAnswers(user_id, tool_slug, answers, attempt);
 
     return sendSuccess(res, result);
   })
