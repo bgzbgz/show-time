@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WOOP Tool | Fast Track Program</title>
+    <title>WOOP — Your Productivity Multiplier</title>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -12,19 +12,21 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../../shared/js/tool-db.js"></script>
+    <!-- PRESERVED: AI challenge integration — do not remove -->
     <script src="../../shared/js/ai-challenge.js"></script>
     <script src="../../shared/js/dependency-injection.js"></script>
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
     <script src="../../shared/js/cognitive-load.js"></script>
 
     <style>
+        /* === FONT FACES === */
         @font-face { font-family: 'Plaak'; src: url('Plaak3Trial-43-Bold.woff2') format('woff2'); font-weight: bold; }
         @font-face { font-family: 'Riforma'; src: url('RiformaLL-Regular.woff2') format('woff2'); font-weight: normal; }
         @font-face { font-family: 'Riforma'; src: url('RiformaLL-Regular.woff2') format('woff2'); font-weight: 600; }
         @font-face { font-family: 'Monument'; src: url('MonumentGrotesk-Mono.woff2') format('woff2'); }
 
+        /* === BASE RESET === */
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
         body {
             font-family: 'Riforma', -apple-system, sans-serif;
             font-size: 16px;
@@ -33,258 +35,59 @@
             -webkit-font-smoothing: antialiased;
         }
 
+        /* === CUSTOM SCROLLBAR — black, minimal, sleek === */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #000; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #333; }
+        /* Firefox */
+        * { scrollbar-width: thin; scrollbar-color: #000 transparent; }
+
+        /* === TYPOGRAPHY HELPERS (Blueprint Section 13) === */
         .plaak { font-family: 'Plaak', sans-serif; font-weight: bold; letter-spacing: -0.01em; line-height: 1.2; }
         .monument { font-family: 'Monument', monospace; letter-spacing: 0.05em; }
 
-        /* Outer frame */
-        .tool-frame {
-            background: #fff;
-            min-height: 100vh;
-        }
-        .tool-inner {
-            background: #fff;
-            min-height: 100vh;
-        }
+        /* === LAYOUT FRAME === */
+        .tool-frame { background: #fff; min-height: 100vh; }
+        .tool-inner { background: #fff; min-height: 100vh; }
 
-        /* Wizard layout */
-        .wizard-layout {
-            display: flex;
-            min-height: 100vh;
-        }
+        /* === WIZARD LAYOUT (Blueprint Section 9, 15) === */
+        .wizard-layout { display: flex; min-height: 100vh; }
         .wizard-main {
             flex: 1;
             display: flex;
             flex-direction: column;
             min-height: 100vh;
             background: #fff;
-            padding: 0 48px;
         }
+
+        /* Blueprint Section 15: max-width 960px container.
+           Sidebar is ~280px (1/3 context), leaving ~640px for inputs (2/3 rule). */
+        .wizard-content {
+            max-width: 640px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 48px 32px; /* Blueprint Section 15: 48px top/bottom, 32px sides */
+            flex: 1;
+        }
+
+        /* === SIDEBAR (Blueprint Section 9: context/navigation panel) === */
         .wizard-sidebar {
             width: 280px;
             background: #000;
             border-left: 1px solid #000;
             flex-shrink: 0;
-        }
-        .wizard-sidebar-inner {
             position: sticky;
             top: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .wizard-sidebar-inner {
             padding: 32px 24px;
-            max-height: 100vh;
+            height: 100%;
             overflow-y: auto;
+            overflow-x: hidden;
         }
-
-        /* Step content area */
-        .step-content {
-            max-width: 100%;
-            padding: 40px 0;
-            flex: 1;
-        }
-        .step-indicator {
-            font-family: 'Monument', monospace;
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #666;
-            margin-bottom: 8px;
-        }
-
-        /* Opening area — the one Plaak heading per page */
-        .opening-box {
-            margin-bottom: 32px;
-        }
-        .opening-box .step-heading {
-            font-family: 'Plaak', sans-serif;
-            font-weight: bold;
-            font-size: 32px;
-            letter-spacing: -0.01em;
-            line-height: 1.2;
-            color: #000;
-            margin-bottom: 6px;
-        }
-        .opening-box .step-hint {
-            font-size: 14px;
-            color: #666;
-            line-height: 1.5;
-            margin: 0;
-        }
-
-        /* Questions layout */
-        .questions-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 0;
-            margin-bottom: 32px;
-        }
-        .questions-grid.single-col {
-            /* same */
-        }
-        .question-box {
-            /* no border, no box */
-        }
-        .question-box.full-width {
-            /* no-op */
-        }
-
-        /* Closing area */
-        .closing-box {
-            border-top: 1px solid #E0E0E0;
-            padding: 20px 0 0 0;
-            margin-top: 8px;
-            text-align: center;
-        }
-        .closing-box p {
-            font-size: 14px;
-            color: #666;
-        }
-        .closing-box .closing-title {
-            font-family: 'Monument', monospace;
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #000;
-            margin-bottom: 6px;
-        }
-
-        /* Form elements */
-        .field-group { margin-bottom: 40px; }
-        .field-group:last-child { margin-bottom: 0; }
-        .field-label {
-            font-weight: 600;
-            font-size: 16px;
-            color: #000;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .field-input {
-            border: 1px solid #E0E0E0;
-            padding: 12px 16px;
-            font-family: 'Riforma', sans-serif;
-            font-size: 16px;
-            width: 100%;
-            color: #000;
-            background: #fff;
-            transition: border-color 0.2s ease;
-        }
-        .field-input:focus { outline: none; border-color: #000; }
-        .field-textarea {
-            border: 1px solid #E0E0E0;
-            padding: 12px 16px;
-            font-family: 'Riforma', sans-serif;
-            font-size: 16px;
-            width: 100%;
-            min-height: 100px;
-            resize: vertical;
-            color: #000;
-            background: #fff;
-            transition: border-color 0.2s ease;
-        }
-        .field-textarea:focus { outline: none; border-color: #000; }
-        .field-help { font-size: 13px; color: #666; margin-top: 4px; }
-        .field-error { font-size: 13px; color: #DC2626; margin-top: 4px; }
-
-        /* Help icon (?) */
-        .help-icon-btn {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #E0E0E0;
-            border: 1.5px solid #999;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            cursor: help;
-            transition: all 0.2s ease;
-            flex-shrink: 0;
-            font-size: 11px;
-            font-weight: 600;
-            color: #666;
-        }
-        .help-icon-btn:hover { background: #000; color: #fff; border-color: #000; }
-
-        /* Help accordion — drops down between label and field */
-        .help-accordion {
-            background: #F5F5F5;
-            border: 1px solid #E0E0E0;
-            border-left: 3px solid #000;
-            padding: 14px 16px;
-            margin-bottom: 8px;
-            font-size: 13px;
-            color: #333;
-            line-height: 1.5;
-            animation: accordionOpen 0.2s ease-out;
-        }
-        @keyframes accordionOpen {
-            from { opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0; }
-            to { opacity: 1; max-height: 300px; }
-        }
-
-        /* LearnMore expandable — prominent so users read before answering */
-        .learn-more-toggle {
-            font-family: 'Monument', monospace;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #000;
-            background: #F5F5F5;
-            border: 1px solid #E0E0E0;
-            cursor: pointer;
-            padding: 10px 14px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin-bottom: 32px;
-            transition: background 0.15s ease;
-        }
-        .learn-more-toggle:hover { background: #EBEBEB; }
-        .learn-more-content {
-            border-left: 3px solid #000;
-            background: #F5F5F5;
-            padding: 16px 20px;
-            margin-bottom: 24px;
-            font-size: 14px;
-            color: #333;
-            line-height: 1.7;
-        }
-
-        /* Button footer */
-        .btn-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px 0;
-            border-top: 1px solid #E0E0E0;
-            background: #fff;
-            width: 100%;
-        }
-        .btn-back {
-            background: #fff;
-            color: #000;
-            border: 2px solid #000;
-            padding: 12px 24px;
-            font-family: 'Riforma', sans-serif;
-            font-size: 16px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        .btn-back:hover { background: #F5F5F5; }
-        .btn-next {
-            background: #000;
-            color: #fff;
-            border: 2px solid #000;
-            padding: 12px 24px;
-            font-family: 'Riforma', sans-serif;
-            font-size: 16px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        .btn-next:hover:not(:disabled) { transform: scale(1.02); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        .btn-next:disabled { background: #E0E0E0; color: #9CA3AF; border-color: #E0E0E0; cursor: not-allowed; }
-
-        /* (Breadcrumb removed — navigation via sidebar) */
-
-        /* Sidebar step items */
         .sidebar-step-item {
             padding: 12px;
             margin-bottom: 8px;
@@ -299,24 +102,247 @@
         .sidebar-step-item .step-name { font-family: 'Riforma', sans-serif; font-size: 14px; }
         .sidebar-snippet { font-size: 12px; margin-top: 4px; opacity: 0.7; line-height: 1.3; }
 
-        /* Canvas styles */
+        /* === STEP HEADER (Blueprint Section 10, 13) === */
+        .step-indicator {
+            font-family: 'Monument', monospace;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #6B7280;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .step-time {
+            font-family: 'Monument', monospace;
+            font-size: 11px;
+            color: #6B7280;
+        }
+        .step-heading {
+            font-family: 'Plaak', sans-serif;
+            font-weight: bold;
+            font-size: 32px; /* Blueprint Section 13: Headers 32px */
+            text-transform: uppercase;
+            letter-spacing: -0.01em;
+            line-height: 1.2;
+            color: #000;
+            margin-bottom: 6px;
+        }
+        .step-hint {
+            font-size: 16px; /* Blueprint Section 13: Body min 16px */
+            color: #6B7280;
+            line-height: 1.5;
+            margin: 0 0 32px 0; /* Blueprint Section 15: 32px section spacing */
+        }
+
+        /* === FORM ELEMENTS (Blueprint Section 14) === */
+
+        /* Labels: Monument Mono, 14px, uppercase, medium weight */
+        .ft-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: 'Monument', monospace;
+            font-size: 14px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #000;
+            margin-bottom: 8px; /* Blueprint: label-to-field 8px */
+        }
+        .ft-required { color: #DC2626; font-weight: 700; }
+
+        /* Inputs: Riforma, 16px, 40-44px height (Blueprint Section 14) */
+        .ft-input {
+            width: 100%;
+            height: 44px;
+            padding: 8px 16px; /* Blueprint: 12px vertical, 16px horizontal */
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
+            color: #000;
+            background: #fff;
+            border: 1px solid #E5E7EB; /* Blueprint: gray-200 default */
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .ft-input:focus {
+            outline: none;
+            border-color: #000;
+            box-shadow: 0 0 0 3px #FFF469; /* Blueprint Section 14: Yellow focus ring */
+        }
+        .ft-input.has-error {
+            border: 2px solid #DC2626; /* Blueprint Section 12: 2px red border */
+            padding-right: 40px; /* space for error icon */
+        }
+        .ft-input.has-error:focus {
+            border-color: #DC2626;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2);
+        }
+
+        /* Textareas */
+        .ft-textarea {
+            width: 100%;
+            min-height: 120px; /* Blueprint Section 14: min-height 120px */
+            padding: 12px 16px;
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
+            color: #000;
+            background: #fff;
+            border: 1px solid #E5E7EB;
+            resize: vertical;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .ft-textarea:focus {
+            outline: none;
+            border-color: #000;
+            box-shadow: 0 0 0 3px #FFF469;
+        }
+        .ft-textarea.has-error {
+            border: 2px solid #DC2626;
+        }
+        .ft-textarea.has-error:focus {
+            border-color: #DC2626;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2);
+        }
+
+        /* Help text: 14px, gray-500 (Blueprint Section 14) */
+        .ft-help {
+            font-size: 14px;
+            color: #6B7280;
+            margin-top: 4px;
+            line-height: 1.5;
+        }
+
+        /* Error message: 14px, red, semibold (Blueprint Section 12) */
+        .ft-error-msg {
+            font-size: 14px;
+            font-weight: 600;
+            color: #DC2626;
+            margin-top: 4px;
+            line-height: 1.4;
+        }
+
+        /* Field group spacing: 16px between fields (Blueprint Section 15) */
+        .ft-field-group {
+            margin-bottom: 24px; /* Slightly more for breathing room within 35-40% whitespace target */
+        }
+        .ft-field-group:last-child { margin-bottom: 0; }
+
+        /* Section spacing: 32px between groups (Blueprint Section 15) */
+        .ft-section { margin-bottom: 32px; }
+
+        /* === YELLOW INSIGHT BOX (Blueprint Section 11, 16) === */
+        /* Max 1 per screen. Background: #FFF469. Black text only. Lightning icon. */
+        .ft-insight {
+            background: #FFF469;
+            border: 3px solid #000;
+            padding: 16px;
+            margin-bottom: 32px;
+        }
+
+        /* === EXAMPLE BOX (Blueprint Section 10) === */
+        /* Gray background. Shows Good vs Bad. */
+        .ft-example {
+            background: #F3F4F6;
+            padding: 16px;
+            margin-bottom: 8px;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #1F2937;
+        }
+
+        /* === ERROR SUMMARY (Blueprint Section 12) === */
+        /* Shows when >1 error on Next click. Links to fields. */
+        .ft-error-summary {
+            border: 2px solid #DC2626;
+            background: #fff;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+        .ft-error-summary a {
+            color: #DC2626;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+        .ft-error-summary a:hover { text-decoration: none; }
+
+        /* === BUTTON FOOTER (Blueprint Section 15: sticky bottom) === */
+        .btn-footer {
+            position: sticky;
+            bottom: 0;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 32px;
+            border-top: 1px solid #E5E7EB;
+            background: #fff;
+            width: 100%;
+        }
+        .btn-back {
+            background: #fff;
+            color: #000;
+            border: 2px solid #000;
+            padding: 12px 24px;
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-height: 44px; /* Blueprint Section 15: 44px touch target */
+        }
+        .btn-back:hover { background: #F3F4F6; }
+        .btn-next {
+            background: #000;
+            color: #fff;
+            border: 2px solid #000;
+            padding: 12px 24px;
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-height: 44px;
+        }
+        .btn-next:hover:not(:disabled) { transform: scale(1.02); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .btn-next:disabled { background: #E5E7EB; color: #9CA3AF; border-color: #E5E7EB; cursor: not-allowed; }
+
+        /* === CLOSING MESSAGE === */
+        .closing-box {
+            border-top: 1px solid #E5E7EB;
+            padding: 20px 0 0 0;
+            margin-top: 8px;
+            text-align: center;
+        }
+        .closing-box p { font-size: 14px; color: #6B7280; }
+        .closing-box .closing-title {
+            font-family: 'Monument', monospace;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #000;
+            margin-bottom: 6px;
+        }
+
+        /* === MOBILE STEP BAR === */
+        .mobile-step-bar { display: none; padding: 12px 16px; border-bottom: 1px solid #E5E7EB; background: #F3F4F6; }
+        .mobile-step-bar .bar-text { font-family: 'Monument', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #6B7280; margin-bottom: 6px; }
+        .mobile-progress { height: 3px; background: #E5E7EB; width: 100%; }
+        .mobile-progress-fill { height: 100%; background: #000; transition: width 0.3s ease; }
+
+        /* === CANVAS STYLES === */
         .numbered-section { background: #000; color: #fff; padding: 8px 14px; font-size: 14px; font-weight: bold; letter-spacing: 0.5px; display: inline-block; font-family: 'Monument', monospace; }
         .canvas-wish-box { background: #FAFAFA; border-left: 4px solid #000; padding: 20px; margin-bottom: 16px; }
         .canvas-step-box { border: 2px solid #000; background: #FAFAFA; padding: 16px; }
         .canvas-obstacle-box { background: #FAFAFA; border-left: 4px solid #DC2626; padding: 16px; margin-bottom: 12px; }
         .canvas-plan-box { border: 3px solid #000; background: #FAFAFA; padding: 24px; }
 
-        /* Mobile step indicator */
-        .mobile-step-bar { display: none; padding: 12px 16px; border-bottom: 1px solid #E0E0E0; background: #F5F5F5; }
-        .mobile-step-bar .bar-text { font-family: 'Monument', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #666; margin-bottom: 6px; }
-        .mobile-progress { height: 3px; background: #E0E0E0; width: 100%; }
-        .mobile-progress-fill { height: 100%; background: #000; transition: width 0.3s ease; }
-
+        /* === ANIMATIONS === */
         @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
         .animate-in { animation: fadeSlideIn 0.3s ease-out; }
 
+        /* === PRINT === */
         @media print { .no-print { display: none !important; } }
 
+        /* === RESPONSIVE (Blueprint Section 15) === */
         @media (min-width: 769px) and (max-width: 1024px) {
             .wizard-sidebar { width: 220px; }
             .wizard-sidebar-inner { padding: 24px 16px; }
@@ -324,11 +350,13 @@
         @media (max-width: 768px) {
             .wizard-sidebar { display: none; }
             .mobile-step-bar { display: block; }
-            .step-content { padding: 20px 16px; }
-            .opening-box .step-heading { font-size: 24px; }
+            .wizard-content { padding: 24px 16px; } /* Reduced padding on mobile */
+            .step-heading { font-size: 24px; } /* Smaller headers on mobile */
             .btn-footer { padding: 12px 16px; }
-            /* questions stack on mobile - already column */
-            /* no header */
+        }
+        @media (max-width: 480px) {
+            .step-heading { font-size: 20px; }
+            .wizard-content { padding: 20px 12px; }
         }
     </style>
 </head>
@@ -338,6 +366,9 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
+        /* ============================================================
+           PRESERVED: Configuration & Initialization — do not modify
+           ============================================================ */
         const CONFIG = {
             SUPABASE_URL: 'https://lutzzfaedkbsmbobmrzx.supabase.co',
             SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1dHp6ZmFlZGtic21ib2Jtcnp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MDA0MDQsImV4cCI6MjA4NjM3NjQwNH0.o2gJba85vDl4NLS-C8Mq3OudWKxet-b0IqO9kazqb8U',
@@ -352,53 +383,97 @@
         DependencyInjection.init(CONFIG.TOOL_SLUG);
         CognitiveLoad.init('woop');
 
-        // --- Resolve logo path relative to HTML file ---
         const LOGO_WHITE = '../../../Designs/02. logos/FastTrack_F_White.png';
 
-        // --- Small Components ---
+        /* ============================================================
+           SHARED COMPONENTS
+           ============================================================ */
 
         function CheckIcon({ color = "#fff", size = 16 }) {
             return <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>;
         }
 
-        /* Breadcrumb removed — navigation via sidebar steps */
-
-        function LearnMore({ children }) {
-            const [open, setOpen] = useState(false);
+        /* Blueprint Section 11: Yellow Insight Box — max 1 per screen */
+        function YellowInsight({ children }) {
             return (
-                <div style={{ marginBottom: open ? 0 : 12 }}>
-                    <button className="learn-more-toggle" onClick={() => setOpen(!open)}>WHY THIS MATTERS {open ? '\u2212' : '+'}</button>
-                    {open && <div className="learn-more-content">{children}</div>}
+                <div className="ft-insight">
+                    <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAYAAABccqhmAAAI0ElEQVR42u3dQW8bZRrA8eeZsRuspkIV4sYNceLMHSQ+xJ72vN9hP8OeV4IvsjfEjVN72BtCCImVqmpXICFoSTzzvnuoxztxnTRJHTbJ+/tJVZvEHo9fz/vPZDLj5uPHj2sATeoMAQgAIACAAAACAAgAIACAAAACAAgAIACAAAACAAgAIACAAAACAAgAIACAAAACAAgAIACAAAACAAgAIACAAAACAAgAIACAAAACAAgAIACAAAACAAIACAAgAIAAAAIACAAgAIAAAAIACAAgAIAAAAIACAAgAIAAAAIACAAgAIAAAAIACAAgAIAAAAIACAAgAIAAAAIACAAgAIAAAAIACAAgAIAAAAIAjVtERN38ux5geVdZRl7zfvyx8pY/9m3fdvIWrcNrY7Xo+/5vmy+U6U+tdfr4vAGvm9vEgQJSD3yfP3KjuA0v8E2td+77ODNz8/JnZu67bY1XG8mZ12J248zM3a/nZrnTY3SbZeY56zrdr1ywzvUGxyyvOYYxG7Pt12fz6arrUfcsPyOim71G5653fvXVV93p6Wl88MEHcXx8HA8fPox33323LhaLm5i0h3018q7Ovf+/q21vVw7HW1uv1/HixYv8/fffY71ev7a+fd/H0dFRLJfL6LpXP8mWUmIcx6i1RmbGYrGIruui1hrDMGw/3/f9dtsZxzFKKZfa1jIzxnGMYRji2bNn8eLFi+3jzsd1/vF0v/nHDx48yPntMzOGYajjOJ653fSc5/evtW4/Pz3v+djM7pfDMEQpJfq+365nKSVqrdF1XZZSaj59+jR+++23eO+992K5XMZ6vY7T09OotW7/njs5OYmTk5O3nrjr9Tp+/vnng2/Uq9UqPv3003jnnXduNDzPnz+Pb7755lIbz23WdV08fvw4+r6/VBRWq1Usl8u3ftzFYhHDMJz53NHRUWRmdF0Xy+VyO1kvMp/w84m9u13sPtZ1XvP58n/66adrzYPM3Dt+02Q91Gs6fQOfQjh//K7rtmEEAAAAAAAAAO6PdDIAd2qDdfYntOfBgwdRa41vv/3WYBzQ4vPPP/9TrXU6B3F7kc/8POTN+cfzizouXOibvn7eXsd596u11pvYU9k8Xu4+1l19MfMGvj3uG46u63LP7XJnXPeN45mr0qbtaudc9/lVRllrzVLKSdd1TzLzXz/++KNZe8gAPH369Mv5lVnzixAu2i4M3b2Wb3mfvdvH7kUtl9imMjOzlPJytVr9NSK+9NIcOACllGPDwG2WmUfDMDystcazZ88MyAF5RyDugpqZJTPv/NWXAgDXKcDmRwa/tRIAGubXgAJAo3N/8042RkIAAAEABAAQAEAAuK8ueZYqAsA9VCPCiUACAAgAIAA0ww//AgAIAK3x3V8AAAEABAAQAEAAuO/u8rs1CwAgAIAAwJV5L0ABoPEGGAIBAAQAEABaYfdfAAABAAQAEABAAGiAA4ECAAgAIACAAAACwH02/b+AXWeTFQCaDgECQINz3xAIAI3yloACAAgAIACAANAMBwEFABAAQAAAAQAEgPssN+cAuxZAAAABAAQAEABAAAABAAQAEABAALjbXA0oAIAA0Kp0KrAA0OjkNwQCgMmPAAACQEsyImIcRyMhALTql19+MQgCQIMcBxAAmp393hFIAGi7AYZAAGg8APYABIAGJ39mdvG/nwQQAFqLwKYERkIAaG72Zy4iImqtBkMAaEmttYuIZUTkcrk0IAe06Pv+PxFRz/mz9/W4xHLftJ9Wz3mhD/bEdnYVL7PfWKd12Nx338rk7Ovz5c7/znOe6+6YXmcc8y3G/Cbuk9dY13z9pcqcjd2ZMa21Zmau+75/ERFxenpq1h4yAB9//PGfa62l1jrWV0qttZRStiHYmZjTx/UtNqK9E+ASAajT5NvcNi87+Tefy4sm/vz5Zeb2ec+Xt9kg5xtuZGaXmdm9OkSd8yNVszGtEVE2H++OX919jM3R7t3AvFp4ZtRa86qhu+gI2s467x/8zWPO1m3+XHPP4nLPY+TO6zId4Ot2lpmZmaWUiIh1RPwzIsZHjx6ZtQd07gaxXC5jtVrFzne8dgbmnOe8b3K8fPky1uv1pZb76NGjvcuex6aUEr/++qutc88Yfffdd/HRRx8ZjENt52/6ruuo65s3ymsN/BUCg+0RAAAAAAAAAOBN8smTJ7FcLrcnoJRSzpyMkplXfhOGxWLxhz6JWuvB3i2267q9z3ccxyilbMen1hp930ff9zEMQwzDEH3fb28TEfHJJ584cYVbbfH9998vVqvVdsMvpdRpA54CsFgsds+HP3Pq6ubc9Om04ez7fhuT+X0uO5mnZV52wtZaYxiGyMw6//xVAlJrjVLK9lz3ad2n9RnHMTKzTqfqzuTJyUmM45hHR0dxfHxcP/vss8HE5y7I999//+8RMcbOVWu7ewEXLmQTgDh7Tcm+04yvdZXgmx47Xr9g6TrL2r1QZf7vM1dJ1ldXBE1fmy5k6SOiOzo6+veHH374xddff/1Dq9dRcHcshmH4i2E4jE2Envd9/4+I+MGIcNt5Q5ADTv7NnlBdr9eu6EEAWjIdG+i6rvZ9b78fAWgxAhERmzdTAQEABKA19gAQgGZnv3f1QQAEAASg0QYYAgSgXX4NiAA0O/ud/osAtMsxAASg4fkfjgEgAO0GYH5ZMghAawXwIwAC0O7krwqAAAAC0B7f/RGAljkPAAEABAAQAEAAmuFAIAIACAAgAE3xe0AEABCA5rgUAAFol91/BAAQgOZkZnRdZy8AAWg5AiAAjaq1KgACAAhAa3z3RwAAAQAEABAAQAAAAQAEABAAQAAAAbizaq3pWgAEABAAQAAAAQAE4B7zbkAIgAgYBAQAEABAAAABaGFQO8OKADTLqcAIACAAgAAAAgAIACAAgADcN34FiACIAAiAyQ8C0FgBXA+MADQdAIOAALQ6/10LgAC0XAB7AAhAu/M/HAhEAJoOAAiACIAAtDf7HQNAAJoOgAIgAA3Pf+OKALSq1moQuBP+C5RjFfeF2nvXAAAAAElFTkSuQmCC" alt="FT" style={{ width: 24, height: 24, flexShrink: 0, objectFit: 'contain' }} />
+                        <div style={{ fontSize: 16, color: '#000', lineHeight: 1.5, fontWeight: 500 }}>{children}</div>
+                    </div>
                 </div>
             );
         }
 
-        function ButtonFooter({ onBack, onNext, nextLabel = 'Save & Go Next', canProceed, showBack = true }) {
+        /* Blueprint Section 10: Good vs Bad example box */
+        function ExampleBox({ bad, good }) {
+            return (
+                <div className="ft-example">
+                    <div style={{ marginBottom: 6 }}>
+                        <span style={{ color: '#DC2626', fontWeight: 700, fontSize: 14 }}>Bad:</span>{' '}
+                        <span style={{ color: '#6B7280' }}>{bad}</span>
+                    </div>
+                    <div>
+                        <span style={{ color: '#16A34A', fontWeight: 700, fontSize: 14 }}>Good:</span>{' '}
+                        {good}
+                    </div>
+                </div>
+            );
+        }
+
+        /* Blueprint Section 12: Error Summary — appears when >1 error on Next click */
+        function ErrorSummary({ errors }) {
+            if (!errors || errors.length === 0) return null;
+            return (
+                <div className="ft-error-summary animate-in" role="alert">
+                    <p style={{ fontWeight: 700, fontSize: 16, marginBottom: 8, color: '#000' }}>There is a problem</p>
+                    <ul style={{ listStyle: 'none', padding: 0 }}>
+                        {errors.map((err, i) => (
+                            <li key={i} style={{ marginBottom: 4 }}>
+                                <a onClick={() => {
+                                    const el = document.getElementById('field-' + err.field);
+                                    if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.focus(); }
+                                }}>{err.message}</a>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            );
+        }
+
+        /* Blueprint Section 15: Sticky footer with action buttons */
+        function ButtonFooter({ onBack, onNext, nextLabel = 'Next', showBack = true, disabled = false }) {
             return (
                 <div className="btn-footer no-print">
                     {showBack ? <button className="btn-back" onClick={onBack}>&larr; Back</button> : <div />}
-                    <button className="btn-next" disabled={!canProceed} onClick={onNext}>{nextLabel} &rarr;</button>
+                    <button className="btn-next" disabled={disabled} onClick={onNext}>{nextLabel} &rarr;</button>
                 </div>
             );
         }
 
-        function MobileStepBar({ currentStep }) {
-            const progress = currentStep >= 999 ? 100 : Math.round((currentStep / 4) * 100);
+        function MobileStepBar({ currentStep, totalSteps }) {
+            const total = totalSteps || 4;
+            const progress = currentStep >= 999 ? 100 : Math.round((currentStep / total) * 100);
             return (
                 <div className="mobile-step-bar no-print">
-                    <div className="bar-text">Step {Math.min(currentStep, 4)} of 4</div>
+                    <div className="bar-text">Step {Math.min(currentStep, total)} of {total}</div>
                     <div className="mobile-progress"><div className="mobile-progress-fill" style={{ width: `${progress}%` }} /></div>
                 </div>
             );
         }
 
         function WizardSidebar({ currentStep, data, onNavigate }) {
-            const steps = [{ num: 1, label: 'Wish' }, { num: 2, label: 'Outcome' }, { num: 3, label: 'Obstacle' }, { num: 4, label: 'Plan' }];
+            const baseSteps = [{ num: 1, label: 'Wish', time: '~3 min' }, { num: 2, label: 'Outcome', time: '~3 min' }, { num: 3, label: 'Obstacle', time: '~5 min' }, { num: 4, label: 'Plan', time: '~3 min' }];
+            const businessSteps = [{ num: 5, label: 'Pre-mortem', time: '~4 min' }, { num: 6, label: 'Cut the Elephant', time: '~3 min' }];
+            const steps = data.scopeType === 'business' ? [...baseSteps, ...businessSteps] : baseSteps;
+            const totalTime = data.scopeType === 'business' ? '~22' : '~15';
             const getSnippet = (n) => {
                 if (n === 1 && data.outcome) return '"' + data.outcome.substring(0, 50) + (data.outcome.length > 50 ? '...' : '') + '"';
                 if (n === 2 && data.steps[0]) { const f = data.steps.filter(s => s.trim()); return f.length + ' milestone' + (f.length !== 1 ? 's' : '') + ' defined'; }
                 if (n === 3 && data.obstacles[0]?.problem) return data.obstacles.length + ' obstacle' + (data.obstacles.length !== 1 ? 's' : '') + ' planned';
                 if (n === 4 && data.firstAction) return 'Deadline: ' + (data.deadline ? new Date(data.deadline).toLocaleDateString() : 'Not set');
+                if (n === 5 && data.premortemScenario) return data.premortemCauses.filter(c => c.trim()).length + ' risk' + (data.premortemCauses.filter(c => c.trim()).length !== 1 ? 's' : '') + ' identified';
+                if (n === 6 && data.elephantGoal) return data.elephantSlices.filter(s => s.trim()).length + ' slice' + (data.elephantSlices.filter(s => s.trim()).length !== 1 ? 's' : '') + ' defined';
                 return null;
             };
             return (
@@ -406,7 +481,7 @@
                     <div className="wizard-sidebar-inner">
                         <div style={{ marginBottom: 24 }}>
                             <div className="monument" style={{ fontSize: 12, textTransform: 'uppercase', color: '#fff', marginBottom: 4 }}>WOOP</div>
-                            <div style={{ fontSize: 13, color: '#999' }}>~15 min</div>
+                            <div style={{ fontSize: 13, color: '#999' }}>{totalTime} min total</div>
                         </div>
                         <div style={{ marginBottom: 16, fontFamily: "'Monument', monospace", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#999' }}>Your journey</div>
                         {steps.map(s => {
@@ -430,22 +505,104 @@
             );
         }
 
-        // Help accordion: renders ? icon inline, accordion drops BELOW the label, ABOVE the input
-        function HelpAccordion({ id, activeHelp, setActiveHelp, children }) {
-            const isOpen = activeHelp === id;
-            return (
-                <>
-                    <button className="help-icon-btn" onClick={() => setActiveHelp(isOpen ? null : id)} title="Help">?</button>
-                    {isOpen && <div className="help-accordion" style={{ marginTop: 6 }}>{children}</div>}
-                </>
-            );
+        /* ============================================================
+           VALIDATION SYSTEM (Blueprint Section 12, 14, 18)
+           ============================================================ */
+
+        /* Returns error message for a field, or null if valid */
+        function getFieldError(field, data) {
+            switch (field) {
+                case 'scopeType': return !data.scopeType ? 'Select your focus before starting.' : null;
+                case 'outcome': return data.outcome.length < 20 ? 'Describe your achievement in at least 20 characters.' : null;
+                case 'worldChange': return data.worldChange.length < 10 ? 'Describe the impact in at least 10 characters.' : null;
+                case 'feeling': return data.feeling.length < 3 ? 'Name the emotion. Even one powerful word counts.' : null;
+                case 'step0': return data.steps[0].trim().length < 6 ? 'Define milestone 1 (at least 6 characters).' : null;
+                case 'step1': return data.steps[1].trim().length < 6 ? 'Define milestone 2 (at least 6 characters).' : null;
+                case 'step2': return data.steps[2].trim().length < 6 ? 'Define milestone 3 (at least 6 characters).' : null;
+                case 'mentallyRehearsed': return !data.mentallyRehearsed ? 'Mentally rehearse each step before proceeding.' : null;
+                case 'simpleOutcome': return data.simpleOutcome.length < 15 ? 'Describe the outcome in at least 15 characters.' : null;
+                case 'bigChunks': return data.bigChunks.length < 10 ? 'List the major work streams (at least 10 characters).' : null;
+                case 'firstAction': return data.firstAction.length < 10 ? 'Define a specific first action (at least 10 characters).' : null;
+                case 'deadline': return !data.deadline ? 'Set a deadline. Date = Reality.' : null;
+                /* Pre-mortem fields */
+                case 'premortemScenario': return data.premortemScenario.length < 20 ? 'Describe the failure scenario in at least 20 characters.' : null;
+                case 'premortemCause0': return data.premortemCauses[0].trim().length < 6 ? 'Root cause 1 needs at least 6 characters.' : null;
+                case 'premortemCause1': return data.premortemCauses[1].trim().length < 6 ? 'Root cause 2 needs at least 6 characters.' : null;
+                case 'premortemCause2': return data.premortemCauses[2].trim().length < 6 ? 'Root cause 3 needs at least 6 characters.' : null;
+                case 'premortemPrevention': return data.premortemPrevention.length < 10 ? 'Describe prevention actions (at least 10 characters).' : null;
+                /* Cut the Elephant fields */
+                case 'elephantGoal': return data.elephantGoal.length < 10 ? 'Define your elephant (at least 10 characters).' : null;
+                case 'elephantSlice0': return data.elephantSlices[0].trim().length < 6 ? 'Slice 1 needs at least 6 characters.' : null;
+                case 'elephantSlice1': return data.elephantSlices[1].trim().length < 6 ? 'Slice 2 needs at least 6 characters.' : null;
+                case 'elephantSlice2': return data.elephantSlices[2].trim().length < 6 ? 'Slice 3 needs at least 6 characters.' : null;
+                case 'elephantFirstSlice': return data.elephantFirstSlice.length < 10 ? 'Your first slice needs at least 10 characters.' : null;
+                default: return null;
+            }
         }
 
-        // --- Main App ---
+        function getObstacleError(field, obstacle) {
+            switch (field) {
+                case 'problem': return (!obstacle.problem || obstacle.problem.trim().length < 6) ? 'Describe a specific obstacle (at least 6 characters).' : null;
+                case 'ifTrigger': return (!obstacle.ifTrigger || obstacle.ifTrigger.trim().length < 4) ? 'Name the trigger event.' : null;
+                case 'thenPerson': return (!obstacle.thenPerson || obstacle.thenPerson.trim().length < 3) ? 'Name the responsible person.' : null;
+                case 'thenAction': return (!obstacle.thenAction || obstacle.thenAction.trim().length < 6) ? 'Define the specific action.' : null;
+                case 'byWhen': return (!obstacle.byWhen || obstacle.byWhen.trim().length < 1) ? 'Set a timeframe.' : null;
+                default: return null;
+            }
+        }
+
+        /* Get all errors for a given step */
+        function validateStep(stepNum, data) {
+            const errors = [];
+            if (stepNum === 1) {
+                ['outcome', 'worldChange', 'feeling'].forEach(f => {
+                    const err = getFieldError(f, data);
+                    if (err) errors.push({ field: f, message: err });
+                });
+            } else if (stepNum === 2) {
+                if (data.scopeType === 'business') {
+                    const err = getFieldError('simpleOutcome', data);
+                    if (err) errors.push({ field: 'simpleOutcome', message: err });
+                } else {
+                    ['step0', 'step1', 'step2', 'mentallyRehearsed'].forEach(f => {
+                        const err = getFieldError(f, data);
+                        if (err) errors.push({ field: f, message: err });
+                    });
+                }
+            } else if (stepNum === 3) {
+                data.obstacles.forEach((o, i) => {
+                    ['problem', 'ifTrigger', 'thenPerson', 'thenAction', 'byWhen'].forEach(f => {
+                        const err = getObstacleError(f, o);
+                        if (err) errors.push({ field: `obstacle-${i}-${f}`, message: `Obstacle ${i + 1}: ${err}` });
+                    });
+                });
+            } else if (stepNum === 4) {
+                ['bigChunks', 'firstAction', 'deadline'].forEach(f => {
+                    const err = getFieldError(f, data);
+                    if (err) errors.push({ field: f, message: err });
+                });
+            } else if (stepNum === 5) {
+                ['premortemScenario', 'premortemCause0', 'premortemCause1', 'premortemCause2', 'premortemPrevention'].forEach(f => {
+                    const err = getFieldError(f, data);
+                    if (err) errors.push({ field: f, message: err });
+                });
+            } else if (stepNum === 6) {
+                ['elephantGoal', 'elephantSlice0', 'elephantSlice1', 'elephantSlice2', 'elephantFirstSlice'].forEach(f => {
+                    const err = getFieldError(f, data);
+                    if (err) errors.push({ field: f, message: err });
+                });
+            }
+            return errors;
+        }
+
+        /* ============================================================
+           MAIN APPLICATION
+           ============================================================ */
 
         function WOOPTool() {
             const [step, setStep] = useState(0);
-            const [questionHelp, setQuestionHelp] = useState(null);
+            const [touched, setTouched] = useState({}); /* tracks which fields have been blurred */
+            const [currentErrors, setCurrentErrors] = useState([]); /* error summary for current step */
 
             const [authState, setAuthState] = useState({ loading: true, authenticated: false, user: null, progress: null, error: null });
 
@@ -454,12 +611,17 @@
                 outcome: '', worldChange: '', feeling: '',
                 steps: ['', '', ''], mentallyRehearsed: false,
                 obstacles: [{ problem: '', ifTrigger: '', thenPerson: '', thenAction: '', byWhen: '' }],
-                bigChunks: '', firstAction: '', deadline: ''
+                simpleOutcome: '', /* everyday mode: single outcome field */
+                bigChunks: '', firstAction: '', deadline: '',
+                /* Pre-mortem (business scope only) */
+                premortemScenario: '', premortemCauses: ['', '', ''], premortemPrevention: '',
+                /* Cut the Elephant (business scope only) */
+                elephantGoal: '', elephantSlices: ['', '', ''], elephantFirstSlice: ''
             });
 
             const autosaveTimer = useRef(null);
 
-            // --- Auth (handled by ToolDB.init → identifyUser) ---
+            /* PRESERVED: Auth initialization */
             useEffect(() => {
                 setAuthState({ loading: false, authenticated: true, user: null, progress: { completed_tools: [], unlocked_tools: ['woop'] }, isUnlocked: true, isCompleted: false, error: null });
             }, []);
@@ -470,7 +632,7 @@
                 }
             }, [authState.authenticated]);
 
-            // --- Auto-save ---
+            /* PRESERVED: Auto-save to localStorage */
             useEffect(() => {
                 if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
                 autosaveTimer.current = setTimeout(() => {
@@ -479,7 +641,7 @@
                 return () => { if (autosaveTimer.current) clearTimeout(autosaveTimer.current); };
             }, [data, step]);
 
-            // --- Load saved data ---
+            /* PRESERVED: Load saved data from localStorage */
             useEffect(() => {
                 const saved = localStorage.getItem('woopData');
                 if (saved) {
@@ -487,7 +649,11 @@
                         const parsed = JSON.parse(saved);
                         if (parsed.data && Array.isArray(parsed.data.obstacles)) {
                             const migratedObstacles = parsed.data.obstacles.map(o => (o.solution !== undefined && !o.ifTrigger) ? { problem: o.problem || '', ifTrigger: '', thenPerson: '', thenAction: '', byWhen: '' } : o);
-                            setData({ ...parsed.data, obstacles: migratedObstacles, scopeType: parsed.data.scopeType || '' });
+                            setData(prev => ({ ...prev, ...parsed.data, obstacles: migratedObstacles, scopeType: parsed.data.scopeType || '',
+                                simpleOutcome: parsed.data.simpleOutcome || '',
+                                premortemScenario: parsed.data.premortemScenario || '', premortemCauses: parsed.data.premortemCauses || ['', '', ''], premortemPrevention: parsed.data.premortemPrevention || '',
+                                elephantGoal: parsed.data.elephantGoal || '', elephantSlices: parsed.data.elephantSlices || ['', '', ''], elephantFirstSlice: parsed.data.elephantFirstSlice || ''
+                            }));
                             let s = parsed.step; if (s === 1.5) s = 2; else if (s === 2.5) s = 3; else if (s === 3.5) s = 4;
                             setStep(s);
                         }
@@ -497,19 +663,66 @@
 
             const [aiReviewing, setAiReviewing] = useState(false);
 
-            // AI-gated step advancement: reviews answers before allowing next step
-            const handleNext = async () => {
-                const userId = localStorage.getItem('ft_user_id');
-                if (!userId) { setStep(step === 4 ? 999 : step + 1); return; }
+            /* Mark a field as touched (Blueprint Section 12: show errors on blur) */
+            const markTouched = (field) => setTouched(prev => ({ ...prev, [field]: true }));
 
-                // Map current step to the question keys for that step
+            /* Mark all fields for a step as touched (on Next click) */
+            const markStepTouched = (stepNum) => {
+                const newTouched = { ...touched };
+                if (stepNum === 1) ['outcome', 'worldChange', 'feeling'].forEach(f => newTouched[f] = true);
+                else if (stepNum === 2) {
+                    if (data.scopeType === 'business') { newTouched.simpleOutcome = true; }
+                    else { ['step0', 'step1', 'step2', 'mentallyRehearsed'].forEach(f => newTouched[f] = true); }
+                }
+                else if (stepNum === 3) {
+                    data.obstacles.forEach((_, i) => {
+                        ['problem', 'ifTrigger', 'thenPerson', 'thenAction', 'byWhen'].forEach(f => newTouched[`obstacle-${i}-${f}`] = true);
+                    });
+                }
+                else if (stepNum === 4) ['bigChunks', 'firstAction', 'deadline'].forEach(f => newTouched[f] = true);
+                else if (stepNum === 5) ['premortemScenario', 'premortemCause0', 'premortemCause1', 'premortemCause2', 'premortemPrevention'].forEach(f => newTouched[f] = true);
+                else if (stepNum === 6) ['elephantGoal', 'elephantSlice0', 'elephantSlice1', 'elephantSlice2', 'elephantFirstSlice'].forEach(f => newTouched[f] = true);
+                setTouched(newTouched);
+            };
+
+            /* Clear errors and touched state when navigating to a new step */
+            useEffect(() => { setCurrentErrors([]); }, [step]);
+
+            /*
+             * HANDLE NEXT — Two phases:
+             * Phase 1: Local validation (Blueprint Section 12)
+             * Phase 2: AI review (PRESERVED — do not modify)
+             */
+            const handleNext = async () => {
+                /* Phase 1: Validate current step */
+                const errors = validateStep(step, data);
+                if (errors.length > 0) {
+                    markStepTouched(step);
+                    setCurrentErrors(errors);
+                    setTimeout(() => {
+                        const el = document.querySelector('.ft-error-summary');
+                        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 50);
+                    return;
+                }
+                setCurrentErrors([]);
+
+                /* Phase 2: PRESERVED — AI-gated step advancement */
+                const userId = localStorage.getItem('ft_user_id');
+                const lastStep = data.scopeType === 'business' ? 6 : 4;
+                if (!userId) { setStep(step === lastStep ? 999 : step + 1); return; }
+
                 const stepAnswerMap = {
                     1: { wish: { outcome: data.outcome, worldChange: data.worldChange, feeling: data.feeling } },
-                    2: { outcome: { steps: data.steps.filter(s => s.trim()), mentallyRehearsed: data.mentallyRehearsed } },
+                    2: data.scopeType === 'business'
+                        ? { outcome: data.simpleOutcome }
+                        : { outcome: { steps: data.steps.filter(s => s.trim()), mentallyRehearsed: data.mentallyRehearsed } },
                     3: { obstacle_internal: data.obstacles.filter(o => o.problem) },
-                    4: { plan_if_then: data.bigChunks, first_action: data.firstAction, commitment_level: data.scopeType }
+                    4: { plan_if_then: data.bigChunks, first_action: data.firstAction, commitment_level: data.scopeType },
+                    5: { premortem: { scenario: data.premortemScenario, causes: data.premortemCauses.filter(c => c.trim()), prevention: data.premortemPrevention } },
+                    6: { elephant: { goal: data.elephantGoal, slices: data.elephantSlices.filter(s => s.trim()), firstSlice: data.elephantFirstSlice } }
                 };
-                const stepNames = { 1: 'Wish', 2: 'Outcome', 3: 'Obstacle', 4: 'Plan' };
+                const stepNames = { 1: 'Wish', 2: 'Outcome', 3: 'Obstacle', 4: 'Plan', 5: 'Pre-mortem', 6: 'Cut the Elephant' };
 
                 setAiReviewing(true);
                 try {
@@ -517,33 +730,37 @@
                         userId, 'woop', stepAnswerMap[step], stepNames[step]
                     );
                     if (canProceed) {
-                        setStep(step === 4 ? 999 : step + 1);
+                        setStep(step === lastStep ? 999 : step + 1);
                     }
                 } catch (e) {
                     console.error('[WOOP] AI review error:', e);
-                    setStep(step === 4 ? 999 : step + 1); // fail open
+                    setStep(step === lastStep ? 999 : step + 1);
                 } finally {
                     setAiReviewing(false);
                 }
             };
 
+            /* Data update helpers */
             const updateData = (field, value) => setData(prev => ({ ...prev, [field]: value }));
             const updateStepField = (index, value) => setData(prev => ({ ...prev, steps: prev.steps.map((s, i) => i === index ? value : s) }));
             const updateObstacle = (index, field, value) => setData(prev => ({ ...prev, obstacles: prev.obstacles.map((o, i) => i === index ? { ...o, [field]: value } : o) }));
-            const addObstacle = () => { if (data.obstacles.length >= 3) { alert('Maximum 3 obstacles allowed.\n\nStrategy is sacrifice.'); return; } setData(prev => ({ ...prev, obstacles: [...prev.obstacles, { problem: '', ifTrigger: '', thenPerson: '', thenAction: '', byWhen: '' }] })); };
+            const addObstacle = () => {
+                if (data.obstacles.length >= 3) return; /* silently prevent — no alert() */
+                setData(prev => ({ ...prev, obstacles: [...prev.obstacles, { problem: '', ifTrigger: '', thenPerson: '', thenAction: '', byWhen: '' }] }));
+            };
             const removeObstacle = (index) => { if (data.obstacles.length > 1) setData(prev => ({ ...prev, obstacles: prev.obstacles.filter((_, i) => i !== index) })); };
+            const updatePremortemCause = (index, value) => setData(prev => ({ ...prev, premortemCauses: prev.premortemCauses.map((c, i) => i === index ? value : c) }));
+            const updateElephantSlice = (index, value) => setData(prev => ({ ...prev, elephantSlices: prev.elephantSlices.map((s, i) => i === index ? value : s) }));
 
-            const canProceedStep1 = data.outcome.length >= 20 && data.worldChange.length >= 10 && data.feeling.length >= 3;
-            const canProceedStep2 = data.steps.filter(s => s.trim().length > 5).length >= 3 && data.mentallyRehearsed;
-            const canProceedStep3 = data.obstacles.length >= 1 && data.obstacles.every(o => o && o.problem && o.problem.trim().length > 5 && o.ifTrigger && o.ifTrigger.trim().length > 3 && o.thenPerson && o.thenPerson.trim().length > 2 && o.thenAction && o.thenAction.trim().length > 5 && o.byWhen && o.byWhen.trim().length > 0);
-            const canProceedStep4 = data.bigChunks.length >= 10 && data.firstAction.length >= 10 && data.deadline !== '';
-
-            // Step closing messages
+            /* Step closing messages */
+            const lastStep = data.scopeType === 'business' ? 6 : 4;
             const closingMessages = {
                 1: { title: 'WISH DEFINED', text: 'Your end game is clear. Next: map the milestones to get there.' },
                 2: { title: 'OUTCOME MAPPED', text: 'Your route is planned and mentally rehearsed. Next: anticipate what could stop you.' },
                 3: { title: 'OBSTACLES PREPARED', text: 'You have IF-THEN plans ready. Nothing will catch you off guard. Next: commit to action.' },
-                4: { title: 'PLAN LOCKED', text: 'Your first action and deadline are set. Time to execute.' }
+                4: { title: 'PLAN LOCKED', text: data.scopeType === 'business' ? 'Your action plan is set. Next: stress-test it with a pre-mortem.' : 'Your first action and deadline are set. Time to execute.' },
+                5: { title: 'PRE-MORTEM COMPLETE', text: 'You have identified and mitigated the biggest risks. Next: break the work into slices.' },
+                6: { title: 'ELEPHANT SLICED', text: 'Your massive goal is now a series of small, daily actions. Time to execute.' }
             };
 
             return (
@@ -564,7 +781,7 @@
                             <div style={{ position: 'fixed', inset: 0, background: '#000', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 40 }}>
                                 <div style={{ textAlign: 'center', padding: '0 32px', maxWidth: 640 }}>
                                     <h1 className="plaak" style={{ fontSize: 48, marginBottom: 24 }}>AUTHENTICATION REQUIRED</h1>
-                                    <p style={{ fontSize: 20, marginBottom: 32 }}>Please access this tool from your LearnWorlds course.</p>
+                                    <p style={{ fontSize: 20, marginBottom: 32 }}>Access this tool from your LearnWorlds course.</p>
                                     <p style={{ fontSize: 16, color: '#999' }}>{authState.error || 'No active session found'}</p>
                                 </div>
                             </div>
@@ -575,9 +792,10 @@
                             <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
                                 <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url(cover.jpg)', backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.5 }} />
                                 <div style={{ position: 'relative', textAlign: 'center', color: '#fff', padding: '0 32px' }} className="animate-in">
-                                    <h1 className="plaak" style={{ fontSize: 80, marginBottom: 16 }}>WOOP</h1>
+                                    <h1 className="plaak" style={{ fontSize: 80, marginBottom: 16, textTransform: 'uppercase' }}>WOOP</h1>
                                     <p style={{ fontSize: 18, color: '#ccc', marginBottom: 48 }}>Transform your wish into an actionable plan</p>
-                                    <button onClick={() => setStep(0.5)} style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 48px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                                    <button onClick={() => setStep(0.5)}
+                                        style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 48px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s ease', minHeight: 44 }}
                                         onMouseOver={e => { e.target.style.background = '#FFF469'; }}
                                         onMouseOut={e => { e.target.style.background = '#fff'; }}
                                     >START</button>
@@ -587,67 +805,67 @@
 
                         {/* Step 0.5: Setup */}
                         {step === 0.5 && (
-                            <div style={{ minHeight: '100vh', background: '#fff', display: 'flex', flexDirection: 'column', padding: '0 48px' }}>
-                                <div className="step-content animate-in" style={{ maxWidth: 560, margin: '0 auto' }}>
+                            <div style={{ minHeight: '100vh', background: '#fff', display: 'flex', flexDirection: 'column' }}>
+                                <div className="wizard-content animate-in" style={{ maxWidth: 560 }}>
                                     <p className="step-indicator">SETUP</p>
-                                    <div className="opening-box">
-                                        <h1 className="step-heading">Before We Start</h1>
-                                        <p className="step-hint">WOOP helps you translate aspirations into concrete, actionable steps using mental contrasting and implementation intentions.</p>
-                                    </div>
+                                    <h1 className="step-heading">Before We Start</h1>
+                                    <p className="step-hint">WOOP turns aspirations into concrete action. People who use WOOP daily report 2x higher productivity and follow-through. Pick your mode.</p>
 
-                                    <div className="field-group">
-                                        <label className="field-label" style={{ marginBottom: 12 }}>What are you defining a goal for?</label>
+                                    <div className="ft-field-group">
+                                        <label className="ft-label">
+                                            How do you want to use WOOP?
+                                            <span className="ft-required">*</span>
+                                        </label>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                            <label style={{ display: 'block', padding: '14px 16px', border: '1px solid #E0E0E0', borderRadius: 4, cursor: 'pointer', transition: 'all 0.15s ease', background: data.scopeType === 'program' ? '#F5F5F5' : '#fff', borderColor: data.scopeType === 'program' ? '#000' : '#E0E0E0' }}>
-                                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                                                    <input type="radio" name="scopeType" value="program" checked={data.scopeType === 'program'} onChange={e => updateData('scopeType', e.target.value)} style={{ marginTop: 3, accentColor: '#000' }} />
-                                                    <div>
-                                                        <div style={{ fontWeight: 600, marginBottom: 2 }}>Completing the Fast Track Program</div>
-                                                        <div style={{ fontSize: 13, color: '#666' }}>e.g. "Finish all 30 sprints, implement 5 core tools"</div>
+                                            {[
+                                                { value: 'program', title: 'Completing the Fast Track Program', desc: 'e.g. "Finish all 30 sprints, implement 5 core tools"' },
+                                                { value: 'business', title: 'Everyday Productivity', desc: 'WOOP + Pre-mortem + Cut the Elephant. 6 steps. Use daily or weekly for any goal.' }
+                                            ].map(opt => (
+                                                <label key={opt.value} style={{ display: 'block', padding: '14px 16px', border: data.scopeType === opt.value ? '2px solid #000' : '1px solid #E5E7EB', cursor: 'pointer', background: data.scopeType === opt.value ? '#F3F4F6' : '#fff', transition: 'all 0.15s ease' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                                                        <input type="radio" name="scopeType" value={opt.value} checked={data.scopeType === opt.value} onChange={e => updateData('scopeType', e.target.value)} style={{ marginTop: 3, accentColor: '#000' }} />
+                                                        <div>
+                                                            <div style={{ fontWeight: 600, marginBottom: 2 }}>{opt.title}</div>
+                                                            <div style={{ fontSize: 14, color: '#6B7280' }}>{opt.desc}</div>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            </label>
-                                            <label style={{ display: 'block', padding: '14px 16px', border: '1px solid #E0E0E0', borderRadius: 4, cursor: 'pointer', transition: 'all 0.15s ease', background: data.scopeType === 'business' ? '#F5F5F5' : '#fff', borderColor: data.scopeType === 'business' ? '#000' : '#E0E0E0' }}>
-                                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                                                    <input type="radio" name="scopeType" value="business" checked={data.scopeType === 'business'} onChange={e => updateData('scopeType', e.target.value)} style={{ marginTop: 3, accentColor: '#000' }} />
-                                                    <div>
-                                                        <div style={{ fontWeight: 600, marginBottom: 2 }}>Your company's strategic transformation</div>
-                                                        <div style={{ fontSize: 13, color: '#666' }}>e.g. "Reach €10M revenue, enter 3 new markets"</div>
-                                                    </div>
-                                                </div>
-                                            </label>
+                                                </label>
+                                            ))}
                                         </div>
+                                        {touched.scopeType && !data.scopeType && (
+                                            <p className="ft-error-msg" role="alert">Select your focus before starting.</p>
+                                        )}
                                     </div>
-
-                                    {!data.scopeType && (
-                                        <p className="field-error" style={{ marginTop: 16 }}>
-                                            Select your focus.
-                                        </p>
-                                    )}
                                 </div>
                                 <div className="btn-footer no-print">
                                     <button className="btn-back" onClick={() => setStep(0)}>&larr; Back</button>
-                                    <button className="btn-next" disabled={!data.scopeType} onClick={() => setStep(1)}>Let's Start &rarr;</button>
+                                    <button className="btn-next" disabled={!data.scopeType} onClick={() => setStep(1)}>Start &rarr;</button>
                                 </div>
                             </div>
                         )}
 
-                        {/* Steps 1-4 */}
-                        {step >= 1 && step <= 4 && (
+                        {/* Steps 1-4: Wizard */}
+                        {step >= 1 && step <= lastStep && (
                             <div className="wizard-layout">
                                 <div className="wizard-main">
-                                    <MobileStepBar currentStep={step} />
+                                    <MobileStepBar currentStep={step} totalSteps={lastStep} />
 
-                                    {step === 1 && <Step1Content data={data} updateData={updateData} questionHelp={questionHelp} setQuestionHelp={setQuestionHelp} closing={closingMessages[1]} canProceed={canProceedStep1} />}
-                                    {step === 2 && <Step2Content data={data} updateStep={updateStepField} updateData={updateData} questionHelp={questionHelp} setQuestionHelp={setQuestionHelp} closing={closingMessages[2]} canProceed={canProceedStep2} />}
-                                    {step === 3 && <Step3Content data={data} updateObstacle={updateObstacle} addObstacle={addObstacle} removeObstacle={removeObstacle} questionHelp={questionHelp} setQuestionHelp={setQuestionHelp} closing={closingMessages[3]} canProceed={canProceedStep3} />}
-                                    {step === 4 && <Step4Content data={data} updateData={updateData} questionHelp={questionHelp} setQuestionHelp={setQuestionHelp} closing={closingMessages[4]} canProceed={canProceedStep4} />}
+                                    <div className="wizard-content animate-in">
+                                        <ErrorSummary errors={currentErrors} />
+
+                                        {step === 1 && <Step1Content data={data} updateData={updateData} touched={touched} markTouched={markTouched} closing={closingMessages[1]} totalSteps={lastStep} />}
+                                        {step === 2 && <Step2Content data={data} updateStep={updateStepField} updateData={updateData} touched={touched} markTouched={markTouched} closing={closingMessages[2]} totalSteps={lastStep} />}
+                                        {step === 3 && <Step3Content data={data} updateObstacle={updateObstacle} addObstacle={addObstacle} removeObstacle={removeObstacle} touched={touched} markTouched={markTouched} closing={closingMessages[3]} totalSteps={lastStep} />}
+                                        {step === 4 && <Step4Content data={data} updateData={updateData} touched={touched} markTouched={markTouched} closing={closingMessages[4]} totalSteps={lastStep} />}
+                                        {step === 5 && <Step5Content data={data} updateData={updateData} updateCause={updatePremortemCause} touched={touched} markTouched={markTouched} closing={closingMessages[5]} totalSteps={lastStep} />}
+                                        {step === 6 && <Step6Content data={data} updateData={updateData} updateSlice={updateElephantSlice} touched={touched} markTouched={markTouched} closing={closingMessages[6]} totalSteps={lastStep} />}
+                                    </div>
 
                                     <ButtonFooter
                                         onBack={() => setStep(step === 1 ? 0.5 : step - 1)}
                                         onNext={handleNext}
-                                        canProceed={!aiReviewing && (step === 1 ? canProceedStep1 : step === 2 ? canProceedStep2 : step === 3 ? canProceedStep3 : canProceedStep4)}
-                                        nextLabel={aiReviewing ? 'AI Coach Reviewing...' : step === 4 ? 'View Your Canvas' : 'Next'}
+                                        disabled={aiReviewing}
+                                        nextLabel={aiReviewing ? 'AI Coach Reviewing...' : step === lastStep ? 'View Your Canvas' : 'Next'}
                                         showBack={true}
                                     />
                                 </div>
@@ -656,283 +874,752 @@
                         )}
 
                         {/* Step 999: Canvas */}
-                        {step === 999 && <CanvasView data={data} onBack={() => setStep(4)} />}
+                        {step === 999 && <CanvasView data={data} onBack={() => setStep(lastStep)} />}
                     </div>
                 </div>
             );
         }
 
-        // --- Step 1: Wish ---
-        function Step1Content({ data, updateData, questionHelp, setQuestionHelp, closing, canProceed }) {
-            const p = data.scopeType === 'program' ? {
-                outcome: "It's 90 days from now. The Fast Track program is complete. All 30 sprints done. Our team is aligned on 3 core values.",
-                worldChange: "My team makes decisions without me. Leadership meetings are productive. I have 10 hours/week for strategy.",
-                feeling: "Energized. Clear. In control. Proud."
-            } : {
-                outcome: "It's 12 months from now. Revenue hit \u20AC10M. We've entered 3 new markets. Built an A-player leadership team of 5.",
-                worldChange: "We're the market leader. Clients seek us out. Team is self-managing.",
-                feeling: "Unstoppable. Fulfilled. Free. Excited."
+        /* ============================================================
+           STEP 1: WISH — Define your end game
+           Blueprint: 3 fields, single column, insight box, examples
+           ============================================================ */
+        function Step1Content({ data, updateData, touched, markTouched, closing, totalSteps }) {
+            const placeholders = {
+                program: {
+                    outcome: "It's 90 days from now. The Fast Track program is complete. All 30 sprints done. Our team is aligned on 3 core values.",
+                    worldChange: "My team makes decisions without me. Leadership meetings are productive. I have 10 hours/week for strategy.",
+                    feeling: "Energized. Clear. In control."
+                },
+                business: {
+                    outcome: "I finished the presentation and nailed the Q3 review. Client approved the proposal on the spot.",
+                    worldChange: "My manager trusts me with bigger projects. Team morale is up because we hit our target.",
+                    feeling: "Confident. Focused. Proud."
+                }
             };
+            const p = placeholders[data.scopeType] || placeholders.business;
+
+            const outcomeErr = touched.outcome ? getFieldError('outcome', data) : null;
+            const worldErr = touched.worldChange ? getFieldError('worldChange', data) : null;
+            const feelingErr = touched.feeling ? getFieldError('feeling', data) : null;
+            const allValid = !getFieldError('outcome', data) && !getFieldError('worldChange', data) && !getFieldError('feeling', data);
 
             return (
-                <div className="step-content animate-in">
-                    <p className="step-indicator">STEP 1 OF 4</p>
-                    <div className="opening-box">
-                        <h1 className="step-heading">Define Your Wish</h1>
-                        <p className="step-hint">Write in present tense as if it already happened. Specificity creates energy.</p>
+                <>
+                    <p className="step-indicator">STEP 1 OF {totalSteps} <span className="step-time">~3 MIN</span></p>
+                    <h1 className="step-heading">Define Your Wish</h1>
+                    <p className="step-hint">Write in present tense. It already happened. Be specific — numbers, names, dates.</p>
+
+                    {/* Blueprint Section 11: Yellow Insight — 1 per step */}
+                    <YellowInsight>
+                        Mental contrasting increases goal achievement by 40% vs. positive thinking alone. Your brain doesn't differentiate between what's in your head and reality. Make it vivid.
+                    </YellowInsight>
+
+                    {/* Field 1: Outcome */}
+                    <div className="ft-field-group" id="field-outcome">
+                        <label className="ft-label" htmlFor="input-outcome">
+                            What have you achieved? <span className="ft-required">*</span>
+                        </label>
+                        <ExampleBox
+                            bad={'"Do better at sales" (vague, no numbers)'}
+                            good={'"Close 3 enterprise deals worth \u20AC500K total by Q2"'}
+                        />
+                        <div style={{ position: 'relative' }}>
+                            <textarea
+                                id="input-outcome"
+                                className={`ft-textarea ${outcomeErr ? 'has-error' : ''}`}
+                                value={data.outcome}
+                                onChange={e => updateData('outcome', e.target.value)}
+                                onBlur={() => markTouched('outcome')}
+                                placeholder={p.outcome}
+                                maxLength={300}
+                                aria-required="true"
+                                aria-invalid={!!outcomeErr}
+                                aria-describedby={outcomeErr ? 'err-outcome' : undefined}
+                            />
+                            {outcomeErr && <span style={{ position: 'absolute', right: 12, top: 12, color: '#fff', fontSize: 11, fontWeight: 700, background: '#DC2626', borderRadius: '50%', width: 18, height: 18, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>!</span>}
+                        </div>
+                        {outcomeErr && <p className="ft-error-msg" id="err-outcome" role="alert">{outcomeErr}</p>}
+                        {!outcomeErr && <p className="ft-help">{data.outcome.length}/300</p>}
                     </div>
 
-                    <LearnMore>
-                        Dreams create energy. Your brain doesn't differentiate between what's in your head and reality. Mental contrasting increases goal achievement by 40% vs. positive thinking alone (Oettingen, 2014).
-                    </LearnMore>
-
-                    <div className="questions-grid">
-                        <div className="question-box full-width">
-                            <label className="field-label">
-                                What have you achieved? What's the concrete outcome?
-                                <HelpAccordion id="outcome" activeHelp={questionHelp} setActiveHelp={setQuestionHelp}>
-                                    <strong>Why:</strong> Specificity creates energy. Vague goals = vague results.<br/>
-                                    <strong>Good:</strong> Concrete numbers, timeline ("90 days from now"), observable results.
-                                </HelpAccordion>
-                            </label>
-                            <textarea className="field-textarea" value={data.outcome} onChange={e => updateData('outcome', e.target.value)} placeholder={p.outcome} maxLength={300} />
-                            <p className="field-help">{data.outcome.length}/300 (min 20)</p>
+                    {/* Field 2: World Change */}
+                    <div className="ft-field-group" id="field-worldChange">
+                        <label className="ft-label" htmlFor="input-worldChange">
+                            How has the world changed? <span className="ft-required">*</span>
+                        </label>
+                        <ExampleBox
+                            bad={'"Things are better" (no observable change)'}
+                            good={'"My team makes decisions without me. Clients refer us to peers."'}
+                        />
+                        <div style={{ position: 'relative' }}>
+                            <textarea
+                                id="input-worldChange"
+                                className={`ft-textarea ${worldErr ? 'has-error' : ''}`}
+                                style={{ minHeight: 100 }}
+                                value={data.worldChange}
+                                onChange={e => updateData('worldChange', e.target.value)}
+                                onBlur={() => markTouched('worldChange')}
+                                placeholder={p.worldChange}
+                                maxLength={200}
+                                aria-required="true"
+                                aria-invalid={!!worldErr}
+                            />
+                            {worldErr && <span style={{ position: 'absolute', right: 12, top: 12, color: '#fff', fontSize: 11, fontWeight: 700, background: '#DC2626', borderRadius: '50%', width: 18, height: 18, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>!</span>}
                         </div>
-
-                        <div className="question-box">
-                            <label className="field-label">
-                                How has the world changed?
-                                <HelpAccordion id="worldChange" activeHelp={questionHelp} setActiveHelp={setQuestionHelp}>
-                                    <strong>Why:</strong> Impact on others creates "approach motivation" — your brain works harder for goals that matter beyond yourself.<br/>
-                                    <strong>Think:</strong> How others behave differently, what systems improved, what's now possible.
-                                </HelpAccordion>
-                            </label>
-                            <textarea className="field-textarea" style={{ minHeight: 80 }} value={data.worldChange} onChange={e => updateData('worldChange', e.target.value)} placeholder={p.worldChange} maxLength={200} />
-                            <p className="field-help">{data.worldChange.length}/200 (min 10)</p>
-                        </div>
-
-                        <div className="question-box">
-                            <label className="field-label">
-                                How do you feel about it?
-                                <HelpAccordion id="feeling" activeHelp={questionHelp} setActiveHelp={setQuestionHelp}>
-                                    <strong>Why:</strong> Emotion is the fuel. Without feeling, goals are just words.<br/>
-                                    <strong>Good:</strong> One powerful word or short phrase that makes you sit up straighter.
-                                </HelpAccordion>
-                            </label>
-                            <input type="text" className="field-input" value={data.feeling} onChange={e => updateData('feeling', e.target.value)} placeholder={p.feeling} />
-                        </div>
+                        {worldErr && <p className="ft-error-msg" role="alert">{worldErr}</p>}
+                        {!worldErr && <p className="ft-help">{data.worldChange.length}/200</p>}
                     </div>
 
-                    {canProceed && (
+                    {/* Field 3: Feeling */}
+                    <div className="ft-field-group" id="field-feeling">
+                        <label className="ft-label" htmlFor="input-feeling">
+                            How do you feel about it? <span className="ft-required">*</span>
+                        </label>
+                        <ExampleBox
+                            bad={'"Good" (generic, no energy)'}
+                            good={'"Unstoppable. Fulfilled. Free." (powerful, visceral)'}
+                        />
+                        <div style={{ position: 'relative' }}>
+                            <input
+                                id="input-feeling"
+                                type="text"
+                                className={`ft-input ${feelingErr ? 'has-error' : ''}`}
+                                value={data.feeling}
+                                onChange={e => updateData('feeling', e.target.value)}
+                                onBlur={() => markTouched('feeling')}
+                                placeholder={p.feeling}
+                                aria-required="true"
+                                aria-invalid={!!feelingErr}
+                            />
+                            {feelingErr && <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: '#fff', fontSize: 11, fontWeight: 700, background: '#DC2626', borderRadius: '50%', width: 18, height: 18, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>!</span>}
+                        </div>
+                        {feelingErr && <p className="ft-error-msg" role="alert">{feelingErr}</p>}
+                    </div>
+
+                    {allValid && (
                         <div className="closing-box animate-in">
                             <p className="closing-title">{closing.title}</p>
                             <p>{closing.text}</p>
                         </div>
                     )}
-                </div>
+                </>
             );
         }
 
-        // --- Step 2: Outcome ---
-        function Step2Content({ data, updateStep, updateData, questionHelp, setQuestionHelp, closing, canProceed }) {
-            const ph = data.scopeType === 'program' ? [
+        /* ============================================================
+           STEP 2: OUTCOME — Map 3 key milestones
+           Blueprint: 4 fields, single column
+           ============================================================ */
+        function Step2Content({ data, updateStep, updateData, touched, markTouched, closing, totalSteps }) {
+            const isBusiness = data.scopeType === 'business';
+
+            if (isBusiness) {
+                /* Everyday mode: single outcome field */
+                const outcomeErr = touched.simpleOutcome ? getFieldError('simpleOutcome', data) : null;
+                const allValid = !getFieldError('simpleOutcome', data);
+
+                return (
+                    <>
+                        <p className="step-indicator">STEP 2 OF {totalSteps} <span className="step-time">~2 MIN</span></p>
+                        <h2 className="step-heading">Define the Outcome</h2>
+                        <p className="step-hint">What would the outcome of this task be? Describe the end result in one clear statement.</p>
+
+                        <YellowInsight>
+                            People who write down a specific outcome are 42% more likely to achieve it. One clear sentence beats a vague paragraph. Make it concrete enough to know when you are done.
+                        </YellowInsight>
+
+                        <ExampleBox
+                            bad={'"Things will be better" (vague, no finish line)'}
+                            good={'"Intuitive tools that are hassle-free, require minimum cognitive load, and the client journey is smooth"'}
+                        />
+
+                        <div className="ft-field-group" id="field-simpleOutcome">
+                            <label className="ft-label" htmlFor="input-simpleOutcome">
+                                What would the outcome be? <span className="ft-required">*</span>
+                            </label>
+                            <p className="ft-help" style={{ marginBottom: 8, marginTop: 0 }}>Describe the result. Not the steps — the destination.</p>
+                            <div style={{ position: 'relative' }}>
+                                <textarea
+                                    id="input-simpleOutcome"
+                                    className={`ft-textarea ${outcomeErr ? 'has-error' : ''}`}
+                                    rows={3}
+                                    value={data.simpleOutcome}
+                                    onChange={e => updateData('simpleOutcome', e.target.value)}
+                                    onBlur={() => markTouched('simpleOutcome')}
+                                    placeholder="Intuitive tools that are hassle-free for the client and require minimum cognitive load, and the client journey is smooth"
+                                    aria-required="true"
+                                    aria-invalid={!!outcomeErr}
+                                />
+                                {outcomeErr && <span style={{ position: 'absolute', right: 12, top: 12, color: '#fff', fontSize: 11, fontWeight: 700, background: '#DC2626', borderRadius: '50%', width: 18, height: 18, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>!</span>}
+                            </div>
+                            {outcomeErr && <p className="ft-error-msg" role="alert">{outcomeErr}</p>}
+                        </div>
+
+                        {allValid && (
+                            <div className="closing-box animate-in">
+                                <p className="closing-title">{closing.title}</p>
+                                <p>{closing.text}</p>
+                            </div>
+                        )}
+                    </>
+                );
+            }
+
+            /* Program mode: 3 milestones + mental rehearsal (original) */
+            const ph = [
                 "Align team on core values and 3 critical moves",
                 "Implement ABC delegation system and run first session",
                 "Launch weekly metrics dashboard and complete 4 review cycles"
-            ] : [
-                "Hire A-player VP of Sales and close first 3 major deals",
-                "Launch in 2 new markets with validated product-market fit",
-                "Build 5-person leadership team with clear OKRs"
             ];
 
+            const stepErrors = [0, 1, 2].map(i => touched[`step${i}`] ? getFieldError(`step${i}`, data) : null);
+            const rehearsalErr = touched.mentallyRehearsed ? getFieldError('mentallyRehearsed', data) : null;
+            const allValid = ![0,1,2].some(i => getFieldError(`step${i}`, data)) && !getFieldError('mentallyRehearsed', data);
+
             return (
-                <div className="step-content animate-in">
-                    <p className="step-indicator">STEP 2 OF 4</p>
-                    <div className="opening-box">
-                        <h1 className="step-heading">Map the Outcome</h1>
-                        <p className="step-hint">What are the 3 key milestones to reach your end game? Strategy is sacrifice — only 3.</p>
-                    </div>
+                <>
+                    <p className="step-indicator">STEP 2 OF {totalSteps} <span className="step-time">~3 MIN</span></p>
+                    <h1 className="step-heading">Map the Outcome</h1>
+                    <p className="step-hint">List 3 key milestones to reach your end game. Strategy is sacrifice — only 3.</p>
 
-                    <LearnMore>
-                        Mental rehearsal works. Lewis Hamilton mentally drives each lap before stepping in the car. Research shows mental practice activates the same brain regions as physical practice.
-                    </LearnMore>
+                    <YellowInsight>
+                        Lewis Hamilton mentally drives each lap before stepping in the car. Mental rehearsal activates the same brain regions as physical practice. Visualize completing each milestone.
+                    </YellowInsight>
 
-                    <div className="questions-grid single-col">
-                        {data.steps.map((stepVal, index) => (
-                            <div key={index} className="question-box" style={{ marginBottom: 24 }}>
-                                <label className="field-label">
-                                    Step {index + 1}
-                                    <HelpAccordion id={`step${index}`} activeHelp={questionHelp} setActiveHelp={setQuestionHelp}>
-                                        <strong>Good milestone:</strong> Specific, measurable, builds toward your end game, you can visualize completing it.
-                                    </HelpAccordion>
-                                </label>
-                                <input type="text" className="field-input" value={stepVal} onChange={e => updateStep(index, e.target.value)} placeholder={ph[index]} />
-                            </div>
-                        ))}
-
-                        <div className="question-box" style={{ marginTop: 32 }}>
-                            <p style={{ fontWeight: 600, fontSize: 16, marginBottom: 8 }}>Mental Rehearsal</p>
-                            <p style={{ fontSize: 14, color: '#666', marginBottom: 14 }}>Close your eyes. Picture yourself completing each step. See the details. Feel the momentum.</p>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
-                                <input type="checkbox" checked={data.mentallyRehearsed} onChange={e => updateData('mentallyRehearsed', e.target.checked)} style={{ width: 18, height: 18 }} />
-                                <span style={{ fontSize: 14 }}>I've mentally rehearsed each step.</span>
+                    {[0, 1, 2].map(index => (
+                        <div key={index} className="ft-field-group" id={`field-step${index}`}>
+                            <label className="ft-label" htmlFor={`input-step${index}`}>
+                                Milestone {index + 1} <span className="ft-required">*</span>
                             </label>
+                            {index === 0 && (
+                                <ExampleBox
+                                    bad={'"Improve sales" (vague, not measurable)'}
+                                    good={'"Hire VP Sales and close first 3 enterprise deals"'}
+                                />
+                            )}
+                            <div style={{ position: 'relative' }}>
+                                <input
+                                    id={`input-step${index}`}
+                                    type="text"
+                                    className={`ft-input ${stepErrors[index] ? 'has-error' : ''}`}
+                                    value={data.steps[index]}
+                                    onChange={e => updateStep(index, e.target.value)}
+                                    onBlur={() => markTouched(`step${index}`)}
+                                    placeholder={ph[index]}
+                                    aria-required="true"
+                                    aria-invalid={!!stepErrors[index]}
+                                />
+                                {stepErrors[index] && <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: '#fff', fontSize: 11, fontWeight: 700, background: '#DC2626', borderRadius: '50%', width: 18, height: 18, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>!</span>}
+                            </div>
+                            {stepErrors[index] && <p className="ft-error-msg" role="alert">{stepErrors[index]}</p>}
                         </div>
+                    ))}
+
+                    <div className="ft-field-group" id="field-mentallyRehearsed" style={{ marginTop: 32, paddingTop: 24, borderTop: '1px solid #E5E7EB' }}>
+                        <p className="ft-label">Mental Rehearsal <span className="ft-required">*</span></p>
+                        <p style={{ fontSize: 14, color: '#6B7280', marginBottom: 14, lineHeight: 1.5 }}>Close your eyes. Picture yourself completing each milestone. See the details. Feel the momentum.</p>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', minHeight: 44 }}>
+                            <input type="checkbox" checked={data.mentallyRehearsed} onChange={e => { updateData('mentallyRehearsed', e.target.checked); markTouched('mentallyRehearsed'); }} style={{ width: 20, height: 20, accentColor: '#000' }} />
+                            <span style={{ fontSize: 16 }}>I've mentally rehearsed each milestone.</span>
+                        </label>
+                        {rehearsalErr && <p className="ft-error-msg" role="alert" style={{ marginTop: 8 }}>{rehearsalErr}</p>}
                     </div>
 
-                    {canProceed && (
+                    {allValid && (
                         <div className="closing-box animate-in">
                             <p className="closing-title">{closing.title}</p>
                             <p>{closing.text}</p>
                         </div>
                     )}
-                </div>
+                </>
             );
         }
 
-        // --- Step 3: Obstacles ---
-        function Step3Content({ data, updateObstacle, addObstacle, removeObstacle, questionHelp, setQuestionHelp, closing, canProceed }) {
+        /* ============================================================
+           STEP 3: OBSTACLE — IF-THEN implementation plans
+           Blueprint: Single column, max 3 obstacles, no alert()
+           ============================================================ */
+        function Step3Content({ data, updateObstacle, addObstacle, removeObstacle, touched, markTouched, closing, totalSteps }) {
+            const allValid = data.obstacles.length >= 1 && data.obstacles.every(o =>
+                o.problem && o.problem.trim().length >= 6 &&
+                o.ifTrigger && o.ifTrigger.trim().length >= 4 &&
+                o.thenPerson && o.thenPerson.trim().length >= 3 &&
+                o.thenAction && o.thenAction.trim().length >= 6 &&
+                o.byWhen && o.byWhen.trim().length >= 1
+            );
+
             return (
-                <div className="step-content animate-in">
-                    <p className="step-indicator">STEP 3 OF 4</p>
-                    <div className="opening-box">
-                        <h1 className="step-heading">Anticipate Obstacles</h1>
-                        <p className="step-hint">Identify what will try to stop you. Create specific IF-THEN plans. Max 3 obstacles.</p>
-                    </div>
+                <>
+                    <p className="step-indicator">STEP 3 OF {totalSteps} <span className="step-time">~5 MIN</span></p>
+                    <h1 className="step-heading">Anticipate Obstacles</h1>
+                    <p className="step-hint">Identify what will try to stop you. Create IF-THEN plans for each. Max 3 obstacles.</p>
 
-                    <LearnMore>
-                        IF-THEN plans increase follow-through by up to 300%. Your brain automatically links trigger to action — no willpower required (Gollwitzer, 1999).
-                    </LearnMore>
+                    <YellowInsight>
+                        IF-THEN plans increase follow-through by up to 300%. Your brain automatically links trigger to action — no willpower required. Be specific about the trigger.
+                    </YellowInsight>
 
-                    <div className="questions-grid single-col">
-                        {data.obstacles && data.obstacles.map((obstacle, index) => (
-                            <div key={index} className="question-box">
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                                    <span className="monument" style={{ fontSize: 11, textTransform: 'uppercase', color: '#666' }}>OBSTACLE {index + 1}</span>
+                    {/* Single-column obstacle list (Blueprint: never multi-column) */}
+                    {data.obstacles && data.obstacles.map((obstacle, index) => {
+                        const errFor = (f) => touched[`obstacle-${index}-${f}`] ? getObstacleError(f, obstacle) : null;
+                        return (
+                            <div key={index} style={{ marginBottom: 40, paddingBottom: 24, borderBottom: index < data.obstacles.length - 1 ? '1px solid #E5E7EB' : 'none' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                                    <span className="monument" style={{ fontSize: 11, textTransform: 'uppercase', color: '#6B7280' }}>OBSTACLE {index + 1}</span>
                                     {data.obstacles.length > 1 && (
-                                        <button onClick={() => removeObstacle(index)} style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: '#999' }}>&times;</button>
+                                        <button onClick={() => removeObstacle(index)} style={{ background: 'none', border: '1px solid #E5E7EB', padding: '4px 12px', fontSize: 14, cursor: 'pointer', color: '#6B7280', minHeight: 44 }}>&times; Remove</button>
                                     )}
                                 </div>
 
-                                <div className="field-group">
-                                    <label className="field-label">
-                                        What's the problem?
-                                        <HelpAccordion id={`obstacle${index}`} activeHelp={questionHelp} setActiveHelp={setQuestionHelp}>
-                                            <strong>Good obstacle:</strong> Specific, realistic, actually likely to happen, could genuinely derail progress.
-                                        </HelpAccordion>
-                                    </label>
-                                    <textarea className="field-textarea" style={{ minHeight: 70 }} value={obstacle.problem} onChange={e => updateObstacle(index, 'problem', e.target.value)} placeholder="e.g. Team pushes back on new accountability system" />
+                                {index === 0 && (
+                                    <ExampleBox
+                                        bad={'"Bad luck" (not specific, not actionable)'}
+                                        good={'"Key team member pushes back on new accountability system"'}
+                                    />
+                                )}
+
+                                {/* Problem field */}
+                                <div className="ft-field-group" id={`field-obstacle-${index}-problem`}>
+                                    <label className="ft-label">The Problem <span className="ft-required">*</span></label>
+                                    <div style={{ position: 'relative' }}>
+                                        <textarea
+                                            className={`ft-textarea ${errFor('problem') ? 'has-error' : ''}`}
+                                            style={{ minHeight: 80 }}
+                                            value={obstacle.problem}
+                                            onChange={e => updateObstacle(index, 'problem', e.target.value)}
+                                            onBlur={() => markTouched(`obstacle-${index}-problem`)}
+                                            placeholder="e.g. Team pushes back on new accountability system"
+                                            aria-required="true"
+                                        />
+                                        {errFor('problem') && <span style={{ position: 'absolute', right: 12, top: 12, color: '#fff', fontSize: 11, fontWeight: 700, background: '#DC2626', borderRadius: '50%', width: 18, height: 18, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>!</span>}
+                                    </div>
+                                    {errFor('problem') && <p className="ft-error-msg" role="alert">{errFor('problem')}</p>}
                                 </div>
 
+                                {/* IF-THEN plan — single column (Blueprint: no multi-column) */}
                                 <div style={{ borderLeft: '3px solid #FFF469', paddingLeft: 16, marginTop: 8 }}>
-                                    <p className="monument" style={{ fontSize: 10, textTransform: 'uppercase', color: '#666', marginBottom: 10 }}>IF-THEN PLAN</p>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                                        <div className="field-group">
-                                            <label className="field-label">IF (trigger)</label>
-                                            <input type="text" className="field-input" value={obstacle.ifTrigger} onChange={e => updateObstacle(index, 'ifTrigger', e.target.value)} placeholder="A team member complains..." />
+                                    <p className="monument" style={{ fontSize: 10, textTransform: 'uppercase', color: '#6B7280', marginBottom: 16 }}>IF-THEN PLAN</p>
+
+                                    <div className="ft-field-group" id={`field-obstacle-${index}-ifTrigger`}>
+                                        <label className="ft-label">IF (trigger) <span className="ft-required">*</span></label>
+                                        <div style={{ position: 'relative' }}>
+                                            <input type="text" className={`ft-input ${errFor('ifTrigger') ? 'has-error' : ''}`}
+                                                value={obstacle.ifTrigger} onChange={e => updateObstacle(index, 'ifTrigger', e.target.value)}
+                                                onBlur={() => markTouched(`obstacle-${index}-ifTrigger`)}
+                                                placeholder="A team member complains about the new process..." aria-required="true" />
+                                            {errFor('ifTrigger') && <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: '#fff', fontSize: 11, fontWeight: 700, background: '#DC2626', borderRadius: '50%', width: 18, height: 18, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>!</span>}
                                         </div>
-                                        <div className="field-group">
-                                            <label className="field-label">THEN (who?)</label>
-                                            <input type="text" className="field-input" value={obstacle.thenPerson} onChange={e => updateObstacle(index, 'thenPerson', e.target.value)} placeholder="I (CEO)" />
-                                        </div>
-                                        <div className="field-group">
-                                            <label className="field-label">WILL (action)</label>
-                                            <input type="text" className="field-input" value={obstacle.thenAction} onChange={e => updateObstacle(index, 'thenAction', e.target.value)} placeholder="Schedule 30-min 1-on-1" />
-                                        </div>
-                                        <div className="field-group">
-                                            <label className="field-label">BY WHEN</label>
-                                            <input type="text" className="field-input" value={obstacle.byWhen} onChange={e => updateObstacle(index, 'byWhen', e.target.value)} placeholder="Within 24 hours" />
-                                        </div>
+                                        {errFor('ifTrigger') && <p className="ft-error-msg" role="alert">{errFor('ifTrigger')}</p>}
                                     </div>
 
+                                    <div className="ft-field-group" id={`field-obstacle-${index}-thenPerson`}>
+                                        <label className="ft-label">THEN (who?) <span className="ft-required">*</span></label>
+                                        <div style={{ position: 'relative' }}>
+                                            <input type="text" className={`ft-input ${errFor('thenPerson') ? 'has-error' : ''}`}
+                                                value={obstacle.thenPerson} onChange={e => updateObstacle(index, 'thenPerson', e.target.value)}
+                                                onBlur={() => markTouched(`obstacle-${index}-thenPerson`)}
+                                                placeholder="I (CEO)" aria-required="true" />
+                                            {errFor('thenPerson') && <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: '#fff', fontSize: 11, fontWeight: 700, background: '#DC2626', borderRadius: '50%', width: 18, height: 18, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>!</span>}
+                                        </div>
+                                        {errFor('thenPerson') && <p className="ft-error-msg" role="alert">{errFor('thenPerson')}</p>}
+                                    </div>
+
+                                    <div className="ft-field-group" id={`field-obstacle-${index}-thenAction`}>
+                                        <label className="ft-label">WILL (action) <span className="ft-required">*</span></label>
+                                        <div style={{ position: 'relative' }}>
+                                            <input type="text" className={`ft-input ${errFor('thenAction') ? 'has-error' : ''}`}
+                                                value={obstacle.thenAction} onChange={e => updateObstacle(index, 'thenAction', e.target.value)}
+                                                onBlur={() => markTouched(`obstacle-${index}-thenAction`)}
+                                                placeholder="Schedule a 30-min 1-on-1 to address concerns" aria-required="true" />
+                                            {errFor('thenAction') && <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: '#fff', fontSize: 11, fontWeight: 700, background: '#DC2626', borderRadius: '50%', width: 18, height: 18, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>!</span>}
+                                        </div>
+                                        {errFor('thenAction') && <p className="ft-error-msg" role="alert">{errFor('thenAction')}</p>}
+                                    </div>
+
+                                    <div className="ft-field-group" id={`field-obstacle-${index}-byWhen`}>
+                                        <label className="ft-label">BY WHEN <span className="ft-required">*</span></label>
+                                        <div style={{ position: 'relative' }}>
+                                            <input type="text" className={`ft-input ${errFor('byWhen') ? 'has-error' : ''}`}
+                                                value={obstacle.byWhen} onChange={e => updateObstacle(index, 'byWhen', e.target.value)}
+                                                onBlur={() => markTouched(`obstacle-${index}-byWhen`)}
+                                                placeholder="Within 24 hours" aria-required="true" />
+                                            {errFor('byWhen') && <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: '#fff', fontSize: 11, fontWeight: 700, background: '#DC2626', borderRadius: '50%', width: 18, height: 18, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>!</span>}
+                                        </div>
+                                        {errFor('byWhen') && <p className="ft-error-msg" role="alert">{errFor('byWhen')}</p>}
+                                    </div>
+
+                                    {/* Live IF-THEN preview */}
                                     {(obstacle.ifTrigger || obstacle.thenAction) && (
-                                        <div style={{ background: '#F5F5F5', padding: 10, marginTop: 8, fontSize: 13, color: '#333' }}>
+                                        <div style={{ background: '#F3F4F6', padding: 12, fontSize: 14, color: '#1F2937', lineHeight: 1.5 }}>
                                             <strong>IF</strong> {obstacle.ifTrigger || '___'}, <strong>THEN</strong> {obstacle.thenPerson || '___'} will <strong>{obstacle.thenAction || '___'}</strong> <strong>BY</strong> {obstacle.byWhen || '___'}
                                         </div>
                                     )}
                                 </div>
                             </div>
-                        ))}
-                    </div>
+                        );
+                    })}
 
-                    {data.obstacles.length < 3 && (
-                        <button onClick={addObstacle} style={{ width: '100%', padding: '12px 0', border: '2px dashed #E0E0E0', background: 'none', fontSize: 14, cursor: 'pointer', color: '#666', marginBottom: 24 }}>
-                            + Add Another Obstacle (Max 3)
+                    {/* Add obstacle — inline message instead of alert() (Blueprint Section 12) */}
+                    {data.obstacles.length < 3 ? (
+                        <button onClick={addObstacle} style={{ width: '100%', padding: '12px 0', border: '2px dashed #E5E7EB', background: 'none', fontSize: 14, cursor: 'pointer', color: '#6B7280', marginBottom: 24, minHeight: 44 }}>
+                            + Add Another Obstacle ({data.obstacles.length}/3)
                         </button>
+                    ) : (
+                        <p style={{ fontSize: 14, color: '#6B7280', marginBottom: 24, textAlign: 'center' }}>
+                            Maximum 3 obstacles. Strategy is sacrifice — focus on the ones that matter most.
+                        </p>
                     )}
 
-                    {canProceed && (
+                    {allValid && (
                         <div className="closing-box animate-in">
                             <p className="closing-title">{closing.title}</p>
                             <p>{closing.text}</p>
                         </div>
                     )}
-                </div>
+                </>
             );
         }
 
-        // --- Step 4: Plan ---
-        function Step4Content({ data, updateData, questionHelp, setQuestionHelp, closing, canProceed }) {
+        /* ============================================================
+           STEP 4: PLAN — First action and deadline
+           Blueprint: 3 fields, single column (no side-by-side)
+           ============================================================ */
+        function Step4Content({ data, updateData, touched, markTouched, closing, totalSteps }) {
+            const chunksErr = touched.bigChunks ? getFieldError('bigChunks', data) : null;
+            const actionErr = touched.firstAction ? getFieldError('firstAction', data) : null;
+            const deadlineErr = touched.deadline ? getFieldError('deadline', data) : null;
+            const allValid = !getFieldError('bigChunks', data) && !getFieldError('firstAction', data) && !getFieldError('deadline', data);
+
             return (
-                <div className="step-content animate-in">
-                    <p className="step-indicator">STEP 4 OF 4</p>
-                    <div className="opening-box">
-                        <h1 className="step-heading">Create Your Plan</h1>
-                        <p className="step-hint">Break down your journey. Choose the smallest, easiest first action. Date = Reality.</p>
+                <>
+                    <p className="step-indicator">STEP 4 OF {totalSteps} <span className="step-time">~3 MIN</span></p>
+                    <h1 className="step-heading">Create Your Plan</h1>
+                    <p className="step-hint">Break down your journey. Pick the smallest first action. Set a deadline. Date = Reality.</p>
+
+                    <YellowInsight>
+                        The Zeigarnik Effect: once you start a task, your brain becomes obsessed with completing it. A specific deadline activates time-based implementation intentions. Pick something so small it's impossible to fail.
+                    </YellowInsight>
+
+                    {/* Field 1: Big Chunks */}
+                    <div className="ft-field-group" id="field-bigChunks">
+                        <label className="ft-label" htmlFor="input-bigChunks">
+                            Big chunks of work <span className="ft-required">*</span>
+                        </label>
+                        <ExampleBox
+                            bad={'"Sales stuff, hiring, operations" (vague buckets)'}
+                            good={'"1. Define company values\\n2. Build delegation framework\\n3. Launch metrics dashboard"'}
+                        />
+                        <div style={{ position: 'relative' }}>
+                            <textarea
+                                id="input-bigChunks"
+                                className={`ft-textarea ${chunksErr ? 'has-error' : ''}`}
+                                style={{ minHeight: 100 }}
+                                value={data.bigChunks}
+                                onChange={e => updateData('bigChunks', e.target.value)}
+                                onBlur={() => markTouched('bigChunks')}
+                                placeholder={"Define and document company values\nBuild ABC delegation framework\nSet up weekly metrics dashboard"}
+                                aria-required="true"
+                                aria-invalid={!!chunksErr}
+                            />
+                            {chunksErr && <span style={{ position: 'absolute', right: 12, top: 12, color: '#fff', fontSize: 11, fontWeight: 700, background: '#DC2626', borderRadius: '50%', width: 18, height: 18, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>!</span>}
+                        </div>
+                        {chunksErr && <p className="ft-error-msg" role="alert">{chunksErr}</p>}
                     </div>
 
-                    <LearnMore>
-                        The Zeigarnik Effect: once you start a task, your brain becomes obsessed with completing it. A specific deadline activates time-based implementation intentions.
-                    </LearnMore>
-
-                    <div className="questions-grid single-col">
-                        <div className="question-box">
-                            <label className="field-label">
-                                What are the big chunks of work?
-                                <HelpAccordion id="bigChunks" activeHelp={questionHelp} setActiveHelp={setQuestionHelp}>
-                                    See the full picture before picking your first bite. List major phases or work streams.
-                                </HelpAccordion>
-                            </label>
-                            <textarea className="field-textarea" style={{ minHeight: 90 }} value={data.bigChunks} onChange={e => updateData('bigChunks', e.target.value)} placeholder={"Define and document company values\nBuild ABC delegation framework\nSet up weekly metrics dashboard"} />
+                    {/* Field 2: First Action — single column (Blueprint: no side-by-side) */}
+                    <div className="ft-field-group" id="field-firstAction">
+                        <label className="ft-label" htmlFor="input-firstAction">
+                            Smallest first action <span className="ft-required">*</span>
+                        </label>
+                        <p className="ft-help" style={{ marginBottom: 8, marginTop: 0 }}>So small it feels silly. Under 30 minutes. Impossible to fail at.</p>
+                        <ExampleBox
+                            bad={'"Start working on the project" (no specificity)'}
+                            good={'"Book the meeting room. Send the invite. That\'s it."'}
+                        />
+                        <div style={{ position: 'relative' }}>
+                            <textarea
+                                id="input-firstAction"
+                                className={`ft-textarea ${actionErr ? 'has-error' : ''}`}
+                                style={{ minHeight: 80 }}
+                                value={data.firstAction}
+                                onChange={e => updateData('firstAction', e.target.value)}
+                                onBlur={() => markTouched('firstAction')}
+                                placeholder="Book the room. Send the invite. That's it."
+                                aria-required="true"
+                                aria-invalid={!!actionErr}
+                            />
+                            {actionErr && <span style={{ position: 'absolute', right: 12, top: 12, color: '#fff', fontSize: 11, fontWeight: 700, background: '#DC2626', borderRadius: '50%', width: 18, height: 18, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>!</span>}
                         </div>
-
-                        <div className="question-box">
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                                <div className="field-group">
-                                    <label className="field-label">
-                                        Smallest first action?
-                                        <HelpAccordion id="firstAction" activeHelp={questionHelp} setActiveHelp={setQuestionHelp}>
-                                            So small it feels silly. Under 30 min. Impossible to fail at. Creates momentum.
-                                        </HelpAccordion>
-                                    </label>
-                                    <textarea className="field-textarea" style={{ minHeight: 80 }} value={data.firstAction} onChange={e => updateData('firstAction', e.target.value)} placeholder="Book the room. Send the invite. That's it." />
-                                </div>
-                                <div className="field-group">
-                                    <label className="field-label">By when?</label>
-                                    <input type="date" className="field-input" value={data.deadline} onChange={e => updateData('deadline', e.target.value)} min={new Date().toISOString().split('T')[0]} />
-                                    <p className="field-help">Date = Reality.</p>
-                                </div>
-                            </div>
-                        </div>
+                        {actionErr && <p className="ft-error-msg" role="alert">{actionErr}</p>}
                     </div>
 
-                    {canProceed && (
+                    {/* Field 3: Deadline */}
+                    <div className="ft-field-group" id="field-deadline">
+                        <label className="ft-label" htmlFor="input-deadline">
+                            By when? <span className="ft-required">*</span>
+                        </label>
+                        <p className="ft-help" style={{ marginBottom: 8, marginTop: 0 }}>A goal without a deadline is a wish. Pick a date.</p>
+                        <div style={{ position: 'relative' }}>
+                            <input
+                                id="input-deadline"
+                                type="date"
+                                className={`ft-input ${deadlineErr ? 'has-error' : ''}`}
+                                value={data.deadline}
+                                onChange={e => updateData('deadline', e.target.value)}
+                                onBlur={() => markTouched('deadline')}
+                                min={new Date().toISOString().split('T')[0]}
+                                aria-required="true"
+                                aria-invalid={!!deadlineErr}
+                            />
+                            {deadlineErr && <span style={{ position: 'absolute', right: 40, top: '50%', transform: 'translateY(-50%)', color: '#fff', fontSize: 11, fontWeight: 700, background: '#DC2626', borderRadius: '50%', width: 18, height: 18, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>!</span>}
+                        </div>
+                        {deadlineErr && <p className="ft-error-msg" role="alert">{deadlineErr}</p>}
+                    </div>
+
+                    {allValid && (
                         <div className="closing-box animate-in">
                             <p className="closing-title">{closing.title}</p>
                             <p>{closing.text}</p>
                         </div>
                     )}
-                </div>
+                </>
             );
         }
 
-        // --- Canvas View ---
-        function CanvasView({ data, onBack }) {
-            const handleShare = () => alert('WOOP plan shared with your team. Accountability activated.');
+        /* ============================================================
+           STEP 5: PRE-MORTEM — Stress-test your plan (business scope only)
+           ============================================================ */
+        function Step5Content({ data, updateData, updateCause, touched, markTouched, closing, totalSteps }) {
+            const scenarioErr = touched.premortemScenario ? getFieldError('premortemScenario', data) : null;
+            const preventionErr = touched.premortemPrevention ? getFieldError('premortemPrevention', data) : null;
+            const allValid = !getFieldError('premortemScenario', data) && !getFieldError('premortemCause0', data) && !getFieldError('premortemCause1', data) && !getFieldError('premortemCause2', data) && !getFieldError('premortemPrevention', data);
 
-            const [submitStatus, setSubmitStatus] = useState(null); // 'saving' | 'success' | 'error'
+            return (
+                <>
+                    <p className="step-indicator">STEP 5 OF {totalSteps} <span className="step-time">~4 MIN</span></p>
+                    <h2 className="step-heading">Pre-mortem</h2>
+                    <p className="step-hint">Imagine your project has already failed. Work backward to find out why. Teams that run pre-mortems catch 30% more risks.</p>
+
+                    <YellowInsight>
+                        A pre-mortem flips optimism bias on its head. Instead of asking "how will we succeed?" you ask "why did we fail?" This surfaces risks your confident brain hides from you.
+                    </YellowInsight>
+
+                    <ExampleBox
+                        bad={'"It failed because things didn\'t work out" (vague, useless)'}
+                        good={'"We lost the key client because onboarding took 6 weeks instead of 2, and they churned before seeing value"'}
+                    />
+
+                    {/* Field 1: Failure scenario */}
+                    <div className="ft-field-group" id="field-premortemScenario">
+                        <label className="ft-label" htmlFor="input-premortemScenario">
+                            It is 6 months from now. Your project failed. What happened? <span className="ft-required">*</span>
+                        </label>
+                        <p className="ft-help" style={{ marginBottom: 8, marginTop: 0 }}>Write in past tense. Be specific. Names, numbers, timelines.</p>
+                        <div style={{ position: 'relative' }}>
+                            <textarea
+                                id="input-premortemScenario"
+                                className={`ft-textarea ${scenarioErr ? 'has-error' : ''}`}
+                                rows={3}
+                                value={data.premortemScenario}
+                                onChange={e => updateData('premortemScenario', e.target.value)}
+                                onBlur={() => markTouched('premortemScenario')}
+                                placeholder="We missed the Q3 launch because..."
+                                aria-required="true"
+                                aria-invalid={!!scenarioErr}
+                            />
+                            {scenarioErr && <span style={{ position: 'absolute', right: 12, top: 12, color: '#fff', fontSize: 11, fontWeight: 700, background: '#DC2626', borderRadius: '50%', width: 18, height: 18, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>!</span>}
+                        </div>
+                        {scenarioErr && <p className="ft-error-msg" role="alert">{scenarioErr}</p>}
+                    </div>
+
+                    {/* Fields 2-4: Root causes */}
+                    <div className="ft-field-group">
+                        <label className="ft-label">Top 3 root causes <span className="ft-required">*</span></label>
+                        <p className="ft-help" style={{ marginBottom: 8, marginTop: 0 }}>Why did it fail? Dig deep. Not symptoms — root causes.</p>
+                    </div>
+                    {[0, 1, 2].map(i => {
+                        const err = touched[`premortemCause${i}`] ? getFieldError(`premortemCause${i}`, data) : null;
+                        return (
+                            <div key={i} className="ft-field-group" id={`field-premortemCause${i}`} style={{ marginTop: i === 0 ? 0 : 12 }}>
+                                <label className="ft-label" htmlFor={`input-premortemCause${i}`} style={{ fontSize: 12 }}>
+                                    Root cause {i + 1} <span className="ft-required">*</span>
+                                </label>
+                                <div style={{ position: 'relative' }}>
+                                    <input
+                                        id={`input-premortemCause${i}`}
+                                        className={`ft-input ${err ? 'has-error' : ''}`}
+                                        value={data.premortemCauses[i]}
+                                        onChange={e => updateCause(i, e.target.value)}
+                                        onBlur={() => markTouched(`premortemCause${i}`)}
+                                        placeholder={i === 0 ? 'No dedicated owner for the project' : i === 1 ? 'Underestimated integration complexity' : 'Team burned out from parallel workstreams'}
+                                        aria-required="true"
+                                        aria-invalid={!!err}
+                                    />
+                                    {err && <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: '#fff', fontSize: 11, fontWeight: 700, background: '#DC2626', borderRadius: '50%', width: 18, height: 18, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>!</span>}
+                                </div>
+                                {err && <p className="ft-error-msg" role="alert">{err}</p>}
+                            </div>
+                        );
+                    })}
+
+                    {/* Field 5: Prevention */}
+                    <div className="ft-field-group" id="field-premortemPrevention" style={{ marginTop: 24 }}>
+                        <label className="ft-label" htmlFor="input-premortemPrevention">
+                            What will you do NOW to prevent these failures? <span className="ft-required">*</span>
+                        </label>
+                        <p className="ft-help" style={{ marginBottom: 8, marginTop: 0 }}>Specific actions. Assign owners. Set check-in dates.</p>
+                        <div style={{ position: 'relative' }}>
+                            <textarea
+                                id="input-premortemPrevention"
+                                className={`ft-textarea ${preventionErr ? 'has-error' : ''}`}
+                                rows={3}
+                                value={data.premortemPrevention}
+                                onChange={e => updateData('premortemPrevention', e.target.value)}
+                                onBlur={() => markTouched('premortemPrevention')}
+                                placeholder="Assign project owner by Friday. Schedule weekly 15-min check-ins. Cap parallel workstreams at 2."
+                                aria-required="true"
+                                aria-invalid={!!preventionErr}
+                            />
+                            {preventionErr && <span style={{ position: 'absolute', right: 12, top: 12, color: '#fff', fontSize: 11, fontWeight: 700, background: '#DC2626', borderRadius: '50%', width: 18, height: 18, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>!</span>}
+                        </div>
+                        {preventionErr && <p className="ft-error-msg" role="alert">{preventionErr}</p>}
+                    </div>
+
+                    {allValid && (
+                        <div className="closing-box animate-in">
+                            <p className="closing-title">{closing.title}</p>
+                            <p>{closing.text}</p>
+                        </div>
+                    )}
+                </>
+            );
+        }
+
+        /* ============================================================
+           STEP 6: CUT THE ELEPHANT — Break massive goals into daily slices (business scope only)
+           ============================================================ */
+        function Step6Content({ data, updateData, updateSlice, touched, markTouched, closing, totalSteps }) {
+            const goalErr = touched.elephantGoal ? getFieldError('elephantGoal', data) : null;
+            const slice0Err = touched.elephantSlice0 ? getFieldError('elephantSlice0', data) : null;
+            const slice1Err = touched.elephantSlice1 ? getFieldError('elephantSlice1', data) : null;
+            const slice2Err = touched.elephantSlice2 ? getFieldError('elephantSlice2', data) : null;
+            const firstSliceErr = touched.elephantFirstSlice ? getFieldError('elephantFirstSlice', data) : null;
+            const allValid = !getFieldError('elephantGoal', data) && !getFieldError('elephantSlice0', data) && !getFieldError('elephantSlice1', data) && !getFieldError('elephantSlice2', data) && !getFieldError('elephantFirstSlice', data);
+
+            return (
+                <>
+                    <p className="step-indicator">STEP 6 OF {totalSteps} <span className="step-time">~3 MIN</span></p>
+                    <h2 className="step-heading">Cut the Elephant</h2>
+                    <p className="step-hint">You cannot eat an elephant in one bite. Slice it into daily or hourly tasks. Focus only on the current slice.</p>
+
+                    <YellowInsight>
+                        Procrastination comes from overwhelm, not laziness. Teams that break goals into 15-30 minute tasks execute 2x faster. The trick: each slice must be completable in one sitting.
+                    </YellowInsight>
+
+                    <ExampleBox
+                        bad={'"Work on the business plan" (too big, triggers paralysis)'}
+                        good={'"Write 3 bullet points for the revenue model section — 20 minutes"'}
+                    />
+
+                    {/* Field 1: The Elephant */}
+                    <div className="ft-field-group" id="field-elephantGoal">
+                        <label className="ft-label" htmlFor="input-elephantGoal">
+                            What is your elephant? <span className="ft-required">*</span>
+                        </label>
+                        <p className="ft-help" style={{ marginBottom: 8, marginTop: 0 }}>The big, overwhelming goal that feels impossible to start.</p>
+                        <div style={{ position: 'relative' }}>
+                            <textarea
+                                id="input-elephantGoal"
+                                className={`ft-textarea ${goalErr ? 'has-error' : ''}`}
+                                rows={2}
+                                value={data.elephantGoal}
+                                onChange={e => updateData('elephantGoal', e.target.value)}
+                                onBlur={() => markTouched('elephantGoal')}
+                                placeholder="Launch the new product line across 3 markets by September"
+                                aria-required="true"
+                                aria-invalid={!!goalErr}
+                            />
+                            {goalErr && <span style={{ position: 'absolute', right: 12, top: 12, color: '#fff', fontSize: 11, fontWeight: 700, background: '#DC2626', borderRadius: '50%', width: 18, height: 18, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>!</span>}
+                        </div>
+                        {goalErr && <p className="ft-error-msg" role="alert">{goalErr}</p>}
+                    </div>
+
+                    {/* Fields 2-4: Slices */}
+                    <div className="ft-field-group">
+                        <label className="ft-label">Slice it into 3 daily or weekly tasks <span className="ft-required">*</span></label>
+                        <p className="ft-help" style={{ marginBottom: 8, marginTop: 0 }}>Each slice should take 15-60 minutes. Small enough to start right now.</p>
+                    </div>
+                    {[0, 1, 2].map(i => {
+                        const err = touched[`elephantSlice${i}`] ? getFieldError(`elephantSlice${i}`, data) : null;
+                        return (
+                            <div key={i} className="ft-field-group" id={`field-elephantSlice${i}`} style={{ marginTop: i === 0 ? 0 : 12 }}>
+                                <label className="ft-label" htmlFor={`input-elephantSlice${i}`} style={{ fontSize: 12 }}>
+                                    Slice {i + 1} <span className="ft-required">*</span>
+                                </label>
+                                <div style={{ position: 'relative' }}>
+                                    <input
+                                        id={`input-elephantSlice${i}`}
+                                        className={`ft-input ${err ? 'has-error' : ''}`}
+                                        value={data.elephantSlices[i]}
+                                        onChange={e => updateSlice(i, e.target.value)}
+                                        onBlur={() => markTouched(`elephantSlice${i}`)}
+                                        placeholder={i === 0 ? 'Draft pricing model for market 1 (30 min)' : i === 1 ? 'List 5 potential distribution partners (20 min)' : 'Write product brief for the sales team (45 min)'}
+                                        aria-required="true"
+                                        aria-invalid={!!err}
+                                    />
+                                    {err && <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: '#fff', fontSize: 11, fontWeight: 700, background: '#DC2626', borderRadius: '50%', width: 18, height: 18, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>!</span>}
+                                </div>
+                                {err && <p className="ft-error-msg" role="alert">{err}</p>}
+                            </div>
+                        );
+                    })}
+
+                    {/* Field 5: First slice — today */}
+                    <div className="ft-field-group" id="field-elephantFirstSlice" style={{ marginTop: 24 }}>
+                        <label className="ft-label" htmlFor="input-elephantFirstSlice">
+                            What is your first slice? What will you do TODAY? <span className="ft-required">*</span>
+                        </label>
+                        <p className="ft-help" style={{ marginBottom: 8, marginTop: 0 }}>One action. One sitting. Start before you feel ready.</p>
+                        <div style={{ position: 'relative' }}>
+                            <textarea
+                                id="input-elephantFirstSlice"
+                                className={`ft-textarea ${firstSliceErr ? 'has-error' : ''}`}
+                                rows={2}
+                                value={data.elephantFirstSlice}
+                                onChange={e => updateData('elephantFirstSlice', e.target.value)}
+                                onBlur={() => markTouched('elephantFirstSlice')}
+                                placeholder="Open a blank doc and write 3 bullet points for the pricing model — 15 minutes, right after lunch."
+                                aria-required="true"
+                                aria-invalid={!!firstSliceErr}
+                            />
+                            {firstSliceErr && <span style={{ position: 'absolute', right: 12, top: 12, color: '#fff', fontSize: 11, fontWeight: 700, background: '#DC2626', borderRadius: '50%', width: 18, height: 18, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>!</span>}
+                        </div>
+                        {firstSliceErr && <p className="ft-error-msg" role="alert">{firstSliceErr}</p>}
+                    </div>
+
+                    {allValid && (
+                        <div className="closing-box animate-in">
+                            <p className="closing-title">{closing.title}</p>
+                            <p>{closing.text}</p>
+                        </div>
+                    )}
+                </>
+            );
+        }
+
+        /* ============================================================
+           CANVAS VIEW — Summary, Export, Submit
+           PRESERVED: All AI integration and PDF export — do not modify
+           ============================================================ */
+        function CanvasView({ data, onBack }) {
+            const handleShare = () => {
+                /* Placeholder — could integrate with Slack/Email in future */
+            };
+
+            const [submitStatus, setSubmitStatus] = useState(null);
             const [submitMessage, setSubmitMessage] = useState('');
 
+            /* PRESERVED: AI challenge submit — do not modify */
             const handleSubmit = async () => {
                 try {
                     setSubmitStatus('saving');
@@ -942,17 +1629,21 @@
                     console.log('[WOOP Submit] userId:', userId);
                     const questionMappings = {
                         wish: { outcome: data.outcome, worldChange: data.worldChange, feeling: data.feeling },
-                        outcome: { steps: data.steps.filter(s => s.trim()), mentallyRehearsed: data.mentallyRehearsed },
+                        outcome: data.scopeType === 'business' ? data.simpleOutcome : { steps: data.steps.filter(s => s.trim()), mentallyRehearsed: data.mentallyRehearsed },
                         obstacle_internal: data.obstacles.filter(o => o.problem),
                         plan_if_then: data.bigChunks,
                         first_action: data.firstAction,
-                        commitment_level: data.scopeType
+                        commitment_level: data.scopeType,
+                        ...(data.scopeType === 'business' ? {
+                            premortem: { scenario: data.premortemScenario, causes: data.premortemCauses.filter(c => c.trim()), prevention: data.premortemPrevention },
+                            elephant: { goal: data.elephantGoal, slices: data.elephantSlices.filter(s => s.trim()), firstSlice: data.elephantFirstSlice }
+                        } : {})
                     };
                     console.log('[WOOP Submit] Submitting with AI challenge:', questionMappings);
                     await window.AIChallenge.submitWithChallenge(userId, 'woop', questionMappings, {
                         onReviewStart: () => { setSubmitMessage('AI coach is reviewing...'); },
                         onRevise: () => { setSubmitStatus(null); setSubmitMessage(''); onBack(); },
-                        onSubmitAnyway: () => { setSubmitStatus('success'); setSubmitMessage('Submission saved successfully!'); },
+                        onSubmitAnyway: () => { setSubmitStatus('success'); setSubmitMessage('Submission saved successfully.'); },
                         onError: (err) => { setSubmitStatus('error'); setSubmitMessage('Failed to save: ' + err.message); }
                     });
                 } catch (error) {
@@ -962,6 +1653,7 @@
                 }
             };
 
+            /* PRESERVED: PDF export — do not modify */
             const imageToDataURL = (img) => new Promise((resolve, reject) => {
                 const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
                 c.getContext('2d').drawImage(img, 0, 0);
@@ -971,7 +1663,7 @@
             const handleExport = async (e) => {
                 try {
                     const btn = e.target; btn.disabled = true; btn.textContent = 'Generating...';
-                    if (!window.jspdf || !window.html2canvas) { alert('PDF libraries loading...'); btn.disabled = false; btn.textContent = 'Export PDF'; return; }
+                    if (!window.jspdf || !window.html2canvas) { btn.disabled = false; btn.textContent = 'Export PDF'; return; }
                     const { jsPDF } = window.jspdf;
                     const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
                     const el = document.getElementById('woop-canvas-content');
@@ -983,83 +1675,166 @@
                     if (ih > mh) { ih = mh; iw = ih * ar; }
                     pdf.addImage(imgData, 'PNG', (pw - iw) / 2, m, iw, ih);
                     const logo = new Image(); logo.crossOrigin = 'anonymous'; logo.src = 'FastTrack_F_black (1).png';
-                    logo.onload = async () => { try { pdf.addImage(await imageToDataURL(logo), 'PNG', pw - 50, 10, 40, 15); } catch(e){} pdf.save(`WOOP-Canvas-${new Date().toISOString().split('T')[0]}.pdf`); btn.disabled = false; btn.textContent = 'Export PDF'; };
+                    logo.onload = async () => { try { pdf.addImage(await imageToDataURL(logo), 'PNG', pw - 50, 10, 40, 15); } catch(err){} pdf.save(`WOOP-Canvas-${new Date().toISOString().split('T')[0]}.pdf`); btn.disabled = false; btn.textContent = 'Export PDF'; };
                     logo.onerror = () => { pdf.save(`WOOP-Canvas-${new Date().toISOString().split('T')[0]}.pdf`); btn.disabled = false; btn.textContent = 'Export PDF'; };
-                } catch (error) { alert('PDF failed: ' + error.message); if (e?.target) { e.target.disabled = false; e.target.textContent = 'Export PDF'; } }
+                } catch (error) { if (e?.target) { e.target.disabled = false; e.target.textContent = 'Export PDF'; } }
             };
 
+            const isBiz = data.scopeType === 'business';
+            const deadlineStr = data.deadline ? new Date(data.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Not set';
+
+            /* Shared cell style */
+            const cell = (bg = '#fff') => ({ background: bg, padding: '14px 16px', fontSize: 13, lineHeight: 1.5 });
+            const tag = (color = '#000') => ({ fontFamily: "'Monument', monospace", fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', color, marginBottom: 4 });
+
             return (
-                <div style={{ minHeight: '100vh', background: '#fff' }}>
-                    <header className="no-print" style={{ borderBottom: '2px solid #000', padding: '16px 24px' }}>
-                        <div style={{ maxWidth: 960, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ minHeight: '100vh', background: '#F3F4F6' }}>
+                    {/* Black hero header */}
+                    <div className="no-print" style={{ background: '#000', padding: '32px 24px 24px' }}>
+                        <div style={{ maxWidth: 960, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
                             <div>
-                                <h1 className="plaak" style={{ fontSize: 28, marginBottom: 4 }}>YOUR WOOP CANVAS</h1>
-                                <p style={{ fontSize: 14, color: '#666' }}>Clarity + Energy = Action</p>
+                                <p style={{ ...tag('#666'), marginBottom: 8 }}>YOUR WOOP CANVAS</p>
+                                <h1 className="plaak" style={{ fontSize: 36, color: '#fff', textTransform: 'uppercase', lineHeight: 1 }}>{data.outcome ? data.outcome.substring(0, 60) + (data.outcome.length > 60 ? '...' : '') : 'Your Wish'}</h1>
+                                <p style={{ fontSize: 13, color: '#FFF469', marginTop: 8, fontFamily: "'Monument', monospace", letterSpacing: '0.05em' }}>{deadlineStr}</p>
                             </div>
-                            <button onClick={onBack} className="btn-back">&larr; Edit</button>
+                            <button onClick={onBack} style={{ background: 'transparent', border: '1px solid #666', color: '#fff', padding: '8px 16px', cursor: 'pointer', fontFamily: "'Monument', monospace", fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', flexShrink: 0 }}>&larr; Edit</button>
                         </div>
-                    </header>
-                    <div style={{ maxWidth: 960, margin: '0 auto', padding: '32px 24px' }}>
-                        <div id="woop-canvas-content" style={{ border: '2px solid #000', padding: 32, marginBottom: 24 }}>
-                            <div style={{ marginBottom: 32 }}>
-                                <div className="numbered-section" style={{ marginBottom: 12 }}>[W] YOUR WISH</div>
-                                <div className="canvas-wish-box">
-                                    <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 4, color: '#666' }}>ACHIEVED</p>
-                                    <p style={{ marginBottom: 16 }}>{data.outcome}</p>
-                                    <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 4, color: '#666' }}>WORLD CHANGED</p>
-                                    <p style={{ marginBottom: 16 }}>{data.worldChange}</p>
-                                    <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 4, color: '#666' }}>FEELING</p>
-                                    <p style={{ fontWeight: 600, fontSize: 18 }}>{data.feeling}</p>
+                    </div>
+
+                    <div style={{ maxWidth: 960, margin: '0 auto', padding: '24px 24px 40px' }}>
+                        <div id="woop-canvas-content" style={{ background: '#fff', border: '2px solid #000' }}>
+
+                            {/* === TOP ROW: Wish + Outcome side by side === */}
+                            <div style={{ display: 'grid', gridTemplateColumns: isBiz ? '1fr' : '1fr 1fr', borderBottom: '2px solid #000' }}>
+                                {/* W — WISH */}
+                                <div style={{ padding: 20, borderRight: isBiz ? 'none' : '2px solid #000' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                                        <span style={{ background: '#000', color: '#fff', padding: '3px 8px', fontFamily: "'Monument', monospace", fontSize: 10, letterSpacing: '0.08em' }}>W</span>
+                                        <span style={{ ...tag(), marginBottom: 0 }}>WISH</span>
+                                    </div>
+                                    <p style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.4, marginBottom: 10 }}>{data.outcome}</p>
+                                    <p style={{ fontSize: 12, color: '#6B7280', marginBottom: 4 }}>{data.worldChange}</p>
+                                    <div style={{ display: 'inline-block', background: '#FFF469', padding: '4px 10px', marginTop: 8 }}>
+                                        <span style={{ fontWeight: 700, fontSize: 14 }}>{data.feeling}</span>
+                                    </div>
                                 </div>
+                                {/* O — OUTCOME */}
+                                {!isBiz && (
+                                    <div style={{ padding: 20 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                                            <span style={{ background: '#000', color: '#fff', padding: '3px 8px', fontFamily: "'Monument', monospace", fontSize: 10, letterSpacing: '0.08em' }}>O</span>
+                                            <span style={{ ...tag(), marginBottom: 0 }}>OUTCOME</span>
+                                        </div>
+                                        {data.steps && data.steps.filter(s => s.trim()).map((s, i) => (
+                                            <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'baseline' }}>
+                                                <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#999', flexShrink: 0 }}>{String(i + 1).padStart(2, '0')}</span>
+                                                <p style={{ fontSize: 13 }}>{s}</p>
+                                            </div>
+                                        ))}
+                                        {data.mentallyRehearsed && <div style={{ background: '#000', color: '#FFF469', padding: '3px 10px', marginTop: 8, display: 'inline-block' }}><span style={{ fontFamily: "'Monument', monospace", fontSize: 9 }}>MENTALLY REHEARSED</span></div>}
+                                    </div>
+                                )}
                             </div>
-                            <div style={{ marginBottom: 32 }}>
-                                <div className="numbered-section" style={{ marginBottom: 12 }}>[O] THE OUTCOME</div>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
-                                    {data.steps && data.steps.filter(s => s.trim()).map((s, i) => (
-                                        <div key={i} className="canvas-step-box">
-                                            <div className="monument" style={{ fontSize: 10, marginBottom: 6, color: '#666' }}>STEP {i + 1}</div>
-                                            <p style={{ fontSize: 14 }}>{s}</p>
+
+                            {/* === OUTCOME ROW (business/everyday mode only) === */}
+                            {isBiz && (
+                                <div style={{ padding: 20, borderBottom: '2px solid #000', background: '#FAFAFA' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                                        <span style={{ background: '#000', color: '#fff', padding: '3px 8px', fontFamily: "'Monument', monospace", fontSize: 10, letterSpacing: '0.08em' }}>O</span>
+                                        <span style={{ ...tag(), marginBottom: 0 }}>OUTCOME</span>
+                                    </div>
+                                    <p style={{ fontSize: 15, lineHeight: 1.5 }}>{data.simpleOutcome}</p>
+                                </div>
+                            )}
+
+                            {/* === MIDDLE ROW: Obstacle + Plan side by side === */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderBottom: isBiz ? '2px solid #000' : 'none' }}>
+                                {/* O — OBSTACLE */}
+                                <div style={{ padding: 20, borderRight: '2px solid #000' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                                        <span style={{ background: '#000', color: '#fff', padding: '3px 8px', fontFamily: "'Monument', monospace", fontSize: 10, letterSpacing: '0.08em' }}>O</span>
+                                        <span style={{ ...tag(), marginBottom: 0 }}>OBSTACLE</span>
+                                    </div>
+                                    {data.obstacles && data.obstacles.map((o, i) => (
+                                        <div key={i} style={{ marginBottom: i < data.obstacles.length - 1 ? 12 : 0 }}>
+                                            <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 4 }}>{o.problem}</p>
+                                            <div style={{ background: '#F9FAFB', padding: '8px 10px', fontSize: 12, border: '1px solid #E5E7EB' }}>
+                                                <strong>IF</strong> {o.ifTrigger || '\u2014'} <strong>THEN</strong> {o.thenAction || '\u2014'} <strong>BY</strong> {o.byWhen || '\u2014'}
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
-                                {data.mentallyRehearsed && <div style={{ background: '#000', color: '#fff', padding: '6px 12px', marginTop: 8, textAlign: 'center' }}><span className="monument" style={{ fontSize: 10 }}>MENTALLY REHEARSED</span></div>}
-                            </div>
-                            <div style={{ marginBottom: 32 }}>
-                                <div className="numbered-section" style={{ marginBottom: 12 }}>[O] OBSTACLES & IF-THEN PLANS</div>
-                                {data.obstacles && data.obstacles.map((o, i) => (
-                                    <div key={i} className="canvas-obstacle-box">
-                                        <p style={{ fontWeight: 600, marginBottom: 8 }}>Problem {i + 1}: {o.problem}</p>
-                                        <div style={{ background: '#fff', padding: 12, border: '1px solid #E0E0E0', fontSize: 14 }}>
-                                            <strong>IF</strong> {o.ifTrigger || '—'}, <strong>THEN</strong> {o.thenPerson || '—'} will <strong>{o.thenAction || '—'}</strong> <strong>BY</strong> {o.byWhen || '—'}
-                                        </div>
+                                {/* P — PLAN */}
+                                <div style={{ padding: 20 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                                        <span style={{ background: '#000', color: '#fff', padding: '3px 8px', fontFamily: "'Monument', monospace", fontSize: 10, letterSpacing: '0.08em' }}>P</span>
+                                        <span style={{ ...tag(), marginBottom: 0 }}>PLAN</span>
                                     </div>
-                                ))}
-                            </div>
-                            <div>
-                                <div className="numbered-section" style={{ marginBottom: 12 }}>[P] THE PLAN</div>
-                                <div className="canvas-plan-box">
-                                    <div className="monument" style={{ fontSize: 10, marginBottom: 8, color: '#666' }}>FIRST ACTION</div>
-                                    <p style={{ fontSize: 16, marginBottom: 16 }}>{data.firstAction}</p>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                        <span className="monument" style={{ fontSize: 10, color: '#666' }}>DEADLINE:</span>
-                                        <span style={{ fontSize: 18, fontWeight: 600 }}>{data.deadline ? new Date(data.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Not set'}</span>
+                                    <p style={{ ...tag('#999'), marginBottom: 2 }}>FIRST ACTION</p>
+                                    <p style={{ fontSize: 15, fontWeight: 600, marginBottom: 16 }}>{data.firstAction}</p>
+                                    <div style={{ background: '#000', color: '#fff', padding: '10px 14px', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                                        <span style={{ fontFamily: "'Monument', monospace", fontSize: 9, color: '#999' }}>DEADLINE</span>
+                                        <span style={{ fontSize: 16, fontWeight: 700, color: '#FFF469' }}>{deadlineStr}</span>
                                     </div>
                                 </div>
                             </div>
+
+                            {/* === BOTTOM: Pre-mortem + Elephant (business only) === */}
+                            {isBiz && (
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+                                    {/* PRE-MORTEM */}
+                                    <div style={{ padding: 20, borderRight: '2px solid #000' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                                            <span style={{ background: '#DC2626', color: '#fff', padding: '3px 8px', fontFamily: "'Monument', monospace", fontSize: 10, letterSpacing: '0.08em' }}>!</span>
+                                            <span style={{ ...tag('#DC2626'), marginBottom: 0 }}>PRE-MORTEM</span>
+                                        </div>
+                                        <p style={{ fontSize: 12, color: '#991B1B', marginBottom: 10, lineHeight: 1.4 }}>{data.premortemScenario}</p>
+                                        {data.premortemCauses.filter(c => c.trim()).map((c, i) => (
+                                            <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 4, alignItems: 'baseline' }}>
+                                                <span style={{ fontFamily: "'Monument', monospace", fontSize: 9, color: '#DC2626', flexShrink: 0 }}>{i + 1}.</span>
+                                                <p style={{ fontSize: 12 }}>{c}</p>
+                                            </div>
+                                        ))}
+                                        <div style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', padding: '8px 10px', marginTop: 10 }}>
+                                            <p style={{ ...tag('#16A34A') }}>PREVENTION</p>
+                                            <p style={{ fontSize: 12 }}>{data.premortemPrevention}</p>
+                                        </div>
+                                    </div>
+                                    {/* CUT THE ELEPHANT */}
+                                    <div style={{ padding: 20 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                                            <span style={{ background: '#000', color: '#FFF469', padding: '3px 8px', fontFamily: "'Monument', monospace", fontSize: 10, letterSpacing: '0.08em' }}>E</span>
+                                            <span style={{ ...tag(), marginBottom: 0 }}>CUT THE ELEPHANT</span>
+                                        </div>
+                                        <p style={{ fontSize: 13, fontWeight: 600, marginBottom: 10 }}>{data.elephantGoal}</p>
+                                        {data.elephantSlices.filter(s => s.trim()).map((s, i) => (
+                                            <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 4, alignItems: 'baseline' }}>
+                                                <span style={{ fontFamily: "'Monument', monospace", fontSize: 9, color: '#999', flexShrink: 0 }}>SLICE {i + 1}</span>
+                                                <p style={{ fontSize: 12 }}>{s}</p>
+                                            </div>
+                                        ))}
+                                        <div style={{ background: '#000', color: '#FFF469', padding: '10px 14px', marginTop: 10 }}>
+                                            <p style={{ fontFamily: "'Monument', monospace", fontSize: 9, color: '#999', marginBottom: 2 }}>TODAY</p>
+                                            <p style={{ fontSize: 13, fontWeight: 600 }}>{data.elephantFirstSlice}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
-                        <div className="no-print" style={{ display: 'flex', gap: 12 }}>
-                            <button onClick={handleShare} className="btn-next" style={{ flex: 1 }}>Share With Team</button>
-                            <button onClick={handleExport} className="btn-back" style={{ flex: 1 }}>Export PDF</button>
-                            <button id="submit-button" data-testid="submit-button" onClick={handleSubmit} className="btn-next" style={{ flex: 1 }} disabled={submitStatus === 'saving'}>
+
+                        {/* Action buttons */}
+                        <div className="no-print" style={{ display: 'flex', gap: 12, marginTop: 20 }}>
+                            <button onClick={handleExport} style={{ flex: 1, minHeight: 48, background: '#fff', border: '2px solid #000', cursor: 'pointer', fontFamily: "'Monument', monospace", fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Export PDF</button>
+                            <button id="submit-button" data-testid="submit-button" onClick={handleSubmit} disabled={submitStatus === 'saving'} style={{ flex: 1, minHeight: 48, background: '#000', color: '#fff', border: '2px solid #000', cursor: 'pointer', fontFamily: "'Monument', monospace", fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                                 {submitStatus === 'saving' ? 'Saving...' : 'Final Submit'}
                             </button>
                         </div>
+
                         {submitStatus && (
-                            <div style={{ marginTop: 16, padding: '12px 16px', textAlign: 'center', background: submitStatus === 'success' ? '#f0fdf4' : submitStatus === 'error' ? '#fef2f2' : '#f5f5f5', border: `1px solid ${submitStatus === 'success' ? '#bbf7d0' : submitStatus === 'error' ? '#fecaca' : '#e0e0e0'}`, fontSize: 14 }}>
-                                <span style={{ color: submitStatus === 'success' ? '#166534' : submitStatus === 'error' ? '#991b1b' : '#333' }}>{submitMessage}</span>
+                            <div style={{ marginTop: 12, padding: '10px 16px', textAlign: 'center', background: submitStatus === 'success' ? '#F0FDF4' : submitStatus === 'error' ? '#FEF2F2' : '#F3F4F6', border: `1px solid ${submitStatus === 'success' ? '#BBF7D0' : submitStatus === 'error' ? '#FECACA' : '#E5E7EB'}`, fontSize: 13 }}>
+                                <span style={{ color: submitStatus === 'success' ? '#166534' : submitStatus === 'error' ? '#991B1B' : '#1F2937' }}>{submitMessage}</span>
                             </div>
                         )}
-                        <div style={{ marginTop: 24, textAlign: 'center' }}><p className="monument" style={{ fontSize: 11, color: '#999' }}>CLARITY AND ENERGY LOCKED IN</p></div>
                     </div>
                 </div>
             );
