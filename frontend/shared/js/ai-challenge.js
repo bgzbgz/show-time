@@ -16,7 +16,8 @@
 const AIChallenge = (function () {
     'use strict';
 
-    const API_BASE = window.location.origin;
+    // Backend is on a separate Railway service
+    const API_BASE = 'https://backend-production-639c.up.railway.app';
 
     /**
      * Call the backend AI challenge endpoint.
