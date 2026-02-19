@@ -174,4 +174,33 @@ router.post(
   })
 );
 
+// =============================================================================
+// POST /api/ai/suggest-slices - AI generates elephant slices from a goal
+// =============================================================================
+
+const SuggestSlicesSchema = z.object({
+  user_id: z.string().uuid(),
+  elephant_goal: z.string().min(5).max(2000),
+  context: z.object({
+    wish: z.string().optional(),
+    outcome: z.string().optional(),
+    obstacle: z.string().optional(),
+  }).optional(),
+});
+
+router.post(
+  '/suggest-slices',
+  challengeRateLimiter,
+  asyncHandler(async (req: Request, res: Response) => {
+    if (!config.ENABLE_AI_INTEGRATION) {
+      return res.status(503).json({ error: 'AI not enabled' });
+    }
+
+    const { user_id, elephant_goal, context } = SuggestSlicesSchema.parse(req.body);
+
+    const result = await challengeService.suggestSlices(elephant_goal, context);
+    return sendSuccess(res, result);
+  })
+);
+
 export default router;

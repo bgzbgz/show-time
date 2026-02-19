@@ -207,6 +207,64 @@ The user has already received your feedback and revised their answers. Be MUCH m
       .eq('id', logId);
   }
 
+  /**
+   * Generate 3 actionable slices for a big goal (Cut the Elephant).
+   */
+  async suggestSlices(
+    elephantGoal: string,
+    context?: { wish?: string; outcome?: string; obstacle?: string }
+  ): Promise<{ slices: string[]; firstSlice: string }> {
+    if (!this.client) {
+      throw new Error('AI service not configured');
+    }
+
+    const systemPrompt = `You are a productivity coach. The user has a big, overwhelming goal (their "elephant"). Your job is to slice it into 3 small, concrete, time-boxed tasks that can each be done in 15-60 minutes. Also suggest what they should do TODAY as their very first slice.
+
+RULES:
+- Each slice must be specific and actionable — start with a verb
+- Include a time estimate in parentheses, e.g. "(30 min)"
+- Each slice should be completable in one sitting
+- Order slices by priority — most impactful first
+- The first_slice should be the easiest to start RIGHT NOW to build momentum
+
+Respond with valid JSON only, no markdown:
+{"slices":["slice 1 (time)","slice 2 (time)","slice 3 (time)"],"first_slice":"what to do today (time)"}`;
+
+    let userMsg = `THE ELEPHANT (big goal): ${elephantGoal}`;
+    if (context?.wish) userMsg += `\nWISH: ${context.wish}`;
+    if (context?.outcome) userMsg += `\nDESIRED OUTCOME: ${context.outcome}`;
+    if (context?.obstacle) userMsg += `\nMAIN OBSTACLE: ${context.obstacle}`;
+
+    try {
+      const response = await this.client.messages.create({
+        model: this.model,
+        max_tokens: 512,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userMsg }],
+      });
+
+      const textBlock = response.content.find(b => b.type === 'text');
+      if (!textBlock || textBlock.type !== 'text') throw new Error('No text response');
+
+      let cleaned = textBlock.text.trim()
+        .replace(/^```(?:json)?\s*/i, '')
+        .replace(/\s*```\s*$/i, '');
+      if (!cleaned.startsWith('{')) {
+        const match = cleaned.match(/\{[\s\S]*\}/);
+        if (match) cleaned = match[0];
+      }
+
+      const parsed = JSON.parse(cleaned);
+      return {
+        slices: Array.isArray(parsed.slices) ? parsed.slices.map(String).slice(0, 3) : [],
+        firstSlice: String(parsed.first_slice || ''),
+      };
+    } catch (e: any) {
+      console.error('[ChallengeService] Suggest slices failed:', e.message);
+      return { slices: [], firstSlice: '' };
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Private helpers
   // ---------------------------------------------------------------------------
