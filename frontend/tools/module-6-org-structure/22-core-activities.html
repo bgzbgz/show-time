@@ -10,6 +10,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../../shared/js/tool-db.js"></script>
+    <script src="../../shared/js/ai-challenge.js"></script>
     <script src="../../shared/js/dependency-injection.js"></script>
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
     <script src="../../shared/js/cognitive-load.js"></script>
@@ -146,6 +147,9 @@
             
             // User identification
             const [userEmail, setUserEmail] = useState('');
+            const [aiReviewing, setAiReviewing] = useState(false);
+            const [submitStatus, setSubmitStatus] = useState(null);
+            const [submitMessage, setSubmitMessage] = useState('');
             
             // Page 2: Processes & KPIs
             const [activityData, setActivityData] = useState([
@@ -245,19 +249,6 @@
                     return false;
                 }
 
-                const submissionData = {
-                    valueProposition,
-                    brainstormActivities: brainstormActivities.filter(a => a.trim()),
-                    coreActivities: coreActivities.filter(a => a.trim()),
-                    activityData: activityData.map((activity, idx) => ({
-                        activityName: coreActivities[idx],
-                        processes: activity.processes.filter(p => p.process.trim()).map(p => ({
-                            process: p.process,
-                            kpi: p.kpi
-                        }))
-                    })).filter(a => a.activityName)
-                };
-
                 try {
                     const questionMappings = {
                         top5_activities: coreActivities.filter(a => a.trim()),
@@ -269,9 +260,12 @@
                             }))
                         })).filter(a => a.activityName)
                     };
-                    await ToolDB.save(userId, questionMappings);
-                    await ToolDB.markComplete(userId);
-                    alert('Submission saved successfully!');
+                    await window.AIChallenge.submitWithChallenge(userId, CONFIG.TOOL_SLUG, questionMappings, {
+                        onReviewStart: () => { setSubmitMessage('AI coach is reviewing...'); },
+                        onRevise: () => { setSubmitStatus(null); setSubmitMessage(''); setCurrentPage('activities'); },
+                        onSubmitAnyway: () => { setSubmitStatus('success'); setSubmitMessage('Submission saved successfully!'); alert('Submission saved successfully!'); },
+                        onError: (err) => { setSubmitStatus('error'); setSubmitMessage('Failed to save: ' + err.message); alert('Submission failed: ' + err.message); }
+                    });
                     return true;
                 } catch (error) {
                     console.error('Supabase submission error:', error);
@@ -518,6 +512,8 @@
                                 currentStep={currentStep}
                                 setCurrentStep={setCurrentStep}
                                 onNext={() => setCurrentPage('processes')}
+                                aiReviewing={aiReviewing}
+                                setAiReviewing={setAiReviewing}
                             />
                         )}
                         
@@ -617,19 +613,37 @@
         }
 
         // PAGE 1: CORE ACTIVITIES - WITH PROGRESSIVE DISCLOSURE
-        function ActivitiesPage({ 
-            valueProposition, 
-            setValueProposition, 
-            brainstormActivities, 
-            setBrainstormActivities, 
-            coreActivities, 
-            setCoreActivities, 
-            showBrainstormSelection, 
+        function ActivitiesPage({
+            valueProposition,
+            setValueProposition,
+            brainstormActivities,
+            setBrainstormActivities,
+            coreActivities,
+            setCoreActivities,
+            showBrainstormSelection,
             setShowBrainstormSelection,
             currentStep,
             setCurrentStep,
-            onNext 
+            onNext,
+            aiReviewing,
+            setAiReviewing
         }) {
+            const handleStepNext = async (targetStep, stepAnswers, stepName) => {
+                const userId = localStorage.getItem('ft_user_id');
+                if (!userId) { setCurrentStep(targetStep); return; }
+                setAiReviewing(true);
+                try {
+                    const ok = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, stepName);
+                    if (ok) {
+                        setCurrentStep(targetStep);
+                    }
+                } catch (err) {
+                    console.error('AI review error:', err);
+                    setCurrentStep(targetStep);
+                } finally {
+                    setAiReviewing(false);
+                }
+            };
             const addBrainstormRow = () => {
                 setBrainstormActivities([...brainstormActivities, '']);
             };
@@ -777,10 +791,11 @@
                         {currentStep === 1 && valueProposition.trim() && (
                             <div className="flex justify-end">
                                 <button
-                                    onClick={() => setCurrentStep(2)}
-                                    className="px-8 py-3 bg-black text-white hover:bg-gray-800 smooth plaak"
+                                    onClick={() => handleStepNext(2, { value_proposition: valueProposition }, 'Value Proposition')}
+                                    disabled={aiReviewing}
+                                    className={`px-8 py-3 bg-black text-white hover:bg-gray-800 smooth plaak ${aiReviewing ? 'opacity-60 cursor-not-allowed' : ''}`}
                                 >
-                                    Continue to Brainstorm →
+                                    {aiReviewing ? 'AI Coach Reviewing...' : 'Continue to Brainstorm →'}
                                 </button>
                             </div>
                         )}
@@ -846,13 +861,20 @@
                                                 </button>
                                                 {brainstormActivities.filter(a => a.trim()).length >= 5 && (
                                                     <button
-                                                        onClick={() => {
-                                                            setShowBrainstormSelection(true);
-                                                            setCurrentStep(3);
+                                                        onClick={async () => {
+                                                            const userId = localStorage.getItem('ft_user_id');
+                                                            if (!userId) { setShowBrainstormSelection(true); setCurrentStep(3); return; }
+                                                            setAiReviewing(true);
+                                                            try {
+                                                                const ok = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, { brainstorm_activities: brainstormActivities.filter(a => a.trim()) }, 'Brainstorm Activities');
+                                                                if (ok) { setShowBrainstormSelection(true); setCurrentStep(3); }
+                                                            } catch (err) { console.error('AI review error:', err); setShowBrainstormSelection(true); setCurrentStep(3); }
+                                                            finally { setAiReviewing(false); }
                                                         }}
-                                                        className="ml-auto px-6 py-2 bg-black text-white hover:bg-gray-800 smooth"
+                                                        disabled={aiReviewing}
+                                                        className={`ml-auto px-6 py-2 bg-black text-white hover:bg-gray-800 smooth ${aiReviewing ? 'opacity-60 cursor-not-allowed' : ''}`}
                                                     >
-                                                        Done - Select Top 5 →
+                                                        {aiReviewing ? 'AI Coach Reviewing...' : 'Done - Select Top 5 →'}
                                                     </button>
                                                 )}
                                             </div>
@@ -914,10 +936,11 @@
                                             </div>
                                             {coreActivities.filter(a => a.trim()).length === 5 && (
                                                 <button
-                                                    onClick={() => setCurrentStep(4)}
-                                                    className="px-8 py-2 bg-black text-white hover:bg-gray-800 smooth font-semibold"
+                                                    onClick={() => handleStepNext(4, { top5_activities: coreActivities.filter(a => a.trim()) }, 'Top 5 Selection')}
+                                                    disabled={aiReviewing}
+                                                    className={`px-8 py-2 bg-black text-white hover:bg-gray-800 smooth font-semibold ${aiReviewing ? 'opacity-60 cursor-not-allowed' : ''}`}
                                                 >
-                                                    Confirm Selection →
+                                                    {aiReviewing ? 'AI Coach Reviewing...' : 'Confirm Selection →'}
                                                 </button>
                                             )}
                                         </div>
@@ -970,10 +993,20 @@
                                             ← Change Selection
                                         </button>
                                         <button
-                                            onClick={onNext}
-                                            className="ml-auto px-8 py-3 bg-black text-white hover:bg-gray-800 smooth plaak text-lg"
+                                            onClick={async () => {
+                                                const userId = localStorage.getItem('ft_user_id');
+                                                if (!userId) { onNext(); return; }
+                                                setAiReviewing(true);
+                                                try {
+                                                    const ok = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, { top5_activities: coreActivities.filter(a => a.trim()) }, 'Core Activities Review');
+                                                    if (ok) onNext();
+                                                } catch (err) { console.error('AI review error:', err); onNext(); }
+                                                finally { setAiReviewing(false); }
+                                            }}
+                                            disabled={aiReviewing}
+                                            className={`ml-auto px-8 py-3 bg-black text-white hover:bg-gray-800 smooth plaak text-lg ${aiReviewing ? 'opacity-60 cursor-not-allowed' : ''}`}
                                         >
-                                            Next: Processes & KPIs →
+                                            {aiReviewing ? 'AI Coach Reviewing...' : 'Next: Processes & KPIs →'}
                                         </button>
                                     </div>
                                 </div>

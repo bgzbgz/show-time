@@ -18,6 +18,7 @@
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../../shared/js/tool-db.js"></script>
+  <script src="../../shared/js/ai-challenge.js"></script>
   <script src="../../shared/js/dependency-injection.js"></script>
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
     <script src="../../shared/js/cognitive-load.js"></script>
@@ -477,6 +478,7 @@
       const [showTransition, setShowTransition] = useState(false);
       const [transitionMessage, setTransitionMessage] = useState('');
       const [transitionProgress, setTransitionProgress] = useState(0);
+      const [aiReviewing, setAiReviewing] = useState(false);
 
       const [data, setData] = useState({
         // Sheet 1: Current Team Assessment
@@ -809,60 +811,67 @@
         updateData('pdps', updated);
       };
 
-      const goNext = () => {
+      const goNext = async () => {
         if (step === 0.5) {
           setStep(1);
-        } else if (step === 1) {
-          const messages = ['STEP 1 COMPLETE - 20%', 'STEP 2 COMPLETE - 40%', 'STEP 3 COMPLETE - 60%', 'STEP 4 COMPLETE - 80%', 'STEP 5 COMPLETE - 100%'];
-          const progressValues = [20, 40, 60, 80, 100];
+        } else if (step >= 1 && step <= 5) {
+          const userId = localStorage.getItem('ft_user_id');
+          if (userId) {
+            setAiReviewing(true);
+            try {
+              let stepAnswers = {};
+              let stepName = '';
+              if (step === 1) {
+                stepName = 'Current Team Assessment';
+                stepAnswers = { current_team: (data.currentTeam || []).map(m => ({ name: m.name, currentPosition: m.currentPosition, companyFit: m.companyFit, jobFit: m.jobFit, bossFit: m.bossFit, teamFit: m.teamFit, totalFit: m.totalFit })) };
+              } else if (step === 2) {
+                stepName = 'Define New Roles';
+                stepAnswers = { new_roles: (data.newRoles || []).map(r => ({ roleTitle: r.roleTitle, criticality: r.criticality, requiredSkills: r.requiredSkills })) };
+              } else if (step === 3) {
+                stepName = 'Decision Matrix';
+                stepAnswers = { decision_matrix: data.decisionMatrix || [] };
+              } else if (step === 4) {
+                stepName = 'Action Plan';
+                stepAnswers = { action_plan: data.actionPlan || {} };
+              } else if (step === 5) {
+                stepName = 'PDPs';
+                stepAnswers = { pdps: data.pdps || [] };
+              }
+              const canProceed = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, stepName);
+              if (!canProceed) { setAiReviewing(false); return; }
+            } catch (err) {
+              console.warn('[AIChallenge] Error, allowing passage:', err);
+            } finally {
+              setAiReviewing(false);
+            }
+          }
 
-          setTransitionMessage(messages[0]);
-          setTransitionProgress(progressValues[0]);
-          setShowTransition(true);
-
-          setTimeout(() => {
-            setShowTransition(false);
-            setStep(2);
-          }, 2000);
-        } else if (step === 2) {
-          setTransitionMessage('STEP 2 COMPLETE - 40%');
-          setTransitionProgress(40);
-          setShowTransition(true);
-
-          setTimeout(() => {
-            setShowTransition(false);
-            initializeMatrix();
-            setStep(3);
-          }, 2000);
-        } else if (step === 3) {
-          setTransitionMessage('STEP 3 COMPLETE - 60%');
-          setTransitionProgress(60);
-          setShowTransition(true);
-
-          setTimeout(() => {
-            setShowTransition(false);
-            categorizeActionPlan();
-            setStep(4);
-          }, 2000);
-        } else if (step === 4) {
-          setTransitionMessage('STEP 4 COMPLETE - 80%');
-          setTransitionProgress(80);
-          setShowTransition(true);
-
-          setTimeout(() => {
-            setShowTransition(false);
-            initializePDPs();
-            setStep(5);
-          }, 2000);
-        } else if (step === 5) {
-          setTransitionMessage('STEP 5 COMPLETE - 100%');
-          setTransitionProgress(100);
-          setShowTransition(true);
-
-          setTimeout(() => {
-            setShowTransition(false);
-            setStep(6);
-          }, 2000);
+          if (step === 1) {
+            setTransitionMessage('STEP 1 COMPLETE - 20%');
+            setTransitionProgress(20);
+            setShowTransition(true);
+            setTimeout(() => { setShowTransition(false); setStep(2); }, 2000);
+          } else if (step === 2) {
+            setTransitionMessage('STEP 2 COMPLETE - 40%');
+            setTransitionProgress(40);
+            setShowTransition(true);
+            setTimeout(() => { setShowTransition(false); initializeMatrix(); setStep(3); }, 2000);
+          } else if (step === 3) {
+            setTransitionMessage('STEP 3 COMPLETE - 60%');
+            setTransitionProgress(60);
+            setShowTransition(true);
+            setTimeout(() => { setShowTransition(false); categorizeActionPlan(); setStep(4); }, 2000);
+          } else if (step === 4) {
+            setTransitionMessage('STEP 4 COMPLETE - 80%');
+            setTransitionProgress(80);
+            setShowTransition(true);
+            setTimeout(() => { setShowTransition(false); initializePDPs(); setStep(5); }, 2000);
+          } else if (step === 5) {
+            setTransitionMessage('STEP 5 COMPLETE - 100%');
+            setTransitionProgress(100);
+            setShowTransition(true);
+            setTimeout(() => { setShowTransition(false); setStep(6); }, 2000);
+          }
         } else if (step === 0) {
           setStep(0.5);
         }
@@ -960,7 +969,6 @@
       };
 
       const handleSubmit = async () => {
-        // Get user ID from localStorage
         const userId = localStorage.getItem('ft_user_id');
         if (!userId) {
           alert('User not authenticated. Please return to the dashboard.');
@@ -993,9 +1001,12 @@
               pdps: data.pdps || []
             }
           };
-          await ToolDB.save(userId, questionMappings);
-          await ToolDB.markComplete(userId);
-          alert('Organizational Redesign submitted successfully!');
+          await window.AIChallenge.submitWithChallenge(userId, CONFIG.TOOL_SLUG, questionMappings, {
+            onReviewStart: () => {},
+            onRevise: () => { setStep(5); },
+            onSubmitAnyway: () => { alert('Organizational Redesign submitted successfully!'); },
+            onError: (err) => { alert('Submission failed: ' + err.message); }
+          });
           return true;
         } catch (error) {
           console.error('Supabase submission error:', error);
@@ -1026,8 +1037,9 @@
             removeTeamMember={removeTeamMember}
             onNext={goNext}
             onBack={goBack}
-            canProceed={isStep1Valid()}
+            canProceed={!aiReviewing && isStep1Valid()}
             setShowHelp={setShowHelp}
+            aiReviewing={aiReviewing}
           />
         );
       }
@@ -1044,8 +1056,9 @@
             updateSkill={updateSkill}
             onNext={goNext}
             onBack={goBack}
-            canProceed={isStep2Valid()}
+            canProceed={!aiReviewing && isStep2Valid()}
             setShowHelp={setShowHelp}
+            aiReviewing={aiReviewing}
           />
         );
       }
@@ -1057,8 +1070,9 @@
             updateMatrixScore={updateMatrixScore}
             onNext={goNext}
             onBack={goBack}
-            canProceed={isStep3Valid()}
+            canProceed={!aiReviewing && isStep3Valid()}
             setShowHelp={setShowHelp}
+            aiReviewing={aiReviewing}
           />
         );
       }
@@ -1070,8 +1084,9 @@
             updateActionPlanItem={updateActionPlanItem}
             onNext={goNext}
             onBack={goBack}
-            canProceed={isStep4Valid()}
+            canProceed={!aiReviewing && isStep4Valid()}
             setShowHelp={setShowHelp}
+            aiReviewing={aiReviewing}
           />
         );
       }
@@ -1086,8 +1101,9 @@
             updateCapability={updateCapability}
             onNext={goNext}
             onBack={goBack}
-            canProceed={isStep5Valid()}
+            canProceed={!aiReviewing && isStep5Valid()}
             setShowHelp={setShowHelp}
+            aiReviewing={aiReviewing}
           />
         );
       }
@@ -1350,7 +1366,7 @@
     }
 
     // Step 1: Current Team Assessment Component
-    function Step1Page({ data, updateTeamMember, addTeamMember, removeTeamMember, onNext, onBack, canProceed, setShowHelp }) {
+    function Step1Page({ data, updateTeamMember, addTeamMember, removeTeamMember, onNext, onBack, canProceed, setShowHelp, aiReviewing }) {
       const [helpOpen, setHelpOpen] = useState(false);
 
       return (
@@ -1585,7 +1601,7 @@
                 disabled={!canProceed}
                 className="btn-primary"
               >
-                NEXT: DEFINE NEW ROLES →
+                {aiReviewing ? 'AI Coach Reviewing...' : 'NEXT: DEFINE NEW ROLES →'}
               </button>
             </div>
 
@@ -1600,7 +1616,7 @@
     }
 
     // Step 2: Define New Roles Component
-    function Step2Page({ data, updateRole, addRole, removeRole, addSkill, removeSkill, updateSkill, onNext, onBack, canProceed, setShowHelp }) {
+    function Step2Page({ data, updateRole, addRole, removeRole, addSkill, removeSkill, updateSkill, onNext, onBack, canProceed, setShowHelp, aiReviewing }) {
       const [helpOpen, setHelpOpen] = useState(false);
 
       return (
@@ -1806,7 +1822,7 @@
                 disabled={!canProceed}
                 className="btn-primary"
               >
-                NEXT: DECISION MATRIX →
+                {aiReviewing ? 'AI Coach Reviewing...' : 'NEXT: DECISION MATRIX →'}
               </button>
             </div>
 
@@ -1821,7 +1837,7 @@
     }
 
     // Step 3: Decision Matrix Component
-    function Step3Page({ data, updateMatrixScore, onNext, onBack, canProceed, setShowHelp }) {
+    function Step3Page({ data, updateMatrixScore, onNext, onBack, canProceed, setShowHelp, aiReviewing }) {
       const [helpOpen, setHelpOpen] = useState(false);
 
       return (
@@ -1989,7 +2005,7 @@
                 disabled={!canProceed}
                 className="btn-primary"
               >
-                NEXT: ACTION PLAN →
+                {aiReviewing ? 'AI Coach Reviewing...' : 'NEXT: ACTION PLAN →'}
               </button>
             </div>
 
@@ -2004,7 +2020,7 @@
     }
 
     // Step 4: Action Plan Component
-    function Step4Page({ data, updateActionPlanItem, onNext, onBack, canProceed, setShowHelp }) {
+    function Step4Page({ data, updateActionPlanItem, onNext, onBack, canProceed, setShowHelp, aiReviewing }) {
       const [helpOpen, setHelpOpen] = useState(false);
 
       return (
@@ -2269,7 +2285,7 @@
                 disabled={!canProceed}
                 className="btn-primary"
               >
-                NEXT: PERSONAL DEVELOPMENT PLANS →
+                {aiReviewing ? 'AI Coach Reviewing...' : 'NEXT: PERSONAL DEVELOPMENT PLANS →'}
               </button>
             </div>
           </div>
@@ -2278,7 +2294,7 @@
     }
 
     // Step 5: Personal Development Plans Component
-    function Step5Page({ data, updatePDP, addCapability, removeCapability, updateCapability, onNext, onBack, canProceed, setShowHelp }) {
+    function Step5Page({ data, updatePDP, addCapability, removeCapability, updateCapability, onNext, onBack, canProceed, setShowHelp, aiReviewing }) {
       const [helpOpen, setHelpOpen] = useState(false);
 
       return (
@@ -2553,7 +2569,7 @@
                 disabled={!canProceed}
                 className="btn-primary"
               >
-                NEXT: CANVAS SUMMARY →
+                {aiReviewing ? 'AI Coach Reviewing...' : 'NEXT: CANVAS SUMMARY →'}
               </button>
             </div>
 

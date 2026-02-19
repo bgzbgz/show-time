@@ -9,6 +9,7 @@
     <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../../shared/js/tool-db.js"></script>
+    <script src="../../shared/js/ai-challenge.js"></script>
     <script src="../../shared/js/dependency-injection.js"></script>
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
     <script src="../../shared/js/cognitive-load.js"></script>
@@ -428,25 +429,29 @@
                 }
 
                 pdf.save(`Sprint_09_Focus_${data.companyId}_${data.userId}.pdf`);
+            };
 
-                // Save to Supabase
-                try {
-                    const userId = localStorage.getItem('ft_user_id');
-                    if (userId) {
-                        const questionMappings = {
-                            golden_hour: { emptyBrain: data.emptyBrain, dailyPlan: data.dailyPlan, flowState: data.flowState },
-                            distraction_plan: { distractions: data.distractions, eliminate: data.eliminate },
-                            daily_reflection: { routines: data.routines, threeRoutines: data.threeRoutines },
-                            team_rituals: data.teamDynamics
-                        };
-                        await ToolDB.save(userId, questionMappings);
-                        await ToolDB.markComplete(userId);
-                        console.log('Saved to Supabase successfully.');
-                    }
-                } catch (error) {
-                    console.error('Supabase submission error:', error);
-                    // Don't alert - PDF still downloads successfully
+            const [submitStatus, setSubmitStatus] = useState(null);
+            const [submitMessage, setSubmitMessage] = useState('');
+
+            const handleSubmit = async () => {
+                const userId = localStorage.getItem('ft_user_id');
+                if (!userId) {
+                    alert('User not authenticated. Please return to the dashboard.');
+                    return;
                 }
+                const questionMappings = {
+                    golden_hour: { emptyBrain: data.emptyBrain, dailyPlan: data.dailyPlan, flowState: data.flowState },
+                    distraction_plan: { distractions: data.distractions, eliminate: data.eliminate },
+                    daily_reflection: { routines: data.routines, threeRoutines: data.threeRoutines },
+                    team_rituals: data.teamDynamics
+                };
+                await window.AIChallenge.submitWithChallenge(userId, CONFIG.TOOL_SLUG, questionMappings, {
+                    onReviewStart: () => { setSubmitStatus('saving'); setSubmitMessage('AI coach is reviewing...'); },
+                    onRevise: () => { setSubmitStatus(null); setSubmitMessage(''); setStep(toolType === 'individual' ? 8 : 1); },
+                    onSubmitAnyway: () => { setSubmitStatus('success'); setSubmitMessage('Submission saved successfully!'); },
+                    onError: (err) => { setSubmitStatus('error'); setSubmitMessage('Failed to save: ' + err.message); }
+                });
             };
 
             const getTotalSteps = () => {
@@ -1540,13 +1545,27 @@
                                 >
                                     ← BACK TO TOOL
                                 </button>
-                                <button
-                                    onClick={exportPDF}
-                                    className="px-6 py-3 bg-black text-white hover:bg-gray-800 transition-all font-bold"
-                                >
-                                    📥 EXPORT PDF
-                                </button>
+                                <div className="flex gap-4">
+                                    <button
+                                        onClick={exportPDF}
+                                        className="px-6 py-3 border-2 border-black hover:bg-black hover:text-white transition-all font-bold"
+                                    >
+                                        Export PDF
+                                    </button>
+                                    <button
+                                        onClick={handleSubmit}
+                                        disabled={submitStatus === 'saving'}
+                                        className="px-6 py-3 bg-black text-white hover:bg-gray-800 transition-all font-bold"
+                                    >
+                                        {submitStatus === 'saving' ? 'AI Coach Reviewing...' : 'Final Submit'}
+                                    </button>
+                                </div>
                             </div>
+                            {submitStatus && submitMessage && (
+                                <div style={{ marginTop: 16, padding: '12px 16px', textAlign: 'center', background: submitStatus === 'success' ? '#f0fdf4' : submitStatus === 'error' ? '#fef2f2' : '#f5f5f5', border: `1px solid ${submitStatus === 'success' ? '#bbf7d0' : submitStatus === 'error' ? '#fecaca' : '#e0e0e0'}`, fontSize: 14 }}>
+                                    <span style={{ color: submitStatus === 'success' ? '#166534' : submitStatus === 'error' ? '#991b1b' : '#333' }}>{submitMessage}</span>
+                                </div>
+                            )}
 
                             {/* Case Study */}
                             <CaseStudy

@@ -13,6 +13,7 @@
     <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../../shared/js/tool-db.js"></script>
+    <script src="../../shared/js/ai-challenge.js"></script>
     <script src="../../shared/js/dependency-injection.js"></script>
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
     <script src="../../shared/js/cognitive-load.js"></script>
@@ -234,30 +235,29 @@
                 return validIdeas.length >= 5;
             };
 
+            const [submitStatus, setSubmitStatus] = useState(null);
+            const [submitMessage, setSubmitMessage] = useState('');
+
             const handleSubmit = async () => {
-                try {
-                    const userId = localStorage.getItem('ft_user_id');
-                    if (!userId) {
-                        alert('User not authenticated. Please return to the dashboard.');
-                        return;
-                    }
-
-                    const sortedIdeas = getSortedIdeas();
-                    const questionMappings = {
-                        quarterly_targets: formData.ideas.filter(i => i.idea.trim()),
-                        impact_ease_matrix: sortedIdeas,
-                        big_rocks: sortedIdeas.slice(0, 5),
-                        elephant_breakdown: sortedIdeas.map(i => ({ idea: i.idea, impact: i.impact, easy: i.easy, score: i.score }))
-                    };
-                    await ToolDB.save(userId, questionMappings);
-                    await ToolDB.markComplete(userId);
-
-                    alert('Submission saved successfully!');
-
-                } catch (error) {
-                    console.error('Submission error:', error);
-                    alert('Failed to save: ' + error.message);
+                const userId = localStorage.getItem('ft_user_id');
+                if (!userId) {
+                    alert('User not authenticated. Please return to the dashboard.');
+                    return;
                 }
+
+                const sortedIdeas = getSortedIdeas();
+                const questionMappings = {
+                    quarterly_targets: formData.ideas.filter(i => i.idea.trim()),
+                    impact_ease_matrix: sortedIdeas,
+                    big_rocks: sortedIdeas.slice(0, 5),
+                    elephant_breakdown: sortedIdeas.map(i => ({ idea: i.idea, impact: i.impact, easy: i.easy, score: i.score }))
+                };
+                await window.AIChallenge.submitWithChallenge(userId, CONFIG.TOOL_SLUG, questionMappings, {
+                    onReviewStart: () => { setSubmitStatus('saving'); setSubmitMessage('AI coach is reviewing...'); },
+                    onRevise: () => { setSubmitStatus(null); setSubmitMessage(''); setStep(1); },
+                    onSubmitAnyway: () => { setSubmitStatus('success'); setSubmitMessage('Submission saved successfully!'); },
+                    onError: (err) => { setSubmitStatus('error'); setSubmitMessage('Failed to save: ' + err.message); }
+                });
             };
 
             // COVER PAGE
@@ -509,10 +509,15 @@
                                     <button onClick={() => window.print()} className="btn-secondary text-xl py-4 px-8">
                                         Export PDF
                                     </button>
-                                    <button onClick={handleSubmit} className="btn-primary text-xl py-6 px-12 plaak">
-                                        SUBMIT TO FAST TRACK
+                                    <button onClick={handleSubmit} className="btn-primary text-xl py-6 px-12 plaak" disabled={submitStatus === 'saving'}>
+                                        {submitStatus === 'saving' ? 'AI COACH REVIEWING...' : 'SUBMIT TO FAST TRACK'}
                                     </button>
                                 </div>
+                                {submitStatus && submitMessage && (
+                                    <div style={{ marginTop: 16, padding: '12px 16px', textAlign: 'center', background: submitStatus === 'success' ? '#f0fdf4' : submitStatus === 'error' ? '#fef2f2' : '#f5f5f5', border: `1px solid ${submitStatus === 'success' ? '#bbf7d0' : submitStatus === 'error' ? '#fecaca' : '#e0e0e0'}`, fontSize: 14 }}>
+                                        <span style={{ color: submitStatus === 'success' ? '#166534' : submitStatus === 'error' ? '#991b1b' : '#333' }}>{submitMessage}</span>
+                                    </div>
+                                )}
 
                                 {/* Case Study */}
                                 <CaseStudy

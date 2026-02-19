@@ -10,6 +10,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../../shared/js/tool-db.js"></script>
+    <script src="../../shared/js/ai-challenge.js"></script>
     <script src="../../shared/js/dependency-injection.js"></script>
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
     <script src="../../shared/js/cognitive-load.js"></script>
@@ -312,10 +313,9 @@
             return `${currency} ${Math.round(value).toLocaleString('en-US')}`;
         };
 
-        // Supabase Submission Function
+        // Supabase Submission Function (now uses AI challenge layer)
         const submitToSupabase = async (submissionData) => {
             try {
-                // Get user ID from localStorage
                 const userId = localStorage.getItem('ft_user_id');
                 if (!userId) {
                     alert('User not authenticated. Please return to the dashboard.');
@@ -326,10 +326,17 @@
                     tam: { totalCustomers: submissionData.marketData.totalCustomers, avgSpending: submissionData.marketData.avgSpending, purchasesPerYear: submissionData.marketData.purchasesPerYear, grossMargin: submissionData.marketData.grossMargin, marketSize: submissionData.marketData.marketSize, profitPool: submissionData.marketData.profitPool, forecast: { currentYear: submissionData.forecast.currentYear, futureYear: submissionData.forecast.futureYear, futureMarketSize: submissionData.forecast.futureMarketSize, futureProfitPool: submissionData.forecast.futureProfitPool } },
                     driving_forces: submissionData.drivingForces
                 };
-                await ToolDB.save(userId, questionMappings);
-                await ToolDB.markComplete(userId);
 
-                return { success: true };
+                const result = await new Promise((resolve, reject) => {
+                    window.AIChallenge.submitWithChallenge(userId, CONFIG.TOOL_SLUG, questionMappings, {
+                        onReviewStart: () => {},
+                        onRevise: () => { resolve({ success: false, revised: true }); },
+                        onSubmitAnyway: () => { resolve({ success: true }); },
+                        onError: (err) => { reject(err); }
+                    });
+                });
+
+                return result;
             } catch (error) {
                 console.error('Supabase submission error:', error);
                 return { success: false, error: error.message };
@@ -365,7 +372,8 @@
             const [showHelp, setShowHelp] = useState(false);
             const [userEmail, setUserEmail] = useState('');
             const [isSubmitting, setIsSubmitting] = useState(false);
-            
+            const [aiReviewing, setAiReviewing] = useState(false);
+
             const [marketData, setMarketData] = useState({
                 totalCustomers: '',
                 avgSpending: '',
@@ -436,6 +444,41 @@
             };
 
             const future = calculateFuture();
+
+            // AI-gated step navigation
+            const handleNext = async (fromStep) => {
+                const userId = localStorage.getItem('ft_user_id');
+                if (!userId) { alert('User not authenticated.'); return; }
+                setAiReviewing(true);
+                try {
+                    let stepAnswers = {};
+                    let stepName = '';
+                    if (fromStep === 1) {
+                        stepName = 'Market Size';
+                        stepAnswers = {
+                            tam: { totalCustomers: marketData.totalCustomers, avgSpending: marketData.avgSpending, purchasesPerYear: marketData.purchasesPerYear, grossMargin: marketData.grossMargin, marketSize: marketSize, profitPool: profitPool }
+                        };
+                    } else if (fromStep === 2) {
+                        stepName = 'Driving Forces';
+                        stepAnswers = {
+                            driving_forces: drivingForces.filter(f => f.name.trim()).map(f => ({
+                                name: f.name, impact: f.impact, probability: f.probability, score: (2 * f.impact) + f.probability
+                            }))
+                        };
+                    }
+                    const canProceed = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, stepName);
+                    if (canProceed) {
+                        if (fromStep === 1) setStep(1.5);
+                        else if (fromStep === 2) setStep(3);
+                    }
+                } catch (err) {
+                    console.warn('[AIChallenge] Error, allowing passage:', err);
+                    if (fromStep === 1) setStep(1.5);
+                    else if (fromStep === 2) setStep(3);
+                } finally {
+                    setAiReviewing(false);
+                }
+            };
 
             // Auto-save functionality
             useEffect(() => {
@@ -730,7 +773,8 @@
                             setPhase={setStep1Phase}
                             canProceedPhase1={canProceedStep1Phase1}
                             canProceed={canProceedStep1}
-                            onNext={() => setStep(1.5)}
+                            onNext={() => handleNext(1)}
+                            aiReviewing={aiReviewing}
                         />}
 
                         {/* Transition Screen */}
@@ -752,7 +796,8 @@
                             showMistakesPopup={showMistakesPopup}
                             setShowMistakesPopup={setShowMistakesPopup}
                             onBack={() => setStep(1)}
-                            onNext={() => setStep(3)}
+                            onNext={() => handleNext(2)}
+                            aiReviewing={aiReviewing}
                         />}
 
                         {/* Step 3: Future Impact */}
@@ -806,7 +851,7 @@
         }
 
         // Step 1: Market Size Component - REDESIGNED
-        function Step1({ marketData, setMarketData, marketSize, profitPool, currentYear, phase, setPhase, canProceedPhase1, canProceed, onNext }) {
+        function Step1({ marketData, setMarketData, marketSize, profitPool, currentYear, phase, setPhase, canProceedPhase1, canProceed, onNext, aiReviewing }) {
             return (
                 <main className="p-12 max-w-6xl mx-auto">
                     <div className="animate-in">
@@ -971,11 +1016,12 @@
                                 </div>
 
                                 <div className="flex justify-end">
-                                    <button 
+                                    <button
                                         className="btn-primary text-xl py-4 px-8"
+                                        disabled={aiReviewing}
                                         onClick={onNext}
                                     >
-                                        Next: Driving Forces →
+                                        {aiReviewing ? 'AI Coach Reviewing...' : 'Next: Driving Forces →'}
                                     </button>
                                 </div>
                             </>
@@ -986,7 +1032,7 @@
         }
 
         // Step 2: Driving Forces Component - COMPACT SLIDERS
-        function Step2({ drivingForces, setDrivingForces, rankedForces, topForces, phase, setPhase, canProceed, showMistakesPopup, setShowMistakesPopup, onBack, onNext }) {
+        function Step2({ drivingForces, setDrivingForces, rankedForces, topForces, phase, setPhase, canProceed, showMistakesPopup, setShowMistakesPopup, onBack, onNext, aiReviewing }) {
             const addForce = () => {
                 const newId = Math.max(...drivingForces.map(f => f.id), 0) + 1;
                 setDrivingForces([...drivingForces, { id: newId, name: '', impact: 3, probability: 3 }]);
@@ -1204,11 +1250,12 @@
                                         <button className="btn-secondary text-lg py-3 px-6" onClick={onBack}>
                                     ← Back
                                 </button>
-                                <button 
+                                <button
                                             className="btn-primary text-xl py-4 px-8"
+                                    disabled={aiReviewing}
                                     onClick={onNext}
                                 >
-                                    Next: Impact Analysis →
+                                    {aiReviewing ? 'AI Coach Reviewing...' : 'Next: Impact Analysis →'}
                                 </button>
                             </div>
                                 </>
@@ -1288,9 +1335,12 @@
                 const result = await submitToSupabase(submissionData);
 
                 if (result.success) {
-                    alert('✅ Submission saved successfully!');
+                    alert('Submission saved successfully!');
+                } else if (result.revised) {
+                    // User chose to revise — stay on this step
+                    return false;
                 } else {
-                    alert('❌ Submission failed. Please try again.');
+                    alert('Submission failed. Please try again.');
                 }
 
                 return result.success;

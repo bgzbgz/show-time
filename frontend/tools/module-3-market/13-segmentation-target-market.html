@@ -18,6 +18,7 @@
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../../shared/js/tool-db.js"></script>
+  <script src="../../shared/js/ai-challenge.js"></script>
   <script src="../../shared/js/dependency-injection.js"></script>
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
     <script src="../../shared/js/cognitive-load.js"></script>
@@ -295,6 +296,7 @@
       const [showTransition, setShowTransition] = useState(false);
       const [transitionMessage, setTransitionMessage] = useState('');
       const [transitionProgress, setTransitionProgress] = useState(0);
+      const [aiReviewing, setAiReviewing] = useState(false);
 
       const [data, setData] = useState({
         // User details
@@ -482,32 +484,59 @@
         }));
       };
 
-      const goNext = () => {
-        if (step === 0.5) {
-          setStep(1);
-        } else if (step >= 1 && step < 4) {
+      const doTransition = (nextStep) => {
+        if (step >= 1 && step <= 4) {
           const messages = ['25% COMPLETE', '50% COMPLETE', '75% COMPLETE', '100% COMPLETE'];
           const progressValues = [25, 50, 75, 100];
-
-          setTransitionMessage(messages[step - 1]);
-          setTransitionProgress(progressValues[step - 1]);
+          const idx = Math.min(step - 1, 3);
+          setTransitionMessage(step === 4 ? '100% COMPLETE' : messages[idx]);
+          setTransitionProgress(step === 4 ? 100 : progressValues[idx]);
           setShowTransition(true);
-
           setTimeout(() => {
             setShowTransition(false);
-            setStep(step + 1);
+            setStep(nextStep);
           }, 2000);
-        } else if (step === 4) {
-          setTransitionMessage('100% COMPLETE');
-          setTransitionProgress(100);
-          setShowTransition(true);
+        } else {
+          setStep(nextStep);
+        }
+      };
 
-          setTimeout(() => {
-            setShowTransition(false);
-            setStep(5);
-          }, 2000);
-        } else if (step === 0) {
-          setStep(0.5);
+      const goNext = async () => {
+        if (step === 0) { setStep(0.5); return; }
+        if (step === 0.5) { setStep(1); return; }
+
+        // AI-gated steps 1-4
+        if (step >= 1 && step <= 4) {
+          const userId = localStorage.getItem('ft_user_id');
+          if (!userId) { alert('User not authenticated.'); return; }
+          setAiReviewing(true);
+          try {
+            let stepAnswers = {};
+            let stepName = '';
+            if (step === 1) {
+              stepName = 'Define Segments';
+              stepAnswers = { segments_define: { customerBehaviors: data.customerBehaviors, segments: data.segments } };
+            } else if (step === 2) {
+              stepName = 'Quantify Segments';
+              stepAnswers = { segments_quantify: { segmentSizes: data.segmentSizes } };
+            } else if (step === 3) {
+              stepName = 'Attractiveness Index';
+              stepAnswers = { segments_rank: { attractivenessCriteria: data.attractivenessCriteria, criteriaWeights: data.criteriaWeights } };
+            } else if (step === 4) {
+              stepName = 'Target Market & Goals';
+              stepAnswers = { primary_target: { targetSegments: data.targetSegments, marketShareGoals: data.marketShareGoals, endGame: data.endGame } };
+            }
+            const canProceed = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, stepName);
+            if (canProceed) {
+              doTransition(step === 4 ? 5 : step + 1);
+            }
+          } catch (err) {
+            console.warn('[AIChallenge] Error, allowing passage:', err);
+            doTransition(step === 4 ? 5 : step + 1);
+          } finally {
+            setAiReviewing(false);
+          }
+          return;
         }
       };
 
@@ -572,9 +601,11 @@
         }
       };
 
+      const [submitStatus, setSubmitStatus] = useState(null);
+      const [submitMessage, setSubmitMessage] = useState('');
+
       const handleSubmit = async () => {
         try {
-          // Get user ID from localStorage
           const userId = localStorage.getItem('ft_user_id');
           if (!userId) {
             alert('User not authenticated. Please return to the dashboard.');
@@ -585,10 +616,13 @@
               segments_list: { customerBehaviors: data.customerBehaviors, segments: data.segments, segmentSizes: data.segmentSizes, attractivenessCriteria: data.attractivenessCriteria, criteriaWeights: data.criteriaWeights },
               primary_target: { targetSegments: data.targetSegments, marketShareGoals: data.marketShareGoals, endGame: data.endGame }
           };
-          await ToolDB.save(userId, questionMappings);
-          await ToolDB.markComplete(userId);
 
-          alert('Segmentation & Target Market plan submitted successfully!');
+          await window.AIChallenge.submitWithChallenge(userId, CONFIG.TOOL_SLUG, questionMappings, {
+              onReviewStart: () => { setSubmitMessage('AI coach is reviewing...'); },
+              onRevise: () => { setSubmitStatus(null); setSubmitMessage(''); setStep(4); },
+              onSubmitAnyway: () => { setSubmitStatus('success'); setSubmitMessage('Submission saved successfully!'); alert('Segmentation & Target Market plan submitted successfully!'); },
+              onError: (err) => { setSubmitStatus('error'); setSubmitMessage('Failed to save: ' + err.message); alert('Submission failed: ' + err.message); }
+          });
         } catch (error) {
           console.error('Submit error:', error);
           alert('Submission failed: ' + error.message + '\n\nYour data is still saved locally. Please try again or contact support.');
@@ -621,6 +655,7 @@
               addSegment={addSegment}
               removeSegment={removeSegment}
               updateSegment={updateSegment}
+              aiReviewing={aiReviewing}
             />
             {showHelp && <HelpModal onClose={() => setShowHelp(false)} stepNumber={1} />}
           </>
@@ -640,6 +675,7 @@
               addSegmentSize={addSegmentSize}
               removeSegmentSize={removeSegmentSize}
               updateSegmentSize={updateSegmentSize}
+              aiReviewing={aiReviewing}
             />
             {showHelp && <HelpModal onClose={() => setShowHelp(false)} stepNumber={2} />}
           </>
@@ -659,6 +695,7 @@
               addAttractiveness={addAttractiveness}
               removeAttractiveness={removeAttractiveness}
               updateAttractiveness={updateAttractiveness}
+              aiReviewing={aiReviewing}
             />
             {showHelp && <HelpModal onClose={() => setShowHelp(false)} stepNumber={3} />}
           </>
@@ -678,6 +715,7 @@
               addMarketShareGoal={addMarketShareGoal}
               removeMarketShareGoal={removeMarketShareGoal}
               updateMarketShareGoal={updateMarketShareGoal}
+              aiReviewing={aiReviewing}
             />
             {showHelp && <HelpModal onClose={() => setShowHelp(false)} stepNumber={4} />}
           </>
@@ -923,7 +961,7 @@
     }
 
     // Step 1: Define Segments
-    function Step1Page({ data, updateData, onNext, onBack, canProceed, setShowHelp, addSegment, removeSegment, updateSegment }) {
+    function Step1Page({ data, updateData, onNext, onBack, canProceed, setShowHelp, addSegment, removeSegment, updateSegment, aiReviewing }) {
       return (
         <div className="min-h-screen bg-white">
           <HelpButton onClick={() => setShowHelp(true)} />
@@ -1071,10 +1109,10 @@
                 </button>
                 <button
                   onClick={onNext}
-                  disabled={!canProceed}
+                  disabled={!canProceed || aiReviewing}
                   className="btn-primary"
                 >
-                  Next: Quantify Segments →
+                  {aiReviewing ? 'AI Coach Reviewing...' : 'Next: Quantify Segments →'}
                 </button>
               </div>
             </div>
@@ -1084,7 +1122,7 @@
     }
 
     // Step 2: Quantify Segments
-    function Step2Page({ data, updateData, onNext, onBack, canProceed, setShowHelp, addSegmentSize, removeSegmentSize, updateSegmentSize }) {
+    function Step2Page({ data, updateData, onNext, onBack, canProceed, setShowHelp, addSegmentSize, removeSegmentSize, updateSegmentSize, aiReviewing }) {
       return (
         <div className="min-h-screen bg-white">
           <HelpButton onClick={() => setShowHelp(true)} />
@@ -1218,10 +1256,10 @@
                 </button>
                 <button
                   onClick={onNext}
-                  disabled={!canProceed}
+                  disabled={!canProceed || aiReviewing}
                   className="btn-primary"
                 >
-                  Next: Rank Segments →
+                  {aiReviewing ? 'AI Coach Reviewing...' : 'Next: Rank Segments →'}
                 </button>
               </div>
             </div>
@@ -1231,7 +1269,7 @@
     }
 
     // Step 3: Attractiveness Index
-    function Step3Page({ data, updateData, onNext, onBack, canProceed, setShowHelp, addAttractiveness, removeAttractiveness, updateAttractiveness }) {
+    function Step3Page({ data, updateData, onNext, onBack, canProceed, setShowHelp, addAttractiveness, removeAttractiveness, updateAttractiveness, aiReviewing }) {
       return (
         <div className="min-h-screen bg-white">
           <HelpButton onClick={() => setShowHelp(true)} />
@@ -1423,10 +1461,10 @@
                 </button>
                 <button
                   onClick={onNext}
-                  disabled={!canProceed}
+                  disabled={!canProceed || aiReviewing}
                   className="btn-primary"
                 >
-                  Next: Target Market Selection →
+                  {aiReviewing ? 'AI Coach Reviewing...' : 'Next: Target Market Selection →'}
                 </button>
               </div>
             </div>
@@ -1436,7 +1474,7 @@
     }
 
     // Step 4: Target Market & Goals
-    function Step4Page({ data, updateData, onNext, onBack, canProceed, setShowHelp, addMarketShareGoal, removeMarketShareGoal, updateMarketShareGoal }) {
+    function Step4Page({ data, updateData, onNext, onBack, canProceed, setShowHelp, addMarketShareGoal, removeMarketShareGoal, updateMarketShareGoal, aiReviewing }) {
       return (
         <div className="min-h-screen bg-white">
           <HelpButton onClick={() => setShowHelp(true)} />
@@ -1599,10 +1637,10 @@
                 </button>
                 <button
                   onClick={onNext}
-                  disabled={!canProceed}
+                  disabled={!canProceed || aiReviewing}
                   className="btn-primary"
                 >
-                  Complete & View Canvas →
+                  {aiReviewing ? 'AI Coach Reviewing...' : 'Complete & View Canvas →'}
                 </button>
               </div>
             </div>

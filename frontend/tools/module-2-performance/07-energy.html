@@ -147,6 +147,7 @@
     <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../../shared/js/tool-db.js"></script>
+    <script src="../../shared/js/ai-challenge.js"></script>
     <script src="../../shared/js/dependency-injection.js"></script>
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
     <script src="../../shared/js/cognitive-load.js"></script>
@@ -488,51 +489,49 @@
                 setStep(newStep);
             };
             
+            const [submitStatus, setSubmitStatus] = useState(null);
+            const [submitMessage, setSubmitMessage] = useState('');
+
             const handleSubmit = async () => {
-                try {
-                    const userId = localStorage.getItem('ft_user_id');
-                    if (!userId) {
-                        alert('User not authenticated. Please return to the dashboard.');
-                        return;
-                    }
-
-                    const questionMappings = {
-                        energy_audit: {
-                            sleep: { rating: formData.sleepRating, doWell: formData.sleepDoWell, notDoWell: formData.sleepNotDoWell, goals: formData.sleepGoals },
-                            food: { rating: formData.foodRating, doWell: formData.foodDoWell, notDoWell: formData.foodNotDoWell, goals: formData.foodGoals },
-                            movement: { rating: formData.movementRating, doWell: formData.movementDoWell, notDoWell: formData.movementNotDoWell, goals: formData.movementGoals },
-                            brain: { rating: formData.brainRating, doWell: formData.brainDoWell, notDoWell: formData.brainNotDoWell, goals: formData.brainGoals }
-                        },
-                        habit_commitments: {
-                            sleep: { keyHabit: formData.sleepKeyHabit, trigger: formData.sleepTrigger, routine: formData.sleepRoutine, reward: formData.sleepReward, accountabilityPartner: formData.sleepAccountabilityPartner },
-                            food: { keyHabit: formData.foodKeyHabit, trigger: formData.foodTrigger, routine: formData.foodRoutine, reward: formData.foodReward, accountabilityPartner: formData.foodAccountabilityPartner },
-                            movement: { keyHabit: formData.movementKeyHabit, trigger: formData.movementTrigger, routine: formData.movementRoutine, reward: formData.movementReward, accountabilityPartner: formData.movementAccountabilityPartner },
-                            brain: { keyHabit: formData.brainKeyHabit, trigger: formData.brainTrigger, routine: formData.brainRoutine, reward: formData.brainReward, accountabilityPartner: formData.brainAccountabilityPartner }
-                        },
-                        team_strategies: {
-                            mentalCanControl: formData.mentalCanControl,
-                            mentalCannotControl: formData.mentalCannotControl,
-                            stopDoing: [formData.stopDoing1, formData.stopDoing2, formData.stopDoing3],
-                            doLess: [formData.doLess1, formData.doLess2, formData.doLess3],
-                            doMore: [formData.doMore1, formData.doMore2, formData.doMore3]
-                        },
-                        energy_woop: {
-                            eventDescription: formData.eventDescription,
-                            gapAnalysis: formData.gapAnalysis,
-                            idealResponse: formData.idealResponse,
-                            futurePlan: formData.futurePlan
-                        }
-                    };
-                    await ToolDB.save(userId, questionMappings);
-                    await ToolDB.markComplete(userId);
-
-                    alert('Submission saved successfully!');
-                    setStep('success');
-
-                } catch (error) {
-                    console.error('Submission error:', error);
-                    alert('Failed to save: ' + error.message);
+                const userId = localStorage.getItem('ft_user_id');
+                if (!userId) {
+                    alert('User not authenticated. Please return to the dashboard.');
+                    return;
                 }
+
+                const questionMappings = {
+                    energy_audit: {
+                        sleep: { rating: formData.sleepRating, doWell: formData.sleepDoWell, notDoWell: formData.sleepNotDoWell, goals: formData.sleepGoals },
+                        food: { rating: formData.foodRating, doWell: formData.foodDoWell, notDoWell: formData.foodNotDoWell, goals: formData.foodGoals },
+                        movement: { rating: formData.movementRating, doWell: formData.movementDoWell, notDoWell: formData.movementNotDoWell, goals: formData.movementGoals },
+                        brain: { rating: formData.brainRating, doWell: formData.brainDoWell, notDoWell: formData.brainNotDoWell, goals: formData.brainGoals }
+                    },
+                    habit_commitments: {
+                        sleep: { keyHabit: formData.sleepKeyHabit, trigger: formData.sleepTrigger, routine: formData.sleepRoutine, reward: formData.sleepReward, accountabilityPartner: formData.sleepAccountabilityPartner },
+                        food: { keyHabit: formData.foodKeyHabit, trigger: formData.foodTrigger, routine: formData.foodRoutine, reward: formData.foodReward, accountabilityPartner: formData.foodAccountabilityPartner },
+                        movement: { keyHabit: formData.movementKeyHabit, trigger: formData.movementTrigger, routine: formData.movementRoutine, reward: formData.movementReward, accountabilityPartner: formData.movementAccountabilityPartner },
+                        brain: { keyHabit: formData.brainKeyHabit, trigger: formData.brainTrigger, routine: formData.brainRoutine, reward: formData.brainReward, accountabilityPartner: formData.brainAccountabilityPartner }
+                    },
+                    team_strategies: {
+                        mentalCanControl: formData.mentalCanControl,
+                        mentalCannotControl: formData.mentalCannotControl,
+                        stopDoing: [formData.stopDoing1, formData.stopDoing2, formData.stopDoing3],
+                        doLess: [formData.doLess1, formData.doLess2, formData.doLess3],
+                        doMore: [formData.doMore1, formData.doMore2, formData.doMore3]
+                    },
+                    energy_woop: {
+                        eventDescription: formData.eventDescription,
+                        gapAnalysis: formData.gapAnalysis,
+                        idealResponse: formData.idealResponse,
+                        futurePlan: formData.futurePlan
+                    }
+                };
+                await window.AIChallenge.submitWithChallenge(userId, CONFIG.TOOL_SLUG, questionMappings, {
+                    onReviewStart: () => { setSubmitStatus('saving'); setSubmitMessage('AI coach is reviewing...'); },
+                    onRevise: () => { setSubmitStatus(null); setSubmitMessage(''); goToStep('mental'); },
+                    onSubmitAnyway: () => { setSubmitStatus('success'); setSubmitMessage('Submission saved successfully!'); setStep('success'); },
+                    onError: (err) => { setSubmitStatus('error'); setSubmitMessage('Failed to save: ' + err.message); }
+                });
             };
             
             // Cover Page
@@ -847,10 +846,15 @@
                             
                             <div className="flex gap-4">
                                 <button onClick={() => goToStep('mental')} className="btn-secondary">← Back to Edit</button>
-                                <button onClick={handleSubmit} className="btn-primary flex-1 text-xl">
-                                    Submit My Energy Protocol
+                                <button onClick={handleSubmit} className="btn-primary flex-1 text-xl" disabled={submitStatus === 'saving'}>
+                                    {submitStatus === 'saving' ? 'AI Coach Reviewing...' : 'Submit My Energy Protocol'}
                                 </button>
                             </div>
+                            {submitStatus && submitMessage && (
+                                <div style={{ marginTop: 16, padding: '12px 16px', textAlign: 'center', background: submitStatus === 'success' ? '#f0fdf4' : submitStatus === 'error' ? '#fef2f2' : '#f5f5f5', border: `1px solid ${submitStatus === 'success' ? '#bbf7d0' : submitStatus === 'error' ? '#fecaca' : '#e0e0e0'}`, fontSize: 14 }}>
+                                    <span style={{ color: submitStatus === 'success' ? '#166534' : submitStatus === 'error' ? '#991b1b' : '#333' }}>{submitMessage}</span>
+                                </div>
+                            )}
 
                             {/* Case Study */}
                             <CaseStudy

@@ -18,6 +18,7 @@
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../../shared/js/tool-db.js"></script>
+  <script src="../../shared/js/ai-challenge.js"></script>
   <script src="../../shared/js/dependency-injection.js"></script>
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
     <script src="../../shared/js/cognitive-load.js"></script>
@@ -361,6 +362,7 @@
       const [showTransition, setShowTransition] = useState(false);
       const [transitionMessage, setTransitionMessage] = useState('');
       const [transitionProgress, setTransitionProgress] = useState(0);
+      const [aiReviewing, setAiReviewing] = useState(false);
 
       const [data, setData] = useState({
         teamMembers: [
@@ -455,23 +457,52 @@
         updateData('teamMembers', updated);
       };
 
-      const goNext = () => {
+      const goNext = async () => {
         if (step === 0.5) {
           setStep(1);
-        } else if (step >= 1 && step < 4) {
-          const messages = ['25% COMPLETE', '50% COMPLETE', '75% COMPLETE', '100% COMPLETE'];
-          const progressValues = [25, 50, 75, 100];
+        } else if (step >= 1 && step <= 4) {
+          const userId = localStorage.getItem('ft_user_id');
+          if (userId && step >= 1 && step <= 4) {
+            setAiReviewing(true);
+            try {
+              let stepAnswers = {};
+              let stepName = '';
+              const teamMembers = data.teamMembers || [];
+              if (step === 1) {
+                stepName = 'Team Members';
+                stepAnswers = { team_list: teamMembers.map(m => ({ name: m.name, role: m.role, tenure: m.tenure })) };
+              } else if (step === 2) {
+                stepName = 'FIT Analysis';
+                stepAnswers = { fit_scores: teamMembers.map(m => ({ name: m.name, energyScore: m.energyScore, skillScore: m.skillScore, valuesScore: m.valuesScore, impactScore: m.impactScore })) };
+              } else if (step === 3) {
+                stepName = 'ABC Classification';
+                stepAnswers = { classification: teamMembers.map(m => ({ name: m.name, abcRating: m.abcRating, abcReasoning: m.abcReasoning })) };
+              } else if (step === 4) {
+                stepName = 'Action Plans';
+                stepAnswers = { action_plans: teamMembers.filter(m => m.abcRating === 'B' || m.abcRating === 'C').map(m => ({ name: m.name, abcRating: m.abcRating, developmentNeeds: m.developmentNeeds, coachingPlan: m.coachingPlan, roleChanges: m.roleChanges, toughDecisions: m.toughDecisions })) };
+              }
+              const canProceed = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, stepName);
+              if (!canProceed) { setAiReviewing(false); return; }
+            } catch (err) {
+              console.warn('[AIChallenge] Error, allowing passage:', err);
+            } finally {
+              setAiReviewing(false);
+            }
+          }
 
-          setTransitionMessage(messages[step - 1]);
-          setTransitionProgress(progressValues[step - 1]);
-          setShowTransition(true);
-
-          setTimeout(() => {
-            setShowTransition(false);
-            setStep(step + 1);
-          }, 2000);
-        } else if (step === 4) {
-          setStep(5);
+          if (step >= 1 && step < 4) {
+            const messages = ['25% COMPLETE', '50% COMPLETE', '75% COMPLETE', '100% COMPLETE'];
+            const progressValues = [25, 50, 75, 100];
+            setTransitionMessage(messages[step - 1]);
+            setTransitionProgress(progressValues[step - 1]);
+            setShowTransition(true);
+            setTimeout(() => {
+              setShowTransition(false);
+              setStep(step + 1);
+            }, 2000);
+          } else if (step === 4) {
+            setStep(5);
+          }
         } else if (step === 0) {
           setStep(0.5);
         }
@@ -564,7 +595,6 @@
       };
 
       const handleSubmit = async () => {
-        // Get user ID from localStorage
         const userId = localStorage.getItem('ft_user_id');
         if (!userId) {
           alert('User not authenticated. Please return to the dashboard.');
@@ -599,9 +629,12 @@
               timeline: m.timeline
             }))
           };
-          await ToolDB.save(userId, questionMappings);
-          await ToolDB.markComplete(userId);
-          alert('FIT & ABC Analysis submitted successfully!');
+          await window.AIChallenge.submitWithChallenge(userId, CONFIG.TOOL_SLUG, questionMappings, {
+            onReviewStart: () => {},
+            onRevise: () => { setStep(4); },
+            onSubmitAnyway: () => { alert('FIT & ABC Analysis submitted successfully!'); },
+            onError: (err) => { alert('Submission failed: ' + err.message); }
+          });
           return true;
         } catch (error) {
           console.error('Supabase submission error:', error);
@@ -632,8 +665,9 @@
             removeTeamMember={removeTeamMember}
             onNext={goNext}
             onBack={goBack}
-            canProceed={isStep1Valid()}
+            canProceed={!aiReviewing && isStep1Valid()}
             setShowHelp={setShowHelp}
+            aiReviewing={aiReviewing}
           />
         );
       }
@@ -645,8 +679,9 @@
             updateTeamMember={updateTeamMember}
             onNext={goNext}
             onBack={goBack}
-            canProceed={isStep2Valid()}
+            canProceed={!aiReviewing && isStep2Valid()}
             setShowHelp={setShowHelp}
+            aiReviewing={aiReviewing}
           />
         );
       }
@@ -658,8 +693,9 @@
             updateTeamMember={updateTeamMember}
             onNext={goNext}
             onBack={goBack}
-            canProceed={isStep3Valid()}
+            canProceed={!aiReviewing && isStep3Valid()}
             setShowHelp={setShowHelp}
+            aiReviewing={aiReviewing}
           />
         );
       }
@@ -671,8 +707,9 @@
             updateTeamMember={updateTeamMember}
             onNext={goNext}
             onBack={goBack}
-            canProceed={isStep4Valid()}
+            canProceed={!aiReviewing && isStep4Valid()}
             setShowHelp={setShowHelp}
+            aiReviewing={aiReviewing}
           />
         );
       }
@@ -946,7 +983,7 @@
     }
 
     // Step 1: Team Member List
-    function Step1Page({ data, updateTeamMember, addTeamMember, removeTeamMember, onNext, onBack, canProceed, setShowHelp }) {
+    function Step1Page({ data, updateTeamMember, addTeamMember, removeTeamMember, onNext, onBack, canProceed, setShowHelp, aiReviewing }) {
       const [showHelpModal, setShowHelpModal] = useState(false);
 
       return (
@@ -1067,7 +1104,7 @@
                 disabled={!canProceed}
                 className="btn-primary flex-1"
               >
-                NEXT: FIT ANALYSIS →
+                {aiReviewing ? 'AI Coach Reviewing...' : 'NEXT: FIT ANALYSIS →'}
               </button>
             </div>
           </div>
@@ -1076,7 +1113,7 @@
     }
 
     // Step 2: FIT Analysis
-    function Step2Page({ data, updateTeamMember, onNext, onBack, canProceed, setShowHelp }) {
+    function Step2Page({ data, updateTeamMember, onNext, onBack, canProceed, setShowHelp, aiReviewing }) {
       const [showHelpModal, setShowHelpModal] = useState(false);
 
       const RatingScale = ({ value, onChange, label }) => {
@@ -1225,7 +1262,7 @@
                 disabled={!canProceed}
                 className="btn-primary flex-1"
               >
-                NEXT: ABC CLASSIFICATION →
+                {aiReviewing ? 'AI Coach Reviewing...' : 'NEXT: ABC CLASSIFICATION →'}
               </button>
             </div>
           </div>
@@ -1234,7 +1271,7 @@
     }
 
     // Step 3: ABC Classification
-    function Step3Page({ data, updateTeamMember, onNext, onBack, canProceed, setShowHelp }) {
+    function Step3Page({ data, updateTeamMember, onNext, onBack, canProceed, setShowHelp, aiReviewing }) {
       const [showHelpModal, setShowHelpModal] = useState(false);
 
       return (
@@ -1390,7 +1427,7 @@
                 disabled={!canProceed}
                 className="btn-primary flex-1"
               >
-                NEXT: ACTION PLANS →
+                {aiReviewing ? 'AI Coach Reviewing...' : 'NEXT: ACTION PLANS →'}
               </button>
             </div>
           </div>
@@ -1399,7 +1436,7 @@
     }
 
     // Step 4: Action Plans
-    function Step4Page({ data, updateTeamMember, onNext, onBack, canProceed, setShowHelp }) {
+    function Step4Page({ data, updateTeamMember, onNext, onBack, canProceed, setShowHelp, aiReviewing }) {
       const [showHelpModal, setShowHelpModal] = useState(false);
 
       return (
@@ -1538,7 +1575,7 @@
                 disabled={!canProceed}
                 className="btn-primary flex-1"
               >
-                VIEW CANVAS →
+                {aiReviewing ? 'AI Coach Reviewing...' : 'VIEW CANVAS →'}
               </button>
             </div>
           </div>

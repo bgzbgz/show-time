@@ -18,6 +18,7 @@
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../../shared/js/tool-db.js"></script>
+  <script src="../../shared/js/ai-challenge.js"></script>
   <script src="../../shared/js/dependency-injection.js"></script>
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
     <script src="../../shared/js/cognitive-load.js"></script>
@@ -731,7 +732,6 @@
 
       // Supabase submission
       const handleSubmit = async () => {
-        // Get user ID from localStorage
         const userId = localStorage.getItem('ft_user_id');
         if (!userId) {
           alert('User not authenticated. Please return to the dashboard.');
@@ -751,9 +751,12 @@
             }
           };
 
-          await ToolDB.save(userId, questionMappings);
-          await ToolDB.markComplete(userId);
-          alert('Employer Branding Strategy submitted successfully!');
+          await window.AIChallenge.submitWithChallenge(userId, CONFIG.TOOL_SLUG, questionMappings, {
+            onReviewStart: () => {},
+            onRevise: () => { setStep(1); },
+            onSubmitAnyway: () => { alert('Employer Branding Strategy submitted successfully!'); },
+            onError: (err) => { alert('Submission failed: ' + err.message); }
+          });
           return true;
         } catch (error) {
           console.error('Supabase submission error:', error);

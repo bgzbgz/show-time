@@ -18,6 +18,7 @@
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../../shared/js/tool-db.js"></script>
+  <script src="../../shared/js/ai-challenge.js"></script>
   <script src="../../shared/js/dependency-injection.js"></script>
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
     <script src="../../shared/js/cognitive-load.js"></script>
@@ -590,6 +591,7 @@
     function DigitalHeartApp() {
       const [step, setStep] = useState(0);
       const [showHelp, setShowHelp] = useState(false);
+      const [aiReviewing, setAiReviewing] = useState(false);
 
       const [data, setData] = useState({
         decisions: [
@@ -696,11 +698,10 @@
         return true;
       };
 
-      const nextStep = () => {
+      const nextStep = async () => {
         if (step === 0) setStep(0.5);
         else if (step === 0.5) {
           setStep(1);
-          // Initialize data sources for each decision
           const decisions = data.decisions || [];
           if ((data.dataSources || []).length === 0) {
             setData(prev => ({
@@ -716,48 +717,76 @@
             }));
           }
         }
-        else if (step === 1) {
-          setStep(2);
-          // Initialize technology for each decision
-          const decisions = data.decisions || [];
-          if ((data.technology || []).length === 0) {
-            setData(prev => ({
-              ...prev,
-              technology: decisions.map(d => ({
-                decisionId: d.id,
-                decisionName: d.decisionName,
-                collectionMethod: '',
-                storageSystem: '',
-                algorithms: [{ id: 1, algorithm: '', purpose: '', complexity: '' }],
-                processingFrequency: '',
-                dataIntegration: '',
-                securityRequirements: ''
-              }))
-            }));
+        else if (step >= 1 && step <= 4) {
+          const userId = localStorage.getItem('ft_user_id');
+          if (userId) {
+            setAiReviewing(true);
+            try {
+              let stepAnswers = {};
+              let stepName = '';
+              if (step === 1) {
+                stepName = 'Core Decisions';
+                stepAnswers = { decisions: data.decisions };
+              } else if (step === 2) {
+                stepName = 'Data Sources';
+                stepAnswers = { dataSources: data.dataSources };
+              } else if (step === 3) {
+                stepName = 'Technology Platform';
+                stepAnswers = { technology: data.technology };
+              } else if (step === 4) {
+                stepName = 'APIs & Access';
+                stepAnswers = { apis: data.apis };
+              }
+              const proceed = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, stepName);
+              if (!proceed) { setAiReviewing(false); return; }
+            } catch (err) {
+              console.warn('[AIChallenge] Error, allowing passage:', err);
+            } finally {
+              setAiReviewing(false);
+            }
           }
-        }
-        else if (step === 2) {
-          setStep(3);
-          // Initialize APIs for each decision
-          const decisions = data.decisions || [];
-          if ((data.apis || []).length === 0) {
-            setData(prev => ({
-              ...prev,
-              apis: decisions.map(d => ({
-                decisionId: d.id,
-                decisionName: d.decisionName,
-                apiEndpoints: [{ id: 1, endpoint: '', purpose: '', users: '' }],
-                accessMethod: '',
-                userInterface: '',
-                updateFrequency: '',
-                userTraining: '',
-                accessControls: ''
-              }))
-            }));
+
+          if (step === 1) {
+            setStep(2);
+            const decisions = data.decisions || [];
+            if ((data.technology || []).length === 0) {
+              setData(prev => ({
+                ...prev,
+                technology: decisions.map(d => ({
+                  decisionId: d.id,
+                  decisionName: d.decisionName,
+                  collectionMethod: '',
+                  storageSystem: '',
+                  algorithms: [{ id: 1, algorithm: '', purpose: '', complexity: '' }],
+                  processingFrequency: '',
+                  dataIntegration: '',
+                  securityRequirements: ''
+                }))
+              }));
+            }
           }
+          else if (step === 2) {
+            setStep(3);
+            const decisions = data.decisions || [];
+            if ((data.apis || []).length === 0) {
+              setData(prev => ({
+                ...prev,
+                apis: decisions.map(d => ({
+                  decisionId: d.id,
+                  decisionName: d.decisionName,
+                  apiEndpoints: [{ id: 1, endpoint: '', purpose: '', users: '' }],
+                  accessMethod: '',
+                  userInterface: '',
+                  updateFrequency: '',
+                  userTraining: '',
+                  accessControls: ''
+                }))
+              }));
+            }
+          }
+          else if (step === 3) setStep(4);
+          else if (step === 4) setStep(5);
         }
-        else if (step === 3) setStep(4);
-        else if (step === 4) setStep(5);
       };
 
       const prevStep = () => {
@@ -807,9 +836,9 @@
               <button
                 className="btn-primary"
                 onClick={nextStep}
-                disabled={!canProceed()}
+                disabled={aiReviewing || !canProceed()}
               >
-                Continue
+                {aiReviewing ? 'AI Coach Reviewing...' : 'Continue'}
               </button>
             </div>
           )}
@@ -2167,7 +2196,6 @@
       const canvasRef = useRef(null);
 
       const handleSubmit = async () => {
-        // Get user ID from localStorage
         const userId = localStorage.getItem('ft_user_id');
         if (!userId) {
           alert('User not authenticated. Please return to the dashboard.');
@@ -2187,9 +2215,12 @@
             }
           };
 
-          await ToolDB.save(userId, questionMappings);
-          await ToolDB.markComplete(userId);
-          alert('Digital Heart (Data Lake) plan submitted successfully!');
+          await window.AIChallenge.submitWithChallenge(userId, CONFIG.TOOL_SLUG, questionMappings, {
+            onReviewStart: () => {},
+            onRevise: () => { onBack(); },
+            onSubmitAnyway: () => { alert('Digital Heart (Data Lake) plan submitted successfully!'); },
+            onError: (err) => { alert('Submission failed: ' + err.message); }
+          });
           return true;
         } catch (error) {
           console.error('Supabase submission error:', error);

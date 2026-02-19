@@ -14,6 +14,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <!-- ToolDB shared library -->
     <script src="../../shared/js/tool-db.js"></script>
+    <script src="../../shared/js/ai-challenge.js"></script>
     <!-- Dependency Injection -->
     <script src="../../shared/js/dependency-injection.js"></script>
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
@@ -2263,7 +2264,9 @@
         // Canvas View Component - CAROUSEL STYLE
         function CanvasView({ formData, onBack }) {
             const [canvasView, setCanvasView] = useState(0); // 0=summary, 1=dream, 2=strengths, 3=values, 4=growth
-            
+            const [submitStatus, setSubmitStatus] = useState(null);
+            const [submitMessage, setSubmitMessage] = useState('');
+
             const handleShare = () => {
                 alert('SHARED WITH TEAM\n\nYour insights are now visible to your team. Bring this to your Guru-led meeting.');
             };
@@ -2302,15 +2305,18 @@
                         goal_2: formData.goals?.[1],
                         goal_3: formData.goals?.[2]
                     };
-                    await ToolDB.save(userId, questionMappings);
-                    await ToolDB.markComplete(userId);
 
-                    // Success
-                    alert('LOCKED IN\n\nKnow Thyself complete. Self-knowledge documented and stored.\n\nReady for team meeting.');
+                    await window.AIChallenge.submitWithChallenge(userId, 'know-thyself', questionMappings, {
+                        onReviewStart: () => { setSubmitMessage('AI coach is reviewing...'); },
+                        onRevise: () => { setSubmitStatus(null); setSubmitMessage(''); },
+                        onSubmitAnyway: () => { setSubmitStatus('success'); setSubmitMessage('LOCKED IN! Know Thyself complete.'); },
+                        onError: (err) => { setSubmitStatus('error'); setSubmitMessage('Failed to save: ' + err.message); }
+                    });
 
                 } catch (error) {
                     console.error('Submit error:', error);
-                    alert('SUBMISSION FAILED\n\nError: ' + error.message + '\n\nYour data is still saved locally. Please try again or contact support.');
+                    setSubmitStatus('error');
+                    setSubmitMessage('SUBMISSION FAILED: ' + error.message);
                 }
             };
 
@@ -2394,6 +2400,13 @@
                                     </div>
                                 </div>
                                 
+                                {/* Status Message */}
+                                {submitMessage && (
+                                    <div className={`p-4 mb-4 border-2 text-lg font-bold text-center ${submitStatus === 'success' ? 'bg-gray-50 border-black text-black' : submitStatus === 'error' ? 'bg-red-50 border-red-500 text-red-700' : 'bg-yellow-50 border-yellow-500 text-yellow-800'}`}>
+                                        {submitMessage}
+                                    </div>
+                                )}
+
                                 {/* Action Buttons */}
                                 <div className="flex gap-4 justify-center">
                                     <button onClick={handleExport} className="btn-secondary flex-1 text-lg py-4">

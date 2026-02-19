@@ -18,6 +18,7 @@
   <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../../shared/js/tool-db.js"></script>
+  <script src="../../shared/js/ai-challenge.js"></script>
   <script src="../../shared/js/dependency-injection.js"></script>
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
     <script src="../../shared/js/cognitive-load.js"></script>
@@ -295,6 +296,7 @@
       const [showTransition, setShowTransition] = useState(false);
       const [transitionMessage, setTransitionMessage] = useState('');
       const [transitionProgress, setTransitionProgress] = useState(0);
+      const [aiReviewing, setAiReviewing] = useState(false);
 
       const [data, setData] = useState({
         // User details
@@ -444,38 +446,61 @@
         }));
       };
 
-      const goNext = () => {
-        if (step === 0.5) {
-          setStep(1);
-        } else if (step >= 1 && step < 4) {
-          // Show transition
-          const messages = [
-            '25% COMPLETE',
-            '50% COMPLETE',
-            '75% COMPLETE',
-            '100% COMPLETE'
-          ];
+      const advanceStep = (fromStep) => {
+        if (fromStep >= 1 && fromStep < 4) {
+          const messages = ['25% COMPLETE', '50% COMPLETE', '75% COMPLETE', '100% COMPLETE'];
           const progressValues = [25, 50, 75, 100];
-
-          setTransitionMessage(messages[step - 1]);
-          setTransitionProgress(progressValues[step - 1]);
+          setTransitionMessage(messages[fromStep - 1]);
+          setTransitionProgress(progressValues[fromStep - 1]);
           setShowTransition(true);
-
-          setTimeout(() => {
-            setShowTransition(false);
-            setStep(step + 1);
-          }, 2000);
-        } else if (step === 4) {
+          setTimeout(() => { setShowTransition(false); setStep(fromStep + 1); }, 2000);
+        } else if (fromStep === 4) {
           setTransitionMessage('100% COMPLETE');
           setTransitionProgress(100);
           setShowTransition(true);
+          setTimeout(() => { setShowTransition(false); setStep(5); }, 2000);
+        }
+      };
 
-          setTimeout(() => {
-            setShowTransition(false);
-            setStep(5);
-          }, 2000);
+      const goNext = async () => {
+        if (step === 0.5) {
+          setStep(1);
+          return;
         } else if (step === 0) {
           setStep(0.5);
+          return;
+        }
+
+        if (step >= 1 && step <= 4) {
+          const userId = localStorage.getItem('ft_user_id');
+          if (!userId) { advanceStep(step); return; }
+          setAiReviewing(true);
+          try {
+            let stepAnswers = {};
+            let stepName = '';
+            if (step === 1) {
+              stepName = 'Priorities Breakdown';
+              stepAnswers = { quarterlyPriorities: data.quarterlyPriorities };
+            } else if (step === 2) {
+              stepName = 'Meeting Readiness';
+              stepAnswers = { meetingPurpose: data.meetingPurpose, meetingParticipants: data.meetingParticipants, agendaItems: data.agendaItems, preMaterials: data.preMaterials, roles: data.roles };
+            } else if (step === 3) {
+              stepName = 'Meeting Evaluation';
+              stepAnswers = { meetingDate: data.meetingDate, meetingType: data.meetingType, effectiveness: data.effectiveness, whatWorked: data.whatWorked, whatDidntWork: data.whatDidntWork, improvements: data.improvements };
+            } else if (step === 4) {
+              stepName = 'Big Rock Discussion';
+              stepAnswers = { bigRockIssue: data.bigRockIssue, problemStatement: data.problemStatement, rootCause: data.rootCause, proposedSolutions: data.proposedSolutions, wwwOwner: data.wwwOwner, wwwWhat: data.wwwWhat, wwwWhen: data.wwwWhen };
+            }
+            const canProceed = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, stepName);
+            if (canProceed) {
+              advanceStep(step);
+            }
+          } catch (err) {
+            console.warn('[AIChallenge] Error, allowing passage:', err);
+            advanceStep(step);
+          } finally {
+            setAiReviewing(false);
+          }
         }
       };
 
@@ -540,45 +565,28 @@
 
           const filename = `Meeting-Rhythm-Canvas-${new Date().toISOString().split('T')[0]}.pdf`;
           pdf.save(filename);
-
-          // Save to Supabase
-          try {
-            const userId = localStorage.getItem('ft_user_id');
-            if (userId) {
-              const questionMappings = {
-                rhythm_dates: data
-              };
-              await ToolDB.save(userId, questionMappings);
-              await ToolDB.markComplete(userId);
-              console.log('Saved to Supabase successfully.');
-            }
-          } catch (error) {
-            console.error('Supabase submission error:', error);
-            // Don't alert - PDF still downloads successfully
-          }
         }
       };
 
+      const [submitStatus, setSubmitStatus] = useState(null);
+      const [submitMessage, setSubmitMessage] = useState('');
+
       const handleSubmit = async () => {
-        try {
-          const userId = localStorage.getItem('ft_user_id');
-          if (!userId) {
-            alert('User not authenticated. Please return to the dashboard.');
-            return;
-          }
-
-          const questionMappings = {
-            rhythm_dates: data
-          };
-          await ToolDB.save(userId, questionMappings);
-          await ToolDB.markComplete(userId);
-
-          alert('Submission saved successfully!');
-
-        } catch (error) {
-          console.error('Submission error:', error);
-          alert('Failed to save: ' + error.message);
+        const userId = localStorage.getItem('ft_user_id');
+        if (!userId) {
+          alert('User not authenticated. Please return to the dashboard.');
+          return;
         }
+
+        const questionMappings = {
+          rhythm_dates: data
+        };
+        await window.AIChallenge.submitWithChallenge(userId, CONFIG.TOOL_SLUG, questionMappings, {
+          onReviewStart: () => { setSubmitStatus('saving'); setSubmitMessage('AI coach is reviewing...'); },
+          onRevise: () => { setSubmitStatus(null); setSubmitMessage(''); setStep(4); },
+          onSubmitAnyway: () => { setSubmitStatus('success'); setSubmitMessage('Submission saved successfully!'); },
+          onError: (err) => { setSubmitStatus('error'); setSubmitMessage('Failed to save: ' + err.message); }
+        });
       };
 
       // Render different pages based on step
@@ -604,7 +612,8 @@
               updateData={updateData}
               onNext={goNext}
               onBack={goBack}
-              canProceed={canProceedFromStep1()}
+              canProceed={!aiReviewing && canProceedFromStep1()}
+              aiReviewing={aiReviewing}
               setShowHelp={setShowHelp}
               addPriority={addPriority}
               removePriority={removePriority}
@@ -626,7 +635,8 @@
               updateData={updateData}
               onNext={goNext}
               onBack={goBack}
-              canProceed={canProceedFromStep2()}
+              canProceed={!aiReviewing && canProceedFromStep2()}
+              aiReviewing={aiReviewing}
               setShowHelp={setShowHelp}
               addAgendaItem={addAgendaItem}
               removeAgendaItem={removeAgendaItem}
@@ -645,7 +655,8 @@
               updateData={updateData}
               onNext={goNext}
               onBack={goBack}
-              canProceed={canProceedFromStep3()}
+              canProceed={!aiReviewing && canProceedFromStep3()}
+              aiReviewing={aiReviewing}
               setShowHelp={setShowHelp}
             />
             {showHelp && <HelpModal onClose={() => setShowHelp(false)} stepNumber={3} />}
@@ -661,7 +672,8 @@
               updateData={updateData}
               onNext={goNext}
               onBack={goBack}
-              canProceed={canProceedFromStep4()}
+              canProceed={!aiReviewing && canProceedFromStep4()}
+              aiReviewing={aiReviewing}
               setShowHelp={setShowHelp}
             />
             {showHelp && <HelpModal onClose={() => setShowHelp(false)} stepNumber={4} />}
@@ -676,6 +688,8 @@
             onBack={goBack}
             onExport={exportPDF}
             onSubmit={handleSubmit}
+            submitStatus={submitStatus}
+            submitMessage={submitMessage}
           />
         );
       }
@@ -920,7 +934,7 @@
     }
 
     // Step 1: Individual Priorities Breakdown
-    function StepPage({ stepNumber, stepName, data, updateData, onNext, onBack, canProceed, setShowHelp, addPriority, removePriority, updatePriority, addTask, removeTask, updateTask }) {
+    function StepPage({ stepNumber, stepName, data, updateData, onNext, onBack, canProceed, aiReviewing, setShowHelp, addPriority, removePriority, updatePriority, addTask, removeTask, updateTask }) {
       return (
         <div className="min-h-screen bg-white">
           <HelpButton onClick={() => setShowHelp(true)} />
@@ -1101,7 +1115,7 @@
                   disabled={!canProceed}
                   className="btn-primary"
                 >
-                  Next: Meeting Readiness →
+                  {aiReviewing ? 'AI Coach Reviewing...' : 'Next: Meeting Readiness →'}
                 </button>
               </div>
             </div>
@@ -1111,7 +1125,7 @@
     }
 
     // Step 2: Meeting Readiness
-    function Step2Page({ data, updateData, onNext, onBack, canProceed, setShowHelp, addAgendaItem, removeAgendaItem, updateAgendaItem }) {
+    function Step2Page({ data, updateData, onNext, onBack, canProceed, aiReviewing, setShowHelp, addAgendaItem, removeAgendaItem, updateAgendaItem }) {
       return (
         <div className="min-h-screen bg-white">
           <HelpButton onClick={() => setShowHelp(true)} />
@@ -1302,7 +1316,7 @@
                   disabled={!canProceed}
                   className="btn-primary"
                 >
-                  Next: Meeting Evaluation →
+                  {aiReviewing ? 'AI Coach Reviewing...' : 'Next: Meeting Evaluation →'}
                 </button>
               </div>
             </div>
@@ -1312,7 +1326,7 @@
     }
 
     // Step 3: Meeting Evaluation
-    function Step3Page({ data, updateData, onNext, onBack, canProceed, setShowHelp }) {
+    function Step3Page({ data, updateData, onNext, onBack, canProceed, aiReviewing, setShowHelp }) {
       return (
         <div className="min-h-screen bg-white">
           <HelpButton onClick={() => setShowHelp(true)} />
@@ -1455,7 +1469,7 @@
                   disabled={!canProceed}
                   className="btn-primary"
                 >
-                  Next: Big Rock Discussion →
+                  {aiReviewing ? 'AI Coach Reviewing...' : 'Next: Big Rock Discussion →'}
                 </button>
               </div>
             </div>
@@ -1465,7 +1479,7 @@
     }
 
     // Step 4: Big Rock Discussion
-    function Step4Page({ data, updateData, onNext, onBack, canProceed, setShowHelp }) {
+    function Step4Page({ data, updateData, onNext, onBack, canProceed, aiReviewing, setShowHelp }) {
       return (
         <div className="min-h-screen bg-white">
           <HelpButton onClick={() => setShowHelp(true)} />
@@ -1615,7 +1629,7 @@
                   disabled={!canProceed}
                   className="btn-primary"
                 >
-                  Complete & View Canvas →
+                  {aiReviewing ? 'AI Coach Reviewing...' : 'Complete & View Canvas →'}
                 </button>
               </div>
             </div>
@@ -1625,7 +1639,7 @@
     }
 
     // Canvas Page Component
-    function CanvasPage({ data, onBack, onExport, onSubmit }) {
+    function CanvasPage({ data, onBack, onExport, onSubmit, submitStatus, submitMessage }) {
       return (
         <div className="min-h-screen bg-white">
           <header className="no-print border-b-4 border-black p-6">
@@ -1779,10 +1793,15 @@
               <button onClick={onExport} className="btn-secondary flex-1">
                 Export PDF
               </button>
-              <button onClick={onSubmit} className="btn-primary flex-1">
-                Submit to Team
+              <button onClick={onSubmit} className="btn-primary flex-1" disabled={submitStatus === 'saving'}>
+                {submitStatus === 'saving' ? 'AI Coach Reviewing...' : 'Submit to Team'}
               </button>
             </div>
+            {submitStatus && submitMessage && (
+              <div style={{ marginTop: 16, padding: '12px 16px', textAlign: 'center', background: submitStatus === 'success' ? '#f0fdf4' : submitStatus === 'error' ? '#fef2f2' : '#f5f5f5', border: `1px solid ${submitStatus === 'success' ? '#bbf7d0' : submitStatus === 'error' ? '#fecaca' : '#e0e0e0'}`, fontSize: 14 }}>
+                <span style={{ color: submitStatus === 'success' ? '#166534' : submitStatus === 'error' ? '#991b1b' : '#333' }}>{submitMessage}</span>
+              </div>
+            )}
 
             {/* Case Study */}
             <CaseStudy

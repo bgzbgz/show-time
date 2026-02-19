@@ -18,6 +18,7 @@
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../../shared/js/tool-db.js"></script>
+  <script src="../../shared/js/ai-challenge.js"></script>
   <script src="../../shared/js/dependency-injection.js"></script>
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
     <script src="../../shared/js/cognitive-load.js"></script>
@@ -412,6 +413,7 @@
       const [showTransition, setShowTransition] = useState(false);
       const [transitionMessage, setTransitionMessage] = useState('');
       const [transitionProgress, setTransitionProgress] = useState(0);
+      const [aiReviewing, setAiReviewing] = useState(false);
 
       const [data, setData] = useState({
         toolType: '', // 'individual' or 'team'
@@ -727,38 +729,93 @@
         }));
       };
 
-      const goNext = () => {
+      const goNext = async () => {
         if (step === 0) {
           setStep(0.5);
         } else if (step === 0.5) {
           setStep(1);
         } else if (data.toolType === 'individual') {
-          if (step >= 1 && step < 3) {
-            const messages = ['33% COMPLETE', '67% COMPLETE', '100% COMPLETE'];
-            const progressValues = [33, 67, 100];
-            setTransitionMessage(messages[step - 1]);
-            setTransitionProgress(progressValues[step - 1]);
-            setShowTransition(true);
-            setTimeout(() => {
-              setShowTransition(false);
-              setStep(step + 1);
-            }, 2000);
-          } else if (step === 3) {
-            setStep(4);
+          if (step >= 1 && step <= 3) {
+            const userId = localStorage.getItem('ft_user_id');
+            if (userId) {
+              setAiReviewing(true);
+              try {
+                let stepAnswers = {};
+                let stepName = '';
+                if (step === 1) {
+                  stepName = 'Individual Decisions';
+                  stepAnswers = { decisions: data.individual.decisions };
+                } else if (step === 2) {
+                  stepName = 'Individual Processes';
+                  stepAnswers = { processes: data.individual.processes };
+                } else if (step === 3) {
+                  stepName = 'Individual Implementation';
+                  stepAnswers = { implementation: data.individual.implementation };
+                }
+                const canProceed = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, stepName);
+                if (!canProceed) { setAiReviewing(false); return; }
+              } catch (err) {
+                console.warn('[AIChallenge] Error, allowing passage:', err);
+              } finally {
+                setAiReviewing(false);
+              }
+            }
+            if (step < 3) {
+              const messages = ['33% COMPLETE', '67% COMPLETE', '100% COMPLETE'];
+              const progressValues = [33, 67, 100];
+              setTransitionMessage(messages[step - 1]);
+              setTransitionProgress(progressValues[step - 1]);
+              setShowTransition(true);
+              setTimeout(() => {
+                setShowTransition(false);
+                setStep(step + 1);
+              }, 2000);
+            } else if (step === 3) {
+              setStep(4);
+            }
           }
         } else if (data.toolType === 'team') {
-          if (step >= 1 && step < 4) {
-            const messages = ['25% COMPLETE', '50% COMPLETE', '75% COMPLETE', '100% COMPLETE'];
-            const progressValues = [25, 50, 75, 100];
-            setTransitionMessage(messages[step - 1]);
-            setTransitionProgress(progressValues[step - 1]);
-            setShowTransition(true);
-            setTimeout(() => {
-              setShowTransition(false);
-              setStep(step + 1);
-            }, 2000);
-          } else if (step === 4) {
-            setStep(5);
+          if (step >= 1 && step <= 4) {
+            const userId = localStorage.getItem('ft_user_id');
+            if (userId) {
+              setAiReviewing(true);
+              try {
+                let stepAnswers = {};
+                let stepName = '';
+                if (step === 1) {
+                  stepName = 'Team Individual Analyses';
+                  stepAnswers = { individualAnalyses: data.team.individualAnalyses };
+                } else if (step === 2) {
+                  stepName = 'Team Patterns';
+                  stepAnswers = { patterns: data.team.patterns };
+                } else if (step === 3) {
+                  stepName = 'Team Strategy';
+                  stepAnswers = { strategy: data.team.strategy };
+                } else if (step === 4) {
+                  stepName = 'Team Implementation Plan';
+                  stepAnswers = { implementationPlan: data.team.implementationPlan };
+                }
+                const canProceed = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, stepName);
+                if (!canProceed) { setAiReviewing(false); return; }
+              } catch (err) {
+                console.warn('[AIChallenge] Error, allowing passage:', err);
+              } finally {
+                setAiReviewing(false);
+              }
+            }
+            if (step < 4) {
+              const messages = ['25% COMPLETE', '50% COMPLETE', '75% COMPLETE', '100% COMPLETE'];
+              const progressValues = [25, 50, 75, 100];
+              setTransitionMessage(messages[step - 1]);
+              setTransitionProgress(progressValues[step - 1]);
+              setShowTransition(true);
+              setTimeout(() => {
+                setShowTransition(false);
+                setStep(step + 1);
+              }, 2000);
+            } else if (step === 4) {
+              setStep(5);
+            }
           }
         }
       };
@@ -860,7 +917,6 @@
       };
 
       const handleSubmit = async () => {
-        // Get user ID from localStorage
         const userId = localStorage.getItem('ft_user_id');
         if (!userId) {
           alert('User not authenticated. Please return to the dashboard.');
@@ -880,9 +936,12 @@
             }
           };
 
-          await ToolDB.save(userId, questionMappings);
-          await ToolDB.markComplete(userId);
-          alert('AI Digitalization plan submitted successfully!');
+          await window.AIChallenge.submitWithChallenge(userId, CONFIG.TOOL_SLUG, questionMappings, {
+            onReviewStart: () => {},
+            onRevise: () => { setStep(data.toolType === 'individual' ? 3 : 4); },
+            onSubmitAnyway: () => { alert('AI Digitalization plan submitted successfully!'); },
+            onError: (err) => { alert('Submission failed: ' + err.message); }
+          });
           return true;
         } catch (error) {
           console.error('Supabase submission error:', error);
@@ -955,8 +1014,9 @@
               removeDecision={removeDecision}
               onNext={goNext}
               onBack={goBack}
-              canProceed={canProceedIndividualStep1()}
+              canProceed={!aiReviewing && canProceedIndividualStep1()}
               setShowHelp={setShowHelp}
+              aiReviewing={aiReviewing}
             />
           );
         }
@@ -969,8 +1029,9 @@
               removeProcess={removeProcess}
               onNext={goNext}
               onBack={goBack}
-              canProceed={canProceedIndividualStep2()}
+              canProceed={!aiReviewing && canProceedIndividualStep2()}
               setShowHelp={setShowHelp}
+              aiReviewing={aiReviewing}
             />
           );
         }
@@ -984,8 +1045,9 @@
               removeAITool={removeAITool}
               onNext={goNext}
               onBack={goBack}
-              canProceed={canProceedIndividualStep3()}
+              canProceed={!aiReviewing && canProceedIndividualStep3()}
               setShowHelp={setShowHelp}
+              aiReviewing={aiReviewing}
             />
           );
         }
@@ -994,6 +1056,7 @@
             <IndividualCanvas
               data={data}
               onExport={exportPDF}
+              onSubmit={handleSubmit}
             />
           );
         }
@@ -1010,8 +1073,9 @@
               removeTeamMember={removeTeamMember}
               onNext={goNext}
               onBack={goBack}
-              canProceed={canProceedTeamStep1()}
+              canProceed={!aiReviewing && canProceedTeamStep1()}
               setShowHelp={setShowHelp}
+              aiReviewing={aiReviewing}
             />
           );
         }
@@ -1022,8 +1086,9 @@
               setData={setData}
               onNext={goNext}
               onBack={goBack}
-              canProceed={canProceedTeamStep2()}
+              canProceed={!aiReviewing && canProceedTeamStep2()}
               setShowHelp={setShowHelp}
+              aiReviewing={aiReviewing}
             />
           );
         }
@@ -1034,8 +1099,9 @@
               setData={setData}
               onNext={goNext}
               onBack={goBack}
-              canProceed={canProceedTeamStep3()}
+              canProceed={!aiReviewing && canProceedTeamStep3()}
               setShowHelp={setShowHelp}
+              aiReviewing={aiReviewing}
             />
           );
         }
@@ -1049,8 +1115,9 @@
               removeActionOwner={removeActionOwner}
               onNext={goNext}
               onBack={goBack}
-              canProceed={canProceedTeamStep4()}
+              canProceed={!aiReviewing && canProceedTeamStep4()}
               setShowHelp={setShowHelp}
+              aiReviewing={aiReviewing}
             />
           );
         }
@@ -1059,6 +1126,7 @@
             <TeamCanvas
               data={data}
               onExport={exportPDF}
+              onSubmit={handleSubmit}
             />
           );
         }
@@ -1226,7 +1294,7 @@
     }
 
     // Individual Step 1: Top 3 Decisions Analysis
-    function IndividualStep1({ data, updateDecision, addDecision, removeDecision, onNext, onBack, canProceed, setShowHelp }) {
+    function IndividualStep1({ data, updateDecision, addDecision, removeDecision, onNext, onBack, canProceed, setShowHelp, aiReviewing }) {
       const [showHelpModal, setShowHelpModal] = useState(false);
 
       const helpContent = (
@@ -1442,7 +1510,7 @@
                 disabled={!canProceed}
                 className="btn-primary"
               >
-                NEXT: TOP 3 PROCESSES
+                {aiReviewing ? 'AI Coach Reviewing...' : 'NEXT: TOP 3 PROCESSES'}
               </button>
             </div>
           </div>
@@ -1451,7 +1519,7 @@
     }
 
     // Individual Step 2: Top 3 Processes Analysis
-    function IndividualStep2({ data, updateProcess, addProcess, removeProcess, onNext, onBack, canProceed, setShowHelp }) {
+    function IndividualStep2({ data, updateProcess, addProcess, removeProcess, onNext, onBack, canProceed, setShowHelp, aiReviewing }) {
       const [showHelpModal, setShowHelpModal] = useState(false);
 
       const helpContent = (
@@ -1650,7 +1718,7 @@
                 disabled={!canProceed}
                 className="btn-primary"
               >
-                NEXT: IMPLEMENTATION PLAN
+                {aiReviewing ? 'AI Coach Reviewing...' : 'NEXT: IMPLEMENTATION PLAN'}
               </button>
             </div>
           </div>
@@ -1659,7 +1727,7 @@
     }
 
     // Individual Step 3: AI Implementation Plan
-    function IndividualStep3({ data, setData, updateAITool, addAITool, removeAITool, onNext, onBack, canProceed, setShowHelp }) {
+    function IndividualStep3({ data, setData, updateAITool, addAITool, removeAITool, onNext, onBack, canProceed, setShowHelp, aiReviewing }) {
       return (
         <div className="min-h-screen bg-white p-8">
           <div className="max-w-6xl mx-auto">
@@ -1845,7 +1913,7 @@
                 disabled={!canProceed}
                 className="btn-primary"
               >
-                VIEW CANVAS
+                {aiReviewing ? 'AI Coach Reviewing...' : 'VIEW CANVAS'}
               </button>
             </div>
           </div>
@@ -1854,16 +1922,21 @@
     }
 
     // Individual Canvas
-    function IndividualCanvas({ data, onExport }) {
+    function IndividualCanvas({ data, onExport, onSubmit }) {
       return (
         <div className="min-h-screen bg-gray-50 p-8">
           <div className="max-w-7xl mx-auto">
             <div className="mb-8 text-center no-print">
               <h1 className="plaak text-6xl mb-4">YOUR AI DIGITALIZATION CANVAS</h1>
               <p className="text-2xl text-gray-700 mb-6">Individual Tool Summary</p>
-              <button onClick={onExport} className="btn-primary">
-                EXPORT TO PDF
-              </button>
+              <div className="flex gap-6 justify-center">
+                <button onClick={onExport} className="btn-primary">
+                  EXPORT TO PDF
+                </button>
+                {onSubmit && <button onClick={onSubmit} className="btn-primary">
+                  SUBMIT
+                </button>}
+              </div>
             </div>
 
             <div id="canvas-content" className="bg-white p-12">
@@ -1981,7 +2054,7 @@
     }
 
     // Team Step 1: Collect Individual Analyses
-    function TeamStep1({ data, updateTeamMember, addTeamMember, removeTeamMember, onNext, onBack, canProceed, setShowHelp }) {
+    function TeamStep1({ data, updateTeamMember, addTeamMember, removeTeamMember, onNext, onBack, canProceed, setShowHelp, aiReviewing }) {
       return (
         <div className="min-h-screen bg-white p-8">
           <div className="max-w-6xl mx-auto">
@@ -2095,7 +2168,7 @@
                 disabled={!canProceed}
                 className="btn-primary"
               >
-                NEXT: PATTERN RECOGNITION
+                {aiReviewing ? 'AI Coach Reviewing...' : 'NEXT: PATTERN RECOGNITION'}
               </button>
             </div>
           </div>
@@ -2104,7 +2177,7 @@
     }
 
     // Team Step 2: Pattern Recognition
-    function TeamStep2({ data, setData, onNext, onBack, canProceed, setShowHelp }) {
+    function TeamStep2({ data, setData, onNext, onBack, canProceed, setShowHelp, aiReviewing }) {
       return (
         <div className="min-h-screen bg-white p-8">
           <div className="max-w-6xl mx-auto">
@@ -2220,7 +2293,7 @@
                 disabled={!canProceed}
                 className="btn-primary"
               >
-                NEXT: COMPANY AI STRATEGY
+                {aiReviewing ? 'AI Coach Reviewing...' : 'NEXT: COMPANY AI STRATEGY'}
               </button>
             </div>
           </div>
@@ -2229,7 +2302,7 @@
     }
 
     // Team Step 3: Company AI Strategy
-    function TeamStep3({ data, setData, onNext, onBack, canProceed, setShowHelp }) {
+    function TeamStep3({ data, setData, onNext, onBack, canProceed, setShowHelp, aiReviewing }) {
       return (
         <div className="min-h-screen bg-white p-8">
           <div className="max-w-6xl mx-auto">
@@ -2334,7 +2407,7 @@
                 disabled={!canProceed}
                 className="btn-primary"
               >
-                NEXT: IMPLEMENTATION PLAN
+                {aiReviewing ? 'AI Coach Reviewing...' : 'NEXT: IMPLEMENTATION PLAN'}
               </button>
             </div>
           </div>
@@ -2343,7 +2416,7 @@
     }
 
     // Team Step 4: Implementation Plan
-    function TeamStep4({ data, setData, updateActionOwner, addActionOwner, removeActionOwner, onNext, onBack, canProceed, setShowHelp }) {
+    function TeamStep4({ data, setData, updateActionOwner, addActionOwner, removeActionOwner, onNext, onBack, canProceed, setShowHelp, aiReviewing }) {
       return (
         <div className="min-h-screen bg-white p-8">
           <div className="max-w-6xl mx-auto">
@@ -2529,7 +2602,7 @@
                 disabled={!canProceed}
                 className="btn-primary"
               >
-                VIEW CANVAS
+                {aiReviewing ? 'AI Coach Reviewing...' : 'VIEW CANVAS'}
               </button>
             </div>
           </div>
@@ -2538,16 +2611,21 @@
     }
 
     // Team Canvas
-    function TeamCanvas({ data, onExport }) {
+    function TeamCanvas({ data, onExport, onSubmit }) {
       return (
         <div className="min-h-screen bg-gray-50 p-8">
           <div className="max-w-7xl mx-auto">
             <div className="mb-8 text-center no-print">
               <h1 className="plaak text-6xl mb-4">TEAM AI DIGITALIZATION CANVAS</h1>
               <p className="text-2xl text-gray-700 mb-6">Team Tool Summary</p>
-              <button onClick={onExport} className="btn-primary">
-                EXPORT TO PDF
-              </button>
+              <div className="flex gap-6 justify-center">
+                <button onClick={onExport} className="btn-primary">
+                  EXPORT TO PDF
+                </button>
+                {onSubmit && <button onClick={onSubmit} className="btn-primary">
+                  SUBMIT
+                </button>}
+              </div>
             </div>
 
             {/* Case Study */}

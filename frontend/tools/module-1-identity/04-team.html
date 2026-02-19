@@ -28,6 +28,7 @@
 
     <!-- ToolDB shared library -->
     <script src="../../shared/js/tool-db.js"></script>
+    <script src="../../shared/js/ai-challenge.js"></script>
     <!-- Dependency Injection -->
     <script src="../../shared/js/dependency-injection.js"></script>
 
@@ -1236,6 +1237,7 @@
         const TeamTool = () => {
             const [step, setStep] = useState(0);
             const [userEmail, setUserEmail] = useState('');
+            const [aiReviewing, setAiReviewing] = useState(false);
             const [teamData, setTeamData] = useState({
                 teamName: '',
                 teamMembers: [],
@@ -1285,7 +1287,7 @@
                 return () => clearTimeout(timer);
             }, [teamData, userEmail, step]);
 
-            // Sync to Supabase via ToolDB
+            // Sync to Supabase via ToolDB (auto-save only, no markComplete)
             useEffect(() => {
                 const timer = setTimeout(async () => {
                     if (userEmail && teamData.teamName) {
@@ -1301,7 +1303,6 @@
                                 accountability_tracker: { teamName: teamData.teamName, teamMembers: teamData.teamMembers }
                             };
                             await ToolDB.save(userId, questionMappings);
-                            await ToolDB.markComplete(userId);
                         } catch (error) {
                             console.error('ToolDB sync error:', error);
                         }
@@ -1310,6 +1311,15 @@
 
                 return () => clearTimeout(timer);
             }, [teamData, userEmail]);
+
+            // Build question mappings helper
+            const getQuestionMappings = () => ({
+                dysfunction_scorecard: teamData.dysfunctionScores,
+                trust_action_plan: teamData.actionPlan,
+                conflict_norms: teamData.improvementPlan,
+                conflict_resolution_strategies: teamData.commitments,
+                accountability_tracker: { teamName: teamData.teamName, teamMembers: teamData.teamMembers }
+            });
 
             const loadFromSupabase = async (email) => {
                 try {
@@ -1353,11 +1363,67 @@
                 return true;
             };
 
-            const handleNext = () => {
-                if (canProceed() && step < 6) {
-                    setStep(step + 1);
-                    window.scrollTo(0, 0);
+            const handleNext = async () => {
+                if (!canProceed() || step >= 6) return;
+
+                // Determine step-specific answers for AI review
+                const stepDataMap = {
+                    1: { accountability_tracker: { teamName: teamData.teamName, teamMembers: teamData.teamMembers } },
+                    3: { conflict_norms: teamData.improvementPlan },
+                    4: { trust_action_plan: teamData.actionPlan },
+                    5: { conflict_resolution_strategies: teamData.commitments }
+                };
+
+                const stepNameMap = {
+                    1: 'Team Setup',
+                    3: 'Improvement Plan',
+                    4: 'Action Plan',
+                    5: 'Commitments'
+                };
+
+                const stepAnswers = stepDataMap[step];
+                if (stepAnswers) {
+                    const userId = localStorage.getItem('ft_user_id');
+                    if (userId) {
+                        setAiReviewing(true);
+                        try {
+                            const canGo = await window.AIChallenge.reviewStep(userId, 'team', stepAnswers, stepNameMap[step]);
+                            if (!canGo) {
+                                setAiReviewing(false);
+                                return;
+                            }
+                        } catch (err) {
+                            console.warn('AI review error, allowing passage:', err);
+                        } finally {
+                            setAiReviewing(false);
+                        }
+                    }
                 }
+
+                // If moving to final step (6), do the AI challenge final submit
+                if (step === 5) {
+                    const userId = localStorage.getItem('ft_user_id');
+                    if (userId) {
+                        setAiReviewing(true);
+                        try {
+                            await window.AIChallenge.submitWithChallenge(userId, 'team', getQuestionMappings(), {
+                                onReviewStart: () => {},
+                                onRevise: () => { setAiReviewing(false); },
+                                onSubmitAnyway: () => { setStep(6); window.scrollTo(0, 0); setAiReviewing(false); },
+                                onError: (err) => { console.error('Submit error:', err); setAiReviewing(false); }
+                            });
+                        } catch (err) {
+                            console.warn('AI challenge error:', err);
+                            setStep(6);
+                            window.scrollTo(0, 0);
+                            setAiReviewing(false);
+                        }
+                        return;
+                    }
+                }
+
+                setStep(step + 1);
+                window.scrollTo(0, 0);
             };
 
             const handleBack = () => {
@@ -1399,10 +1465,10 @@
                                 {step < 6 && (
                                     <button
                                         onClick={handleNext}
-                                        disabled={!canProceed()}
+                                        disabled={!canProceed() || aiReviewing}
                                         className="btn-primary ml-auto"
                                     >
-                                        Next →
+                                        {aiReviewing ? 'AI Coach Reviewing...' : 'Next →'}
                                     </button>
                                 )}
                             </div>

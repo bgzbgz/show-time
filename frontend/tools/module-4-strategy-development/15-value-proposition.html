@@ -12,6 +12,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../../shared/js/tool-db.js"></script>
+    <script src="../../shared/js/ai-challenge.js"></script>
     <script src="../../shared/js/dependency-injection.js"></script>
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
     <script src="../../shared/js/cognitive-load.js"></script>
@@ -501,6 +502,7 @@
             const [authState, setAuthState] = useState({ loading: true, authenticated: false, user: null, progress: null, error: null });
             const [submitStatus, setSubmitStatus] = useState(null);
             const [submitMessage, setSubmitMessage] = useState('');
+            const [aiReviewing, setAiReviewing] = useState(false);
 
             /* ── Data state ── */
             const [data, setData] = useState({
@@ -552,6 +554,39 @@
             const canProceedStep3 = data.vpTargetSegment.length >= 10 && data.vpPainPoint.length >= 10 && data.vpSolution.length >= 10 && data.vpCoreBenefit.length >= 10 && data.fullValueProp.length >= 30;
             const yesCount = Object.values(data.validation).filter(v => v === 'yes').length;
             const canProceedStep4 = yesCount >= 6;
+
+            /* ── AI-gated step navigation ── */
+            const handleNext = async () => {
+                const userId = localStorage.getItem('ft_user_id');
+                if (!userId) { alert('User not authenticated.'); return; }
+                setAiReviewing(true);
+                try {
+                    let stepAnswers = {};
+                    let stepName = '';
+                    if (step === 1) {
+                        stepName = 'Customer Foundation';
+                        stepAnswers = { pain_mapping: { targetSegment: data.targetSegment, biggestPain: data.biggestPain, painEvidence: data.painEvidence, currentSolutions: data.currentSolutions, ahaMoment: data.ahaMoment, desiredOutcome: data.desiredOutcome } };
+                    } else if (step === 2) {
+                        stepName = 'Competitive Landscape';
+                        stepAnswers = { differentiators: { competitors: data.competitors, uniqueValue: data.uniqueValue, whySwitchToUs: data.whySwitchToUs } };
+                    } else if (step === 3) {
+                        stepName = 'Craft Your VP';
+                        stepAnswers = { vp_statement: data.fullValueProp, anti_promise: data.antiValueProp };
+                    } else if (step === 4) {
+                        stepName = 'Validate & Test';
+                        stepAnswers = { validation: data.validation, testing: { testingPlan: data.testingPlan, refinementNotes: data.refinementNotes } };
+                    }
+                    const canProceed = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, stepName);
+                    if (canProceed) {
+                        setStep(step === totalSteps ? 999 : step + 1);
+                    }
+                } catch (err) {
+                    console.warn('[AIChallenge] Error, allowing passage:', err);
+                    setStep(step === totalSteps ? 999 : step + 1);
+                } finally {
+                    setAiReviewing(false);
+                }
+            };
 
             /* ── Competitor helpers ── */
             const updateCompetitor = (index, field, value) => {
@@ -610,7 +645,7 @@
                 } catch (e) { console.warn('Failed to restore auto-save:', e); }
             }, []);
 
-            /* ── Submit ── */
+            /* ── Submit (with AI challenge) ── */
             const handleSubmit = async () => {
                 try {
                     setSubmitStatus('saving'); setSubmitMessage('');
@@ -623,10 +658,13 @@
                         pain_mapping: { targetSegment: data.targetSegment, biggestPain: data.biggestPain, painEvidence: data.painEvidence, currentSolutions: data.currentSolutions, ahaMoment: data.ahaMoment, desiredOutcome: data.desiredOutcome },
                         differentiators: { competitors: data.competitors, uniqueValue: data.uniqueValue, whySwitchToUs: data.whySwitchToUs }
                     };
-                    await ToolDB.save(userId, questionMappings);
-                    await ToolDB.markComplete(userId);
 
-                    setSubmitStatus('success'); setSubmitMessage('Submission saved successfully!');
+                    await window.AIChallenge.submitWithChallenge(userId, CONFIG.TOOL_SLUG, questionMappings, {
+                        onReviewStart: () => { setSubmitMessage('AI coach is reviewing...'); },
+                        onRevise: () => { setSubmitStatus(null); setSubmitMessage(''); setStep(totalSteps); },
+                        onSubmitAnyway: () => { setSubmitStatus('success'); setSubmitMessage('Submission saved successfully!'); },
+                        onError: (err) => { setSubmitStatus('error'); setSubmitMessage('Failed to save: ' + err.message); }
+                    });
                 } catch (error) {
                     setSubmitStatus('error'); setSubmitMessage('Failed to save: ' + error.message);
                 }
@@ -1078,9 +1116,9 @@
 
                                     <ButtonFooter
                                         onBack={() => setStep(step === 1 ? 0.5 : step - 1)}
-                                        onNext={() => setStep(step === totalSteps ? 999 : step + 1)}
-                                        canProceed={step === 1 ? canProceedStep1 : step === 2 ? canProceedStep2 : step === 3 ? canProceedStep3 : canProceedStep4}
-                                        nextLabel={step === totalSteps ? 'View Your Canvas' : 'Next'}
+                                        onNext={handleNext}
+                                        canProceed={!aiReviewing && (step === 1 ? canProceedStep1 : step === 2 ? canProceedStep2 : step === 3 ? canProceedStep3 : canProceedStep4)}
+                                        nextLabel={aiReviewing ? 'AI Coach Reviewing...' : step === totalSteps ? 'View Your Canvas' : 'Next'}
                                         showBack={true}
                                     />
                                 </div>

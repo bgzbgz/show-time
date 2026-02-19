@@ -18,6 +18,7 @@
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../../shared/js/tool-db.js"></script>
+  <script src="../../shared/js/ai-challenge.js"></script>
   <script src="../../shared/js/dependency-injection.js"></script>
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
     <script src="../../shared/js/cognitive-load.js"></script>
@@ -288,6 +289,9 @@
       const [showTransition, setShowTransition] = useState(false);
       const [transitionMessage, setTransitionMessage] = useState('');
       const [transitionProgress, setTransitionProgress] = useState(0);
+      const [aiReviewing, setAiReviewing] = useState(false);
+      const [submitStatus, setSubmitStatus] = useState(null);
+      const [submitMessage, setSubmitMessage] = useState('');
 
       const [data, setData] = useState({
         // Step 1: Feature Classification
@@ -396,25 +400,64 @@
         updateData('pricingActions', updated);
       };
 
-      const goNext = () => {
-        if (step === 0.5) {
-          setStep(1);
-        } else if (step >= 1 && step < 5) {
+      const advanceStep = (fromStep) => {
+        if (fromStep >= 1 && fromStep < 5) {
           const messages = ['20% COMPLETE', '40% COMPLETE', '60% COMPLETE', '80% COMPLETE', '100% COMPLETE'];
           const progressValues = [20, 40, 60, 80, 100];
 
-          setTransitionMessage(messages[step - 1]);
-          setTransitionProgress(progressValues[step - 1]);
+          setTransitionMessage(messages[fromStep - 1]);
+          setTransitionProgress(progressValues[fromStep - 1]);
           setShowTransition(true);
 
           setTimeout(() => {
             setShowTransition(false);
-            setStep(step + 1);
+            setStep(fromStep + 1);
           }, 2000);
-        } else if (step === 5) {
+        } else if (fromStep === 5) {
           setStep(6);
+        }
+      };
+
+      const goNext = () => {
+        if (step === 0.5) {
+          setStep(1);
         } else if (step === 0) {
           setStep(0.5);
+        }
+      };
+
+      const handleNext = async (fromStep) => {
+        const userId = localStorage.getItem('ft_user_id');
+        if (!userId) { alert('User not authenticated.'); return; }
+        setAiReviewing(true);
+        try {
+          let stepAnswers = {};
+          let stepName = '';
+          if (fromStep === 1) {
+            stepName = 'Feature Classification';
+            stepAnswers = { features: data.features };
+          } else if (fromStep === 2) {
+            stepName = 'Price Anchor Selection';
+            stepAnswers = { anchorType: data.anchorType, targetSegment: data.targetSegment, competitorBenchmark: data.competitorBenchmark, anchorPrice: data.anchorPrice, anchorRationale: data.anchorRationale };
+          } else if (fromStep === 3) {
+            stepName = 'Tier Bundle Design';
+            stepAnswers = { tiers: data.tiers };
+          } else if (fromStep === 4) {
+            stepName = 'Price-to-Value Alignment';
+            stepAnswers = { mustHaveFeatures: data.mustHaveFeatures, niceToHaveFeatures: data.niceToHaveFeatures, killerFeatures: data.killerFeatures, valueProposition: data.valueProposition };
+          } else if (fromStep === 5) {
+            stepName = 'Implementation Plan';
+            stepAnswers = { pricingActions: data.pricingActions, pilotPlan: data.pilotPlan, successMetrics: data.successMetrics };
+          }
+          const canProceed = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, stepName);
+          if (canProceed) {
+            advanceStep(fromStep);
+          }
+        } catch (err) {
+          console.warn('[AIChallenge] Error, allowing passage:', err);
+          advanceStep(fromStep);
+        } finally {
+          setAiReviewing(false);
         }
       };
 
@@ -534,10 +577,13 @@
               anchorRationale: data.anchorRationale
             }
           };
-          await ToolDB.save(userId, questionMappings);
-          await ToolDB.markComplete(userId);
 
-          alert('Strategy Driven Pricing submitted successfully!');
+          await window.AIChallenge.submitWithChallenge(userId, CONFIG.TOOL_SLUG, questionMappings, {
+            onReviewStart: () => { setSubmitMessage('AI coach is reviewing...'); },
+            onRevise: () => { setSubmitStatus(null); setSubmitMessage(''); setStep(5); },
+            onSubmitAnyway: () => { setSubmitStatus('success'); setSubmitMessage('Submission saved successfully!'); },
+            onError: (err) => { setSubmitStatus('error'); setSubmitMessage('Failed to save: ' + err.message); }
+          });
         } catch (error) {
           console.error('Submit error:', error);
           alert('Submission failed: ' + error.message);
@@ -564,9 +610,10 @@
             updateFeature={updateFeature}
             addFeature={addFeature}
             removeFeature={removeFeature}
-            onNext={goNext}
+            onNext={() => handleNext(1)}
             onBack={goBack}
-            canProceed={isStep1Valid()}
+            canProceed={!aiReviewing && isStep1Valid()}
+            aiReviewing={aiReviewing}
             setShowHelp={setShowHelp}
           />
         );
@@ -577,9 +624,10 @@
           <Step2Page
             data={data}
             updateData={updateData}
-            onNext={goNext}
+            onNext={() => handleNext(2)}
             onBack={goBack}
-            canProceed={isStep2Valid()}
+            canProceed={!aiReviewing && isStep2Valid()}
+            aiReviewing={aiReviewing}
             setShowHelp={setShowHelp}
           />
         );
@@ -592,9 +640,10 @@
             updateTier={updateTier}
             addTier={addTier}
             removeTier={removeTier}
-            onNext={goNext}
+            onNext={() => handleNext(3)}
             onBack={goBack}
-            canProceed={isStep3Valid()}
+            canProceed={!aiReviewing && isStep3Valid()}
+            aiReviewing={aiReviewing}
             setShowHelp={setShowHelp}
           />
         );
@@ -605,9 +654,10 @@
           <Step4Page
             data={data}
             updateData={updateData}
-            onNext={goNext}
+            onNext={() => handleNext(4)}
             onBack={goBack}
-            canProceed={isStep4Valid()}
+            canProceed={!aiReviewing && isStep4Valid()}
+            aiReviewing={aiReviewing}
             setShowHelp={setShowHelp}
           />
         );
@@ -621,9 +671,10 @@
             updateAction={updateAction}
             addAction={addAction}
             removeAction={removeAction}
-            onNext={goNext}
+            onNext={() => handleNext(5)}
             onBack={goBack}
-            canProceed={isStep5Valid()}
+            canProceed={!aiReviewing && isStep5Valid()}
+            aiReviewing={aiReviewing}
             setShowHelp={setShowHelp}
           />
         );
@@ -814,7 +865,7 @@
     }
 
     // Step 1: Feature Classification
-    function Step1Page({ data, updateFeature, addFeature, removeFeature, onNext, onBack, canProceed, setShowHelp }) {
+    function Step1Page({ data, updateFeature, addFeature, removeFeature, onNext, onBack, canProceed, aiReviewing, setShowHelp }) {
       return (
         <div className="bg-white min-h-screen p-16 pb-32">
           <div className="max-w-5xl mx-auto">
@@ -944,7 +995,7 @@
                 disabled={!canProceed}
                 className="btn-primary flex-1"
               >
-                NEXT: PRICE ANCHOR →
+                {aiReviewing ? 'AI Coach Reviewing...' : 'NEXT: PRICE ANCHOR →'}
               </button>
             </div>
           </div>
@@ -953,7 +1004,7 @@
     }
 
     // Step 2: Price Anchor Selection
-    function Step2Page({ data, updateData, onNext, onBack, canProceed, setShowHelp }) {
+    function Step2Page({ data, updateData, onNext, onBack, canProceed, aiReviewing, setShowHelp }) {
       return (
         <div className="bg-white min-h-screen p-16 pb-32">
           <div className="max-w-5xl mx-auto">
@@ -1060,7 +1111,7 @@
                 disabled={!canProceed}
                 className="btn-primary flex-1"
               >
-                NEXT: TIER BUNDLES →
+                {aiReviewing ? 'AI Coach Reviewing...' : 'NEXT: TIER BUNDLES →'}
               </button>
             </div>
           </div>
@@ -1069,7 +1120,7 @@
     }
 
     // Step 3: Tier Bundle Design
-    function Step3Page({ data, updateTier, addTier, removeTier, onNext, onBack, canProceed, setShowHelp }) {
+    function Step3Page({ data, updateTier, addTier, removeTier, onNext, onBack, canProceed, aiReviewing, setShowHelp }) {
       return (
         <div className="bg-white min-h-screen p-16 pb-32">
           <div className="max-w-5xl mx-auto">
@@ -1193,7 +1244,7 @@
                 disabled={!canProceed}
                 className="btn-primary flex-1"
               >
-                NEXT: VALUE ALIGNMENT →
+                {aiReviewing ? 'AI Coach Reviewing...' : 'NEXT: VALUE ALIGNMENT →'}
               </button>
             </div>
           </div>
@@ -1202,7 +1253,7 @@
     }
 
     // Step 4: Price-to-Value Alignment
-    function Step4Page({ data, updateData, onNext, onBack, canProceed, setShowHelp }) {
+    function Step4Page({ data, updateData, onNext, onBack, canProceed, aiReviewing, setShowHelp }) {
       return (
         <div className="bg-white min-h-screen p-16 pb-32">
           <div className="max-w-5xl mx-auto">
@@ -1296,7 +1347,7 @@
                 disabled={!canProceed}
                 className="btn-primary flex-1"
               >
-                NEXT: IMPLEMENTATION →
+                {aiReviewing ? 'AI Coach Reviewing...' : 'NEXT: IMPLEMENTATION →'}
               </button>
             </div>
           </div>
@@ -1305,7 +1356,7 @@
     }
 
     // Step 5: Implementation Plan
-    function Step5Page({ data, updateData, updateAction, addAction, removeAction, onNext, onBack, canProceed, setShowHelp }) {
+    function Step5Page({ data, updateData, updateAction, addAction, removeAction, onNext, onBack, canProceed, aiReviewing, setShowHelp }) {
       return (
         <div className="bg-white min-h-screen p-16 pb-32">
           <div className="max-w-5xl mx-auto">
@@ -1436,7 +1487,7 @@
                 disabled={!canProceed}
                 className="btn-primary flex-1"
               >
-                VIEW PRICING STRATEGY →
+                {aiReviewing ? 'AI Coach Reviewing...' : 'VIEW PRICING STRATEGY →'}
               </button>
             </div>
           </div>

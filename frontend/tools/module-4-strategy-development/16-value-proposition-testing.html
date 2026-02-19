@@ -18,6 +18,7 @@
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../../shared/js/tool-db.js"></script>
+  <script src="../../shared/js/ai-challenge.js"></script>
   <script src="../../shared/js/dependency-injection.js"></script>
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
     <script src="../../shared/js/cognitive-load.js"></script>
@@ -296,6 +297,7 @@
       const [showTransition, setShowTransition] = useState(false);
       const [transitionMessage, setTransitionMessage] = useState('');
       const [transitionProgress, setTransitionProgress] = useState(0);
+      const [aiReviewing, setAiReviewing] = useState(false);
 
       const [data, setData] = useState({
         // User details
@@ -481,32 +483,62 @@
         }));
       };
 
-      const goNext = () => {
-        if (step === 0.5) {
-          setStep(1);
-        } else if (step >= 1 && step < 5) {
+      const doTransition = (nextStep) => {
+        if (step >= 1 && step <= 5) {
           const messages = ['20% COMPLETE', '40% COMPLETE', '60% COMPLETE', '80% COMPLETE', '100% COMPLETE'];
           const progressValues = [20, 40, 60, 80, 100];
-
-          setTransitionMessage(messages[step - 1]);
-          setTransitionProgress(progressValues[step - 1]);
+          const idx = Math.min(step - 1, 4);
+          setTransitionMessage(step === 5 ? '100% COMPLETE' : messages[idx]);
+          setTransitionProgress(step === 5 ? 100 : progressValues[idx]);
           setShowTransition(true);
-
           setTimeout(() => {
             setShowTransition(false);
-            setStep(step + 1);
+            setStep(nextStep);
           }, 2000);
-        } else if (step === 5) {
-          setTransitionMessage('100% COMPLETE');
-          setTransitionProgress(100);
-          setShowTransition(true);
+        } else {
+          setStep(nextStep);
+        }
+      };
 
-          setTimeout(() => {
-            setShowTransition(false);
-            setStep(6);
-          }, 2000);
-        } else if (step === 0) {
-          setStep(0.5);
+      const goNext = async () => {
+        if (step === 0) { setStep(0.5); return; }
+        if (step === 0.5) { setStep(1); return; }
+
+        // AI-gated steps 1-5
+        if (step >= 1 && step <= 5) {
+          const userId = localStorage.getItem('ft_user_id');
+          if (!userId) { alert('User not authenticated.'); return; }
+          setAiReviewing(true);
+          try {
+            let stepAnswers = {};
+            let stepName = '';
+            if (step === 1) {
+              stepName = 'Setup';
+              stepAnswers = { setup: { valuePropBeingTested: data.valuePropBeingTested, testingObjective: data.testingObjective, targetCustomerProfile: data.targetCustomerProfile, interviewPlan: data.interviewPlan } };
+            } else if (step === 2) {
+              stepName = 'Round 1 Interviews';
+              stepAnswers = { customer_feedback_r1: { round1Interviews: data.round1Interviews } };
+            } else if (step === 3) {
+              stepName = 'Refinement';
+              stepAnswers = { comparison_results: { round1Patterns: data.round1Patterns, positivePatterns: data.positivePatterns, confusionPoints: data.confusionPoints, objections: data.objections, refinedValueProp: data.refinedValueProp, changesJustification: data.changesJustification } };
+            } else if (step === 4) {
+              stepName = 'Round 2 Interviews';
+              stepAnswers = { customer_feedback_r2: { round2Interviews: data.round2Interviews } };
+            } else if (step === 5) {
+              stepName = 'Final Decision';
+              stepAnswers = { final_vp: { finalValueProp: data.finalValueProp }, reality_log: { validation: data.validation, consistentReactions: data.consistentReactions, strongestDifferentiator: data.strongestDifferentiator }, next_steps: { remainingAdjustments: data.remainingAdjustments, rolloutPlan: data.rolloutPlan } };
+            }
+            const canProceed = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, stepName);
+            if (canProceed) {
+              doTransition(step === 5 ? 6 : step + 1);
+            }
+          } catch (err) {
+            console.warn('[AIChallenge] Error, allowing passage:', err);
+            doTransition(step === 5 ? 6 : step + 1);
+          } finally {
+            setAiReviewing(false);
+          }
+          return;
         }
       };
 
@@ -614,6 +646,9 @@
         }
       };
 
+      const [submitStatus, setSubmitStatus] = useState(null);
+      const [submitMessage, setSubmitMessage] = useState('');
+
       const handleSubmit = async () => {
         try {
           const userId = localStorage.getItem('ft_user_id');
@@ -629,10 +664,13 @@
               final_vp: { finalValueProp: data.finalValueProp, refinedValueProp: data.refinedValueProp, changesJustification: data.changesJustification },
               next_steps: { remainingAdjustments: data.remainingAdjustments, rolloutPlan: data.rolloutPlan }
           };
-          await ToolDB.save(userId, questionMappings);
-          await ToolDB.markComplete(userId);
 
-          alert('Value proposition testing results submitted successfully!');
+          await window.AIChallenge.submitWithChallenge(userId, CONFIG.TOOL_SLUG, questionMappings, {
+              onReviewStart: () => { setSubmitMessage('AI coach is reviewing...'); },
+              onRevise: () => { setSubmitStatus(null); setSubmitMessage(''); setStep(5); },
+              onSubmitAnyway: () => { setSubmitStatus('success'); setSubmitMessage('Submission saved successfully!'); alert('Value proposition testing results submitted successfully!'); },
+              onError: (err) => { setSubmitStatus('error'); setSubmitMessage('Failed to save: ' + err.message); alert('Submission failed: ' + err.message); }
+          });
         } catch (error) {
           console.error('Submit error:', error);
           alert('Submission failed: ' + error.message);
@@ -662,6 +700,7 @@
               onBack={goBack}
               canProceed={canProceedFromStep1()}
               setShowHelp={setShowHelp}
+              aiReviewing={aiReviewing}
             />
             {showHelp && <HelpModal onClose={() => setShowHelp(false)} stepNumber={1} />}
           </Fragment>
@@ -681,6 +720,7 @@
               addRound1Interview={addRound1Interview}
               removeRound1Interview={removeRound1Interview}
               updateRound1Interview={updateRound1Interview}
+              aiReviewing={aiReviewing}
             />
             {showHelp && <HelpModal onClose={() => setShowHelp(false)} stepNumber={2} />}
           </Fragment>
@@ -697,6 +737,7 @@
               onBack={goBack}
               canProceed={canProceedFromStep3()}
               setShowHelp={setShowHelp}
+              aiReviewing={aiReviewing}
             />
             {showHelp && <HelpModal onClose={() => setShowHelp(false)} stepNumber={3} />}
           </Fragment>
@@ -716,6 +757,7 @@
               addRound2Interview={addRound2Interview}
               removeRound2Interview={removeRound2Interview}
               updateRound2Interview={updateRound2Interview}
+              aiReviewing={aiReviewing}
             />
             {showHelp && <HelpModal onClose={() => setShowHelp(false)} stepNumber={4} />}
           </Fragment>
@@ -733,6 +775,7 @@
               onBack={goBack}
               canProceed={canProceedFromStep5()}
               setShowHelp={setShowHelp}
+              aiReviewing={aiReviewing}
             />
             {showHelp && <HelpModal onClose={() => setShowHelp(false)} stepNumber={5} />}
           </Fragment>
@@ -940,7 +983,7 @@
     }
 
     // Step 1: Test Setup
-    function Step1Page({ data, updateData, onNext, onBack, canProceed, setShowHelp }) {
+    function Step1Page({ data, updateData, onNext, onBack, canProceed, setShowHelp, aiReviewing }) {
       return (
         <div className="bg-white min-h-screen p-16 pb-32">
           <div className="max-w-5xl mx-auto">
@@ -1045,10 +1088,10 @@
               </button>
               <button
                 onClick={onNext}
-                disabled={!canProceed}
+                disabled={!canProceed || aiReviewing}
                 className="btn-primary flex-1"
               >
-                NEXT: ROUND 1 INTERVIEWS →
+                {aiReviewing ? 'AI COACH REVIEWING...' : 'NEXT: ROUND 1 INTERVIEWS →'}
               </button>
             </div>
           </div>
@@ -1057,7 +1100,7 @@
     }
 
     // Step 2: Round 1 Customer Interviews
-    function Step2Page({ data, updateData, onNext, onBack, canProceed, setShowHelp, addRound1Interview, removeRound1Interview, updateRound1Interview }) {
+    function Step2Page({ data, updateData, onNext, onBack, canProceed, setShowHelp, addRound1Interview, removeRound1Interview, updateRound1Interview, aiReviewing }) {
       return (
         <div className="bg-white min-h-screen p-16 pb-32">
           <div className="max-w-6xl mx-auto">
@@ -1242,10 +1285,10 @@
               </button>
               <button
                 onClick={onNext}
-                disabled={!canProceed}
+                disabled={!canProceed || aiReviewing}
                 className="btn-primary flex-1"
               >
-                NEXT: ANALYZE & REFINE →
+                {aiReviewing ? 'AI COACH REVIEWING...' : 'NEXT: ANALYZE & REFINE →'}
               </button>
             </div>
           </div>
@@ -1254,7 +1297,7 @@
     }
 
     // Step 3: Refinement Based on Round 1
-    function Step3Page({ data, updateData, onNext, onBack, canProceed, setShowHelp }) {
+    function Step3Page({ data, updateData, onNext, onBack, canProceed, setShowHelp, aiReviewing }) {
       return (
         <div className="bg-white min-h-screen p-16 pb-32">
           <div className="max-w-5xl mx-auto">
@@ -1372,10 +1415,10 @@
               </button>
               <button
                 onClick={onNext}
-                disabled={!canProceed}
+                disabled={!canProceed || aiReviewing}
                 className="btn-primary flex-1"
               >
-                NEXT: ROUND 2 VALIDATION →
+                {aiReviewing ? 'AI COACH REVIEWING...' : 'NEXT: ROUND 2 VALIDATION →'}
               </button>
             </div>
           </div>
@@ -1384,7 +1427,7 @@
     }
 
     // Step 4: Round 2 Validation Interviews
-    function Step4Page({ data, updateData, onNext, onBack, canProceed, setShowHelp, addRound2Interview, removeRound2Interview, updateRound2Interview }) {
+    function Step4Page({ data, updateData, onNext, onBack, canProceed, setShowHelp, addRound2Interview, removeRound2Interview, updateRound2Interview, aiReviewing }) {
       return (
         <div className="bg-white min-h-screen p-16 pb-32">
           <div className="max-w-6xl mx-auto">
@@ -1595,10 +1638,10 @@
               </button>
               <button
                 onClick={onNext}
-                disabled={!canProceed}
+                disabled={!canProceed || aiReviewing}
                 className="btn-primary flex-1"
               >
-                NEXT: FINAL DECISION →
+                {aiReviewing ? 'AI COACH REVIEWING...' : 'NEXT: FINAL DECISION →'}
               </button>
             </div>
           </div>
@@ -1607,7 +1650,7 @@
     }
 
     // Step 5: Final Decision & Validation
-    function Step5Page({ data, updateData, updateValidation, onNext, onBack, canProceed, setShowHelp }) {
+    function Step5Page({ data, updateData, updateValidation, onNext, onBack, canProceed, setShowHelp, aiReviewing }) {
       const validationQuestions = [
         { key: 'mainNeedsSatisfied', label: 'We have verified if the value proposition satisfies the main core segment/customer needs' },
         { key: 'factsNotOpinions', label: 'During customer interviews, we asked for facts about their attitudes, behaviors, and real actions they are likely to take rather than their opinions' },
@@ -1791,10 +1834,10 @@
               </button>
               <button
                 onClick={onNext}
-                disabled={!canProceed}
+                disabled={!canProceed || aiReviewing}
                 className="btn-primary flex-1"
               >
-                VIEW COMPLETE SUMMARY →
+                {aiReviewing ? 'AI COACH REVIEWING...' : 'VIEW COMPLETE SUMMARY →'}
               </button>
             </div>
           </div>

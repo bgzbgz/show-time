@@ -12,6 +12,7 @@
     <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../../shared/js/tool-db.js"></script>
+    <script src="../../shared/js/ai-challenge.js"></script>
     <script src="../../shared/js/dependency-injection.js"></script>
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
     <script src="../../shared/js/cognitive-load.js"></script>
@@ -343,6 +344,9 @@
             const [step, setStep] = useState(0); // 0=intro, 0.5=choice, 1-N=steps, 999=canvas
             const [showHelp, setShowHelp] = useState(false);
             const [toolType, setToolType] = useState(''); // 'individual' or 'team'
+            const [aiReviewing, setAiReviewing] = useState(false);
+            const [submitStatus, setSubmitStatus] = useState(null);
+            const [submitMessage, setSubmitMessage] = useState('');
 
             // Data state
             const [data, setData] = useState({
@@ -516,6 +520,27 @@
                 }
             };
 
+            // AI-gated step navigation
+            const handleStepNext = async (nextStepValue, stepAnswers, stepName) => {
+                const userId = localStorage.getItem('ft_user_id');
+                if (!userId) {
+                    setStep(nextStepValue);
+                    return;
+                }
+                setAiReviewing(true);
+                try {
+                    const canGo = await window.AIChallenge.reviewStep(userId, 'fit', stepAnswers, stepName);
+                    if (canGo) {
+                        setStep(nextStepValue);
+                    }
+                } catch (err) {
+                    console.warn('AI review error, allowing passage:', err);
+                    setStep(nextStepValue);
+                } finally {
+                    setAiReviewing(false);
+                }
+            };
+
             const handleSubmit = async () => {
                 try {
                     // Get user ID from localStorage
@@ -529,14 +554,18 @@
                         individual_scores: data.individual,
                         abc_matrix: data.team
                     };
-                    await ToolDB.save(userId, questionMappings);
-                    await ToolDB.markComplete(userId);
 
-                    alert('Assessment submitted successfully!');
+                    await window.AIChallenge.submitWithChallenge(userId, 'fit', questionMappings, {
+                        onReviewStart: () => { setSubmitMessage('AI coach is reviewing...'); },
+                        onRevise: () => { setSubmitStatus(null); setSubmitMessage(''); },
+                        onSubmitAnyway: () => { setSubmitStatus('success'); setSubmitMessage('Assessment submitted successfully!'); },
+                        onError: (err) => { setSubmitStatus('error'); setSubmitMessage('Failed to save: ' + err.message); }
+                    });
 
                 } catch (error) {
                     console.error('Submit error:', error);
-                    alert('Failed to submit: ' + error.message);
+                    setSubmitStatus('error');
+                    setSubmitMessage('Failed to submit: ' + error.message);
                 }
             };
 
@@ -836,8 +865,9 @@
                         <IndividualStep1
                             data={data}
                             updateIndividual={updateIndividual}
-                            onNext={() => setStep(2)}
+                            onNext={() => handleStepNext(2, { individual_context: { name: data.individual.name, role: data.individual.role, teamContext: data.individual.teamContext } }, 'Context')}
                             onBack={() => setStep(0.5)}
+                            aiReviewing={aiReviewing}
                         />
                     )}
 
@@ -845,8 +875,9 @@
                         <IndividualStep2
                             data={data}
                             updateIndividual={updateIndividual}
-                            onNext={() => setStep(3)}
+                            onNext={() => handleStepNext(3, { individual_values_job: { valuesFit: data.individual.valuesFit, valuesEvidence: data.individual.valuesEvidence, jobFit: data.individual.jobFit, jobEvidence: data.individual.jobEvidence } }, 'Values & Job Fit')}
                             onBack={() => setStep(1)}
+                            aiReviewing={aiReviewing}
                         />
                     )}
 
@@ -854,8 +885,9 @@
                         <IndividualStep3
                             data={data}
                             updateIndividual={updateIndividual}
-                            onNext={() => setStep(4)}
+                            onNext={() => handleStepNext(4, { individual_team_boss: { teamFit: data.individual.teamFit, teamEvidence: data.individual.teamEvidence, bossFit: data.individual.bossFit, bossEvidence: data.individual.bossEvidence } }, 'Team & Boss Fit')}
                             onBack={() => setStep(2)}
+                            aiReviewing={aiReviewing}
                         />
                     )}
 
@@ -863,8 +895,9 @@
                         <IndividualStep4
                             data={data}
                             updateIndividual={updateIndividual}
-                            onNext={() => setStep(999)}
+                            onNext={() => handleStepNext(999, { individual_action: { strengths: data.individual.strengths, improvementAreas: data.individual.improvementAreas, actionPlan: data.individual.actionPlan } }, 'Action Plan')}
                             onBack={() => setStep(3)}
+                            aiReviewing={aiReviewing}
                         />
                     )}
 
@@ -873,8 +906,9 @@
                         <TeamStep1
                             data={data}
                             updateTeam={updateTeam}
-                            onNext={() => setStep(2)}
+                            onNext={() => handleStepNext(2, { team_setup: { assessorName: data.team.assessorName, teamContext: data.team.teamContext } }, 'Team Setup')}
                             onBack={() => setStep(0.5)}
+                            aiReviewing={aiReviewing}
                         />
                     )}
 
@@ -884,8 +918,9 @@
                             updateTeamMember={updateTeamMember}
                             addTeamMember={addTeamMember}
                             removeTeamMember={removeTeamMember}
-                            onNext={() => setStep(999)}
+                            onNext={() => handleStepNext(999, { abc_matrix: data.team }, 'Team Assessment')}
                             onBack={() => setStep(1)}
+                            aiReviewing={aiReviewing}
                         />
                     )}
 
@@ -897,6 +932,8 @@
                             exportPDF={exportPDF}
                             handleSubmit={handleSubmit}
                             onBack={() => setStep(toolType === 'individual' ? 4 : 2)}
+                            submitStatus={submitStatus}
+                            submitMessage={submitMessage}
                         />
                     )}
                 </>
@@ -904,7 +941,7 @@
         }
 
         // Individual Step 1: Context
-        function IndividualStep1({ data, updateIndividual, onNext, onBack }) {
+        function IndividualStep1({ data, updateIndividual, onNext, onBack, aiReviewing }) {
             const ind = data.individual || {};
 
             const canProceed = ind.name?.trim() && ind.role?.trim() && ind.teamContext?.trim();
@@ -993,10 +1030,10 @@
                         </button>
                         <button
                             onClick={onNext}
-                            disabled={!canProceed}
+                            disabled={!canProceed || aiReviewing}
                             className="btn-primary flex-1"
                         >
-                            NEXT: VALUES & JOB →
+                            {aiReviewing ? 'AI Coach Reviewing...' : 'NEXT: VALUES & JOB →'}
                         </button>
                     </div>
                 </div>
@@ -1004,7 +1041,7 @@
         }
 
         // Individual Step 2: Values & Job FIT
-        function IndividualStep2({ data, updateIndividual, onNext, onBack }) {
+        function IndividualStep2({ data, updateIndividual, onNext, onBack, aiReviewing }) {
             const ind = data.individual || {};
 
             const canProceed = (ind.valuesEvidence?.length || 0) >= 50 && (ind.jobEvidence?.length || 0) >= 50;
@@ -1120,10 +1157,10 @@
                         </button>
                         <button
                             onClick={onNext}
-                            disabled={!canProceed}
+                            disabled={!canProceed || aiReviewing}
                             className="btn-primary flex-1"
                         >
-                            NEXT: TEAM & BOSS →
+                            {aiReviewing ? 'AI Coach Reviewing...' : 'NEXT: TEAM & BOSS →'}
                         </button>
                     </div>
                 </div>
@@ -1131,7 +1168,7 @@
         }
 
         // Individual Step 3: Team & Boss FIT
-        function IndividualStep3({ data, updateIndividual, onNext, onBack }) {
+        function IndividualStep3({ data, updateIndividual, onNext, onBack, aiReviewing }) {
             const ind = data.individual || {};
 
             const canProceed = (ind.teamEvidence?.length || 0) >= 50 && (ind.bossEvidence?.length || 0) >= 50;
@@ -1247,10 +1284,10 @@
                         </button>
                         <button
                             onClick={onNext}
-                            disabled={!canProceed}
+                            disabled={!canProceed || aiReviewing}
                             className="btn-primary flex-1"
                         >
-                            NEXT: ACTION PLAN →
+                            {aiReviewing ? 'AI Coach Reviewing...' : 'NEXT: ACTION PLAN →'}
                         </button>
                     </div>
                 </div>
@@ -1258,7 +1295,7 @@
         }
 
         // Individual Step 4: Action Plan
-        function IndividualStep4({ data, updateIndividual, onNext, onBack }) {
+        function IndividualStep4({ data, updateIndividual, onNext, onBack, aiReviewing }) {
             const ind = data.individual || {};
 
             const avgFit = Math.round((
@@ -1362,10 +1399,10 @@
                         </button>
                         <button
                             onClick={onNext}
-                            disabled={!canProceed}
+                            disabled={!canProceed || aiReviewing}
                             className="btn-primary flex-1"
                         >
-                            VIEW RESULTS →
+                            {aiReviewing ? 'AI Coach Reviewing...' : 'VIEW RESULTS →'}
                         </button>
                     </div>
                 </div>
@@ -1373,7 +1410,7 @@
         }
 
         // Team Step 1: Setup
-        function TeamStep1({ data, updateTeam, onNext, onBack }) {
+        function TeamStep1({ data, updateTeam, onNext, onBack, aiReviewing }) {
             const team = data.team || {};
 
             const canProceed = team.assessorName?.trim() && team.teamContext?.trim();
@@ -1436,10 +1473,10 @@
                         </button>
                         <button
                             onClick={onNext}
-                            disabled={!canProceed}
+                            disabled={!canProceed || aiReviewing}
                             className="btn-primary flex-1"
                         >
-                            NEXT: ASSESS TEAM →
+                            {aiReviewing ? 'AI Coach Reviewing...' : 'NEXT: ASSESS TEAM →'}
                         </button>
                     </div>
                 </div>
@@ -1447,7 +1484,7 @@
         }
 
         // Team Step 2: Assessment
-        function TeamStep2({ data, updateTeamMember, addTeamMember, removeTeamMember, onNext, onBack }) {
+        function TeamStep2({ data, updateTeamMember, addTeamMember, removeTeamMember, onNext, onBack, aiReviewing }) {
             const team = data.team || {};
             const members = team.teamMembers || [];
 
@@ -1631,10 +1668,10 @@
                         </button>
                         <button
                             onClick={onNext}
-                            disabled={!canProceed}
+                            disabled={!canProceed || aiReviewing}
                             className="btn-primary flex-1"
                         >
-                            VIEW ABC MATRIX →
+                            {aiReviewing ? 'AI Coach Reviewing...' : 'VIEW ABC MATRIX →'}
                         </button>
                     </div>
                 </div>
@@ -1642,7 +1679,7 @@
         }
 
         // Canvas Page
-        function CanvasPage({ data, toolType, exportPDF, handleSubmit, onBack }) {
+        function CanvasPage({ data, toolType, exportPDF, handleSubmit, onBack, submitStatus, submitMessage }) {
             if (toolType === 'individual') {
                 const ind = data.individual || {};
                 const avgFit = Math.round((
@@ -1663,6 +1700,12 @@
                                     </button>
                                 </div>
                             </div>
+
+                            {submitMessage && (
+                                <div className={`p-4 mb-6 border-2 text-lg font-bold no-print ${submitStatus === 'success' ? 'bg-gray-50 border-black text-black' : submitStatus === 'error' ? 'bg-red-50 border-red-500 text-red-700' : 'bg-yellow-50 border-yellow-500 text-yellow-800'}`}>
+                                    {submitMessage}
+                                </div>
+                            )}
 
                             <div id="canvas-content" className="bg-white p-12 border-4 border-black">
                                 <h2 className="plaak text-5xl mb-2">{ind.name || 'YOUR NAME'}</h2>
@@ -1756,6 +1799,12 @@
                                     quote={"[PLACEHOLDER] FIT showed us our best people were being wasted in wrong positions."}
                                 />
                             </div>
+
+                            {submitMessage && (
+                                <div className={`p-4 mb-6 border-2 text-lg font-bold no-print ${submitStatus === 'success' ? 'bg-gray-50 border-black text-black' : submitStatus === 'error' ? 'bg-red-50 border-red-500 text-red-700' : 'bg-yellow-50 border-yellow-500 text-yellow-800'}`}>
+                                    {submitMessage}
+                                </div>
+                            )}
 
                             <div id="canvas-content" className="bg-white p-12 border-4 border-black">
                                 <h2 className="plaak text-5xl mb-2">TEAM ASSESSMENT</h2>

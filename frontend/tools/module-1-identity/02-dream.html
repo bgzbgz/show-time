@@ -11,6 +11,7 @@
     <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../../shared/js/tool-db.js"></script>
+    <script src="../../shared/js/ai-challenge.js"></script>
     <script src="../../shared/js/dependency-injection.js"></script>
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
     <script src="../../shared/js/cognitive-load.js"></script>
@@ -612,7 +613,8 @@
             const [showHelp, setShowHelp] = useState(false);
             const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
             const [submissionStatus, setSubmissionStatus] = useState(null); // null, 'loading', 'success', 'error'
-            
+            const [aiReviewing, setAiReviewing] = useState(false);
+
             const [data, setData] = useState({
                 companyName: '',
                 userEmail: '',
@@ -676,6 +678,27 @@
                 }
             };
 
+            // AI-gated step navigation
+            const handleStepNext = async (nextStepValue, stepAnswers, stepName) => {
+                const userId = localStorage.getItem('ft_user_id');
+                if (!userId) {
+                    setStep(nextStepValue);
+                    return;
+                }
+                setAiReviewing(true);
+                try {
+                    const canProceed = await window.AIChallenge.reviewStep(userId, 'dream', stepAnswers, stepName);
+                    if (canProceed) {
+                        setStep(nextStepValue);
+                    }
+                } catch (err) {
+                    console.warn('AI review error, allowing passage:', err);
+                    setStep(nextStepValue);
+                } finally {
+                    setAiReviewing(false);
+                }
+            };
+
             // Webhook Submission Function
             const submitToWebhook = async () => {
                 setSubmissionStatus('loading');
@@ -695,11 +718,14 @@
                         killer_conclusion: data.employeePromise,
                         one_sentence: data.oneSentence
                     };
-                    await ToolDB.save(userId, questionMappings);
-                    await ToolDB.markComplete(userId);
 
-                    setSubmissionStatus('success');
-                    setTimeout(() => setSubmissionStatus(null), 5000);
+                    await window.AIChallenge.submitWithChallenge(userId, 'dream', questionMappings, {
+                        onReviewStart: () => { setSubmissionStatus('loading'); },
+                        onRevise: () => { setSubmissionStatus(null); },
+                        onSubmitAnyway: () => { setSubmissionStatus('success'); setTimeout(() => setSubmissionStatus(null), 5000); },
+                        onError: (err) => { setSubmissionStatus('error'); setTimeout(() => setSubmissionStatus(null), 5000); }
+                    });
+
                 } catch (error) {
                     console.error('Webhook submission error:', error);
                     setSubmissionStatus('error');
@@ -1001,7 +1027,8 @@
                         {step === 1 && <Step1Corporate
                             data={data}
                             updateData={updateData}
-                            onNext={() => setStep(1.5)}
+                            onNext={() => handleStepNext(1.5, { dream_narrative: data.corporateKiller }, 'Corporate Killer')}
+                            aiReviewing={aiReviewing}
                         />}
 
                         {/* Step 1.7: Employee Promise (WIFM Gate) */}
@@ -1009,7 +1036,8 @@
                             data={data}
                             updateData={updateData}
                             onBack={() => setStep(1)}
-                            onNext={() => setStep(1.8)}
+                            onNext={() => handleStepNext(1.8, { killer_conclusion: data.employeePromise }, 'Employee Promise')}
+                            aiReviewing={aiReviewing}
                         />}
 
                         {/* Transition after Employee Promise */}
@@ -1038,7 +1066,8 @@
                             data={data}
                             updateData={updateData}
                             onBack={() => setStep(1)}
-                            onNext={() => setStep(2.5)}
+                            onNext={() => handleStepNext(2.5, { dream_visualization: data.dreamAnswers }, 'Dream Questions')}
+                            aiReviewing={aiReviewing}
                         />}
 
                         {/* Emotional Pause after Dream Questions */}
@@ -1068,7 +1097,8 @@
                             updateData={updateData}
                             generate3Sentences={generate3Sentences}
                             onBack={() => setStep(2)}
-                            onNext={() => setStep(4)}
+                            onNext={() => handleStepNext(4, { one_sentence: data.oneSentence }, 'One Sentence Dream')}
+                            aiReviewing={aiReviewing}
                         />}
 
                         {/* Step 4: Dream Board */}
@@ -1099,7 +1129,7 @@
         }
 
         // Step 1: Corporate Killer Component (with character feedback and jargon detection)
-        function Step1Corporate({ data, updateData, onNext }) {
+        function Step1Corporate({ data, updateData, onNext, aiReviewing }) {
             const canProceed = data.companyName &&
                               data.userEmail &&
                               data.corporateKiller.whatLost &&
@@ -1279,10 +1309,10 @@
                         <div className="flex justify-end">
                             <button
                                 className="btn-primary text-xl py-4 px-8"
-                                disabled={!canProceed}
+                                disabled={!canProceed || aiReviewing}
                                 onClick={onNext}
                             >
-                                Next: Employee Promise →
+                                {aiReviewing ? 'AI Coach Reviewing...' : 'Next: Employee Promise →'}
                             </button>
                         </div>
                     </div>
@@ -1291,7 +1321,7 @@
         }
 
         // Step 1.7: Employee Promise (WIFM Gate) Component
-        function Step1_7EmployeePromise({ data, updateData, onBack, onNext }) {
+        function Step1_7EmployeePromise({ data, updateData, onBack, onNext, aiReviewing }) {
             const canProceed = data.employeePromise.money &&
                               data.employeePromise.pride &&
                               data.employeePromise.freedom;
@@ -1388,10 +1418,10 @@
                             </button>
                             <button
                                 className="btn-primary text-xl py-4 px-8"
-                                disabled={!canProceed}
+                                disabled={!canProceed || aiReviewing}
                                 onClick={onNext}
                             >
-                                Continue to Dream Questions →
+                                {aiReviewing ? 'AI Coach Reviewing...' : 'Continue to Dream Questions →'}
                             </button>
                         </div>
                     </div>
@@ -1400,7 +1430,7 @@
         }
 
         // Step 2: Dream Questions Component (ONE-AT-A-TIME)
-        function Step2DreamQuestions({ data, updateData, onBack, onNext }) {
+        function Step2DreamQuestions({ data, updateData, onBack, onNext, aiReviewing }) {
             const [currentQuestion, setCurrentQuestion] = useState(0);
             
             const questions = [
@@ -1530,12 +1560,12 @@
                             <button className="btn-secondary text-lg py-3 px-6" onClick={handleBack}>
                                 ← Back
                             </button>
-                            <button 
+                            <button
                                 className="btn-primary text-xl py-4 px-8"
-                                disabled={!canProceed}
+                                disabled={!canProceed || (currentQuestion >= questions.length - 1 && aiReviewing)}
                                 onClick={handleNext}
                             >
-                                {currentQuestion < questions.length - 1 ? 'Next Question →' : 'Complete Section →'}
+                                {currentQuestion < questions.length - 1 ? 'Next Question →' : (aiReviewing ? 'AI Coach Reviewing...' : 'Complete Section →')}
                             </button>
                         </div>
 
@@ -1559,7 +1589,7 @@
         }
 
         // Step 3: One Sentence Component (with 3 AI versions + jargon detection)
-        function Step3OneSentence({ data, updateData, generate3Sentences, onBack, onNext }) {
+        function Step3OneSentence({ data, updateData, generate3Sentences, onBack, onNext, aiReviewing }) {
             const [selectedVersion, setSelectedVersion] = useState(null);
             const [showOptions, setShowOptions] = useState(false);
             const [aiSentences, setAiSentences] = useState([]);
@@ -1695,12 +1725,12 @@
                             <button className="btn-secondary text-lg py-3 px-6" onClick={onBack}>
                                 ← Back
                             </button>
-                            <button 
+                            <button
                                 className="btn-primary text-xl py-4 px-8"
-                                disabled={!canProceed}
+                                disabled={!canProceed || aiReviewing}
                                 onClick={onNext}
                             >
-                                Next: Dream Board →
+                                {aiReviewing ? 'AI Coach Reviewing...' : 'Next: Dream Board →'}
                             </button>
                         </div>
                     </div>

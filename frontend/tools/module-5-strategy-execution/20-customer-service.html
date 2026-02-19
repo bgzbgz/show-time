@@ -18,6 +18,7 @@
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../../shared/js/tool-db.js"></script>
+  <script src="../../shared/js/ai-challenge.js"></script>
   <script src="../../shared/js/dependency-injection.js"></script>
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
     <script src="../../shared/js/cognitive-load.js"></script>
@@ -288,6 +289,9 @@
       const [showTransition, setShowTransition] = useState(false);
       const [transitionMessage, setTransitionMessage] = useState('');
       const [transitionProgress, setTransitionProgress] = useState(0);
+      const [aiReviewing, setAiReviewing] = useState(false);
+      const [submitStatus, setSubmitStatus] = useState(null);
+      const [submitMessage, setSubmitMessage] = useState('');
 
       const [data, setData] = useState({
         // Step 1: Journey Mapping
@@ -453,23 +457,62 @@
       };
 
       // Navigation
-      const goNext = () => {
-        if (step === 0.5) {
-          setStep(1);
-        } else if (step >= 1 && step < 5) {
+      const advanceStep = (fromStep) => {
+        if (fromStep >= 1 && fromStep < 5) {
           const messages = ['20% COMPLETE', '40% COMPLETE', '60% COMPLETE', '80% COMPLETE', '100% COMPLETE'];
           const progressValues = [20, 40, 60, 80, 100];
-          setTransitionMessage(messages[step - 1]);
-          setTransitionProgress(progressValues[step - 1]);
+          setTransitionMessage(messages[fromStep - 1]);
+          setTransitionProgress(progressValues[fromStep - 1]);
           setShowTransition(true);
           setTimeout(() => {
             setShowTransition(false);
-            setStep(step + 1);
+            setStep(fromStep + 1);
           }, 2000);
-        } else if (step === 5) {
+        } else if (fromStep === 5) {
           setStep(6);
+        }
+      };
+
+      const goNext = () => {
+        if (step === 0.5) {
+          setStep(1);
         } else if (step === 0) {
           setStep(0.5);
+        }
+      };
+
+      const handleNext = async (fromStep) => {
+        const userId = localStorage.getItem('ft_user_id');
+        if (!userId) { alert('User not authenticated.'); return; }
+        setAiReviewing(true);
+        try {
+          let stepAnswers = {};
+          let stepName = '';
+          if (fromStep === 1) {
+            stepName = 'Customer Journey Map';
+            stepAnswers = { journeyStages: data.journeyStages };
+          } else if (fromStep === 2) {
+            stepName = 'WOW Touchpoints';
+            stepAnswers = { wowTouchpoints: data.wowTouchpoints };
+          } else if (fromStep === 3) {
+            stepName = 'Just Better Improvements';
+            stepAnswers = { justBetter: data.justBetter };
+          } else if (fromStep === 4) {
+            stepName = 'Ownership & Metrics';
+            stepAnswers = { ownership: data.ownership };
+          } else if (fromStep === 5) {
+            stepName = 'Implementation Plan';
+            stepAnswers = { executionPlan: data.executionPlan, frontlineCommunication: data.frontlineCommunication, metricTracking: data.metricTracking, quarterlyReview: data.quarterlyReview };
+          }
+          const canProceed = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, stepName);
+          if (canProceed) {
+            advanceStep(fromStep);
+          }
+        } catch (err) {
+          console.warn('[AIChallenge] Error, allowing passage:', err);
+          advanceStep(fromStep);
+        } finally {
+          setAiReviewing(false);
         }
       };
 
@@ -553,10 +596,13 @@
               quarterlyReview: data.quarterlyReview
             }
           };
-          await ToolDB.save(userId, questionMappings);
-          await ToolDB.markComplete(userId);
 
-          alert('Customer Service Strategy submitted successfully!');
+          await window.AIChallenge.submitWithChallenge(userId, CONFIG.TOOL_SLUG, questionMappings, {
+            onReviewStart: () => { setSubmitMessage('AI coach is reviewing...'); },
+            onRevise: () => { setSubmitStatus(null); setSubmitMessage(''); setStep(5); },
+            onSubmitAnyway: () => { setSubmitStatus('success'); setSubmitMessage('Submission saved successfully!'); },
+            onError: (err) => { setSubmitStatus('error'); setSubmitMessage('Failed to save: ' + err.message); }
+          });
         } catch (error) {
           console.error('Submit error:', error);
           alert('Submission failed: ' + error.message);
@@ -583,9 +629,10 @@
             updateStage={updateStage}
             addStage={addStage}
             removeStage={removeStage}
-            onNext={goNext}
+            onNext={() => handleNext(1)}
             onBack={goBack}
-            canProceed={isStep1Valid()}
+            canProceed={!aiReviewing && isStep1Valid()}
+            aiReviewing={aiReviewing}
           />
         );
       }
@@ -595,9 +642,10 @@
           <Step2Page
             data={data}
             updateWow={updateWow}
-            onNext={goNext}
+            onNext={() => handleNext(2)}
             onBack={goBack}
-            canProceed={isStep2Valid()}
+            canProceed={!aiReviewing && isStep2Valid()}
+            aiReviewing={aiReviewing}
           />
         );
       }
@@ -607,9 +655,10 @@
           <Step3Page
             data={data}
             updateBetter={updateBetter}
-            onNext={goNext}
+            onNext={() => handleNext(3)}
             onBack={goBack}
-            canProceed={isStep3Valid()}
+            canProceed={!aiReviewing && isStep3Valid()}
+            aiReviewing={aiReviewing}
           />
         );
       }
@@ -619,9 +668,10 @@
           <Step4Page
             data={data}
             updateOwnership={updateOwnership}
-            onNext={goNext}
+            onNext={() => handleNext(4)}
             onBack={goBack}
-            canProceed={isStep4Valid()}
+            canProceed={!aiReviewing && isStep4Valid()}
+            aiReviewing={aiReviewing}
           />
         );
       }
@@ -631,9 +681,10 @@
           <Step5Page
             data={data}
             updateData={updateData}
-            onNext={goNext}
+            onNext={() => handleNext(5)}
             onBack={goBack}
-            canProceed={isStep5Valid()}
+            canProceed={!aiReviewing && isStep5Valid()}
+            aiReviewing={aiReviewing}
           />
         );
       }
@@ -921,7 +972,7 @@
     }
 
     // Step 1: Customer Journey Map
-    function Step1Page({ data, updateStage, addStage, removeStage, onNext, onBack, canProceed }) {
+    function Step1Page({ data, updateStage, addStage, removeStage, onNext, onBack, canProceed, aiReviewing }) {
       const [showHelpModal, setShowHelpModal] = useState(false);
 
       return (
@@ -1059,7 +1110,7 @@
                 disabled={!canProceed}
                 className="btn-primary flex-1"
               >
-                NEXT: WOW MOMENTS →
+                {aiReviewing ? 'AI Coach Reviewing...' : 'NEXT: WOW MOMENTS →'}
               </button>
             </div>
           </div>
@@ -1068,7 +1119,7 @@
     }
 
     // Step 2: WOW Touchpoints
-    function Step2Page({ data, updateWow, onNext, onBack, canProceed }) {
+    function Step2Page({ data, updateWow, onNext, onBack, canProceed, aiReviewing }) {
       const [showHelpModal, setShowHelpModal] = useState(false);
 
       return (
@@ -1173,7 +1224,7 @@
                 disabled={!canProceed}
                 className="btn-primary flex-1"
               >
-                NEXT: JUST BETTER →
+                {aiReviewing ? 'AI Coach Reviewing...' : 'NEXT: JUST BETTER →'}
               </button>
             </div>
           </div>
@@ -1182,7 +1233,7 @@
     }
 
     // Step 3: Just Better Improvements
-    function Step3Page({ data, updateBetter, onNext, onBack, canProceed }) {
+    function Step3Page({ data, updateBetter, onNext, onBack, canProceed, aiReviewing }) {
       const [showHelpModal, setShowHelpModal] = useState(false);
 
       return (
@@ -1287,7 +1338,7 @@
                 disabled={!canProceed}
                 className="btn-primary flex-1"
               >
-                NEXT: OWNERSHIP →
+                {aiReviewing ? 'AI Coach Reviewing...' : 'NEXT: OWNERSHIP →'}
               </button>
             </div>
           </div>
@@ -1296,7 +1347,7 @@
     }
 
     // Step 4: Ownership & Metrics
-    function Step4Page({ data, updateOwnership, onNext, onBack, canProceed }) {
+    function Step4Page({ data, updateOwnership, onNext, onBack, canProceed, aiReviewing }) {
       const [showHelpModal, setShowHelpModal] = useState(false);
 
       return (
@@ -1389,7 +1440,7 @@
                 disabled={!canProceed}
                 className="btn-primary flex-1"
               >
-                NEXT: IMPLEMENTATION →
+                {aiReviewing ? 'AI Coach Reviewing...' : 'NEXT: IMPLEMENTATION →'}
               </button>
             </div>
           </div>
@@ -1398,7 +1449,7 @@
     }
 
     // Step 5: Implementation Plan
-    function Step5Page({ data, updateData, onNext, onBack, canProceed }) {
+    function Step5Page({ data, updateData, onNext, onBack, canProceed, aiReviewing }) {
       const [showHelpModal, setShowHelpModal] = useState(false);
 
       return (
@@ -1499,7 +1550,7 @@
                 disabled={!canProceed}
                 className="btn-primary flex-1"
               >
-                VIEW SUMMARY →
+                {aiReviewing ? 'AI Coach Reviewing...' : 'VIEW SUMMARY →'}
               </button>
             </div>
           </div>

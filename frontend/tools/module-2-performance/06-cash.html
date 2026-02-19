@@ -12,6 +12,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../../shared/js/tool-db.js"></script>
+    <script src="../../shared/js/ai-challenge.js"></script>
     <script src="../../shared/js/dependency-injection.js"></script>
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
     <script src="../../shared/js/cognitive-load.js"></script>
@@ -398,6 +399,7 @@
             const [ideas, setIdeas] = useState([]);
             const [actions, setActions] = useState([{ what: '', who: '', when: '' }, { what: '', who: '', when: '' }, { what: '', who: '', when: '' }]);
 
+            const [aiReviewing, setAiReviewing] = useState(false);
             const autosaveTimer = useRef(null);
 
             // Calculated values
@@ -443,6 +445,50 @@
             const canStep3 = true;
             const topIdeas = [...ideas].sort((a, b) => ((b.impact * 2) + b.ease) - ((a.impact * 2) + a.ease));
             const canStep4 = actions.filter(a => a.what.trim() && a.who.trim() && a.when).length >= 1;
+
+            const handleNext = async (fromStep) => {
+                const userId = localStorage.getItem('ft_user_id');
+                if (!userId) { setStep(fromStep === 4 ? 999 : fromStep + 1); return; }
+                setAiReviewing(true);
+                try {
+                    let stepAnswers = {};
+                    let stepName = '';
+                    if (fromStep === 1) {
+                        stepName = 'Year 1 Data';
+                        stepAnswers = {
+                            story_report_y1: { revenue: year1PL.revenue, cogs: year1PL.cogs, directLabor: year1PL.directLabor, managementLabor: year1PL.managementLabor, overheads: year1PL.overheads, interest: year1PL.interest, tax: year1PL.tax },
+                            year1_bs: year1BS,
+                            year1_wc: year1WC
+                        };
+                    } else if (fromStep === 2) {
+                        stepName = 'Year 2 Data';
+                        stepAnswers = {
+                            story_report_y2: { revenue: year2PL.revenue, cogs: year2PL.cogs, directLabor: year2PL.directLabor, managementLabor: year2PL.managementLabor, overheads: year2PL.overheads, interest: year2PL.interest, tax: year2PL.tax },
+                            year2_bs: year2BS,
+                            year2_wc: year2WC
+                        };
+                    } else if (fromStep === 3) {
+                        stepName = 'Power of One';
+                        stepAnswers = {
+                            power_of_one: powerOfOne.map(l => ({ lever: l.lever, cashImpact: l.cash, ebitImpact: l.ebit }))
+                        };
+                    } else if (fromStep === 4) {
+                        stepName = 'Action Plan';
+                        stepAnswers = {
+                            action_sheets: actions.filter(a => a.what.trim())
+                        };
+                    }
+                    const canProceed = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, stepName);
+                    if (canProceed) {
+                        setStep(fromStep === 4 ? 999 : fromStep + 1);
+                    }
+                } catch (err) {
+                    console.warn('[AIChallenge] Error, allowing passage:', err);
+                    setStep(fromStep === 4 ? 999 : fromStep + 1);
+                } finally {
+                    setAiReviewing(false);
+                }
+            };
 
             return (
                 <div className="tool-frame">
@@ -533,9 +579,9 @@
                                     {step === 4 && <Step4Content ideas={ideas} setIdeas={setIdeas} actions={actions} setActions={setActions} powerOfOne={powerOfOne} />}
                                     <ButtonFooter
                                         onBack={() => setStep(step === 1 ? 0.5 : step - 1)}
-                                        onNext={() => setStep(step === 4 ? 999 : step + 1)}
-                                        canProceed={step === 1 ? canStep1 : step === 2 ? canStep2 : step === 3 ? canStep3 : canStep4}
-                                        nextLabel={step === 4 ? 'View Your Canvas' : 'Next'}
+                                        onNext={() => handleNext(step)}
+                                        canProceed={!aiReviewing && (step === 1 ? canStep1 : step === 2 ? canStep2 : step === 3 ? canStep3 : canStep4)}
+                                        nextLabel={aiReviewing ? 'AI Coach Reviewing...' : step === 4 ? 'View Your Canvas' : 'Next'}
                                     />
                                 </div>
                                 <WizardSidebar currentStep={step} year1PL={year1PL} year2PL={year2PL} year2WC={year2WC} powerOfOne={powerOfOne} actionsCount={actions.filter(a => a.what.trim()).length} onNavigate={setStep} />
@@ -869,25 +915,21 @@
             const [submitMessage, setSubmitMessage] = useState('');
 
             const handleSubmit = async () => {
-                try {
-                    setSubmitStatus('saving');
-                    const userId = localStorage.getItem('ft_user_id');
-                    if (!userId) { setSubmitStatus('error'); setSubmitMessage('User not authenticated.'); return; }
-                    const questionMappings = {
-                        story_report: { year1PL: { revenue: y1PL.revenue, cogs: y1PL.cogs, grossMargin: y1PL.grossMargin, ebit: y1PL.ebit, ebitPct: y1PL.ebitPct, netProfit: y1PL.netProfit, directLER: y1PL.directLER, managementLER: y1PL.managementLER }, year2PL: { revenue: y2PL.revenue, cogs: y2PL.cogs, grossMargin: y2PL.grossMargin, ebit: y2PL.ebit, ebitPct: y2PL.ebitPct, netProfit: y2PL.netProfit, directLER: y2PL.directLER, managementLER: y2PL.managementLER } },
-                        power_of_one: powerOfOne.map(l => ({ lever: l.lever, cashImpact: l.cash, ebitImpact: l.ebit })),
-                        action_sheets: actions.filter(a => a.what.trim()),
-                        top_priority: 'Cash impact: ' + totalCash + ', EBIT impact: ' + totalEbit,
-                        ler_ratio: { year1WC: y1WC, year2WC: y2WC }
-                    };
-                    await ToolDB.save(userId, questionMappings);
-                    await ToolDB.markComplete(userId);
-                    setSubmitStatus('success');
-                    setSubmitMessage('Saved successfully!');
-                } catch (error) {
-                    setSubmitStatus('error');
-                    setSubmitMessage('Failed: ' + error.message);
-                }
+                const userId = localStorage.getItem('ft_user_id');
+                if (!userId) { setSubmitStatus('error'); setSubmitMessage('User not authenticated.'); return; }
+                const questionMappings = {
+                    story_report: { year1PL: { revenue: y1PL.revenue, cogs: y1PL.cogs, grossMargin: y1PL.grossMargin, ebit: y1PL.ebit, ebitPct: y1PL.ebitPct, netProfit: y1PL.netProfit, directLER: y1PL.directLER, managementLER: y1PL.managementLER }, year2PL: { revenue: y2PL.revenue, cogs: y2PL.cogs, grossMargin: y2PL.grossMargin, ebit: y2PL.ebit, ebitPct: y2PL.ebitPct, netProfit: y2PL.netProfit, directLER: y2PL.directLER, managementLER: y2PL.managementLER } },
+                    power_of_one: powerOfOne.map(l => ({ lever: l.lever, cashImpact: l.cash, ebitImpact: l.ebit })),
+                    action_sheets: actions.filter(a => a.what.trim()),
+                    top_priority: 'Cash impact: ' + totalCash + ', EBIT impact: ' + totalEbit,
+                    ler_ratio: { year1WC: y1WC, year2WC: y2WC }
+                };
+                await window.AIChallenge.submitWithChallenge(userId, CONFIG.TOOL_SLUG, questionMappings, {
+                    onReviewStart: () => { setSubmitStatus('saving'); setSubmitMessage('AI coach is reviewing...'); },
+                    onRevise: () => { setSubmitStatus(null); setSubmitMessage(''); onBack(); },
+                    onSubmitAnyway: () => { setSubmitStatus('success'); setSubmitMessage('Saved successfully!'); },
+                    onError: (err) => { setSubmitStatus('error'); setSubmitMessage('Failed: ' + err.message); }
+                });
             };
 
             const handleExport = async (e) => {
