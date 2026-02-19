@@ -92,7 +92,7 @@ router.post(
 // =============================================================================
 
 const AIChallengeRequestSchema = z.object({
-  user_id: z.string().uuid(),
+  user_id: z.string().min(1),
   tool_slug: z.string().min(1),
   answers: z.record(z.unknown()),
   attempt: z.number().int().min(1).max(10).optional().default(1),
@@ -140,18 +140,21 @@ router.post(
     // Validate request
     const { user_id, tool_slug, answers, attempt } = AIChallengeRequestSchema.parse(req.body);
 
-    // Validate user exists
-    const { data: user } = await supabase
-      .from('users')
-      .select('id')
-      .eq('id', user_id)
-      .single();
+    // Validate user exists (skip for anonymous users)
+    const isAnonymous = user_id.startsWith('anon-');
+    if (!isAnonymous) {
+      const { data: user } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', user_id)
+        .single();
 
-    if (!user) {
-      return res.status(400).json({
-        error: 'Validation Error',
-        message: 'Invalid user_id',
-      });
+      if (!user) {
+        return res.status(400).json({
+          error: 'Validation Error',
+          message: 'Invalid user_id',
+        });
+      }
     }
 
     // Call challenge service
