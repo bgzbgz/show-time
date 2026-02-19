@@ -12,6 +12,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../../shared/js/tool-db.js"></script>
+    <script src="../../shared/js/ai-challenge.js"></script>
     <script src="../../shared/js/dependency-injection.js"></script>
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
     <script src="../../shared/js/cognitive-load.js"></script>
@@ -903,11 +904,10 @@
             const handleSubmit = async () => {
                 try {
                     setSubmitStatus('saving');
-                    setSubmitMessage('');
+                    setSubmitMessage('Reviewing your answers...');
                     const userId = localStorage.getItem('ft_user_id');
                     if (!userId) { setSubmitStatus('error'); setSubmitMessage('User not authenticated. No user ID found.'); return; }
                     console.log('[WOOP Submit] userId:', userId);
-                    // Map form data to question_keys for the new 3-table DB
                     const questionMappings = {
                         wish: { outcome: data.outcome, worldChange: data.worldChange, feeling: data.feeling },
                         outcome: { steps: data.steps.filter(s => s.trim()), mentallyRehearsed: data.mentallyRehearsed },
@@ -916,11 +916,13 @@
                         first_action: data.firstAction,
                         commitment_level: data.scopeType
                     };
-                    console.log('[WOOP Submit] Saving via ToolDB:', questionMappings);
-                    await ToolDB.save(userId, questionMappings);
-                    await ToolDB.markComplete(userId);
-                    setSubmitStatus('success');
-                    setSubmitMessage('Submission saved successfully!');
+                    console.log('[WOOP Submit] Submitting with AI challenge:', questionMappings);
+                    await AIChallenge.submitWithChallenge(userId, 'woop', questionMappings, {
+                        onReviewStart: () => { setSubmitMessage('AI coach is reviewing...'); },
+                        onRevise: () => { setSubmitStatus(null); setSubmitMessage(''); onBack(); },
+                        onSubmitAnyway: () => { setSubmitStatus('success'); setSubmitMessage('Submission saved successfully!'); },
+                        onError: (err) => { setSubmitStatus('error'); setSubmitMessage('Failed to save: ' + err.message); }
+                    });
                 } catch (error) {
                     console.error('[WOOP Submit] Error:', error);
                     setSubmitStatus('error');

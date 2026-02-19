@@ -65,6 +65,9 @@ const envSchema = z.object({
   N8N_WEBHOOK_URL: z.string().url().optional(),
   N8N_TIMEOUT_MS: z.coerce.number().int().positive().default(30000),
 
+  // Anthropic AI (Claude) — for AI Challenge Layer
+  ANTHROPIC_API_KEY: z.string().optional(),
+
   // PDF Export
   PUPPETEER_EXECUTABLE_PATH: z.string().optional(),
   PDF_EXPORT_TIMEOUT_MS: z.coerce.number().int().positive().default(60000),
