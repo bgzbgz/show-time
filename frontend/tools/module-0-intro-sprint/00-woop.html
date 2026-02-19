@@ -495,6 +495,38 @@
                 }
             }, []);
 
+            const [aiReviewing, setAiReviewing] = useState(false);
+
+            // AI-gated step advancement: reviews answers before allowing next step
+            const handleNext = async () => {
+                const userId = localStorage.getItem('ft_user_id');
+                if (!userId) { setStep(step === 4 ? 999 : step + 1); return; }
+
+                // Map current step to the question keys for that step
+                const stepAnswerMap = {
+                    1: { wish: { outcome: data.outcome, worldChange: data.worldChange, feeling: data.feeling } },
+                    2: { outcome: { steps: data.steps.filter(s => s.trim()), mentallyRehearsed: data.mentallyRehearsed } },
+                    3: { obstacle_internal: data.obstacles.filter(o => o.problem) },
+                    4: { plan_if_then: data.bigChunks, first_action: data.firstAction, commitment_level: data.scopeType }
+                };
+                const stepNames = { 1: 'Wish', 2: 'Outcome', 3: 'Obstacle', 4: 'Plan' };
+
+                setAiReviewing(true);
+                try {
+                    const canProceed = await window.AIChallenge.reviewStep(
+                        userId, 'woop', stepAnswerMap[step], stepNames[step]
+                    );
+                    if (canProceed) {
+                        setStep(step === 4 ? 999 : step + 1);
+                    }
+                } catch (e) {
+                    console.error('[WOOP] AI review error:', e);
+                    setStep(step === 4 ? 999 : step + 1); // fail open
+                } finally {
+                    setAiReviewing(false);
+                }
+            };
+
             const updateData = (field, value) => setData(prev => ({ ...prev, [field]: value }));
             const updateStepField = (index, value) => setData(prev => ({ ...prev, steps: prev.steps.map((s, i) => i === index ? value : s) }));
             const updateObstacle = (index, field, value) => setData(prev => ({ ...prev, obstacles: prev.obstacles.map((o, i) => i === index ? { ...o, [field]: value } : o) }));
@@ -613,9 +645,9 @@
 
                                     <ButtonFooter
                                         onBack={() => setStep(step === 1 ? 0.5 : step - 1)}
-                                        onNext={() => setStep(step === 4 ? 999 : step + 1)}
-                                        canProceed={step === 1 ? canProceedStep1 : step === 2 ? canProceedStep2 : step === 3 ? canProceedStep3 : canProceedStep4}
-                                        nextLabel={step === 4 ? 'View Your Canvas' : 'Next'}
+                                        onNext={handleNext}
+                                        canProceed={!aiReviewing && (step === 1 ? canProceedStep1 : step === 2 ? canProceedStep2 : step === 3 ? canProceedStep3 : canProceedStep4)}
+                                        nextLabel={aiReviewing ? 'AI Coach Reviewing...' : step === 4 ? 'View Your Canvas' : 'Next'}
                                         showBack={true}
                                     />
                                 </div>
