@@ -8,8 +8,8 @@
  *   <script>
  *     // In your submit handler:
  *     const result = await AIChallenge.submitWithChallenge(userId, 'woop', questionMappings, {
- *       onRevise: () => { /* go back to form */ },
- *       onSubmitAnyway: () => { /* show success */ }
+ *       onRevise: () => { // go back to form },
+ *       onSubmitAnyway: () => { // show success }
  *     });
  *   </script>
  */
