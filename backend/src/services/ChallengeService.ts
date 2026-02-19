@@ -259,8 +259,12 @@ class ChallengeService {
     try {
       // Strip markdown code fences if present
       let cleaned = text.trim();
-      if (cleaned.startsWith('```')) {
-        cleaned = cleaned.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+      // Remove opening ```json or ``` and closing ```
+      cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '');
+      // If still not valid JSON, try extracting JSON object
+      if (!cleaned.startsWith('{')) {
+        const match = cleaned.match(/\{[\s\S]*\}/);
+        if (match) cleaned = match[0];
       }
 
       const parsed = JSON.parse(cleaned);
