@@ -15,9 +15,10 @@ const app: Express = express();
 app.use(helmet());
 
 // CORS configuration
+console.log('🔓 CORS Origins:', config.CORS_ORIGIN);
 app.use(
   cors({
-    origin: config.CORS_ORIGIN.split(','),
+    origin: config.NODE_ENV === 'development' ? '*' : config.CORS_ORIGIN.split(','),
     credentials: config.CORS_CREDENTIALS,
   })
 );
@@ -51,6 +52,7 @@ import dataRoutes from './routes/data.js';
 import aiRoutes from './routes/ai.js';
 import guruRoutes from './routes/guru.js';
 import learnworldsRoutes from './routes/learnworlds.js';
+import webhookRoutes from './routes/webhooks.js';
 
 // Mount routes
 app.use('/api/auth', authRoutes);
@@ -60,6 +62,7 @@ app.use('/api/data', dataRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/guru', guruRoutes);
 app.use('/api/learnworlds', learnworldsRoutes);
+app.use('/api/webhooks', webhookRoutes);
 
 // 404 handler
 app.use((_req, res) => {

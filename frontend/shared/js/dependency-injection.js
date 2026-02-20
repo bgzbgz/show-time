@@ -688,9 +688,38 @@ const DependencyInjection = (function() {
     }
 
     /**
+     * Create a yellow dependency context box above a field
+     */
+    function createDependencyBox(element, label, value, sourceTool) {
+        const displayValue = typeof value === 'object'
+            ? JSON.stringify(value, null, 2)
+            : String(value);
+
+        const box = document.createElement('div');
+        box.className = 'ft-dependency-box';
+        box.innerHTML =
+            '<div style="display:flex;align-items:flex-start;gap:10px;">' +
+                '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' +
+                '<div style="flex:1;min-width:0;">' +
+                    '<div style="font-family:\'Monument\',\'Courier New\',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;font-weight:700;margin-bottom:4px;color:#000;">This is your ' + label + '</div>' +
+                    '<div style="font-family:\'Riforma\',Arial,sans-serif;font-size:14px;line-height:1.5;color:#000;white-space:pre-wrap;word-break:break-word;">' + displayValue.replace(/</g, '&lt;') + '</div>' +
+                    '<div style="font-family:\'Monument\',\'Courier New\',monospace;font-size:10px;color:#555;margin-top:6px;">From: ' + sourceTool.replace(/-/g, ' ') + '</div>' +
+                '</div>' +
+            '</div>';
+
+        // Insert before the target element's parent field group
+        const fieldGroup = element.closest('.ft-field-group') || element.parentElement;
+        if (fieldGroup) {
+            fieldGroup.insertBefore(box, fieldGroup.firstChild);
+        } else {
+            element.parentElement.insertBefore(box, element);
+        }
+    }
+
+    /**
      * Populate a field with dependency value
      */
-    function populateField(targetField, value) {
+    function populateField(targetField, value, displayLabel, sourceTool) {
         const selectors = [
             `#${targetField}`,
             `[name="${targetField}"]`,
@@ -738,7 +767,10 @@ const DependencyInjection = (function() {
             }
 
             element.classList.add('dependency-injected');
-            element.title = `Loaded from ${currentTool} dependencies`;
+
+            // Create the yellow context box
+            const label = displayLabel || targetField.replace(/_/g, ' ');
+            createDependencyBox(element, label, value, sourceTool || 'previous tool');
 
             console.log(`Populated ${targetField} with dependency value`);
             return true;
@@ -767,7 +799,7 @@ const DependencyInjection = (function() {
             const value = await queryFieldOutput(dep.source_tool, dep.source_field);
 
             if (value !== null) {
-                const success = populateField(dep.target_field, value);
+                const success = populateField(dep.target_field, value, dep.display_label, dep.source_tool);
                 if (success) {
                     results.loaded++;
                 } else {
@@ -797,25 +829,37 @@ const DependencyInjection = (function() {
                 position: fixed;
                 top: 20px;
                 right: 20px;
-                background: #10b981;
-                color: white;
-                padding: 12px 24px;
-                border-radius: 8px;
-                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                background: #000;
+                color: #FFF469;
+                padding: 14px 24px;
+                border: 2px solid #FFF469;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
                 z-index: 9999;
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                animation: slideIn 0.3s ease-out;
+                font-family: 'Monument', 'Courier New', monospace;
+                font-size: 13px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.03em;
+                animation: diSlideIn 0.3s ease-out;
             ">
-                Loaded ${loaded}/${total} values from previous tools
+                ${loaded}/${total} answers loaded from your previous tools
             </div>
             <style>
-                @keyframes slideIn {
+                @keyframes diSlideIn {
                     from { transform: translateX(100%); opacity: 0; }
                     to { transform: translateX(0); opacity: 1; }
                 }
                 .dependency-injected {
-                    border-left: 3px solid #10b981 !important;
-                    background-color: #f0fdf4 !important;
+                    border-left: 3px solid #FFF469 !important;
+                    background-color: #fffde6 !important;
+                }
+                .ft-dependency-box {
+                    background: #FFF469;
+                    color: #000;
+                    border: 2px solid #000;
+                    border-radius: 0;
+                    padding: 14px 16px;
+                    margin-bottom: 12px;
                 }
             </style>
         `;
@@ -826,7 +870,7 @@ const DependencyInjection = (function() {
             notification.style.transition = 'opacity 0.3s';
             notification.style.opacity = '0';
             setTimeout(() => notification.remove(), 300);
-        }, 3000);
+        }, 4000);
     }
 
     /**
