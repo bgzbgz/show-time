@@ -27,24 +27,39 @@ const COURSE_TO_TOOL_SLUG: Record<string, string> = {
 // =============================================================================
 // Request Validation Schemas
 // =============================================================================
+// Matches the actual LearnWorlds courseCompleted webhook payload (v2).
+// See: LearnWorlds docs — "When a course is completed"
 
 const CourseCompletedPayloadSchema = z.object({
-  data: z.object({
-    user_id: z.string().min(1),
-    user_email: z.string().email(),
-    user_name: z.string().optional().default(''),
-    course_id: z.string().min(1),
-    course_title: z.string().optional().default(''),
-  }),
+  version: z.number().optional(),
   type: z.literal('courseCompleted'),
+  trigger: z.string().optional(),
+  school_id: z.string().optional(),
+  data: z.object({
+    completed_at: z.number().optional(),
+    manually_completed: z.boolean().optional(),
+    ip_address: z.string().nullable().optional(),
+    course: z.object({
+      id: z.string().min(1),
+      title: z.string().optional().default(''),
+      access: z.string().optional(),
+    }).passthrough(),
+    user: z.object({
+      id: z.string().min(1),
+      email: z.string().email(),
+      first_name: z.string().optional().default(''),
+      last_name: z.string().optional().default(''),
+      username: z.string().optional(),
+    }).passthrough(),
+  }),
 });
 
 // =============================================================================
 // Middleware: Webhook Secret Verification
 // =============================================================================
 
-function verifyWebhookSecret(req: Request, res: Response): boolean {
-  const secret = req.headers['x-webhook-secret'] as string | undefined;
+function verifyWebhookSignature(req: Request): boolean {
+  const signatureHeader = req.headers['learnworlds-webhook-signature'] as string | undefined;
   const expectedSecret = process.env.LEARNWORLDS_WEBHOOK_SECRET;
 
   if (!expectedSecret) {
@@ -52,11 +67,17 @@ function verifyWebhookSecret(req: Request, res: Response): boolean {
     return false;
   }
 
-  if (!secret || secret !== expectedSecret) {
+  if (!signatureHeader) {
     return false;
   }
 
-  return true;
+  // LearnWorlds sends: "v1=<signature_value>"
+  // Compare against our stored secret (which is the raw signature value)
+  const signature = signatureHeader.startsWith('v1=')
+    ? signatureHeader.slice(3)
+    : signatureHeader;
+
+  return signature === expectedSecret;
 }
 
 // =============================================================================
@@ -78,7 +99,7 @@ router.post(
       // -----------------------------------------------------------------------
       // 1. Verify shared secret
       // -----------------------------------------------------------------------
-      if (!verifyWebhookSecret(req, res)) {
+      if (!verifyWebhookSignature(req)) {
         console.warn('Webhook secret verification failed');
         // Still return 200 — we don't want LearnWorlds to retry endlessly,
         // but we log the failure and bail out of processing.
@@ -96,7 +117,11 @@ router.post(
       }
 
       const { data, type } = parseResult.data;
-      const { user_id: lwUserId, user_email, user_name, course_id, course_title } = data;
+      const lwUserId = data.user.id;
+      const user_email = data.user.email;
+      const user_name = [data.user.first_name, data.user.last_name].filter(Boolean).join(' ');
+      const course_id = data.course.id;
+      const course_title = data.course.title;
 
       // -----------------------------------------------------------------------
       // 3. Map course_id to tool_slug (from DB first, fallback to hardcoded)
@@ -229,7 +254,6 @@ async function upsertUserByEmail(
       email,
       full_name: name || email.split('@')[0],
       learnworlds_user_id: learnworldsUserId,
-      learnworlds_email: email,
       role: 'user',
       last_login: new Date().toISOString(),
     })
