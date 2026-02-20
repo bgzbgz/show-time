@@ -142,6 +142,11 @@
 
         @media print { .no-print { display: none; } }
 
+        .dependency-injected {
+            border-left: 3px solid #FFF469 !important;
+            background-color: #fffde6 !important;
+        }
+
         .cover-overlay {
             background: linear-gradient(to bottom, rgba(0,0,0,0.4), rgba(0,0,0,0.7));
         }
@@ -213,20 +218,40 @@
                 }))
             });
 
+            const [dreamLoaded, setDreamLoaded] = useState(false);
+
+            // Load dream dependency from Dream tool on mount
+            useEffect(() => {
+                async function loadDreamDependency() {
+                    const userId = localStorage.getItem('ft_user_id');
+                    if (!userId || !window.ToolDB) return;
+                    try {
+                        await ToolDB.whenReady();
+                        const dreamValue = await ToolDB.getDependency(userId, 'identity.dream.one_sentence');
+                        if (dreamValue) {
+                            setFormData(prev => ({ ...prev, dream: String(dreamValue) }));
+                            setDreamLoaded(true);
+                            console.log('[Values] Loaded dream dependency:', dreamValue);
+                        }
+                    } catch (err) {
+                        console.warn('[Values] Failed to load dream dependency:', err);
+                    }
+                }
+                loadDreamDependency();
+            }, []);
+
             // Auto-save
             useEffect(() => {
+                const userId = localStorage.getItem('ft_user_id');
                 const timer = setTimeout(() => {
-                    if (userEmail) {
+                    if (userId) {
                         localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify({
-                            formData, step, userEmail, lastSaved: new Date().toISOString()
+                            formData, step, lastSaved: new Date().toISOString()
                         }));
                     }
                 }, 2000);
                 return () => clearTimeout(timer);
-            }, [formData, step, userEmail]);
-
-            // Auto-restore disabled - tool always starts fresh
-            // Data still auto-saves in background for crash recovery
+            }, [formData, step]);
 
             const updateField = (field, value) => {
                 setFormData(prev => ({ ...prev, [field]: value }));
@@ -599,11 +624,16 @@
                     <div className="grid grid-cols-1 gap-8 mb-8">
                         <div>
                             <label className="block font-bold mb-2 text-lg">Your Company Dream</label>
-                            <ScienceBookmarkIcon>
-                                [PLACEHOLDER] Research backs this: Studies show that structured reflection on this aspect of values leads to significantly better outcomes than intuitive approaches alone.
-                            </ScienceBookmarkIcon>
+                            {dreamLoaded && (
+                                <div style={{background:'#FFF469',border:'2px solid #000',padding:'12px 16px',marginBottom:'8px',display:'flex',alignItems:'flex-start',gap:'10px'}}>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,marginTop:'2px'}}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                    <div style={{flex:1}}>
+                                        <div style={{fontFamily:"'Monument','Courier New',monospace",fontSize:'11px',textTransform:'uppercase',letterSpacing:'0.05em',fontWeight:700,color:'#000'}}>Auto-loaded from your Dream tool</div>
+                                    </div>
+                                </div>
+                            )}
                             <textarea
-                                className="worksheet-input min-h-[120px] text-lg"
+                                className={`worksheet-input min-h-[120px] text-lg ${dreamLoaded ? 'dependency-injected' : ''}`}
                                 placeholder="Copy-paste your dream reminder from Sprint 1..."
                                 value={formData.dream}
                                 onChange={(e) => updateField('dream', e.target.value)}
