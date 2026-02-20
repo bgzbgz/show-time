@@ -19,13 +19,14 @@
     <script src="../../js/tool-access-control.js"></script>
 
     <style>
+        /* === FONT FACES === */
         @font-face { font-family: 'Plaak'; src: url('Plaak3Trial-43-Bold.woff2') format('woff2'); font-weight: bold; }
         @font-face { font-family: 'Riforma'; src: url('RiformaLL-Regular.woff2') format('woff2'); font-weight: normal; }
         @font-face { font-family: 'Riforma'; src: url('RiformaLL-Regular.woff2') format('woff2'); font-weight: 600; }
         @font-face { font-family: 'Monument'; src: url('MonumentGrotesk-Mono.woff2') format('woff2'); }
 
+        /* === BASE RESET === */
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
         body {
             font-family: 'Riforma', -apple-system, sans-serif;
             font-size: 16px;
@@ -34,55 +35,61 @@
             -webkit-font-smoothing: antialiased;
         }
 
+        /* === CUSTOM SCROLLBAR === */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #000; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #333; }
+        * { scrollbar-width: thin; scrollbar-color: #000 transparent; }
+
+        /* === TYPOGRAPHY HELPERS === */
         .plaak { font-family: 'Plaak', sans-serif; font-weight: bold; letter-spacing: -0.01em; line-height: 1.2; }
         .monument { font-family: 'Monument', monospace; letter-spacing: 0.05em; }
 
+        /* === LAYOUT FRAME === */
         .tool-frame { background: #fff; min-height: 100vh; }
         .tool-inner { background: #fff; min-height: 100vh; }
 
+        /* === WIZARD LAYOUT === */
         .wizard-layout { display: flex; min-height: 100vh; }
-        .wizard-main { flex: 1; display: flex; flex-direction: column; min-height: 100vh; background: #fff; padding: 0 48px; }
-        .wizard-sidebar { width: 280px; background: #000; border-left: 1px solid #000; flex-shrink: 0; }
-        .wizard-sidebar-inner { position: sticky; top: 0; padding: 32px 24px; max-height: 100vh; overflow-y: auto; }
+        .wizard-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background: #fff;
+        }
+        .wizard-content {
+            max-width: 640px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 48px 32px;
+            flex: 1;
+        }
 
-        .step-content { max-width: 100%; padding: 40px 0; flex: 1; }
-        .step-indicator { font-family: 'Monument', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #666; margin-bottom: 8px; }
-
-        .opening-box { margin-bottom: 32px; }
-        .opening-box .step-heading { font-family: 'Plaak', sans-serif; font-weight: bold; font-size: 32px; letter-spacing: -0.01em; line-height: 1.2; color: #000; margin-bottom: 6px; }
-        .opening-box .step-hint { font-size: 14px; color: #666; line-height: 1.5; margin: 0; }
-
-        .questions-grid { display: flex; flex-direction: column; gap: 0; margin-bottom: 32px; }
-        .closing-box { border-top: 1px solid #E0E0E0; padding: 20px 0 0 0; margin-top: 8px; text-align: center; }
-        .closing-box p { font-size: 14px; color: #666; }
-        .closing-box .closing-title { font-family: 'Monument', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #000; margin-bottom: 6px; }
-
-        .field-group { margin-bottom: 20px; }
-        .field-group:last-child { margin-bottom: 0; }
-        .field-label { font-weight: 600; font-size: 14px; color: #000; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
-        .field-input { border: 1px solid #E0E0E0; padding: 10px 14px; font-family: 'Riforma', sans-serif; font-size: 15px; width: 100%; color: #000; background: #fff; transition: border-color 0.2s ease; }
-        .field-input:focus { outline: none; border-color: #000; }
-        .field-textarea { border: 1px solid #E0E0E0; padding: 10px 14px; font-family: 'Riforma', sans-serif; font-size: 15px; width: 100%; min-height: 80px; resize: vertical; color: #000; background: #fff; transition: border-color 0.2s ease; }
-        .field-textarea:focus { outline: none; border-color: #000; }
-        .field-help { font-size: 12px; color: #666; margin-top: 3px; }
-
-        .help-icon-btn { width: 18px; height: 18px; border-radius: 50%; background: #E0E0E0; border: 1.5px solid #999; display: inline-flex; align-items: center; justify-content: center; cursor: help; transition: all 0.2s ease; flex-shrink: 0; font-size: 10px; font-weight: 600; color: #666; }
-        .help-icon-btn:hover { background: #000; color: #fff; border-color: #000; }
-        .help-accordion { background: #F5F5F5; border: 1px solid #E0E0E0; border-left: 3px solid #000; padding: 12px 14px; margin-bottom: 8px; font-size: 13px; color: #333; line-height: 1.5; animation: accordionOpen 0.2s ease-out; }
-        @keyframes accordionOpen { from { opacity: 0; max-height: 0; } to { opacity: 1; max-height: 300px; } }
-
-        .learn-more-toggle { font-family: 'Monument', monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: #000; background: #F5F5F5; border: 1px solid #E0E0E0; cursor: pointer; padding: 10px 14px; display: flex; align-items: center; gap: 6px; margin-bottom: 32px; transition: background 0.15s ease; }
-        .learn-more-toggle:hover { background: #EBEBEB; }
-        .learn-more-content { border-left: 3px solid #000; background: #F5F5F5; padding: 16px 20px; margin-bottom: 24px; font-size: 14px; color: #333; line-height: 1.7; }
-
-        .btn-footer { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; border-top: 1px solid #E0E0E0; background: #fff; width: 100%; }
-        .btn-back { background: #fff; color: #000; border: 2px solid #000; padding: 12px 24px; font-family: 'Riforma', sans-serif; font-size: 16px; cursor: pointer; transition: all 0.2s ease; }
-        .btn-back:hover { background: #F5F5F5; }
-        .btn-next { background: #000; color: #fff; border: 2px solid #000; padding: 12px 24px; font-family: 'Riforma', sans-serif; font-size: 16px; cursor: pointer; transition: all 0.2s ease; }
-        .btn-next:hover:not(:disabled) { transform: scale(1.02); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        .btn-next:disabled { background: #E0E0E0; color: #9CA3AF; border-color: #E0E0E0; cursor: not-allowed; }
-
-        .sidebar-step-item { padding: 12px; margin-bottom: 8px; border-left: 3px solid transparent; transition: all 0.2s ease; }
+        /* === SIDEBAR === */
+        .wizard-sidebar {
+            width: 280px;
+            background: #000;
+            border-left: 1px solid #000;
+            flex-shrink: 0;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .wizard-sidebar-inner {
+            padding: 32px 24px;
+            height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        .sidebar-step-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            border-left: 3px solid transparent;
+            transition: all 0.2s ease;
+        }
         .sidebar-step-item.active { border-left-color: #FFF469; background: #222; }
         .sidebar-step-item.completed { background: #fff; color: #000; border-left-color: #fff; cursor: pointer; }
         .sidebar-step-item.completed:hover { background: #E0E0E0; }
@@ -91,39 +98,196 @@
         .sidebar-step-item .step-name { font-family: 'Riforma', sans-serif; font-size: 14px; }
         .sidebar-snippet { font-size: 12px; margin-top: 4px; opacity: 0.7; line-height: 1.3; }
 
-        .numbered-section { background: #000; color: #fff; padding: 8px 14px; font-size: 14px; font-weight: bold; letter-spacing: 0.5px; display: inline-block; font-family: 'Monument', monospace; }
+        /* === STEP HEADER === */
+        .step-indicator {
+            font-family: 'Monument', monospace;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #6B7280;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .step-heading {
+            font-family: 'Plaak', sans-serif;
+            font-weight: bold;
+            font-size: 32px;
+            text-transform: uppercase;
+            letter-spacing: -0.01em;
+            line-height: 1.2;
+            color: #000;
+            margin-bottom: 6px;
+        }
+        .step-hint {
+            font-size: 16px;
+            color: #6B7280;
+            line-height: 1.5;
+            margin: 0 0 32px 0;
+        }
+        .opening-box { margin-bottom: 32px; }
 
-        .mobile-step-bar { display: none; padding: 12px 16px; border-bottom: 1px solid #E0E0E0; background: #F5F5F5; }
-        .mobile-step-bar .bar-text { font-family: 'Monument', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #666; margin-bottom: 6px; }
-        .mobile-progress { height: 3px; background: #E0E0E0; width: 100%; }
+        /* === FORM ELEMENTS === */
+        .field-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: 'Monument', monospace;
+            font-size: 14px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #000;
+            margin-bottom: 8px;
+        }
+        .field-input {
+            width: 100%;
+            height: 44px;
+            padding: 8px 16px;
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
+            color: #000;
+            background: #fff;
+            border: 1px solid #E5E7EB;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .field-input:focus {
+            outline: none;
+            border-color: #000;
+            box-shadow: 0 0 0 3px #FFF469;
+        }
+        .field-textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 12px 16px;
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
+            color: #000;
+            background: #fff;
+            border: 1px solid #E5E7EB;
+            resize: vertical;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .field-textarea:focus {
+            outline: none;
+            border-color: #000;
+            box-shadow: 0 0 0 3px #FFF469;
+        }
+        .field-help {
+            font-size: 14px;
+            color: #6B7280;
+            margin-top: 4px;
+            line-height: 1.5;
+        }
+        .field-group { margin-bottom: 24px; }
+        .field-group:last-child { margin-bottom: 0; }
+
+        /* === LEARN MORE === */
+        .learn-more-toggle {
+            font-family: 'Monument', monospace;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #000;
+            background: #F3F4F6;
+            border: 1px solid #E5E7EB;
+            cursor: pointer;
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 32px;
+            transition: background 0.15s ease;
+        }
+        .learn-more-toggle:hover { background: #E5E7EB; }
+        .learn-more-content {
+            border-left: 3px solid #000;
+            background: #F3F4F6;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            font-size: 14px;
+            color: #374151;
+            line-height: 1.7;
+        }
+
+        /* === YELLOW INSIGHT BOX (matches WOOP) === */
+        .ft-insight {
+            background: #FFF469;
+            border: 3px solid #000;
+            padding: 16px;
+            margin-bottom: 32px;
+        }
+
+        /* === CLOSING MESSAGE === */
+        .closing-box {
+            border-top: 1px solid #E5E7EB;
+            padding: 20px 0 0 0;
+            margin-top: 8px;
+            text-align: center;
+        }
+        .closing-box p { font-size: 14px; color: #6B7280; }
+        .closing-box .closing-title {
+            font-family: 'Monument', monospace;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #000;
+            margin-bottom: 6px;
+        }
+
+        /* === BUTTON FOOTER (sticky like WOOP) === */
+        .btn-footer {
+            position: sticky;
+            bottom: 0;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 32px;
+            border-top: 1px solid #E5E7EB;
+            background: #fff;
+            width: 100%;
+        }
+        .btn-back {
+            background: #fff;
+            color: #000;
+            border: 2px solid #000;
+            padding: 12px 24px;
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-height: 44px;
+        }
+        .btn-back:hover { background: #F3F4F6; }
+        .btn-next {
+            background: #000;
+            color: #fff;
+            border: 2px solid #000;
+            padding: 12px 24px;
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-height: 44px;
+        }
+        .btn-next:hover:not(:disabled) { transform: scale(1.02); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .btn-next:disabled { background: #E5E7EB; color: #9CA3AF; border-color: #E5E7EB; cursor: not-allowed; }
+
+        /* === MOBILE === */
+        .mobile-step-bar { display: none; padding: 12px 16px; border-bottom: 1px solid #E5E7EB; background: #F3F4F6; }
+        .mobile-step-bar .bar-text { font-family: 'Monument', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #6B7280; margin-bottom: 6px; }
+        .mobile-progress { height: 3px; background: #E5E7EB; width: 100%; }
         .mobile-progress-fill { height: 100%; background: #000; transition: width 0.3s ease; }
 
-        @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-in { animation: fadeSlideIn 0.3s ease-out; }
-
-        @media print { .no-print { display: none !important; } }
-
-        @media (min-width: 769px) and (max-width: 1024px) {
-            .wizard-sidebar { width: 220px; }
-            .wizard-sidebar-inner { padding: 24px 16px; }
-        }
-        @media (max-width: 768px) {
-            .wizard-sidebar { display: none; }
-            .mobile-step-bar { display: block; }
-            .step-content { padding: 20px 16px; }
-            .wizard-main { padding: 0 16px; }
-            .opening-box .step-heading { font-size: 24px; }
-            .btn-footer { padding: 12px 0; }
-            .two-col { grid-template-columns: 1fr !important; }
-        }
-
-        /* Cash-specific styles */
+        /* === CASH-SPECIFIC === */
         .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        .section-divider { border-top: 1px solid #E0E0E0; padding-top: 24px; margin-top: 24px; }
-        .section-label { font-family: 'Monument', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #666; margin-bottom: 16px; }
+        .section-divider { border-top: 1px solid #E5E7EB; padding-top: 24px; margin-top: 24px; }
+        .section-label { font-family: 'Monument', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #6B7280; margin-bottom: 16px; }
 
-        .metrics-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; padding: 16px; background: #F5F5F5; border-left: 3px solid #000; margin: 16px 0; }
-        .metric-item .metric-label { font-size: 11px; color: #666; font-family: 'Monument', monospace; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 2px; }
+        .metrics-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; padding: 16px; background: #F3F4F6; border-left: 3px solid #000; margin: 16px 0; }
+        .metric-item .metric-label { font-size: 11px; color: #6B7280; font-family: 'Monument', monospace; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 2px; }
         .metric-item .metric-value { font-weight: 600; font-size: 15px; }
         .metric-badge { display: inline-block; font-size: 10px; padding: 2px 6px; font-family: 'Monument', monospace; text-transform: uppercase; letter-spacing: 0.03em; margin-left: 4px; }
         .badge-good { background: #d1fae5; color: #065f46; }
@@ -141,7 +305,7 @@
         .lever-impacts { display: flex; gap: 16px; font-size: 13px; }
         .lever-cash { color: #059669; font-weight: 600; }
         .lever-ebit { color: #2563eb; font-weight: 600; }
-        input[type="range"] { -webkit-appearance: none; width: 100%; height: 4px; background: #E0E0E0; outline: none; border-radius: 2px; cursor: pointer; }
+        input[type="range"] { -webkit-appearance: none; width: 100%; height: 4px; background: #E5E7EB; outline: none; border-radius: 2px; cursor: pointer; }
         input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; background: #000; cursor: pointer; border-radius: 50%; border: 2px solid #000; }
         input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; background: #000; cursor: pointer; border-radius: 50%; border: 2px solid #000; }
         .slider-value { font-family: 'Monument', monospace; font-size: 13px; min-width: 60px; text-align: right; }
@@ -153,15 +317,33 @@
         /* Action plan */
         .idea-row { display: flex; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
         .idea-row:last-child { border-bottom: none; }
-        .score-badge { font-family: 'Monument', monospace; font-size: 12px; background: #F5F5F5; padding: 4px 8px; min-width: 32px; text-align: center; }
+        .score-badge { font-family: 'Monument', monospace; font-size: 12px; background: #F3F4F6; padding: 4px 8px; min-width: 32px; text-align: center; }
 
-        /* Canvas */
-        .canvas-section { border: 2px solid #000; padding: 24px; margin-bottom: 16px; }
-        .canvas-metric-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-        .canvas-metric-box { background: #F5F5F5; padding: 14px; text-align: center; }
-        .canvas-metric-label { font-family: 'Monument', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: #666; margin-bottom: 4px; }
-        .canvas-metric-value { font-family: 'Plaak', sans-serif; font-size: 22px; font-weight: bold; }
-        @media (max-width: 768px) { .canvas-metric-grid { grid-template-columns: 1fr; } }
+        /* === ANIMATIONS === */
+        @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .animate-in { animation: fadeSlideIn 0.3s ease-out; }
+
+        /* === PRINT === */
+        @media print { .no-print { display: none !important; } }
+
+        /* === RESPONSIVE === */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .wizard-sidebar { width: 220px; }
+            .wizard-sidebar-inner { padding: 24px 16px; }
+        }
+        @media (max-width: 768px) {
+            .wizard-sidebar { display: none; }
+            .mobile-step-bar { display: block; }
+            .wizard-content { padding: 24px 16px; }
+            .step-heading { font-size: 24px; }
+            .btn-footer { padding: 12px 16px; }
+            .two-col { grid-template-columns: 1fr !important; }
+        }
+        @media (max-width: 480px) {
+            .step-heading { font-size: 20px; }
+            .wizard-content { padding: 20px 12px; }
+        }
     </style>
 </head>
 <body>
@@ -336,20 +518,10 @@
             );
         }
 
-        function HelpAccordion({ id, activeHelp, setActiveHelp, children }) {
-            const isOpen = activeHelp === id;
-            return (
-                <>
-                    <button className="help-icon-btn" onClick={() => setActiveHelp(isOpen ? null : id)} title="Help">?</button>
-                    {isOpen && <div className="help-accordion" style={{ marginTop: 6 }}>{children}</div>}
-                </>
-            );
-        }
-
         function NumField({ label, value, onChange, placeholder, help, required }) {
             return (
                 <div className="field-group">
-                    <label className="field-label">{label}{required && ' *'}</label>
+                    <label className="field-label">{label}{required && <span style={{ color: '#DC2626', fontWeight: 700 }}> *</span>}</label>
                     <input type="number" className="field-input" value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} />
                     {help && <p className="field-help">{help}</p>}
                 </div>
@@ -380,7 +552,7 @@
             if (!deps || deps.length === 0) return null;
             return (
                 <div style={{ marginBottom: '24px' }}>
-                    <div style={{ fontFamily: "'Monument', monospace", fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#666', marginBottom: '8px' }}>
+                    <div style={{ fontFamily: "'Monument', monospace", fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#6B7280', marginBottom: '8px' }}>
                         CONTEXT FROM PREVIOUS TOOLS
                     </div>
                     {deps.map((dep, i) => (
@@ -453,7 +625,7 @@
                 loadDeps();
             }, []);
 
-            // Auth (handled by ToolDB.init → identifyUser)
+            // Auth (handled by ToolDB.init -> identifyUser)
             useEffect(() => {
                 setAuthState({ loading: false, authenticated: true, user: null, progress: { completed_tools: [], unlocked_tools: ['cash'] }, isUnlocked: true, isCompleted: false, error: null });
             }, []);
@@ -568,22 +740,26 @@
 
                         {/* Setup */}
                         {step === 0.5 && (
-                            <div style={{ minHeight: '100vh', background: '#fff', display: 'flex', flexDirection: 'column', padding: '0 48px' }}>
-                                <div className="step-content animate-in" style={{ maxWidth: 560, margin: '0 auto' }}>
+                            <div style={{ minHeight: '100vh', background: '#fff', display: 'flex', flexDirection: 'column' }}>
+                                <div className="wizard-content animate-in">
                                     <p className="step-indicator">SETUP</p>
                                     <div className="opening-box">
                                         <h1 className="step-heading">Before We Start</h1>
                                         <p className="step-hint">Cash flow is the oxygen of your company. This tool shows how small 1% improvements across 7 levers create dramatic cash flow results.</p>
                                     </div>
 
-                                    <div style={{ background: '#F5F5F5', padding: 20, marginBottom: 32, fontSize: 14, color: '#333', lineHeight: 1.7 }}>
-                                        <strong>You will need:</strong>
-                                        <ul style={{ marginTop: 8, paddingLeft: 20 }}>
-                                            <li>Profit & Loss statement for the last 2 years</li>
-                                            <li>Balance Sheet for the last 2 years</li>
-                                            <li>Days in A/R, A/P, and Inventory metrics</li>
-                                        </ul>
-                                        <p style={{ marginTop: 8, color: '#666' }}>Your finance team can help gather this data. Strategic insights matter more than decimal precision.</p>
+                                    <div className="ft-insight">
+                                        <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                                            <div style={{ fontSize: 16, color: '#000', lineHeight: 1.5, fontWeight: 500 }}>
+                                                <strong>You will need:</strong>
+                                                <ul style={{ marginTop: 8, paddingLeft: 20 }}>
+                                                    <li>Profit & Loss statement for the last 2 years</li>
+                                                    <li>Balance Sheet for the last 2 years</li>
+                                                    <li>Days in A/R, A/P, and Inventory metrics</li>
+                                                </ul>
+                                                <p style={{ marginTop: 8, color: '#333' }}>Your finance team can help gather this data. Strategic insights matter more than decimal precision.</p>
+                                            </div>
+                                        </div>
                                     </div>
 
                                     <div className="field-group">
@@ -594,10 +770,10 @@
                                                 { val: 'service', title: 'Service / Professional', desc: 'You sell expertise (WIP, cost of delivery, billable staff)' },
                                                 { val: 'retail', title: 'Retail / Distribution', desc: 'You buy and resell products (stock, COGS, store staff)' }
                                             ].map(opt => (
-                                                <label key={opt.val} style={{ display: 'block', padding: '14px 16px', border: '1px solid #E0E0E0', borderRadius: 4, cursor: 'pointer', transition: 'all 0.15s ease', background: businessModel === opt.val ? '#F5F5F5' : '#fff', borderColor: businessModel === opt.val ? '#000' : '#E0E0E0' }}>
+                                                <label key={opt.val} style={{ display: 'block', padding: '14px 16px', border: businessModel === opt.val ? '2px solid #000' : '1px solid #E5E7EB', cursor: 'pointer', transition: 'all 0.15s ease', background: businessModel === opt.val ? '#FFF469' : '#fff' }}>
                                                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
                                                         <input type="radio" name="bm" value={opt.val} checked={businessModel === opt.val} onChange={() => setBusinessModel(opt.val)} style={{ marginTop: 3, accentColor: '#000' }} />
-                                                        <div><div style={{ fontWeight: 600, marginBottom: 2 }}>{opt.title}</div><div style={{ fontSize: 13, color: '#666' }}>{opt.desc}</div></div>
+                                                        <div><div style={{ fontWeight: 600, marginBottom: 2 }}>{opt.title}</div><div style={{ fontSize: 13, color: businessModel === opt.val ? '#333' : '#6B7280' }}>{opt.desc}</div></div>
                                                     </div>
                                                 </label>
                                             ))}
@@ -616,10 +792,12 @@
                             <div className="wizard-layout">
                                 <div className="wizard-main">
                                     <MobileStepBar currentStep={step} />
-                                    {step === 1 && <><DependencyContext deps={deps} /><Step1Content pl={year1PL} setPL={setYear1PL} bs={year1BS} setBS={setYear1BS} wc={year1WC} setWC={setYear1WC} calc={y1PL} bsCalc={y1BS} wcCalc={y1WC} labels={labels} questionHelp={questionHelp} setQuestionHelp={setQuestionHelp} canProceed={canStep1} /></>}
-                                    {step === 2 && <Step2Content pl={year2PL} setPL={setYear2PL} bs={year2BS} setBS={setYear2BS} wc={year2WC} setWC={setYear2WC} calc={y2PL} bsCalc={y2BS} wcCalc={y2WC} y1WC={y1WC} labels={labels} questionHelp={questionHelp} setQuestionHelp={setQuestionHelp} canProceed={canStep2} />}
-                                    {step === 3 && <Step3Content powerOfOne={powerOfOne} improvements={improvements} setImprovements={setImprovements} totalCash={totalCash} totalEbit={totalEbit} y2PL={y2PL} labels={labels} />}
-                                    {step === 4 && <Step4Content ideas={ideas} setIdeas={setIdeas} actions={actions} setActions={setActions} powerOfOne={powerOfOne} />}
+                                    <div className="wizard-content animate-in">
+                                        {step === 1 && <><DependencyContext deps={deps} /><Step1Content pl={year1PL} setPL={setYear1PL} bs={year1BS} setBS={setYear1BS} wc={year1WC} setWC={setYear1WC} calc={y1PL} bsCalc={y1BS} wcCalc={y1WC} labels={labels} questionHelp={questionHelp} setQuestionHelp={setQuestionHelp} canProceed={canStep1} /></>}
+                                        {step === 2 && <Step2Content pl={year2PL} setPL={setYear2PL} bs={year2BS} setBS={setYear2BS} wc={year2WC} setWC={setYear2WC} calc={y2PL} bsCalc={y2BS} wcCalc={y2WC} y1WC={y1WC} labels={labels} questionHelp={questionHelp} setQuestionHelp={setQuestionHelp} canProceed={canStep2} />}
+                                        {step === 3 && <Step3Content powerOfOne={powerOfOne} improvements={improvements} setImprovements={setImprovements} totalCash={totalCash} totalEbit={totalEbit} y2PL={y2PL} labels={labels} />}
+                                        {step === 4 && <Step4Content ideas={ideas} setIdeas={setIdeas} actions={actions} setActions={setActions} powerOfOne={powerOfOne} />}
+                                    </div>
                                     <ButtonFooter
                                         onBack={() => setStep(step === 1 ? 0.5 : step - 1)}
                                         onNext={() => handleNext(step)}
@@ -647,7 +825,7 @@
             const upWC = (k, v) => setWC(prev => ({ ...prev, [k]: v }));
 
             return (
-                <div className="questions-grid">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 0, marginBottom: 32 }}>
                     {/* P&L */}
                     <p className="section-label">PROFIT & LOSS — {yearLabel}</p>
                     <div className="two-col">
@@ -707,7 +885,7 @@
                                 <div className="metric-label">Cash Conversion Cycle</div>
                                 <div className="metric-value" style={{ fontSize: 22 }}>{wcCalc.ccc.toFixed(0)} days <MetricBadge value={-wcCalc.ccc} good={-30} avg={-60} /></div>
                                 {prevWC && calculateWC(prevWC).daysAR > 0 && (
-                                    <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
+                                    <div style={{ fontSize: 12, color: '#6B7280', marginTop: 4 }}>
                                         Change from Year 1: {(wcCalc.ccc - calculateWC(prevWC).ccc > 0 ? '+' : '')}{(wcCalc.ccc - calculateWC(prevWC).ccc).toFixed(0)} days
                                     </div>
                                 )}
@@ -720,7 +898,7 @@
 
         function Step1Content({ pl, setPL, bs, setBS, wc, setWC, calc, bsCalc, wcCalc, labels, questionHelp, setQuestionHelp, canProceed }) {
             return (
-                <div className="step-content animate-in">
+                <>
                     <p className="step-indicator">STEP 1 OF 4</p>
                     <div className="opening-box">
                         <h1 className="step-heading">Year 1 Financial Data</h1>
@@ -736,13 +914,13 @@
                             <p>Baseline established. Next: enter your most recent year for comparison.</p>
                         </div>
                     )}
-                </div>
+                </>
             );
         }
 
         function Step2Content({ pl, setPL, bs, setBS, wc, setWC, calc, bsCalc, wcCalc, y1WC, labels, questionHelp, setQuestionHelp, canProceed }) {
             return (
-                <div className="step-content animate-in">
+                <>
                     <p className="step-indicator">STEP 2 OF 4</p>
                     <div className="opening-box">
                         <h1 className="step-heading">Year 2 Financial Data</h1>
@@ -758,7 +936,7 @@
                             <p>Both years captured. Next: discover the power of small improvements.</p>
                         </div>
                     )}
-                </div>
+                </>
             );
         }
 
@@ -773,7 +951,7 @@
             const maxVals = [10, 10, 10, 10, 10, 10, 30, 30, 30];
 
             return (
-                <div className="step-content animate-in">
+                <>
                     <p className="step-indicator">STEP 3 OF 4</p>
                     <div className="opening-box">
                         <h1 className="step-heading">Power of One Simulator</h1>
@@ -801,8 +979,10 @@
                     )}
 
                     {y2PL.revenue <= 0 && (
-                        <div style={{ background: '#fef3c7', borderLeft: '3px solid #f59e0b', padding: 16, marginBottom: 24, fontSize: 14 }}>
-                            Complete Year 2 data first to use the simulator. Go back to Step 2.
+                        <div className="ft-insight">
+                            <div style={{ fontSize: 16, color: '#000', lineHeight: 1.5, fontWeight: 500 }}>
+                                Complete Year 2 data first to use the simulator. Go back to Step 2.
+                            </div>
                         </div>
                     )}
 
@@ -852,7 +1032,7 @@
                             <p>You've identified {fmt(totalCash)} in potential cash flow improvement. Next: turn this into action.</p>
                         </div>
                     )}
-                </div>
+                </>
             );
         }
 
@@ -873,7 +1053,7 @@
             ranked.forEach((item, i) => { rankMap[item.id] = i + 1; });
 
             return (
-                <div className="step-content animate-in">
+                <>
                     <p className="step-indicator">STEP 4 OF 4</p>
                     <div className="opening-box">
                         <h1 className="step-heading">Action Plan</h1>
@@ -885,7 +1065,7 @@
 
                     {/* Idea Brainstorm */}
                     <p className="section-label">BRAINSTORM IDEAS</p>
-                    <div style={{ background: '#F5F5F5', padding: 16, marginBottom: 16, fontSize: 13, color: '#333' }}>
+                    <div style={{ background: '#F3F4F6', padding: 16, marginBottom: 16, fontSize: 13, color: '#374151' }}>
                         <strong>Scoring:</strong> Impact (1=Small, 2=Medium, 3=Large) x 2 + Ease (1=Hard, 2=Medium, 3=Easy). Range: 3-9. Higher = better priority.
                     </div>
 
@@ -910,7 +1090,7 @@
                         );
                     })}
 
-                    <button onClick={addIdea} style={{ width: '100%', padding: '12px 0', border: '2px dashed #E0E0E0', background: 'none', fontSize: 14, cursor: 'pointer', color: '#666', margin: '16px 0 32px' }}>
+                    <button onClick={addIdea} style={{ width: '100%', padding: '12px 0', border: '2px dashed #E5E7EB', background: 'none', fontSize: 14, cursor: 'pointer', color: '#6B7280', margin: '16px 0 32px' }}>
                         + Add Idea
                     </button>
 
@@ -918,11 +1098,11 @@
                     <div className="section-divider">
                         <p className="section-label">YOUR TOP 3 COMMITMENTS (WHO, WHAT, WHEN)</p>
                     </div>
-                    <p style={{ fontSize: 14, color: '#666', marginBottom: 20 }}>Based on your scoring above, commit to exactly 3 actions with clear ownership and deadlines.</p>
+                    <p style={{ fontSize: 14, color: '#6B7280', marginBottom: 20 }}>Based on your scoring above, commit to exactly 3 actions with clear ownership and deadlines.</p>
 
                     {actions.map((action, i) => (
                         <div key={i} style={{ borderLeft: '3px solid #000', paddingLeft: 16, marginBottom: 24 }}>
-                            <p className="monument" style={{ fontSize: 10, textTransform: 'uppercase', color: '#666', marginBottom: 10 }}>ACTION {i + 1}</p>
+                            <p className="monument" style={{ fontSize: 10, textTransform: 'uppercase', color: '#6B7280', marginBottom: 10 }}>ACTION {i + 1}</p>
                             <div className="field-group">
                                 <label className="field-label">What (specific action)</label>
                                 <textarea className="field-textarea" style={{ minHeight: 60 }} value={action.what} onChange={e => updateAction(i, 'what', e.target.value)} placeholder={i === 0 ? "e.g. Reduce debtor days from 70 to 55 by implementing 24hr invoicing" : i === 1 ? "e.g. Negotiate 5% COGS reduction with top 3 suppliers" : "e.g. Increase prices by 2% on premium product lines"} />
@@ -946,12 +1126,12 @@
                             <p>Accountability is set. Review your canvas and submit.</p>
                         </div>
                     )}
-                </div>
+                </>
             );
         }
 
         // =========================================================================
-        // CANVAS VIEW
+        // CANVAS VIEW (WOOP-style grid layout)
         // =========================================================================
         function CanvasView({ y1PL, y2PL, y1WC, y2WC, powerOfOne, totalCash, totalEbit, actions, onBack }) {
             const [submitStatus, setSubmitStatus] = useState(null);
@@ -996,117 +1176,176 @@
 
             const sorted = [...powerOfOne].sort((a, b) => b.cash - a.cash);
 
+            /* Shared cell style helpers (matching WOOP) */
+            const tag = (color = '#000') => ({ fontFamily: "'Monument', monospace", fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', color, marginBottom: 4 });
+
             return (
-                <div style={{ minHeight: '100vh', background: '#fff' }}>
-                    <header className="no-print" style={{ borderBottom: '2px solid #000', padding: '16px 24px' }}>
-                        <div style={{ maxWidth: 960, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ minHeight: '100vh', background: '#F3F4F6' }}>
+                    {/* Black hero header (WOOP-style) */}
+                    <div className="no-print" style={{ background: '#000', padding: '32px 24px 24px' }}>
+                        <div style={{ maxWidth: 960, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
                             <div>
-                                <h1 className="plaak" style={{ fontSize: 28, marginBottom: 4 }}>YOUR CASH FLOW CANVAS</h1>
-                                <p style={{ fontSize: 14, color: '#666' }}>Cash is king — now you have the map</p>
+                                <p style={{ ...tag('#666'), marginBottom: 8 }}>YOUR CASH FLOW CANVAS</p>
+                                <h1 className="plaak" style={{ fontSize: 36, color: '#fff', textTransform: 'uppercase', lineHeight: 1 }}>POWER OF ONE</h1>
+                                <p style={{ fontSize: 13, color: '#FFF469', marginTop: 8, fontFamily: "'Monument', monospace", letterSpacing: '0.05em' }}>Cash Impact: {fmt(totalCash)} | EBIT Impact: {fmt(totalEbit)}</p>
                             </div>
-                            <button onClick={onBack} className="btn-back">&larr; Edit</button>
+                            <button onClick={onBack} style={{ background: 'transparent', border: '1px solid #666', color: '#fff', padding: '8px 16px', cursor: 'pointer', fontFamily: "'Monument', monospace", fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', flexShrink: 0 }}>&larr; Edit</button>
                         </div>
-                    </header>
+                    </div>
 
-                    <div style={{ maxWidth: 960, margin: '0 auto', padding: '32px 24px' }}>
-                        <div id="cash-canvas">
-                            {/* Executive Summary */}
-                            <div className="canvas-section" style={{ background: '#000', color: '#fff', border: '2px solid #000' }}>
-                                <div className="numbered-section" style={{ background: '#fff', color: '#000', marginBottom: 16 }}>EXECUTIVE SUMMARY</div>
-                                <div className="canvas-metric-grid">
-                                    <div className="canvas-metric-box" style={{ background: '#111' }}>
-                                        <div className="canvas-metric-label" style={{ color: '#999' }}>Cash Flow Impact</div>
-                                        <div className="canvas-metric-value" style={{ color: '#4ade80' }}>{fmt(totalCash)}</div>
+                    <div style={{ maxWidth: 960, margin: '0 auto', padding: '24px 24px 40px' }}>
+                        <div id="cash-canvas" style={{ background: '#fff', border: '2px solid #000' }}>
+
+                            {/* === ROW 1: Executive Summary (yellow hero) === */}
+                            <div style={{ background: '#FFF469', padding: 20, borderBottom: '2px solid #000' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                                    <span style={{ background: '#000', color: '#FFF469', padding: '3px 8px', fontFamily: "'Monument', monospace", fontSize: 10, letterSpacing: '0.08em' }}>CF</span>
+                                    <span style={{ ...tag(), marginBottom: 0 }}>EXECUTIVE SUMMARY</span>
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+                                    <div>
+                                        <p style={{ ...tag('#666') }}>CASH FLOW IMPACT</p>
+                                        <p style={{ fontSize: 24, fontWeight: 700, fontFamily: "'Plaak', sans-serif" }}>{fmt(totalCash)}</p>
                                     </div>
-                                    <div className="canvas-metric-box" style={{ background: '#111' }}>
-                                        <div className="canvas-metric-label" style={{ color: '#999' }}>EBIT Impact</div>
-                                        <div className="canvas-metric-value" style={{ color: '#60a5fa' }}>{fmt(totalEbit)}</div>
+                                    <div>
+                                        <p style={{ ...tag('#666') }}>EBIT IMPACT</p>
+                                        <p style={{ fontSize: 24, fontWeight: 700, fontFamily: "'Plaak', sans-serif" }}>{fmt(totalEbit)}</p>
                                     </div>
-                                    <div className="canvas-metric-box" style={{ background: '#111' }}>
-                                        <div className="canvas-metric-label" style={{ color: '#999' }}>Cash Conversion Cycle</div>
-                                        <div className="canvas-metric-value" style={{ color: '#fff' }}>{y2WC.ccc.toFixed(0)} days</div>
+                                    <div>
+                                        <p style={{ ...tag('#666') }}>CASH CONVERSION CYCLE</p>
+                                        <p style={{ fontSize: 24, fontWeight: 700, fontFamily: "'Plaak', sans-serif" }}>{y2WC.ccc.toFixed(0)} days</p>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Year-over-Year */}
-                            <div className="canvas-section">
-                                <div className="numbered-section" style={{ marginBottom: 16 }}>YEAR-OVER-YEAR</div>
-                                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 8, fontSize: 14 }}>
-                                    <div style={{ fontWeight: 600, color: '#666' }}></div><div className="monument" style={{ fontSize: 10, color: '#666' }}>YEAR 1</div><div className="monument" style={{ fontSize: 10, color: '#666' }}>YEAR 2</div><div className="monument" style={{ fontSize: 10, color: '#666' }}>CHANGE</div>
+                            {/* === ROW 2: Year-over-Year + Working Capital side by side === */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderBottom: '2px solid #000' }}>
+                                {/* Year-over-Year */}
+                                <div style={{ padding: 20, borderRight: '2px solid #000' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                                        <span style={{ background: '#000', color: '#fff', padding: '3px 8px', fontFamily: "'Monument', monospace", fontSize: 10, letterSpacing: '0.08em' }}>01</span>
+                                        <span style={{ ...tag(), marginBottom: 0 }}>YEAR-OVER-YEAR</span>
+                                    </div>
                                     {[
-                                        ['Revenue', y1PL.revenue, y2PL.revenue],
-                                        ['Gross Margin %', y1PL.grossMarginPct, y2PL.grossMarginPct],
-                                        ['EBIT %', y1PL.ebitPct, y2PL.ebitPct],
-                                        ['Net Profit', y1PL.netProfit, y2PL.netProfit]
-                                    ].map(([label, v1, v2]) => {
-                                        const isP = label.includes('%');
-                                        const d = v2 - v1;
-                                        return (
-                                            <React.Fragment key={label}>
-                                                <div style={{ fontWeight: 600 }}>{label}</div>
-                                                <div>{isP ? fmtPct(v1) : fmt(v1)}</div>
-                                                <div>{isP ? fmtPct(v2) : fmt(v2)}</div>
-                                                <div style={{ color: d >= 0 ? '#059669' : '#DC2626' }}>{d >= 0 ? '+' : ''}{isP ? fmtPct(d) : fmt(d)}</div>
-                                            </React.Fragment>
-                                        );
-                                    })}
+                                        ['Revenue', fmt(y1PL.revenue), fmt(y2PL.revenue), y2PL.revenue - y1PL.revenue],
+                                        ['Gross Margin', fmtPct(y1PL.grossMarginPct), fmtPct(y2PL.grossMarginPct), y2PL.grossMarginPct - y1PL.grossMarginPct],
+                                        ['EBIT', fmtPct(y1PL.ebitPct), fmtPct(y2PL.ebitPct), y2PL.ebitPct - y1PL.ebitPct],
+                                        ['Net Profit', fmt(y1PL.netProfit), fmt(y2PL.netProfit), y2PL.netProfit - y1PL.netProfit]
+                                    ].map(([label, v1, v2, d]) => (
+                                        <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid #F3F4F6', fontSize: 13 }}>
+                                            <span style={{ fontWeight: 600, flex: 1 }}>{label}</span>
+                                            <span style={{ color: '#6B7280', width: 80, textAlign: 'right' }}>{v1}</span>
+                                            <span style={{ width: 80, textAlign: 'right' }}>{v2}</span>
+                                            <span style={{ width: 70, textAlign: 'right', color: d >= 0 ? '#059669' : '#DC2626', fontWeight: 600 }}>{d >= 0 ? '+' : ''}{typeof d === 'number' ? (label.includes('Revenue') || label.includes('Profit') ? fmt(d) : fmtPct(d)) : d}</span>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Working Capital */}
+                                <div style={{ padding: 20 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                                        <span style={{ background: '#000', color: '#fff', padding: '3px 8px', fontFamily: "'Monument', monospace", fontSize: 10, letterSpacing: '0.08em' }}>02</span>
+                                        <span style={{ ...tag(), marginBottom: 0 }}>WORKING CAPITAL</span>
+                                    </div>
+                                    {[
+                                        ['Days A/R', y1WC.daysAR.toFixed(0), y2WC.daysAR.toFixed(0), y2WC.daysAR - y1WC.daysAR],
+                                        ['Days A/P', y1WC.daysAP.toFixed(0), y2WC.daysAP.toFixed(0), y2WC.daysAP - y1WC.daysAP],
+                                        ['Days Inventory', y1WC.daysInv.toFixed(0), y2WC.daysInv.toFixed(0), y2WC.daysInv - y1WC.daysInv],
+                                        ['CCC', y1WC.ccc.toFixed(0), y2WC.ccc.toFixed(0), y2WC.ccc - y1WC.ccc]
+                                    ].map(([label, v1, v2, d]) => (
+                                        <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid #F3F4F6', fontSize: 13 }}>
+                                            <span style={{ fontWeight: 600, flex: 1 }}>{label}</span>
+                                            <span style={{ color: '#6B7280', width: 60, textAlign: 'right' }}>{v1}d</span>
+                                            <span style={{ width: 60, textAlign: 'right' }}>{v2}d</span>
+                                            <span style={{ width: 60, textAlign: 'right', color: (label === 'Days A/P' ? (d >= 0 ? '#059669' : '#DC2626') : (d <= 0 ? '#059669' : '#DC2626')), fontWeight: 600 }}>{d >= 0 ? '+' : ''}{d.toFixed(0)}d</span>
+                                        </div>
+                                    ))}
+                                    {/* LER badges */}
+                                    <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
+                                        {y2PL.directLER > 0 && (
+                                            <div style={{ background: '#F3F4F6', padding: '8px 12px', flex: 1 }}>
+                                                <p style={{ ...tag('#6B7280') }}>DIRECT LER</p>
+                                                <p style={{ fontSize: 15, fontWeight: 700 }}>{y2PL.directLER.toFixed(2)}</p>
+                                            </div>
+                                        )}
+                                        {y2PL.managementLER > 0 && (
+                                            <div style={{ background: '#F3F4F6', padding: '8px 12px', flex: 1 }}>
+                                                <p style={{ ...tag('#6B7280') }}>MGMT LER</p>
+                                                <p style={{ fontSize: 15, fontWeight: 700 }}>{y2PL.managementLER.toFixed(2)}</p>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Power of One Ranked */}
-                            <div className="canvas-section">
-                                <div className="numbered-section" style={{ marginBottom: 16 }}>POWER OF ONE — RANKED BY CASH IMPACT</div>
+                            {/* === ROW 3: Power of One Ranked === */}
+                            <div style={{ padding: 20, borderBottom: '2px solid #000' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                                    <span style={{ background: '#000', color: '#fff', padding: '3px 8px', fontFamily: "'Monument', monospace", fontSize: 10, letterSpacing: '0.08em' }}>03</span>
+                                    <span style={{ ...tag(), marginBottom: 0 }}>POWER OF ONE — RANKED BY CASH IMPACT</span>
+                                </div>
                                 {sorted.filter(l => l.cash > 0).map((lever, i) => (
-                                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: i < sorted.length - 1 ? '1px solid #f0f0f0' : 'none' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                            <span className="monument" style={{ fontSize: 11, color: '#666', minWidth: 24 }}>#{i + 1}</span>
-                                            <span style={{ fontWeight: 600, fontSize: 14 }}>{lever.lever}</span>
+                                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: i < sorted.filter(l => l.cash > 0).length - 1 ? '1px solid #F3F4F6' : 'none' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                            <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#6B7280', minWidth: 20 }}>#{i + 1}</span>
+                                            <span style={{ fontWeight: 600, fontSize: 13 }}>{lever.lever}</span>
+                                            <span style={{ background: '#F3F4F6', padding: '2px 6px', fontFamily: "'Monument', monospace", fontSize: 10, color: '#6B7280' }}>{lever.val}{lever.unit === '%' ? '%' : 'd'}</span>
                                         </div>
-                                        <div style={{ display: 'flex', gap: 24 }}>
-                                            <span style={{ color: '#059669', fontWeight: 600, fontSize: 14 }}>{fmt(lever.cash)}</span>
-                                            {lever.ebit > 0 && <span style={{ color: '#2563eb', fontSize: 13 }}>EBIT: {fmt(lever.ebit)}</span>}
+                                        <div style={{ display: 'flex', gap: 16 }}>
+                                            <span style={{ background: '#d1fae5', color: '#065f46', padding: '2px 8px', fontWeight: 600, fontSize: 13 }}>{fmt(lever.cash)}</span>
+                                            {lever.ebit > 0 && <span style={{ color: '#2563eb', fontSize: 12 }}>EBIT: {fmt(lever.ebit)}</span>}
                                         </div>
                                     </div>
                                 ))}
+                                {/* Total bar */}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, padding: '10px 14px', background: '#000', color: '#fff' }}>
+                                    <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, letterSpacing: '0.05em' }}>TOTAL IMPACT</span>
+                                    <div style={{ display: 'flex', gap: 16 }}>
+                                        <span style={{ color: '#4ade80', fontWeight: 700, fontSize: 15 }}>{fmt(totalCash)}</span>
+                                        <span style={{ color: '#60a5fa', fontWeight: 700, fontSize: 15 }}>EBIT: {fmt(totalEbit)}</span>
+                                    </div>
+                                </div>
                             </div>
 
-                            {/* Action Plan */}
-                            <div className="canvas-section">
-                                <div className="numbered-section" style={{ marginBottom: 16 }}>ACTION PLAN (WHO, WHAT, WHEN)</div>
+                            {/* === ROW 4: Action Plan === */}
+                            <div style={{ padding: 20 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                                    <span style={{ background: '#000', color: '#FFF469', padding: '3px 8px', fontFamily: "'Monument', monospace", fontSize: 10, letterSpacing: '0.08em' }}>GO</span>
+                                    <span style={{ ...tag(), marginBottom: 0 }}>ACTION PLAN (WHO, WHAT, WHEN)</span>
+                                </div>
                                 {actions.filter(a => a.what.trim()).map((action, i) => (
                                     <div key={i} style={{ borderLeft: '3px solid #000', paddingLeft: 16, marginBottom: 16 }}>
-                                        <p className="monument" style={{ fontSize: 10, color: '#666', marginBottom: 4 }}>ACTION {i + 1}</p>
-                                        <p style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>{action.what}</p>
-                                        <div style={{ display: 'flex', gap: 24, fontSize: 13, color: '#666' }}>
-                                            <span>Owner: {action.who || '—'}</span>
-                                            <span>Deadline: {action.when ? new Date(action.when).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}</span>
+                                        <p style={{ ...tag('#6B7280') }}>ACTION {i + 1}</p>
+                                        <p style={{ fontSize: 14, fontWeight: 600, marginBottom: 4, lineHeight: 1.4 }}>{action.what}</p>
+                                        <div style={{ display: 'flex', gap: 20, fontSize: 12, color: '#6B7280' }}>
+                                            <span>Owner: <strong style={{ color: '#000' }}>{action.who || '\u2014'}</strong></span>
+                                            <span>Deadline: <strong style={{ color: '#000' }}>{action.when ? new Date(action.when).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '\u2014'}</strong></span>
                                         </div>
                                     </div>
                                 ))}
                                 {actions.filter(a => a.what.trim()).length === 0 && <p style={{ fontSize: 14, color: '#999' }}>No actions defined.</p>}
                             </div>
 
-                            {/* Quote */}
-                            <div style={{ textAlign: 'center', padding: '24px 0', borderTop: '1px solid #E0E0E0' }}>
-                                <p style={{ fontSize: 14, fontStyle: 'italic', color: '#666' }}>"Mind the gap between profit and cash flow; it's where the real financial health of your business lies."</p>
-                                <p className="monument" style={{ fontSize: 10, color: '#999', marginTop: 4 }}>ALAN MILTZ</p>
+                            {/* Quote footer */}
+                            <div style={{ borderTop: '2px solid #000', padding: '16px 20px', textAlign: 'center', background: '#FAFAFA' }}>
+                                <p style={{ fontSize: 13, fontStyle: 'italic', color: '#6B7280' }}>"Mind the gap between profit and cash flow; it's where the real financial health of your business lies."</p>
+                                <p style={{ ...tag('#999'), marginTop: 4, marginBottom: 0 }}>ALAN MILTZ</p>
                             </div>
                         </div>
 
-                        {/* Action buttons */}
-                        <div className="no-print" style={{ display: 'flex', gap: 12, marginTop: 24 }}>
-                            <button onClick={handleExport} className="btn-back" style={{ flex: 1 }}>Export PDF</button>
-                            <button onClick={handleSubmit} className="btn-next" style={{ flex: 1 }} disabled={submitStatus === 'saving'}>
+                        {/* Action buttons (WOOP-style Monument font) */}
+                        <div className="no-print" style={{ display: 'flex', gap: 12, marginTop: 20 }}>
+                            <button onClick={handleExport} style={{ flex: 1, minHeight: 48, background: '#fff', border: '2px solid #000', cursor: 'pointer', fontFamily: "'Monument', monospace", fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Export PDF</button>
+                            <button onClick={handleSubmit} disabled={submitStatus === 'saving'} style={{ flex: 1, minHeight: 48, background: '#000', color: '#fff', border: '2px solid #000', cursor: 'pointer', fontFamily: "'Monument', monospace", fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                                 {submitStatus === 'saving' ? 'Saving...' : 'Final Submit'}
                             </button>
                         </div>
+
                         {submitStatus && (
-                            <div style={{ marginTop: 16, padding: '12px 16px', textAlign: 'center', background: submitStatus === 'success' ? '#f0fdf4' : submitStatus === 'error' ? '#fef2f2' : '#f5f5f5', border: `1px solid ${submitStatus === 'success' ? '#bbf7d0' : submitStatus === 'error' ? '#fecaca' : '#e0e0e0'}`, fontSize: 14 }}>
-                                <span style={{ color: submitStatus === 'success' ? '#166534' : submitStatus === 'error' ? '#991b1b' : '#333' }}>{submitMessage}</span>
+                            <div style={{ marginTop: 12, padding: '10px 16px', textAlign: 'center', background: submitStatus === 'success' ? '#F0FDF4' : submitStatus === 'error' ? '#FEF2F2' : '#F3F4F6', border: `1px solid ${submitStatus === 'success' ? '#BBF7D0' : submitStatus === 'error' ? '#FECACA' : '#E5E7EB'}`, fontSize: 13 }}>
+                                <span style={{ color: submitStatus === 'success' ? '#166534' : submitStatus === 'error' ? '#991B1B' : '#1F2937' }}>{submitMessage}</span>
                             </div>
                         )}
-                        <div style={{ marginTop: 24, textAlign: 'center' }}><p className="monument" style={{ fontSize: 11, color: '#999' }}>CASH IS KING — NOW EXECUTE</p></div>
                     </div>
                 </div>
             );
