@@ -289,12 +289,12 @@ const ToolDB = (function() {
         const storedId = localStorage.getItem('ft_user_id');
         if (storedId) return storedId;
 
-        // 3. Dev mode: auto-generate anon user so AI challenge and features work
+        // 3. Dev mode: use known dev user with real data
         if (new URLSearchParams(window.location.search).has('dev')) {
-            const anonId = 'anon-' + crypto.randomUUID();
-            localStorage.setItem('ft_user_id', anonId);
-            console.log('[ToolDB] DEV MODE — generated anon user:', anonId);
-            return anonId;
+            const devUserId = '7ac90e0a-0a2f-4e63-82a9-5e0d7b939c88';
+            localStorage.setItem('ft_user_id', devUserId);
+            console.log('[ToolDB] DEV MODE — using dev user:', devUserId);
+            return devUserId;
         }
 
         return null;
