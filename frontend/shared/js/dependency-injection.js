@@ -664,6 +664,12 @@ const DependencyInjection = (function() {
         }
     };
 
+    // Aliases for tools that use shortened TOOL_SLUG values
+    dependenciesConfig["segmentation"] = dependenciesConfig["segmentation-target-market"];
+    dependenciesConfig["target-segment"] = dependenciesConfig["target-segment-deep-dive"];
+    dependenciesConfig["vp-testing"] = dependenciesConfig["value-proposition-testing"];
+    dependenciesConfig["fit-abc"] = dependenciesConfig["fit-abc-analysis"];
+
     /**
      * Query field value using ToolDB.getDependency (replaces old RPC/schema approach)
      */

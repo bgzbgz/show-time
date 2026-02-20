@@ -16,6 +16,7 @@
     <script src="../../shared/js/dependency-injection.js"></script>
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
     <script src="../../shared/js/cognitive-load.js"></script>
+    <script src="../../js/tool-access-control.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
@@ -278,7 +279,7 @@
 
         // Initialize ToolDB and dependency injection
         ToolDB.init(CONFIG.TOOL_SLUG);
-        DependencyInjection.init(CONFIG.TOOL_SLUG);
+        ToolAccessControl.init(CONFIG.TOOL_SLUG);
 
         // Initialize cognitive load components
         CognitiveLoad.init('fit', {"insights":["FIT forces honest conversations about whether people are in the right roles.","A-players in wrong seats destroy more value than B-players in right seats."],"caseStudy":{"before":"[PLACEHOLDER] 40% of team members were in wrong roles.","after":"[PLACEHOLDER] Strategic role changes led to 30% productivity increase.","quote":"[PLACEHOLDER] FIT showed us our best people were being wasted in wrong positions."}});
@@ -340,7 +341,25 @@
             );
         }
 
+        function DependencyContext({ deps }) {
+            if (!deps || deps.length === 0) return null;
+            return (
+                <div style={{ marginBottom: '24px' }}>
+                    <div style={{ fontFamily: "'Monument', monospace", fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#666', marginBottom: '8px' }}>
+                        CONTEXT FROM PREVIOUS TOOLS
+                    </div>
+                    {deps.map((dep, i) => (
+                        <div key={i} style={{ background: '#FFF9E0', border: '1px solid #F0E68C', borderLeft: '3px solid #DAA520', padding: '12px 16px', marginBottom: '8px', fontSize: '14px' }}>
+                            <div style={{ fontWeight: 600, marginBottom: '4px', color: '#333' }}>{dep.label}</div>
+                            <div style={{ color: '#555', whiteSpace: 'pre-wrap' }}>{dep.value}</div>
+                        </div>
+                    ))}
+                </div>
+            );
+        }
+
         function FITTool() {
+            const [deps, setDeps] = useState([]);
             const [step, setStep] = useState(0); // 0=intro, 0.5=choice, 1-N=steps, 999=canvas
             const [showHelp, setShowHelp] = useState(false);
             const [toolType, setToolType] = useState(''); // 'individual' or 'team'
@@ -394,6 +413,30 @@
             });
 
             const autosaveTimer = useRef(null);
+
+            useEffect(() => {
+                async function loadDeps() {
+                    const userId = localStorage.getItem('ft_user_id');
+                    if (!userId || !window.ToolDB || !window.DependencyInjection) return;
+                    try {
+                        await ToolDB.whenReady();
+                        const config = DependencyInjection.getDependenciesConfig();
+                        const toolConfig = config[CONFIG.TOOL_SLUG];
+                        if (!toolConfig || !toolConfig.fields) return;
+                        const loaded = [];
+                        for (const field of toolConfig.fields) {
+                            const val = await ToolDB.getDependency(userId, field.source_field);
+                            if (val) {
+                                loaded.push({ label: field.display_label || field.source_field, value: typeof val === 'object' ? JSON.stringify(val, null, 2) : String(val) });
+                            }
+                        }
+                        setDeps(loaded);
+                    } catch (err) {
+                        console.warn('[' + CONFIG.TOOL_SLUG + '] Failed to load dependencies:', err);
+                    }
+                }
+                loadDeps();
+            }, []);
 
             // Auto-save
             useEffect(() => {
@@ -862,13 +905,13 @@
 
                     {/* Individual Steps */}
                     {toolType === 'individual' && step === 1 && (
-                        <IndividualStep1
+                        <><DependencyContext deps={deps} /><IndividualStep1
                             data={data}
                             updateIndividual={updateIndividual}
                             onNext={() => handleStepNext(2, { individual_context: { name: data.individual.name, role: data.individual.role, teamContext: data.individual.teamContext } }, 'Context')}
                             onBack={() => setStep(0.5)}
                             aiReviewing={aiReviewing}
-                        />
+                        /></>
                     )}
 
                     {toolType === 'individual' && step === 2 && (
@@ -903,13 +946,13 @@
 
                     {/* Team Steps */}
                     {toolType === 'team' && step === 1 && (
-                        <TeamStep1
+                        <><DependencyContext deps={deps} /><TeamStep1
                             data={data}
                             updateTeam={updateTeam}
                             onNext={() => handleStepNext(2, { team_setup: { assessorName: data.team.assessorName, teamContext: data.team.teamContext } }, 'Team Setup')}
                             onBack={() => setStep(0.5)}
                             aiReviewing={aiReviewing}
-                        />
+                        /></>
                     )}
 
                     {toolType === 'team' && step === 2 && (

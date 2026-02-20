@@ -35,6 +35,7 @@
     <!-- Cognitive Load Components -->
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
     <script src="../../shared/js/cognitive-load.js"></script>
+    <script src="../../js/tool-access-control.js"></script>
 
     <style>
         /* Font Face Declarations */
@@ -288,7 +289,7 @@
 
         // Initialize ToolDB and dependency injection
         ToolDB.init(CONFIG.TOOL_SLUG);
-        DependencyInjection.init(CONFIG.TOOL_SLUG);
+        ToolAccessControl.init(CONFIG.TOOL_SLUG);
 
         // Initialize cognitive load components
         CognitiveLoad.init('team', {"insights":["A team is only as strong as its weakest dysfunction. Identify and address the top 3.","Accountability without trust is tyranny. Trust without accountability is negligence."],"caseStudy":{"before":"[PLACEHOLDER] Team meetings were polite but unproductive.","after":"[PLACEHOLDER] Dysfunction scores improved from 3/10 to 7/10.","quote":"[PLACEHOLDER] The dysfunction assessment was uncomfortable but transformative."}});
@@ -1221,8 +1222,26 @@
             );
         };
 
+        function DependencyContext({ deps }) {
+            if (!deps || deps.length === 0) return null;
+            return (
+                <div style={{ marginBottom: '24px' }}>
+                    <div style={{ fontFamily: "'Monument', monospace", fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#666', marginBottom: '8px' }}>
+                        CONTEXT FROM PREVIOUS TOOLS
+                    </div>
+                    {deps.map((dep, i) => (
+                        <div key={i} style={{ background: '#FFF9E0', border: '1px solid #F0E68C', borderLeft: '3px solid #DAA520', padding: '12px 16px', marginBottom: '8px', fontSize: '14px' }}>
+                            <div style={{ fontWeight: 600, marginBottom: '4px', color: '#333' }}>{dep.label}</div>
+                            <div style={{ color: '#555', whiteSpace: 'pre-wrap' }}>{dep.value}</div>
+                        </div>
+                    ))}
+                </div>
+            );
+        }
+
         // Main TeamTool Component
         const TeamTool = () => {
+            const [deps, setDeps] = useState([]);
             const [step, setStep] = useState(0);
             const [userEmail, setUserEmail] = useState('');
             const [aiReviewing, setAiReviewing] = useState(false);
@@ -1234,6 +1253,30 @@
                 actionPlan: [{}, {}, {}],
                 commitments: []
             });
+
+            useEffect(() => {
+                async function loadDeps() {
+                    const userId = localStorage.getItem('ft_user_id');
+                    if (!userId || !window.ToolDB || !window.DependencyInjection) return;
+                    try {
+                        await ToolDB.whenReady();
+                        const config = DependencyInjection.getDependenciesConfig();
+                        const toolConfig = config[CONFIG.TOOL_SLUG];
+                        if (!toolConfig || !toolConfig.fields) return;
+                        const loaded = [];
+                        for (const field of toolConfig.fields) {
+                            const val = await ToolDB.getDependency(userId, field.source_field);
+                            if (val) {
+                                loaded.push({ label: field.display_label || field.source_field, value: typeof val === 'object' ? JSON.stringify(val, null, 2) : String(val) });
+                            }
+                        }
+                        setDeps(loaded);
+                    } catch (err) {
+                        console.warn('[' + CONFIG.TOOL_SLUG + '] Failed to load dependencies:', err);
+                    }
+                }
+                loadDeps();
+            }, []);
 
             // Load from localStorage on mount
             useEffect(() => {
@@ -1435,7 +1478,7 @@
                     )}
 
                     {step === 0 && <Step0 onNext={handleNext} />}
-                    {step === 1 && <Step1 teamData={teamData} setTeamData={setTeamData} userEmail={userEmail} setUserEmail={setUserEmail} />}
+                    {step === 1 && <><DependencyContext deps={deps} /><Step1 teamData={teamData} setTeamData={setTeamData} userEmail={userEmail} setUserEmail={setUserEmail} /></>}
                     {step === 2 && <Step2 teamData={teamData} />}
                     {step === 3 && <Step3 teamData={teamData} setTeamData={setTeamData} />}
                     {step === 4 && <Step4 teamData={teamData} setTeamData={setTeamData} />}

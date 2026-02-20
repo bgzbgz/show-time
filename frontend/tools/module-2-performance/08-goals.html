@@ -17,6 +17,7 @@
     <script src="../../shared/js/dependency-injection.js"></script>
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
     <script src="../../shared/js/cognitive-load.js"></script>
+    <script src="../../js/tool-access-control.js"></script>
 
     <style>
         @font-face {
@@ -173,13 +174,31 @@
 
         // Initialize ToolDB and dependency injection
         ToolDB.init(CONFIG.TOOL_SLUG);
-        DependencyInjection.init(CONFIG.TOOL_SLUG);
+        ToolAccessControl.init(CONFIG.TOOL_SLUG);
 
         // Initialize cognitive load components
         CognitiveLoad.init('goals', {"insights":["Goals without alignment are chaos. Every goal must connect to the dream.","OKRs work because they create transparency and focus. Maximum 3-5 objectives per quarter."],"caseStudy":{"before":"[PLACEHOLDER] 47 goals across the company.","after":"[PLACEHOLDER] 3 company OKRs. Goal completion rate jumped from 20% to 75%.","quote":"[PLACEHOLDER] Fewer goals meant better goals."}});
         const { FastTrackInsight, ScienceBox, WarningBox, CaseStudy, ScienceBookmarkIcon, ToolGuideDrawer } = CognitiveLoad.components;
 
+        function DependencyContext({ deps }) {
+            if (!deps || deps.length === 0) return null;
+            return (
+                <div style={{ marginBottom: '24px' }}>
+                    <div style={{ fontFamily: "'Monument', monospace", fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#666', marginBottom: '8px' }}>
+                        CONTEXT FROM PREVIOUS TOOLS
+                    </div>
+                    {deps.map((dep, i) => (
+                        <div key={i} style={{ background: '#FFF9E0', border: '1px solid #F0E68C', borderLeft: '3px solid #DAA520', padding: '12px 16px', marginBottom: '8px', fontSize: '14px' }}>
+                            <div style={{ fontWeight: 600, marginBottom: '4px', color: '#333' }}>{dep.label}</div>
+                            <div style={{ color: '#555', whiteSpace: 'pre-wrap' }}>{dep.value}</div>
+                        </div>
+                    ))}
+                </div>
+            );
+        }
+
         const ImpactEasyMatrix = () => {
+            const [deps, setDeps] = useState([]);
             const [step, setStep] = useState(0);
             const [userEmail, setUserEmail] = useState('');
             const [formData, setFormData] = useState({
@@ -189,6 +208,30 @@
                     easy: 3 
                 })),
             });
+
+            useEffect(() => {
+                async function loadDeps() {
+                    const userId = localStorage.getItem('ft_user_id');
+                    if (!userId || !window.ToolDB || !window.DependencyInjection) return;
+                    try {
+                        await ToolDB.whenReady();
+                        const config = DependencyInjection.getDependenciesConfig();
+                        const toolConfig = config[CONFIG.TOOL_SLUG];
+                        if (!toolConfig || !toolConfig.fields) return;
+                        const loaded = [];
+                        for (const field of toolConfig.fields) {
+                            const val = await ToolDB.getDependency(userId, field.source_field);
+                            if (val) {
+                                loaded.push({ label: field.display_label || field.source_field, value: typeof val === 'object' ? JSON.stringify(val, null, 2) : String(val) });
+                            }
+                        }
+                        setDeps(loaded);
+                    } catch (err) {
+                        console.warn('[' + CONFIG.TOOL_SLUG + '] Failed to load dependencies:', err);
+                    }
+                }
+                loadDeps();
+            }, []);
 
             // Auto-save
             useEffect(() => {
@@ -351,6 +394,7 @@
             if (step === 1) {
                 return (
                     <>
+                        <DependencyContext deps={deps} />
                         <header className="border-b-2 border-black py-6 px-8 no-print">
                             <div className="flex justify-between items-start">
                                 <div>

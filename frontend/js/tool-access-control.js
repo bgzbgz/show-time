@@ -48,7 +48,12 @@ var ToolAccessControl = (function () {
         'employer-branding': 'Employer Branding',
         'agile-teams': 'Agile Teams',
         'digitalization': 'Digitalization',
-        'digital-heart': 'Digital Heart'
+        'digital-heart': 'Digital Heart',
+        // Aliases for shortened TOOL_SLUG values
+        'segmentation': 'Segmentation & Target Market',
+        'target-segment': 'Target Segment Deep Dive',
+        'vp-testing': 'Value Proposition Testing',
+        'fit-abc': 'Fit ABC Analysis'
     };
 
     /**
