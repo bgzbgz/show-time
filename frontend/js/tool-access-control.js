@@ -154,6 +154,12 @@ var ToolAccessControl = (function () {
      * Initialize access control for a tool
      */
     function init(toolSlug) {
+        // Dev mode: ?dev in URL bypasses all access control
+        if (new URLSearchParams(window.location.search).has('dev')) {
+            console.log('[ToolAccessControl] DEV MODE — all tools unlocked');
+            return Promise.resolve();
+        }
+
         // WOOP is always accessible
         if (toolSlug === 'woop') return Promise.resolve();
 

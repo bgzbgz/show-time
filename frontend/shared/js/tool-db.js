@@ -289,6 +289,14 @@ const ToolDB = (function() {
         const storedId = localStorage.getItem('ft_user_id');
         if (storedId) return storedId;
 
+        // 3. Dev mode: auto-generate anon user so AI challenge and features work
+        if (new URLSearchParams(window.location.search).has('dev')) {
+            const anonId = 'anon-' + crypto.randomUUID();
+            localStorage.setItem('ft_user_id', anonId);
+            console.log('[ToolDB] DEV MODE — generated anon user:', anonId);
+            return anonId;
+        }
+
         return null;
     }
 
