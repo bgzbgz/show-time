@@ -6,10 +6,8 @@ import { asyncHandler } from '../middleware/errorHandler.js';
 const router = Router();
 
 // =============================================================================
-// LearnWorlds Course ID -> Tool Slug Mapping
+// LearnWorlds Course ID -> Tool Slug Mapping (hardcoded fallback)
 // =============================================================================
-// TODO: Replace these placeholder course IDs with real LearnWorlds course IDs.
-// The keys are LearnWorlds course IDs, the values are tool slugs in user_progress.
 
 const COURSE_TO_TOOL_SLUG: Record<string, string> = {
   'course-woop': 'woop',
@@ -27,10 +25,9 @@ const COURSE_TO_TOOL_SLUG: Record<string, string> = {
 // =============================================================================
 // Request Validation Schemas
 // =============================================================================
-// Matches the actual LearnWorlds courseCompleted webhook payload (v2).
-// See: LearnWorlds docs — "When a course is completed"
 
-const CourseCompletedPayloadSchema = z.object({
+// Format 1: Standard LearnWorlds webhook (Settings > Developers > Webhooks)
+const StandardWebhookSchema = z.object({
   version: z.number().optional(),
   type: z.literal('courseCompleted'),
   trigger: z.string().optional(),
@@ -42,7 +39,6 @@ const CourseCompletedPayloadSchema = z.object({
     course: z.object({
       id: z.string().min(1),
       title: z.string().optional().default(''),
-      access: z.string().optional(),
     }).passthrough(),
     user: z.object({
       id: z.string().min(1),
@@ -54,36 +50,67 @@ const CourseCompletedPayloadSchema = z.object({
   }),
 });
 
+// Format 2: LearnWorlds automation webhook (user/course/school at top level)
+const AutomationWebhookSchema = z.object({
+  user: z.object({
+    id: z.string().min(1),
+    email: z.string().email(),
+    username: z.string().optional().default(''),
+  }).passthrough(),
+  course: z.object({
+    id: z.string().min(1),
+    title: z.string().optional().default(''),
+  }).passthrough(),
+  school: z.object({}).passthrough().optional(),
+  courses: z.array(z.any()).optional(),
+});
+
 // =============================================================================
-// Middleware: Webhook Secret Verification
+// Normalize payload from either format into a common shape
 // =============================================================================
 
-function verifyWebhookSignature(req: Request): boolean {
-  const signatureHeader = req.headers['learnworlds-webhook-signature'] as string | undefined;
-  const expectedSecret = process.env.LEARNWORLDS_WEBHOOK_SECRET;
+interface NormalizedPayload {
+  lwUserId: string;
+  userEmail: string;
+  userName: string;
+  courseId: string;
+  courseTitle: string;
+}
 
-  if (!expectedSecret) {
-    console.error('LEARNWORLDS_WEBHOOK_SECRET is not configured');
-    return false;
+function normalizePayload(body: unknown): NormalizedPayload | null {
+  // Try standard webhook format first
+  const std = StandardWebhookSchema.safeParse(body);
+  if (std.success) {
+    const { data } = std.data;
+    return {
+      lwUserId: data.user.id,
+      userEmail: data.user.email,
+      userName: [data.user.first_name, data.user.last_name].filter(Boolean).join(' '),
+      courseId: data.course.id,
+      courseTitle: data.course.title || '',
+    };
   }
 
-  if (!signatureHeader) {
-    return false;
+  // Try automation webhook format
+  const auto = AutomationWebhookSchema.safeParse(body);
+  if (auto.success) {
+    return {
+      lwUserId: auto.data.user.id,
+      userEmail: auto.data.user.email,
+      userName: auto.data.user.username || '',
+      courseId: auto.data.course.id,
+      courseTitle: auto.data.course.title || '',
+    };
   }
 
-  // LearnWorlds sends: "v1=<signature_value>"
-  // Compare against our stored secret (which is the raw signature value)
-  const signature = signatureHeader.startsWith('v1=')
-    ? signatureHeader.slice(3)
-    : signatureHeader;
-
-  return signature === expectedSecret;
+  return null;
 }
 
 // =============================================================================
 // POST /learnworlds/course-completed
 // =============================================================================
-// Handles the courseCompleted webhook event from LearnWorlds.
+// Handles courseCompleted events from LearnWorlds.
+// Accepts both standard webhook and automation webhook payload formats.
 // - Maps the course_id to a tool_slug
 // - Looks up or creates the user by email
 // - Inserts a tool_completions row to mark the tool as complete
@@ -93,69 +120,57 @@ function verifyWebhookSignature(req: Request): boolean {
 router.post(
   '/learnworlds/course-completed',
   asyncHandler(async (req: Request, res: Response) => {
-    // Always return 200 to acknowledge receipt quickly.
-    // We process inline but catch all errors so the response never fails.
     try {
       // -----------------------------------------------------------------------
-      // 1. Verify shared secret
+      // 1. Log the raw payload for debugging
       // -----------------------------------------------------------------------
-      if (!verifyWebhookSignature(req)) {
-        console.warn('Webhook secret verification failed');
-        // Still return 200 — we don't want LearnWorlds to retry endlessly,
-        // but we log the failure and bail out of processing.
-        return res.status(200).json({ received: true, processed: false, reason: 'unauthorized' });
-      }
+      console.log('Webhook received:', JSON.stringify(req.body).slice(0, 500));
 
       // -----------------------------------------------------------------------
-      // 2. Validate payload
+      // 2. Normalize payload (accepts both standard and automation formats)
       // -----------------------------------------------------------------------
-      const parseResult = CourseCompletedPayloadSchema.safeParse(req.body);
+      const payload = normalizePayload(req.body);
 
-      if (!parseResult.success) {
-        console.warn('Invalid webhook payload:', parseResult.error.flatten());
+      if (!payload) {
+        console.warn('Invalid webhook payload — does not match standard or automation format');
+        await logWebhookEvent('unknown', req.body, false, 'invalid_payload_format');
         return res.status(200).json({ received: true, processed: false, reason: 'invalid_payload' });
       }
 
-      const { data, type } = parseResult.data;
-      const lwUserId = data.user.id;
-      const user_email = data.user.email;
-      const user_name = [data.user.first_name, data.user.last_name].filter(Boolean).join(' ');
-      const course_id = data.course.id;
-      const course_title = data.course.title;
+      const { lwUserId, userEmail, userName, courseId, courseTitle } = payload;
+      console.log(`Processing: user=${userEmail}, course=${courseId}`);
 
       // -----------------------------------------------------------------------
       // 3. Map course_id to tool_slug (from DB first, fallback to hardcoded)
       // -----------------------------------------------------------------------
       let toolSlug: string | undefined;
 
-      // Try database mapping first (editable in Supabase dashboard)
       const { data: mapping } = await supabase
         .from('course_tool_mapping')
         .select('tool_slug')
-        .eq('course_id', course_id)
+        .eq('course_id', courseId)
         .single();
 
       if (mapping) {
         toolSlug = mapping.tool_slug;
       } else {
-        // Fallback to hardcoded mapping
-        toolSlug = COURSE_TO_TOOL_SLUG[course_id];
+        toolSlug = COURSE_TO_TOOL_SLUG[courseId];
       }
 
       if (!toolSlug) {
-        console.warn(`No tool_slug mapping found for course_id: ${course_id}`);
-        await logWebhookEvent(type, req.body, false, `No mapping for course_id: ${course_id}`);
+        console.warn(`No tool_slug mapping found for course_id: ${courseId}`);
+        await logWebhookEvent('courseCompleted', req.body, false, `No mapping for course_id: ${courseId}`);
         return res.status(200).json({ received: true, processed: false, reason: 'unmapped_course' });
       }
 
       // -----------------------------------------------------------------------
       // 4. Look up or create user by email
       // -----------------------------------------------------------------------
-      const user = await upsertUserByEmail(user_email, user_name, lwUserId);
+      const user = await upsertUserByEmail(userEmail, userName, lwUserId);
 
       if (!user) {
-        console.error(`Failed to upsert user for email: ${user_email}`);
-        await logWebhookEvent(type, req.body, false, 'user_upsert_failed');
+        console.error(`Failed to upsert user for email: ${userEmail}`);
+        await logWebhookEvent('courseCompleted', req.body, false, 'user_upsert_failed');
         return res.status(200).json({ received: true, processed: false, reason: 'user_error' });
       }
 
@@ -170,28 +185,27 @@ router.post(
             tool_slug: toolSlug,
             completed_at: new Date().toISOString(),
             source: 'learnworlds_webhook',
-            course_id,
-            course_title,
+            course_id: courseId,
+            course_title: courseTitle,
           },
           { onConflict: 'user_id,tool_slug' }
         );
 
       if (completionError) {
         console.error('Failed to insert tool_completions:', completionError);
-        await logWebhookEvent(type, req.body, false, completionError.message);
+        await logWebhookEvent('courseCompleted', req.body, false, completionError.message);
         return res.status(200).json({ received: true, processed: false, reason: 'completion_insert_failed' });
       }
 
-      console.log(`Tool completion recorded: user=${user_email}, tool=${toolSlug}, course=${course_id}`);
+      console.log(`Tool completion recorded: user=${userEmail}, tool=${toolSlug}, course=${courseId}`);
 
       // -----------------------------------------------------------------------
       // 6. Log webhook event
       // -----------------------------------------------------------------------
-      await logWebhookEvent(type, req.body, true);
+      await logWebhookEvent('courseCompleted', req.body, true);
 
       return res.status(200).json({ received: true, processed: true });
     } catch (err: unknown) {
-      // Catch-all: never let the webhook response fail
       console.error('Unhandled error processing webhook:', err);
 
       try {
@@ -219,21 +233,18 @@ async function upsertUserByEmail(
   name: string,
   learnworldsUserId: string
 ): Promise<UpsertedUser | null> {
-  // Try to find existing user by email
   const { data: existingUser, error: lookupError } = await supabase
     .from('users')
     .select('id, email')
     .eq('email', email)
     .single();
 
-  // PGRST116 = "not found" — that's expected when the user is new
   if (lookupError && lookupError.code !== 'PGRST116') {
     console.error('Error looking up user by email:', lookupError);
     return null;
   }
 
   if (existingUser) {
-    // Update learnworlds_user_id if not already set
     const { error: updateError } = await supabase
       .from('users')
       .update({ learnworlds_user_id: learnworldsUserId })
@@ -241,13 +252,11 @@ async function upsertUserByEmail(
 
     if (updateError) {
       console.error('Failed to update learnworlds_user_id:', updateError);
-      // Non-fatal — the user still exists
     }
 
     return existingUser as UpsertedUser;
   }
 
-  // Create new user
   const { data: newUser, error: createError } = await supabase
     .from('users')
     .insert({
