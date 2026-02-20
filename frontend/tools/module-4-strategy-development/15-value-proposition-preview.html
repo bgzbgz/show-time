@@ -1,0 +1,1388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Value Proposition Engine | PREVIEW | Fast Track Program</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../../shared/js/tool-db.js"></script>
+    <script src="../../shared/js/ai-challenge.js"></script>
+    <script src="../../shared/js/dependency-injection.js"></script>
+    <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
+    <script src="../../shared/js/cognitive-load.js"></script>
+    <!-- access control removed for preview -->
+
+    <style>
+        @font-face { font-family: 'Plaak'; src: url('Plaak3Trial-43-Bold.woff2') format('woff2'); font-weight: bold; }
+        @font-face { font-family: 'Riforma'; src: url('RiformaLL-Regular.woff2') format('woff2'); font-weight: normal; }
+        @font-face { font-family: 'Riforma'; src: url('RiformaLL-Regular.woff2') format('woff2'); font-weight: 600; }
+        @font-face { font-family: 'Monument'; src: url('MonumentGrotesk-Mono.woff2') format('woff2'); }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Riforma', -apple-system, sans-serif;
+            font-size: 16px;
+            color: #000;
+            background: #000;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .plaak { font-family: 'Plaak', sans-serif; font-weight: bold; letter-spacing: -0.01em; line-height: 1.2; }
+        .monument { font-family: 'Monument', monospace; letter-spacing: 0.05em; }
+
+        .tool-frame { background: #fff; min-height: 100vh; }
+        .tool-inner { background: #fff; min-height: 100vh; }
+
+        .wizard-layout { display: flex; min-height: 100vh; }
+        .wizard-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background: #fff;
+            padding: 0 48px;
+        }
+        .wizard-sidebar {
+            width: 280px;
+            background: #000;
+            border-left: 1px solid #000;
+            flex-shrink: 0;
+        }
+        .wizard-sidebar-inner {
+            position: sticky;
+            top: 0;
+            padding: 32px 24px;
+            max-height: 100vh;
+            overflow-y: auto;
+        }
+
+        .step-content { max-width: 100%; padding: 40px 0; flex: 1; }
+        .step-indicator {
+            font-family: 'Monument', monospace;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .opening-box { margin-bottom: 32px; }
+        .opening-box .step-heading {
+            font-family: 'Plaak', sans-serif;
+            font-weight: bold;
+            font-size: 32px;
+            letter-spacing: -0.01em;
+            line-height: 1.2;
+            color: #000;
+            margin-bottom: 6px;
+        }
+        .opening-box .step-hint {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        .questions-grid { display: flex; flex-direction: column; gap: 0; margin-bottom: 32px; }
+        .fields-row { display: grid; gap: 20px; margin-bottom: 20px; }
+        .fields-row-3 { grid-template-columns: repeat(3, 1fr); }
+        .fields-row-2 { grid-template-columns: 1fr 1fr; }
+        .fields-row .field-card { background: #FAFAFA; border: 1px solid #E0E0E0; padding: 16px; }
+        .fields-row .field-card label.field-label { font-size: 13px; margin-bottom: 6px; }
+        .fields-row .field-card .field-textarea,
+        .fields-row .field-card .field-input { font-size: 14px; padding: 10px 12px; }
+        .fields-row .field-card .field-textarea { min-height: 64px; }
+        .fields-row .field-card .field-help { font-size: 11px; margin-top: 3px; }
+
+        .closing-box {
+            border-top: 1px solid #E0E0E0;
+            padding: 20px 0 0 0;
+            margin-top: 8px;
+            text-align: center;
+        }
+        .closing-box p { font-size: 14px; color: #666; }
+        .closing-box .closing-title {
+            font-family: 'Monument', monospace;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #000;
+            margin-bottom: 6px;
+        }
+
+        .field-group { margin-bottom: 40px; }
+        .field-group:last-child { margin-bottom: 0; }
+        .field-label {
+            font-weight: 600;
+            font-size: 16px;
+            color: #000;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .field-input {
+            border: 1px solid #E0E0E0;
+            padding: 12px 16px;
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
+            width: 100%;
+            color: #000;
+            background: #fff;
+            transition: border-color 0.2s ease;
+        }
+        .field-input:focus { outline: none; border-color: #000; }
+        .field-textarea {
+            border: 1px solid #E0E0E0;
+            padding: 12px 16px;
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
+            width: 100%;
+            min-height: 100px;
+            resize: vertical;
+            color: #000;
+            background: #fff;
+            transition: border-color 0.2s ease;
+        }
+        .field-textarea:focus { outline: none; border-color: #000; }
+        .field-help { font-size: 13px; color: #666; margin-top: 4px; }
+        .field-error { font-size: 13px; color: #DC2626; margin-top: 4px; }
+
+        .help-icon-btn {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #E0E0E0;
+            border: 1.5px solid #999;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: help;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+            font-size: 11px;
+            font-weight: 600;
+            color: #666;
+        }
+        .help-icon-btn:hover { background: #000; color: #fff; border-color: #000; }
+
+        .help-accordion {
+            background: #F5F5F5;
+            border: 1px solid #E0E0E0;
+            border-left: 3px solid #000;
+            padding: 14px 16px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: #333;
+            line-height: 1.5;
+            animation: accordionOpen 0.2s ease-out;
+        }
+        @keyframes accordionOpen {
+            from { opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0; }
+            to { opacity: 1; max-height: 300px; }
+        }
+
+        .learn-more-toggle {
+            font-family: 'Monument', monospace;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #000;
+            background: #F5F5F5;
+            border: 1px solid #E0E0E0;
+            cursor: pointer;
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 32px;
+            transition: background 0.15s ease;
+        }
+        .learn-more-toggle:hover { background: #EBEBEB; }
+        .learn-more-content {
+            border-left: 3px solid #000;
+            background: #F5F5F5;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            font-size: 14px;
+            color: #333;
+            line-height: 1.7;
+        }
+
+        .ft-insight {
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+            background: #F5F5F5;
+            border: 1px solid #E0E0E0;
+            border-left: 4px solid #FFF469;
+            padding: 16px 20px;
+            margin-bottom: 32px;
+        }
+        .ft-insight-icon {
+            flex-shrink: 0;
+            width: 28px;
+            height: 28px;
+            background: #FFF469;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .ft-insight-label {
+            font-family: 'Monument', monospace;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #000;
+            margin-bottom: 4px;
+        }
+        .ft-insight-text {
+            font-size: 14px;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .btn-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-top: 1px solid #E0E0E0;
+            background: #fff;
+            width: 100%;
+        }
+        .btn-back {
+            background: #fff;
+            color: #000;
+            border: 2px solid #000;
+            padding: 12px 24px;
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-back:hover { background: #F5F5F5; }
+        .btn-next {
+            background: #000;
+            color: #fff;
+            border: 2px solid #000;
+            padding: 12px 24px;
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-next:hover:not(:disabled) { transform: scale(1.02); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .btn-next:disabled { background: #E0E0E0; color: #9CA3AF; border-color: #E0E0E0; cursor: not-allowed; }
+
+        .sidebar-step-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            border-left: 3px solid transparent;
+            transition: all 0.2s ease;
+        }
+        .sidebar-step-item.active { border-left-color: #FFF469; background: #222; }
+        .sidebar-step-item.completed { background: #fff; color: #000; border-left-color: #fff; cursor: pointer; }
+        .sidebar-step-item.completed:hover { background: #E0E0E0; }
+        .sidebar-step-item.locked { opacity: 0.5; }
+        .sidebar-step-item .step-num { font-family: 'Riforma', sans-serif; font-size: 14px; }
+        .sidebar-step-item .step-name { font-family: 'Riforma', sans-serif; font-size: 14px; }
+        .sidebar-snippet { font-size: 12px; margin-top: 4px; opacity: 0.7; line-height: 1.3; }
+
+        .numbered-section { background: #000; color: #fff; padding: 8px 14px; font-size: 14px; font-weight: bold; letter-spacing: 0.5px; display: inline-block; font-family: 'Monument', monospace; }
+        .canvas-section-box { background: #FAFAFA; border-left: 4px solid #000; padding: 20px; margin-bottom: 16px; }
+
+        .mobile-step-bar { display: none; padding: 12px 16px; border-bottom: 1px solid #E0E0E0; background: #F5F5F5; }
+        .mobile-step-bar .bar-text { font-family: 'Monument', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #666; margin-bottom: 6px; }
+        .mobile-progress { height: 3px; background: #E0E0E0; width: 100%; }
+        .mobile-progress-fill { height: 100%; background: #000; transition: width 0.3s ease; }
+
+        /* VP formula preview */
+        .vp-preview {
+            background: #000;
+            color: #fff;
+            padding: 24px 28px;
+            margin-bottom: 32px;
+            font-size: 18px;
+            line-height: 1.6;
+        }
+        .vp-preview .vp-slot {
+            background: #FFF469;
+            color: #000;
+            padding: 2px 8px;
+            font-weight: 600;
+        }
+        .vp-preview .vp-slot.empty {
+            background: #333;
+            color: #999;
+        }
+
+        /* Validation item */
+        .validation-item {
+            padding: 16px;
+            border: 1px solid #E0E0E0;
+            margin-bottom: 8px;
+            transition: all 0.2s ease;
+        }
+        .validation-item.answered-yes { background: #f0fdf4; border-color: #bbf7d0; }
+        .validation-item.answered-no { background: #fef2f2; border-color: #fecaca; }
+
+        @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-in { animation: fadeSlideIn 0.3s ease-out; }
+
+        @media print { .no-print { display: none !important; } }
+
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .wizard-sidebar { width: 220px; }
+            .wizard-sidebar-inner { padding: 24px 16px; }
+        }
+        @media (max-width: 1024px) {
+            .competitors-grid-3 { grid-template-columns: repeat(2, 1fr) !important; }
+            .fields-row-3 { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 768px) {
+            .wizard-sidebar { display: none; }
+            .mobile-step-bar { display: block; }
+            .step-content { padding: 20px 16px; }
+            .opening-box .step-heading { font-size: 24px; }
+            .btn-footer { padding: 12px 16px; }
+            .wizard-main { padding: 0 16px; }
+            .vp-preview { font-size: 15px; padding: 16px; }
+            .competitors-grid-3 { grid-template-columns: 1fr !important; }
+            .fields-row-3 { grid-template-columns: 1fr; }
+            .fields-row-2 { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        /* ============================================================
+           CONFIG
+           ============================================================ */
+        const CONFIG = {
+            SUPABASE_URL: 'https://lutzzfaedkbsmbobmrzx.supabase.co',
+            SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1dHp6ZmFlZGtic21ib2Jtcnp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MDA0MDQsImV4cCI6MjA4NjM3NjQwNH0.o2gJba85vDl4NLS-C8Mq3OudWKxet-b0IqO9kazqb8U',
+            TOOL_SLUG: 'value-proposition',
+            TOOL_TITLE: 'VALUE PROPOSITION ENGINE',
+            TIME_ESTIMATE: '~25 min',
+            COVER_IMAGE: 'cover.jpg',
+            AUTOSAVE_DELAY: 2000,
+            STEPS: [
+                { num: 1, label: 'Pain Map' },
+                { num: 2, label: 'Your Edge' },
+                { num: 3, label: 'The Statement' },
+                { num: 4, label: 'Stress Test' }
+            ],
+            CLOSING_MESSAGES: {
+                1: { title: 'PAIN MAP COMPLETE', text: 'Pain identified. Next: find the gap your competitors can\'t close.' },
+                2: { title: 'EDGE IDENTIFIED', text: 'Differentiation clear. Next: build your one-sentence value proposition.' },
+                3: { title: 'STATEMENT BUILT', text: 'Your VP is taking shape. Next: stress test it.' },
+                4: { title: 'STRESS TEST COMPLETE', text: 'Your VP is validated. See your canvas.' }
+            },
+            TRANSITION_CONTENT: {
+                1: {
+                    brutalTruth: 'CEOs overestimate how well they know their customer\'s pain by 2x. If you can\'t state it in 8 words, you\'re guessing. The next step will expose whether your "differentiation" is real or imagined.',
+                    peerProof: '"A $75M logistics CEO ran this exercise and discovered their customers\' #1 pain wasn\'t price — it was unpredictable delivery windows. That single insight doubled their enterprise close rate in 90 days."'
+                },
+                2: {
+                    brutalTruth: '73% of \'unique value\' claims are things competitors already do. You\'ve mapped the landscape — now you need to compress everything into one sentence. If it takes more than one breath, it\'s not ready.',
+                    peerProof: '"When a $30M SaaS founder mapped this grid, they found their \'unique value\' was table stakes. Their real differentiator was something they\'d been giving away for free."'
+                },
+                3: {
+                    brutalTruth: 'You have a statement. Now the hard part: finding out if it\'s actually true. Most teams skip validation and wonder why sales stall. Don\'t be most teams.',
+                    peerProof: '"A $120M manufacturing CEO rewrote their VP using this formula. Sales cycle dropped from 90 days to 45. Close rate jumped from 18% to 31%."'
+                },
+                4: {
+                    brutalTruth: 'If you answered \'Yes\' to all 8 without hesitation, you\'re probably being generous with yourself. The real test is 10 prospects who have zero reason to lie.',
+                    peerProof: '"Teams that deploy a validated VP within 48 hours see 2x faster pipeline growth than those who \'refine\' for weeks."'
+                }
+            }
+        };
+
+        const { createClient } = supabase;
+        const supabaseClient = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+        window.supabaseClient = supabaseClient;
+        ToolDB.init(CONFIG.TOOL_SLUG);
+        // ToolAccessControl.init skipped for preview
+        CognitiveLoad.init(CONFIG.TOOL_SLUG);
+
+        /* ============================================================
+           REUSABLE COMPONENTS
+           ============================================================ */
+
+        function CheckIcon({ color = "#fff", size = 16 }) {
+            return <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>;
+        }
+
+        function LightbulbIcon({ size = 16 }) {
+            return <svg width={size} height={size} viewBox="0 0 24 24" fill="#000"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>;
+        }
+
+        function LearnMore({ children }) {
+            const [open, setOpen] = useState(false);
+            return (
+                <div style={{ marginBottom: open ? 0 : 12 }}>
+                    <button className="learn-more-toggle" onClick={() => setOpen(!open)}>THE DATA {open ? '\u2212' : '+'}</button>
+                    {open && <div className="learn-more-content">{children}</div>}
+                </div>
+            );
+        }
+
+        function FastTrackInsight({ children, label = 'Fast Track Insight' }) {
+            return (
+                <div className="ft-insight">
+                    <div className="ft-insight-icon"><LightbulbIcon size={16} /></div>
+                    <div>
+                        <div className="ft-insight-label">{label}</div>
+                        <div className="ft-insight-text">{children}</div>
+                    </div>
+                </div>
+            );
+        }
+
+        function HelpAccordion({ id, activeHelp, setActiveHelp, children }) {
+            const isOpen = activeHelp === id;
+            return (
+                <>
+                    <button className="help-icon-btn" onClick={() => setActiveHelp(isOpen ? null : id)} title="Help">?</button>
+                    {isOpen && <div className="help-accordion" style={{ marginTop: 6 }}>{children}</div>}
+                </>
+            );
+        }
+
+        function ButtonFooter({ onBack, onNext, nextLabel = 'Next', canProceed, showBack = true }) {
+            return (
+                <div className="btn-footer no-print">
+                    {showBack ? <button className="btn-back" onClick={onBack}>&larr; Back</button> : <div />}
+                    <button className="btn-next" disabled={!canProceed} onClick={onNext}>{nextLabel} &rarr;</button>
+                </div>
+            );
+        }
+
+        function MobileStepBar({ currentStep, totalSteps }) {
+            const progress = currentStep >= 999 ? 100 : Math.round((currentStep / totalSteps) * 100);
+            return (
+                <div className="mobile-step-bar no-print">
+                    <div className="bar-text">Step {Math.min(currentStep, totalSteps)} of {totalSteps}</div>
+                    <div className="mobile-progress"><div className="mobile-progress-fill" style={{ width: `${progress}%` }} /></div>
+                </div>
+            );
+        }
+
+        function WizardSidebar({ currentStep, steps, toolTitle, timeEstimate, getSnippet, onNavigate }) {
+            return (
+                <div className="wizard-sidebar no-print">
+                    <div className="wizard-sidebar-inner">
+                        <div style={{ marginBottom: 24 }}>
+                            <div className="monument" style={{ fontSize: 12, textTransform: 'uppercase', color: '#fff', marginBottom: 4 }}>{toolTitle}</div>
+                            <div style={{ fontSize: 13, color: '#999' }}>{timeEstimate}</div>
+                        </div>
+                        <div style={{ marginBottom: 16, fontFamily: "'Monument', monospace", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#999' }}>YOUR EXECUTION MAP</div>
+                        {steps.map(s => {
+                            const isCompleted = currentStep > s.num, isActive = currentStep === s.num, isLocked = currentStep < s.num;
+                            const snippet = isCompleted && getSnippet ? getSnippet(s.num) : null;
+                            return (
+                                <div key={s.num} className={`sidebar-step-item ${isCompleted ? 'completed' : ''} ${isActive ? 'active' : ''} ${isLocked ? 'locked' : ''}`}
+                                    onClick={() => isCompleted && onNavigate && onNavigate(s.num)}
+                                    title={isCompleted ? 'Click to review this step' : ''}
+                                >
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                        {isCompleted ? <CheckIcon color="#000" size={14} /> : <span className="step-num" style={{ color: isActive ? '#fff' : '#ccc' }}>{String(s.num).padStart(2, '0')}</span>}
+                                        <span className="step-name" style={{ color: isLocked ? '#666' : isCompleted ? '#000' : '#fff' }}>{s.label}</span>
+                                    </div>
+                                    {snippet && <div className="sidebar-snippet">{snippet}</div>}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        }
+
+        function DependencyContext({ deps }) {
+            if (!deps || deps.length === 0) return null;
+            return (
+                <div style={{ marginBottom: '24px' }}>
+                    <div style={{ fontFamily: "'Monument', monospace", fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#666', marginBottom: '8px' }}>
+                        CONTEXT FROM PREVIOUS TOOLS
+                    </div>
+                    {deps.map((dep, i) => (
+                        <div key={i} style={{ background: '#FFF9E0', border: '1px solid #F0E68C', borderLeft: '3px solid #DAA520', padding: '12px 16px', marginBottom: '8px', fontSize: '14px' }}>
+                            <div style={{ fontWeight: 600, marginBottom: '4px', color: '#333' }}>{dep.label}</div>
+                            <div style={{ color: '#555', whiteSpace: 'pre-wrap' }}>{dep.value}</div>
+                        </div>
+                    ))}
+                </div>
+            );
+        }
+
+        /* ============================================================
+           MAIN TOOL
+           ============================================================ */
+
+        function ToolApp() {
+            const [deps, setDeps] = useState([]);
+            const [step, setStep] = useState(0);
+            const [questionHelp, setQuestionHelp] = useState(null);
+            const [authState, setAuthState] = useState({ loading: true, authenticated: false, user: null, progress: null, error: null });
+            const [submitStatus, setSubmitStatus] = useState(null);
+            const [submitMessage, setSubmitMessage] = useState('');
+            const [aiReviewing, setAiReviewing] = useState(false);
+
+            /* ── Data state ── */
+            const [data, setData] = useState({
+                companyId: '', userId: '',
+                // Step 1: Customer Foundation
+                targetSegment: '',
+                biggestPain: '',
+                painEvidence: '',
+                currentSolutions: '',
+                ahaMoment: '',
+                desiredOutcome: '',
+                // Step 2: Competitive Landscape
+                competitors: [{ name: '', strength: '', weakness: '', differentiation: '' }],
+                uniqueValue: '',
+                whySwitchToUs: '',
+                // Step 3: Craft VP
+                vpTargetSegment: '',
+                vpPainPoint: '',
+                vpSolution: '',
+                vpCoreBenefit: '',
+                vpCompetitorWeakness: '',
+                fullValueProp: '',
+                antiValueProp: '',
+                // Step 4: Validate
+                validation: {
+                    painkiller: '', differentiated: '', highValue: '', hardToCopy: '',
+                    notPriceOnly: '', crystalClear: '', customerNeedsBased: '', decisionFilter: ''
+                },
+                testingPlan: '',
+                refinementNotes: ''
+            });
+
+            const autosaveTimer = useRef(null);
+            const updateData = (key, value) => setData(prev => ({ ...prev, [key]: value }));
+            const updateValidation = (key, value) => setData(prev => ({ ...prev, validation: { ...prev.validation, [key]: value } }));
+
+            useEffect(() => {
+                async function loadDeps() {
+                    const userId = localStorage.getItem('ft_user_id');
+                    if (!userId || !window.ToolDB || !window.DependencyInjection) return;
+                    try {
+                        await ToolDB.whenReady();
+                        const config = DependencyInjection.getDependenciesConfig();
+                        const toolConfig = config[CONFIG.TOOL_SLUG];
+                        if (!toolConfig || !toolConfig.fields) return;
+                        const loaded = [];
+                        for (const field of toolConfig.fields) {
+                            const val = await ToolDB.getDependency(userId, field.source_field);
+                            if (val) {
+                                loaded.push({ label: field.display_label || field.source_field, value: typeof val === 'object' ? JSON.stringify(val, null, 2) : String(val) });
+                            }
+                        }
+                        setDeps(loaded);
+                    } catch (err) {
+                        console.warn('[' + CONFIG.TOOL_SLUG + '] Failed to load dependencies:', err);
+                    }
+                }
+                loadDeps();
+            }, []);
+
+            /* ── Auto-generate VP from components ── */
+            useEffect(() => {
+                if (data.vpTargetSegment && data.vpPainPoint && data.vpSolution && data.vpCoreBenefit) {
+                    const vp = `For ${data.vpTargetSegment} who struggle with ${data.vpPainPoint}, we provide ${data.vpSolution} that ${data.vpCoreBenefit}${data.vpCompetitorWeakness ? `, unlike ${data.vpCompetitorWeakness}` : ''}.`;
+                    setData(prev => ({ ...prev, fullValueProp: vp }));
+                }
+            }, [data.vpTargetSegment, data.vpPainPoint, data.vpSolution, data.vpCoreBenefit, data.vpCompetitorWeakness]);
+
+            /* ── Validation ── */
+            const totalSteps = CONFIG.STEPS.length;
+            const canProceedStep1 = data.targetSegment.length >= 20 && data.biggestPain.length >= 30 && data.ahaMoment.length >= 20;
+            const canProceedStep2 = data.competitors.length >= 1 && data.competitors.every(c => c.name.length >= 2 && c.weakness.length >= 10) && data.uniqueValue.length >= 30;
+            const canProceedStep3 = data.vpTargetSegment.length >= 10 && data.vpPainPoint.length >= 10 && data.vpSolution.length >= 10 && data.vpCoreBenefit.length >= 10 && data.fullValueProp.length >= 30;
+            const yesCount = Object.values(data.validation).filter(v => v === 'yes').length;
+            const canProceedStep4 = yesCount >= 6;
+
+            /* ── AI-gated step navigation ── */
+            const handleNext = async () => {
+                const userId = localStorage.getItem('ft_user_id');
+                if (!userId) { alert('User not authenticated.'); return; }
+                setAiReviewing(true);
+                try {
+                    let stepAnswers = {};
+                    let stepName = '';
+                    if (step === 1) {
+                        stepName = 'Pain Map';
+                        stepAnswers = { pain_mapping: { targetSegment: data.targetSegment, biggestPain: data.biggestPain, painEvidence: data.painEvidence, currentSolutions: data.currentSolutions, ahaMoment: data.ahaMoment, desiredOutcome: data.desiredOutcome } };
+                    } else if (step === 2) {
+                        stepName = 'Your Edge';
+                        stepAnswers = { differentiators: { competitors: data.competitors, uniqueValue: data.uniqueValue, whySwitchToUs: data.whySwitchToUs } };
+                    } else if (step === 3) {
+                        stepName = 'The Statement';
+                        stepAnswers = { vp_statement: data.fullValueProp, anti_promise: data.antiValueProp };
+                    } else if (step === 4) {
+                        stepName = 'Stress Test';
+                        stepAnswers = { validation: data.validation, testing: { testingPlan: data.testingPlan, refinementNotes: data.refinementNotes } };
+                    }
+                    const canProceed = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, stepName);
+                    if (canProceed) {
+                        setStep(step === totalSteps ? 999 : step + 0.5);
+                    }
+                } catch (err) {
+                    console.warn('[AIChallenge] Error, allowing passage:', err);
+                    setStep(step === totalSteps ? 999 : step + 0.5);
+                } finally {
+                    setAiReviewing(false);
+                }
+            };
+
+            /* ── Competitor helpers ── */
+            const updateCompetitor = (index, field, value) => {
+                setData(prev => ({ ...prev, competitors: prev.competitors.map((c, i) => i === index ? { ...c, [field]: value } : c) }));
+            };
+            const addCompetitor = () => {
+                if (data.competitors.length >= 5) return;
+                setData(prev => ({ ...prev, competitors: [...prev.competitors, { name: '', strength: '', weakness: '', differentiation: '' }] }));
+            };
+            const removeCompetitor = (index) => {
+                if (data.competitors.length <= 1) return;
+                setData(prev => ({ ...prev, competitors: prev.competitors.filter((_, i) => i !== index) }));
+            };
+
+            /* ── Sidebar snippets ── */
+            const getSnippet = (n) => {
+                if (n === 1 && data.targetSegment) return '"' + data.targetSegment.substring(0, 50) + (data.targetSegment.length > 50 ? '...' : '') + '"';
+                if (n === 2) return data.competitors.filter(c => c.name).length + ' competitor' + (data.competitors.filter(c => c.name).length !== 1 ? 's' : '') + ' mapped';
+                if (n === 3 && data.fullValueProp) return '"' + data.fullValueProp.substring(0, 60) + '..."';
+                if (n === 4) return yesCount + '/8 validated';
+                return null;
+            };
+
+            /* ── Auth (handled by ToolDB.init → identifyUser) ── */
+            useEffect(() => {
+                setAuthState({ loading: false, authenticated: true, user: null, progress: { completed_tools: [], unlocked_tools: [CONFIG.TOOL_SLUG] }, isUnlocked: true, isCompleted: false, error: null });
+            }, []);
+
+            useEffect(() => {
+                if (authState.authenticated && authState.progress && window.toolAccessControl) {
+                    window.toolAccessControl.initialize(authState.progress, CONFIG.TOOL_SLUG, CONFIG.SPRINT_NUMBER);
+                }
+            }, [authState.authenticated]);
+
+            /* ── Auto-save ── */
+            useEffect(() => {
+                if (step < 1) return;
+                clearTimeout(autosaveTimer.current);
+                autosaveTimer.current = setTimeout(() => {
+                    localStorage.setItem(`ft_${CONFIG.TOOL_SLUG}_autosave`, JSON.stringify({ step, data, savedAt: new Date().toISOString() }));
+                }, CONFIG.AUTOSAVE_DELAY);
+                return () => clearTimeout(autosaveTimer.current);
+            }, [data, step]);
+
+            /* ── Load saved ── */
+            useEffect(() => {
+                try {
+                    const saved = localStorage.getItem(`ft_${CONFIG.TOOL_SLUG}_autosave`);
+                    if (saved) {
+                        const parsed = JSON.parse(saved);
+                        if (parsed.data) {
+                            setData(prev => ({ ...prev, ...parsed.data }));
+                            if (parsed.step) setStep(parsed.step);
+                        }
+                    }
+                } catch (e) { console.warn('Failed to restore auto-save:', e); }
+            }, []);
+
+            /* ── Submit (with AI challenge) ── */
+            const handleSubmit = async () => {
+                try {
+                    setSubmitStatus('saving'); setSubmitMessage('');
+                    const userId = localStorage.getItem('ft_user_id');
+                    if (!userId) { setSubmitStatus('error'); setSubmitMessage('User not authenticated.'); return; }
+
+                    const questionMappings = {
+                        vp_statement: data.fullValueProp,
+                        anti_promise: data.antiValueProp,
+                        pain_mapping: { targetSegment: data.targetSegment, biggestPain: data.biggestPain, painEvidence: data.painEvidence, currentSolutions: data.currentSolutions, ahaMoment: data.ahaMoment, desiredOutcome: data.desiredOutcome },
+                        differentiators: { competitors: data.competitors, uniqueValue: data.uniqueValue, whySwitchToUs: data.whySwitchToUs }
+                    };
+
+                    await window.AIChallenge.submitWithChallenge(userId, CONFIG.TOOL_SLUG, questionMappings, {
+                        onReviewStart: () => { setSubmitMessage('AI coach is reviewing...'); },
+                        onRevise: () => { setSubmitStatus(null); setSubmitMessage(''); setStep(totalSteps); },
+                        onSubmitAnyway: () => { setSubmitStatus('success'); setSubmitMessage('Submission saved successfully!'); },
+                        onError: (err) => { setSubmitStatus('error'); setSubmitMessage('Failed to save: ' + err.message); }
+                    });
+                } catch (error) {
+                    setSubmitStatus('error'); setSubmitMessage('Failed to save: ' + error.message);
+                }
+            };
+
+            /* ── PDF ── */
+            const handleExport = async (e) => {
+                try {
+                    const btn = e.target; btn.disabled = true; btn.textContent = 'Generating...';
+                    const { jsPDF } = window.jspdf;
+                    const el = document.getElementById('canvas-content');
+                    if (!el) throw new Error('Canvas not found.');
+                    const canvas = await html2canvas(el, { scale: 2, useCORS: false, backgroundColor: '#fff', logging: false });
+                    const imgData = canvas.toDataURL('image/png');
+                    const pdf = new jsPDF('p', 'mm', 'a4');
+                    const pdfW = pdf.internal.pageSize.getWidth(), pdfH = pdf.internal.pageSize.getHeight();
+                    const imgW = pdfW - 20, imgH = (canvas.height * imgW) / canvas.width;
+                    if (imgH <= pdfH - 20) { pdf.addImage(imgData, 'PNG', 10, 10, imgW, imgH); }
+                    else {
+                        let srcY = 0;
+                        while (srcY < canvas.height) {
+                            const sliceH = Math.min(canvas.height - srcY, (canvas.width * (pdfH - 20)) / imgW);
+                            const sliceCanvas = document.createElement('canvas'); sliceCanvas.width = canvas.width; sliceCanvas.height = sliceH;
+                            sliceCanvas.getContext('2d').drawImage(canvas, 0, srcY, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+                            pdf.addImage(sliceCanvas.toDataURL('image/png'), 'PNG', 10, 10, imgW, (sliceH * imgW) / canvas.width);
+                            srcY += sliceH;
+                            if (srcY < canvas.height) pdf.addPage();
+                        }
+                    }
+                    pdf.save(`${CONFIG.TOOL_SLUG}-canvas.pdf`);
+                    btn.disabled = false; btn.textContent = 'Export PDF';
+                } catch (err) { alert('PDF export failed: ' + err.message); e.target.disabled = false; e.target.textContent = 'Export PDF'; }
+            };
+
+            /* ============================================================
+               RENDER
+               ============================================================ */
+            return (
+                <div className="tool-frame">
+                    <div className="tool-inner">
+
+                        {authState.loading && (
+                            <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000' }}>
+                                <div style={{ textAlign: 'center', color: '#fff' }}>
+                                    <div className="plaak" style={{ fontSize: 32, marginBottom: 12 }}>Loading...</div>
+                                </div>
+                            </div>
+                        )}
+
+                        {!authState.loading && !authState.authenticated && (
+                            <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000' }}>
+                                <div style={{ textAlign: 'center', color: '#fff', padding: '0 32px', maxWidth: 640 }}>
+                                    <h1 className="plaak" style={{ fontSize: 48, marginBottom: 24 }}>AUTHENTICATION REQUIRED</h1>
+                                    <p style={{ fontSize: 20, marginBottom: 32 }}>Please access this tool from your LearnWorlds course.</p>
+                                    <p style={{ fontSize: 16, color: '#999' }}>{authState.error || 'No active session found'}</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ── STEP 0: Cover ── */}
+                        {step === 0 && authState.authenticated && (
+                            <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+                                <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${CONFIG.COVER_IMAGE})`, backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.5 }} />
+                                <div style={{ position: 'relative', textAlign: 'center', color: '#fff', padding: '0 32px' }} className="animate-in">
+                                    <h1 className="plaak" style={{ fontSize: 80, marginBottom: 16 }}>{CONFIG.TOOL_TITLE}</h1>
+                                    <p style={{ fontSize: 18, color: '#ccc', marginBottom: 12 }}>One sentence. Total market clarity. Deploy today.</p>
+                                    <p className="monument" style={{ fontSize: 13, color: '#FFF469', letterSpacing: '0.05em', marginBottom: 12 }}>YOUR CURRENT VP IS COSTING YOU REVENUE. FIX IT IN 25 MINUTES.</p>
+                                    <p className="monument" style={{ fontSize: 11, color: '#999', letterSpacing: '0.05em', marginBottom: 48 }}>NOT ANOTHER VP CANVAS. A PRECISION INSTRUMENT FOR CEOS WHO COMPETE TO WIN.</p>
+                                    <button onClick={() => setStep(0.5)} style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 48px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                                        onMouseOver={e => { e.target.style.background = '#FFF469'; }}
+                                        onMouseOut={e => { e.target.style.background = '#fff'; }}
+                                    >BUILD IT NOW</button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ── STEP 0.5: Setup ── */}
+                        {step === 0.5 && (
+                            <div style={{ minHeight: '100vh', background: '#fff', display: 'flex', flexDirection: 'column', padding: '0 48px' }}>
+                                <div className="step-content animate-in" style={{ maxWidth: 560, margin: '0 auto' }}>
+                                    <p className="step-indicator">SETUP</p>
+                                    <div className="opening-box">
+                                        <h1 className="step-heading">Identify Yourself</h1>
+                                        <p className="step-hint">A weak VP bleeds revenue. A precise VP prints it. Four steps. One powerful sentence. No theory.</p>
+                                    </div>
+
+                                    <div style={{ background: '#000', color: '#fff', padding: '16px 20px', marginBottom: 32, borderLeft: '4px solid #FFF469' }}>
+                                        <span className="monument" style={{ fontSize: 10, color: '#FFF469', marginRight: 8 }}>FACT:</span>
+                                        <span style={{ fontSize: 14, lineHeight: 1.6 }}>Companies with a 1-sentence VP close deals 2.4x faster. Vague VPs cost the average $50M company $2-5M/year in lost deals.</span>
+                                    </div>
+
+                                </div>
+                                <div className="btn-footer no-print">
+                                    <button className="btn-back" onClick={() => setStep(0)}>&larr; Back</button>
+                                    <button className="btn-next" onClick={() => setStep(1)}>Execute &rarr;</button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ── STEPS 1-4: Wizard ── */}
+                        {step >= 1 && step <= totalSteps && Number.isInteger(step) && (
+                            <div className="wizard-layout">
+                                <div className="wizard-main">
+                                    <MobileStepBar currentStep={step} totalSteps={totalSteps} />
+
+                                    {/* ── STEP 1: Customer Foundation ── */}
+                                    {step === 1 && (
+                                        <div className="step-content animate-in">
+                                            <DependencyContext deps={deps} />
+                                            <p className="step-indicator">STEP 1 OF {totalSteps}</p>
+                                            <div className="opening-box">
+                                                <h1 className="step-heading">Map the Pain</h1>
+                                                <p className="step-hint">Name the exact pain your customer would pay to eliminate. Get this wrong and everything downstream falls apart.</p>
+                                            </div>
+
+                                            <LearnMore>
+                                                Companies that nail their VP close 2.4x faster. Purchase decisions are emotional first, rational second. Get the pain right and everything else follows.
+                                            </LearnMore>
+
+                                            <FastTrackInsight>
+                                                If your offer is a vitamin, you'll struggle to sell it. Only painkillers command premium pricing. Only painkillers make customers move fast. Name the painkiller.
+                                            </FastTrackInsight>
+
+                                            <div className="questions-grid">
+                                                {/* Row 1: 3 cards */}
+                                                <div className="fields-row fields-row-3">
+                                                    <div className="field-card">
+                                                        <label className="field-label">
+                                                            Your Target Customer
+                                                            <HelpAccordion id="targetSeg" activeHelp={questionHelp} setActiveHelp={setQuestionHelp}>
+                                                                Be surgical: industry, company size, revenue range, decision-maker title. Vague = dead.
+                                                            </HelpAccordion>
+                                                        </label>
+                                                        <textarea className="field-textarea" value={data.targetSegment} onChange={e => updateData('targetSegment', e.target.value)} placeholder="e.g. High-growth SaaS startups (20-100 employees) with $5M-$30M ARR..." maxLength={500} />
+                                                        <p className="field-help">{data.targetSegment.length}/500 (min 20)</p>
+                                                    </div>
+                                                    <div className="field-card">
+                                                        <label className="field-label">
+                                                            The Pain That Costs Them Money
+                                                            <HelpAccordion id="pain" activeHelp={questionHelp} setActiveHelp={setQuestionHelp}>
+                                                                Name the #1 thing costing them revenue or time. Painkillers sell. Vitamins collect dust.
+                                                            </HelpAccordion>
+                                                        </label>
+                                                        <textarea className="field-textarea" value={data.biggestPain} onChange={e => updateData('biggestPain', e.target.value)} placeholder="e.g. Teams spend 40%+ of time on repetitive manual tasks across disconnected tools..." maxLength={800} />
+                                                        <p className="field-help">{data.biggestPain.length}/800 (min 30)</p>
+                                                    </div>
+                                                    <div className="field-card">
+                                                        <label className="field-label">Proof It's Real</label>
+                                                        <textarea className="field-textarea" value={data.painEvidence} onChange={e => updateData('painEvidence', e.target.value)} placeholder="Numbers, quotes, behaviors: '67% said manual data entry is their top frustration.'" maxLength={500} />
+                                                    </div>
+                                                </div>
+
+                                                {/* Row 2: 3 cards */}
+                                                <div className="fields-row fields-row-3">
+                                                    <div className="field-card">
+                                                        <label className="field-label">What They Do Now (And Why It Fails)</label>
+                                                        <textarea className="field-textarea" value={data.currentSolutions} onChange={e => updateData('currentSolutions', e.target.value)} placeholder="What are they doing now? Why isn't it working?" maxLength={500} />
+                                                    </div>
+                                                    <div className="field-card">
+                                                        <label className="field-label">
+                                                            The Breaking Point
+                                                            <HelpAccordion id="aha" activeHelp={questionHelp} setActiveHelp={setQuestionHelp}>
+                                                                When do customers realize they NEED your solution? What triggers urgency?
+                                                            </HelpAccordion>
+                                                        </label>
+                                                        <textarea className="field-textarea" value={data.ahaMoment} onChange={e => updateData('ahaMoment', e.target.value)} placeholder="e.g. When they hire their 50th employee and manual processes start breaking..." maxLength={500} />
+                                                        <p className="field-help">{data.ahaMoment.length}/500 (min 20)</p>
+                                                    </div>
+                                                    <div className="field-card">
+                                                        <label className="field-label">What They'd Pay Any Price For</label>
+                                                        <textarea className="field-textarea" value={data.desiredOutcome} onChange={e => updateData('desiredOutcome', e.target.value)} placeholder="What transformation do they want? What does success look like for them?" maxLength={500} />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {canProceedStep1 && (
+                                                <div className="closing-box animate-in">
+                                                    <p className="closing-title">{CONFIG.CLOSING_MESSAGES[1].title}</p>
+                                                    <p>{CONFIG.CLOSING_MESSAGES[1].text}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* ── STEP 2: Competitive Landscape ── */}
+                                    {step === 2 && (
+                                        <div className="step-content animate-in">
+                                            <p className="step-indicator">STEP 2 OF {totalSteps}</p>
+                                            <div className="opening-box">
+                                                <h1 className="step-heading">Find Your Edge</h1>
+                                                <p className="step-hint">If you can't articulate your difference in one breath, you're competing on price. Price wars are a race to zero.</p>
+                                            </div>
+
+                                            <LearnMore>
+                                                Differentiated VPs grow 3x faster (McKinsey). Winning brands don't serve everyone — they own specific segments. Align your VP with what you're best at, not just what you do.
+                                            </LearnMore>
+
+                                            <FastTrackInsight>
+                                                A strong VP is not about being slightly better — it's about being impossible to replace. If they can copy you in 6 months, it's not differentiation.
+                                            </FastTrackInsight>
+
+                                            <div className="questions-grid">
+                                                {/* Competitor cards — 3 per row */}
+                                                <div className="competitors-grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginBottom: 24 }}>
+                                                    {data.competitors.map((comp, idx) => (
+                                                        <div key={idx} style={{ border: '1px solid #E0E0E0', padding: 20, background: '#FAFAFA' }}>
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                                                                <span className="monument" style={{ fontSize: 10, textTransform: 'uppercase', color: '#666' }}>COMPETITOR {idx + 1}</span>
+                                                                {data.competitors.length > 1 && (
+                                                                    <button onClick={() => removeCompetitor(idx)} style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: '#999', lineHeight: 1 }}>&times;</button>
+                                                                )}
+                                                            </div>
+                                                            <div style={{ marginBottom: 12 }}>
+                                                                <label className="field-label" style={{ fontSize: 13 }}>Name</label>
+                                                                <input type="text" className="field-input" style={{ padding: '8px 12px', fontSize: 14 }} value={comp.name} onChange={e => updateCompetitor(idx, 'name', e.target.value)} placeholder="Competitor name" />
+                                                            </div>
+                                                            <div style={{ marginBottom: 12 }}>
+                                                                <label className="field-label" style={{ fontSize: 13 }}>Their Strength</label>
+                                                                <input type="text" className="field-input" style={{ padding: '8px 12px', fontSize: 14 }} value={comp.strength} onChange={e => updateCompetitor(idx, 'strength', e.target.value)} placeholder="What do they do well?" />
+                                                            </div>
+                                                            <div style={{ marginBottom: 12 }}>
+                                                                <label className="field-label" style={{ fontSize: 13 }}>Their Weakness</label>
+                                                                <textarea className="field-textarea" style={{ minHeight: 48, fontSize: 14, padding: '8px 12px' }} value={comp.weakness} onChange={e => updateCompetitor(idx, 'weakness', e.target.value)} placeholder="Where do they fall short?" />
+                                                                <p className="field-help">{comp.weakness.length} (min 10)</p>
+                                                            </div>
+                                                            <div>
+                                                                <label className="field-label" style={{ fontSize: 13 }}>How We're Different</label>
+                                                                <textarea className="field-textarea" style={{ minHeight: 48, fontSize: 14, padding: '8px 12px' }} value={comp.differentiation} onChange={e => updateCompetitor(idx, 'differentiation', e.target.value)} placeholder="What do we do that they can't?" />
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+
+                                                {data.competitors.length < 5 && (
+                                                    <button onClick={addCompetitor} style={{ width: '100%', padding: '12px 0', border: '2px dashed #E0E0E0', background: 'none', fontSize: 14, cursor: 'pointer', color: '#666', marginBottom: 32 }}>
+                                                        + Add Competitor ({data.competitors.length}/5)
+                                                    </button>
+                                                )}
+
+                                                {/* Unique Value + Why Switch */}
+                                                <div className="fields-row fields-row-2">
+                                                    <div className="field-card">
+                                                        <label className="field-label">
+                                                            Our Unfair Advantage
+                                                            <HelpAccordion id="uniqueVal" activeHelp={questionHelp} setActiveHelp={setQuestionHelp}>
+                                                                What do you do that competitors physically cannot? If they can copy it in 6 months, it's not differentiation.
+                                                            </HelpAccordion>
+                                                        </label>
+                                                        <textarea className="field-textarea" value={data.uniqueValue} onChange={e => updateData('uniqueValue', e.target.value)} placeholder="e.g. We're the ONLY platform that combines AI-powered workflow design with zero-code setup AND scales from 20 to 500+ employees without IT resources." maxLength={800} />
+                                                        <p className="field-help">{data.uniqueValue.length}/800 (min 30)</p>
+                                                    </div>
+                                                    <div className="field-card">
+                                                        <label className="field-label">The Trigger That Makes Them Move</label>
+                                                        <textarea className="field-textarea" value={data.whySwitchToUs} onChange={e => updateData('whySwitchToUs', e.target.value)} placeholder="What compelling reason would make a customer leave their current solution for yours?" maxLength={500} />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {canProceedStep2 && (
+                                                <div className="closing-box animate-in">
+                                                    <p className="closing-title">{CONFIG.CLOSING_MESSAGES[2].title}</p>
+                                                    <p>{CONFIG.CLOSING_MESSAGES[2].text}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* ── STEP 3: Craft Your VP ── */}
+                                    {step === 3 && (
+                                        <div className="step-content animate-in">
+                                            <p className="step-indicator">STEP 3 OF {totalSteps}</p>
+                                            <div className="opening-box">
+                                                <h1 className="step-heading">Craft Your Statement</h1>
+                                                <p className="step-hint">One sentence. If it doesn't make your target customer say 'I need this,' it's not done.</p>
+                                            </div>
+
+                                            <LearnMore>
+                                                One sentence. Addresses the pain. Differentiates from competition. Makes them act. That's it.
+                                            </LearnMore>
+
+                                            <FastTrackInsight>
+                                                One breath. That's your test. If you can't say your VP in one breath, it's not a VP — it's a brochure. Strip every word that doesn't earn its place.
+                                            </FastTrackInsight>
+
+                                            <div style={{ background: '#000', color: '#fff', padding: '12px 20px', marginBottom: 24, textAlign: 'center' }}>
+                                                <span className="monument" style={{ fontSize: 12, color: '#FFF469' }}>The VP formula below has been used by 200+ CEOs to cut pitch time by 60% and increase close rates by 34%.</span>
+                                            </div>
+
+                                            {/* Formula display */}
+                                            <div style={{ background: '#000', color: '#fff', padding: '20px 24px', marginBottom: 32, fontSize: 15, lineHeight: 1.8 }}>
+                                                <div className="monument" style={{ fontSize: 10, color: '#999', marginBottom: 8 }}>THE FAST TRACK FORMULA</div>
+                                                For <span style={{ background: data.vpTargetSegment ? '#FFF469' : '#333', color: data.vpTargetSegment ? '#000' : '#999', padding: '2px 8px', fontWeight: 600 }}>{data.vpTargetSegment || '[target segment]'}</span> who struggle with <span style={{ background: data.vpPainPoint ? '#FFF469' : '#333', color: data.vpPainPoint ? '#000' : '#999', padding: '2px 8px', fontWeight: 600 }}>{data.vpPainPoint || '[pain point]'}</span>, we provide <span style={{ background: data.vpSolution ? '#FFF469' : '#333', color: data.vpSolution ? '#000' : '#999', padding: '2px 8px', fontWeight: 600 }}>{data.vpSolution || '[solution]'}</span> that <span style={{ background: data.vpCoreBenefit ? '#FFF469' : '#333', color: data.vpCoreBenefit ? '#000' : '#999', padding: '2px 8px', fontWeight: 600 }}>{data.vpCoreBenefit || '[core benefit]'}</span>{data.vpCompetitorWeakness ? <>, unlike <span style={{ background: '#FFF469', color: '#000', padding: '2px 8px', fontWeight: 600 }}>{data.vpCompetitorWeakness}</span></> : ''}.
+                                            </div>
+
+                                            <div className="questions-grid">
+                                                {/* Row 1: 3 formula components */}
+                                                <div className="fields-row fields-row-3">
+                                                    <div className="field-card">
+                                                        <label className="field-label">Who (Exact Profile)</label>
+                                                        <input type="text" className="field-input" value={data.vpTargetSegment} onChange={e => updateData('vpTargetSegment', e.target.value)} placeholder="high-growth SaaS startups (20-100 employees)" />
+                                                        <p className="field-help">{data.vpTargetSegment.length} (min 10)</p>
+                                                    </div>
+                                                    <div className="field-card">
+                                                        <label className="field-label">Pain Point</label>
+                                                        <input type="text" className="field-input" value={data.vpPainPoint} onChange={e => updateData('vpPainPoint', e.target.value)} placeholder="wasting 40% of team time on manual workflows" />
+                                                        <p className="field-help">{data.vpPainPoint.length} (min 10)</p>
+                                                    </div>
+                                                    <div className="field-card">
+                                                        <label className="field-label">Your Solution</label>
+                                                        <input type="text" className="field-input" value={data.vpSolution} onChange={e => updateData('vpSolution', e.target.value)} placeholder="an AI-powered, zero-code automation platform" />
+                                                        <p className="field-help">{data.vpSolution.length} (min 10)</p>
+                                                    </div>
+                                                </div>
+
+                                                {/* Row 2: 2 remaining components */}
+                                                <div className="fields-row fields-row-3">
+                                                    <div className="field-card">
+                                                        <label className="field-label">The Result They Get</label>
+                                                        <input type="text" className="field-input" value={data.vpCoreBenefit} onChange={e => updateData('vpCoreBenefit', e.target.value)} placeholder="eliminates 80% of manual work in 24 hours" />
+                                                        <p className="field-help">{data.vpCoreBenefit.length} (min 10)</p>
+                                                    </div>
+                                                    <div className="field-card">
+                                                        <label className="field-label">Competitor Gap (The Opening)</label>
+                                                        <input type="text" className="field-input" value={data.vpCompetitorWeakness} onChange={e => updateData('vpCompetitorWeakness', e.target.value)} placeholder="competitors who require 6-month implementations" />
+                                                    </div>
+                                                    <div className="field-card">
+                                                        <label className="field-label">
+                                                            What We Refuse To Promise
+                                                            <HelpAccordion id="antiVP" activeHelp={questionHelp} setActiveHelp={setQuestionHelp}>
+                                                                What do you explicitly NOT promise? Prevents overpromising. "Strategy is sacrifice."
+                                                            </HelpAccordion>
+                                                        </label>
+                                                        <textarea className="field-textarea" value={data.antiValueProp} onChange={e => updateData('antiValueProp', e.target.value)} placeholder="We do NOT promise:&#10;- Enterprise-level customization&#10;- Replacing your entire tech stack" maxLength={500} />
+                                                    </div>
+                                                </div>
+
+                                                {/* Live preview */}
+                                                {data.fullValueProp && data.fullValueProp.length > 30 && (
+                                                    <div style={{ background: '#FFF469', border: '3px solid #000', padding: 20, marginBottom: 8 }}>
+                                                        <div className="monument" style={{ fontSize: 10, marginBottom: 8 }}>YOUR VALUE PROPOSITION</div>
+                                                        <p style={{ fontSize: 17, fontWeight: 600, lineHeight: 1.5 }}>{data.fullValueProp}</p>
+                                                        <p style={{ fontSize: 12, color: '#666', marginTop: 8, fontStyle: 'italic' }}>Read it out loud. Does it make customers say "I need this NOW"?</p>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {canProceedStep3 && (
+                                                <div className="closing-box animate-in">
+                                                    <p className="closing-title">{CONFIG.CLOSING_MESSAGES[3].title}</p>
+                                                    <p>{CONFIG.CLOSING_MESSAGES[3].text}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* ── STEP 4: Validate & Test ── */}
+                                    {step === 4 && (
+                                        <div className="step-content animate-in">
+                                            <p className="step-indicator">STEP 4 OF {totalSteps}</p>
+                                            <div className="opening-box">
+                                                <h1 className="step-heading">Stress Test</h1>
+                                                <p className="step-hint">8 binary questions. 6 or more 'yes' means you're ready. Fewer means you have work to do.</p>
+                                            </div>
+
+                                            <LearnMore>
+                                                Untested = hypothesis. Run it past 10 real buyers within 48 hours. The 8-point check tells you if it's ready to deploy.
+                                            </LearnMore>
+
+                                            <FastTrackInsight>
+                                                Don't validate with your team. They'll tell you it's great because you sign their paycheck. Send it to 10 prospects who have zero reason to lie. Track: instant comprehension or confused silence.
+                                            </FastTrackInsight>
+
+                                            {/* Display current VP */}
+                                            {data.fullValueProp && (
+                                                <div style={{ background: '#000', color: '#fff', padding: '16px 20px', marginBottom: 24, fontSize: 15 }}>
+                                                    <div className="monument" style={{ fontSize: 10, color: '#999', marginBottom: 6 }}>YOUR VALUE PROPOSITION</div>
+                                                    <p style={{ lineHeight: 1.5 }}>{data.fullValueProp}</p>
+                                                </div>
+                                            )}
+
+                                            {/* 8-point checklist */}
+                                            <div style={{ marginBottom: 32 }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                                                    <span className="monument" style={{ fontSize: 12 }}>8-POINT VALIDATION</span>
+                                                    <span style={{ fontSize: 14, fontWeight: 600, color: yesCount >= 6 ? '#16A34A' : yesCount >= 4 ? '#000' : '#DC2626' }}>{yesCount}/8</span>
+                                                </div>
+
+                                                {[
+                                                    { key: 'painkiller', text: 'Our VP solves a critical pain (painkiller, not vitamin) — the 1-2 most important needs of our core customer' },
+                                                    { key: 'differentiated', text: 'Our VP differentiates us from competitors in a meaningful way' },
+                                                    { key: 'highValue', text: 'Our VP focuses on needs/pains that many customers have OR a small number is willing to pay a lot for' },
+                                                    { key: 'hardToCopy', text: 'Our VP is difficult to copy' },
+                                                    { key: 'notPriceOnly', text: 'Our VP does NOT rely on lower price only, but on unique value we create' },
+                                                    { key: 'crystalClear', text: 'Our VP is sharp, to the point, and crystal clear to the customer' },
+                                                    { key: 'customerNeedsBased', text: 'Our VP is based on what the target customer needs (not just what we do now)' },
+                                                    { key: 'decisionFilter', text: 'Our VP serves as a filter for management to make day-to-day strategic decisions' }
+                                                ].map((q, idx) => (
+                                                    <div key={q.key} className={`validation-item ${data.validation[q.key] === 'yes' ? 'answered-yes' : data.validation[q.key] === 'no' ? 'answered-no' : ''}`}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
+                                                            <p style={{ fontSize: 14, lineHeight: 1.5, flex: 1 }}><strong>{idx + 1}.</strong> {q.text}</p>
+                                                            <div style={{ display: 'flex', gap: 12, flexShrink: 0 }}>
+                                                                <label style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', fontSize: 14 }}>
+                                                                    <input type="radio" name={q.key} value="yes" checked={data.validation[q.key] === 'yes'} onChange={() => updateValidation(q.key, 'yes')} style={{ accentColor: '#000' }} /> Yes
+                                                                </label>
+                                                                <label style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', fontSize: 14 }}>
+                                                                    <input type="radio" name={q.key} value="no" checked={data.validation[q.key] === 'no'} onChange={() => updateValidation(q.key, 'no')} style={{ accentColor: '#000' }} /> No
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+
+                                                {/* Score feedback */}
+                                                {Object.values(data.validation).filter(v => v).length >= 8 && (
+                                                    <div style={{ marginTop: 12, padding: '12px 16px', background: yesCount >= 6 ? '#f0fdf4' : '#fef2f2', border: `2px solid ${yesCount >= 6 ? '#16A34A' : '#DC2626'}`, fontSize: 14 }}>
+                                                        {yesCount >= 6 ? (
+                                                            <p><strong>Solid.</strong> Your VP clears the bar. Now put it in front of 10 real buyers this week.</p>
+                                                        ) : (
+                                                            <p><strong>Not ready.</strong> {yesCount}/8 means your VP has gaps competitors will exploit. Go back. Fix the 'No' items. Then run it again.</p>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="questions-grid">
+                                                <div className="fields-row fields-row-2">
+                                                    <div className="field-card">
+                                                        <label className="field-label">
+                                                            48-Hour Deployment Plan
+                                                            <HelpAccordion id="testPlan" activeHelp={questionHelp} setActiveHelp={setQuestionHelp}>
+                                                                Send to 10 target customers this week. Track: Do they get it instantly? Do they lean in or tune out?
+                                                            </HelpAccordion>
+                                                        </label>
+                                                        <textarea className="field-textarea" value={data.testingPlan} onChange={e => updateData('testingPlan', e.target.value)} placeholder="e.g. Send to 10 target buyers via email this week. Schedule 5 calls to read it aloud and watch reactions." maxLength={500} />
+                                                    </div>
+                                                    <div className="field-card">
+                                                        <label className="field-label">What Changes After First 10 Reactions</label>
+                                                        <textarea className="field-textarea" value={data.refinementNotes} onChange={e => updateData('refinementNotes', e.target.value)} placeholder="What will you change after the first 10 reactions?" maxLength={500} />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {canProceedStep4 && (
+                                                <div className="closing-box animate-in">
+                                                    <p className="closing-title">{CONFIG.CLOSING_MESSAGES[4].title}</p>
+                                                    <p>{CONFIG.CLOSING_MESSAGES[4].text}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    <ButtonFooter
+                                        onBack={() => setStep(step === 1 ? 0.5 : step - 1)}
+                                        onNext={handleNext}
+                                        canProceed={!aiReviewing && (step === 1 ? canProceedStep1 : step === 2 ? canProceedStep2 : step === 3 ? canProceedStep3 : canProceedStep4)}
+                                        nextLabel={aiReviewing ? 'AI Coach Reviewing...' : step === totalSteps ? 'See Your Canvas' : 'Complete Step ' + step}
+                                        showBack={true}
+                                    />
+                                </div>
+                                <WizardSidebar
+                                    currentStep={step}
+                                    steps={CONFIG.STEPS}
+                                    toolTitle={CONFIG.TOOL_TITLE}
+                                    timeEstimate={CONFIG.TIME_ESTIMATE}
+                                    getSnippet={getSnippet}
+                                    onNavigate={setStep}
+                                />
+                            </div>
+                        )}
+
+                        {/* ── TRANSITION SCREENS (1.5, 2.5, 3.5, 4.5) ── */}
+                        {[1.5, 2.5, 3.5, 4.5].includes(step) && (() => {
+                            const completedStep = Math.floor(step);
+                            const nextStep = completedStep + 1;
+                            const t = CONFIG.TRANSITION_CONTENT[completedStep];
+                            const msg = CONFIG.CLOSING_MESSAGES[completedStep];
+                            const nextStepLabel = completedStep < totalSteps ? CONFIG.STEPS[completedStep].label : null;
+                            return (
+                                <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <div style={{ maxWidth: 640, padding: '0 32px', textAlign: 'center', color: '#fff' }} className="animate-in">
+                                        <div className="monument" style={{ fontSize: 12, color: '#FFF469', letterSpacing: '0.1em', marginBottom: 16 }}>
+                                            STEP {completedStep} OF {totalSteps}
+                                        </div>
+                                        <h1 className="plaak" style={{ fontSize: 48, marginBottom: 12 }}>{msg.title}</h1>
+                                        <p style={{ fontSize: 16, color: '#ccc', marginBottom: 48 }}>{msg.text}</p>
+
+                                        <div style={{ background: '#111', border: '1px solid #333', borderLeft: '4px solid #FFF469', padding: '20px 24px', marginBottom: 24, textAlign: 'left' }}>
+                                            <span className="monument" style={{ fontSize: 10, color: '#FFF469', display: 'block', marginBottom: 8 }}>BRUTAL TRUTH</span>
+                                            <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7 }}>{t.brutalTruth}</p>
+                                        </div>
+
+                                        <div style={{ background: '#111', border: '1px solid #333', borderLeft: '4px solid #666', padding: '20px 24px', marginBottom: 48, textAlign: 'left' }}>
+                                            <span className="monument" style={{ fontSize: 10, color: '#999', display: 'block', marginBottom: 8 }}>PEER PROOF</span>
+                                            <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7, fontStyle: 'italic' }}>{t.peerProof}</p>
+                                        </div>
+
+                                        <button
+                                            onClick={() => setStep(completedStep >= totalSteps ? 999 : nextStep)}
+                                            style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 48px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                                            onMouseOver={e => { e.target.style.background = '#FFF469'; }}
+                                            onMouseOut={e => { e.target.style.background = '#fff'; }}
+                                        >
+                                            {completedStep >= totalSteps ? 'SEE YOUR CANVAS' : `CONTINUE TO STEP ${nextStep}`}
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
+                        {/* ── STEP 999: Canvas ── */}
+                        {step === 999 && (
+                            <div style={{ minHeight: '100vh', background: '#fff' }}>
+                                <header className="no-print" style={{ borderBottom: '2px solid #000', padding: '16px 24px' }}>
+                                    <div style={{ maxWidth: 960, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div>
+                                            <h1 className="plaak" style={{ fontSize: 28, marginBottom: 4 }}>YOUR VALUE PROPOSITION CANVAS</h1>
+                                            <p style={{ fontSize: 14, color: '#666' }}>Built for operators. Not academics. If you confuse, you lose.</p>
+                                        </div>
+                                        <button onClick={() => setStep(totalSteps)} className="btn-back">&larr; Edit</button>
+                                    </div>
+                                </header>
+
+                                <div style={{ maxWidth: 960, margin: '0 auto', padding: '32px 24px' }}>
+                                    <div id="canvas-content" style={{ border: '2px solid #000', padding: 32, marginBottom: 24 }}>
+
+                                        {/* THE VP — hero block */}
+                                        <div style={{ background: '#FFF469', border: '3px solid #000', padding: 28, marginBottom: 32, textAlign: 'center' }}>
+                                            <div className="monument" style={{ fontSize: 10, marginBottom: 8 }}>YOUR VALUE PROPOSITION</div>
+                                            <p style={{ fontSize: 22, fontWeight: 600, lineHeight: 1.5 }}>{data.fullValueProp}</p>
+                                        </div>
+
+                                        {/* Section 1: Customer Foundation */}
+                                        <div style={{ marginBottom: 32 }}>
+                                            <div className="numbered-section" style={{ marginBottom: 12 }}>01 — CUSTOMER FOUNDATION</div>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                                                <div className="canvas-section-box">
+                                                    <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 4, color: '#666' }}>TARGET SEGMENT</p>
+                                                    <p style={{ fontSize: 14 }}>{data.targetSegment}</p>
+                                                </div>
+                                                <div className="canvas-section-box">
+                                                    <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 4, color: '#666' }}>AHA! MOMENT</p>
+                                                    <p style={{ fontSize: 14 }}>{data.ahaMoment}</p>
+                                                </div>
+                                            </div>
+                                            <div className="canvas-section-box">
+                                                <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 4, color: '#666' }}>BIGGEST PAIN</p>
+                                                <p style={{ fontSize: 14 }}>{data.biggestPain}</p>
+                                            </div>
+                                            {data.desiredOutcome && (
+                                                <div className="canvas-section-box">
+                                                    <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 4, color: '#666' }}>DESIRED OUTCOME</p>
+                                                    <p style={{ fontSize: 14 }}>{data.desiredOutcome}</p>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Section 2: Competitive Landscape */}
+                                        <div style={{ marginBottom: 32 }}>
+                                            <div className="numbered-section" style={{ marginBottom: 12 }}>02 — COMPETITIVE LANDSCAPE</div>
+                                            <div className="canvas-section-box">
+                                                <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 4, color: '#666' }}>OUR UNIQUE VALUE</p>
+                                                <p style={{ fontSize: 14 }}>{data.uniqueValue}</p>
+                                            </div>
+                                            {data.competitors.filter(c => c.name).length > 0 && (
+                                                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(data.competitors.filter(c => c.name).length, 3)}, 1fr)`, gap: 12 }}>
+                                                    {data.competitors.filter(c => c.name).map((c, i) => (
+                                                        <div key={i} style={{ background: '#FAFAFA', border: '1px solid #E0E0E0', padding: 16 }}>
+                                                            <p style={{ fontWeight: 600, fontSize: 14, marginBottom: 8 }}>{c.name}</p>
+                                                            {c.strength && <p style={{ fontSize: 12, color: '#16A34A', marginBottom: 4 }}>+ {c.strength}</p>}
+                                                            {c.weakness && <p style={{ fontSize: 12, color: '#DC2626', marginBottom: 4 }}>- {c.weakness}</p>}
+                                                            {c.differentiation && <p style={{ fontSize: 12, color: '#2563EB' }}>We: {c.differentiation}</p>}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Section 3: VP Formula */}
+                                        <div style={{ marginBottom: 32 }}>
+                                            <div className="numbered-section" style={{ marginBottom: 12 }}>03 — VP COMPONENTS</div>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                                                <div className="canvas-section-box">
+                                                    <p style={{ fontWeight: 600, fontSize: 12, marginBottom: 4, color: '#666' }}>FOR (TARGET)</p>
+                                                    <p style={{ fontSize: 14 }}>{data.vpTargetSegment}</p>
+                                                </div>
+                                                <div className="canvas-section-box">
+                                                    <p style={{ fontWeight: 600, fontSize: 12, marginBottom: 4, color: '#666' }}>WHO STRUGGLE WITH (PAIN)</p>
+                                                    <p style={{ fontSize: 14 }}>{data.vpPainPoint}</p>
+                                                </div>
+                                                <div className="canvas-section-box">
+                                                    <p style={{ fontWeight: 600, fontSize: 12, marginBottom: 4, color: '#666' }}>WE PROVIDE (SOLUTION)</p>
+                                                    <p style={{ fontSize: 14 }}>{data.vpSolution}</p>
+                                                </div>
+                                                <div className="canvas-section-box">
+                                                    <p style={{ fontWeight: 600, fontSize: 12, marginBottom: 4, color: '#666' }}>THAT (BENEFIT)</p>
+                                                    <p style={{ fontSize: 14 }}>{data.vpCoreBenefit}</p>
+                                                </div>
+                                            </div>
+                                            {data.antiValueProp && (
+                                                <div className="canvas-section-box" style={{ borderLeftColor: '#DC2626' }}>
+                                                    <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 4, color: '#DC2626' }}>ANTI-VALUE PROPOSITION (WHAT WE DON'T PROMISE)</p>
+                                                    <p style={{ fontSize: 14, whiteSpace: 'pre-line' }}>{data.antiValueProp}</p>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Section 4: Validation Score */}
+                                        <div style={{ marginBottom: 16 }}>
+                                            <div className="numbered-section" style={{ marginBottom: 12 }}>04 — VALIDATION</div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+                                                <div style={{ textAlign: 'center', minWidth: 80 }}>
+                                                    <div style={{ fontSize: 40, fontWeight: 700 }}>{yesCount}/8</div>
+                                                    <p style={{ fontSize: 12, color: '#666' }}>Score</p>
+                                                </div>
+                                                <div style={{ flex: 1, padding: '12px 16px', background: yesCount >= 6 ? '#f0fdf4' : '#fef2f2', border: `1px solid ${yesCount >= 6 ? '#bbf7d0' : '#fecaca'}` }}>
+                                                    {yesCount >= 6 ? (
+                                                        <p style={{ fontSize: 14 }}><strong>Strong Value Proposition</strong> — Passed validation. Ready for customer testing.</p>
+                                                    ) : (
+                                                        <p style={{ fontSize: 14 }}><strong>Needs Refinement</strong> — Score below threshold. Strengthen weak areas.</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            {data.testingPlan && (
+                                                <div className="canvas-section-box" style={{ marginTop: 12 }}>
+                                                    <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 4, color: '#666' }}>TESTING PLAN</p>
+                                                    <p style={{ fontSize: 14 }}>{data.testingPlan}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Action buttons */}
+                                    <div className="no-print" style={{ display: 'flex', gap: 12 }}>
+                                        <button onClick={() => setStep(totalSteps)} className="btn-back" style={{ flex: 1 }}>&larr; Back to editing</button>
+                                        <button onClick={handleExport} className="btn-back" style={{ flex: 1 }}>Export PDF</button>
+                                        <button id="submit-button" onClick={handleSubmit} className="btn-next" style={{ flex: 1 }} disabled={submitStatus === 'saving'}>
+                                            {submitStatus === 'saving' ? 'Saving...' : 'Deploy'}
+                                        </button>
+                                    </div>
+                                    {submitStatus && (
+                                        <div style={{ marginTop: 16, padding: '12px 16px', textAlign: 'center', background: submitStatus === 'success' ? '#f0fdf4' : submitStatus === 'error' ? '#fef2f2' : '#f5f5f5', border: `1px solid ${submitStatus === 'success' ? '#bbf7d0' : submitStatus === 'error' ? '#fecaca' : '#e0e0e0'}`, fontSize: 14 }}>
+                                            <span style={{ color: submitStatus === 'success' ? '#166534' : submitStatus === 'error' ? '#991b1b' : '#333' }}>{submitMessage}</span>
+                                        </div>
+                                    )}
+                                    <div style={{ marginTop: 24, textAlign: 'center' }}>
+                                        <p className="monument" style={{ fontSize: 11, color: '#999' }}>BUILT FOR OPERATORS. NOT ACADEMICS. DEPLOY THIS WEEK.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<ToolApp />, document.getElementById('root'));
+    </script>
+</body>
+</html>
