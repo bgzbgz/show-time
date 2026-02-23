@@ -729,5 +729,497 @@ rhythm_dates
 
 ---
 
-## Session 3 Scope (Next: Tools 12-21)
-Tools: market-size, segmentation, target-segment, value-proposition, vp-testing, product-development, pricing, brand-marketing, customer-service, route-to-market (Modules 3-5: Market, Strategy, Execution)
+## Tool 12: Market Size (slug: market-size)
+
+**Classification:** calculator + brainstorm (TAM-SAM-SOM + driving forces)
+**Completion:** individual-only
+**Meeting phase:** before
+**Data risk:** LOW (0 responses)
+
+### Intended Logic (from course content)
+
+**Source:** `frontend/content/sprint-12-market-size/content.md` (Sprint 13: Market Size)
+
+- **Purpose:** Calculate TAM (Total Addressable Market) + driving forces + 3-year forecast
+- **Framework:** TAM-SAM-SOM model + driving forces impact analysis
+- **Key questions:** Total customers x avg spending x purchases/year = market size; gross margin = profit pool; brainstorm 30-40 driving forces; score by impact (1-5) + probability (1-5); rank top 7; project 3-year impact
+- **Expected outputs:** Current market size + profit pool, top 7 driving forces ranked, 3-year market forecast
+
+### Current Implementation
+- **Steps:** Cover -> Setup -> Step 1 (market inputs: 4 phases) -> Transition -> Step 2 (forces: list/score/rank) -> Step 3 (3-year impact analysis) -> Submit
+- **Question keys (FROZEN):** tam, driving_forces
+- **Reference keys:** market.size.tam, market.size.driving_forces
+- **Dependencies consumed:** none
+- **Dependencies produced:** tam (used by segmentation)
+- **AI challenge:** reviewStep gates steps 1-2; submitWithChallenge on final
+- **Special:** Force scoring formula = (2 x impact) + probability (additive, not multiplicative)
+
+### Gap Analysis: MODERATE
+
+| Aspect | Expected | Actual | Status |
+|--------|----------|--------|--------|
+| TAM calculation | customers x spending x purchases | Yes, 3 inputs + auto-calc | PASS |
+| Profit pool | gross margin applied | Yes | PASS |
+| Driving forces list | 30-40 brainstorm | Unlimited, min 3 | PASS |
+| Force scoring | impact x probability | (2 x impact) + probability | DIFFERENT formula |
+| Top 7 ranking | sorted display | Yes, ranked with badges | PASS |
+| 3-year forecast | per-force impact x 4 variables | Yes, compounding logic | PASS |
+| SAM/SOM breakdown | explicit fields | Only TAM (no SAM/SOM) | GAP |
+| PDF export | downloadable | Not implemented | GAP |
+| Placeholder content | final | [PLACEHOLDER] in cognitive load | MINOR |
+
+**Missing:** SAM/SOM fields (TAM-only), PDF export, scoring formula documentation
+**Wrong:** Scoring formula is additive not multiplicative (may be intentional)
+
+### Fix Priority: P1
+### Fix Scope: M (document/fix scoring formula, consider SAM/SOM, add PDF export, fill placeholders)
+
+---
+
+## Tool 13: Segmentation (slug: segmentation-target-market)
+
+**Classification:** canvas + assessment (behavioral segmentation + attractiveness ranking)
+**Completion:** individual-then-team
+**Meeting phase:** before
+**Data risk:** LOW (0 responses)
+
+### Intended Logic (from course content)
+
+**Source:** `frontend/content/sprint-13-segmentation/content.md` (Sprint 04: Segmentation)
+
+- **Purpose:** Define behavior-driven market segments, quantify size/value, rank by attractiveness, focus on 2-3 targets
+- **Framework:** Jobs-to-be-Done + weighted attractiveness index (size, growth, profitability, fit)
+- **Key questions:** 5-7 behavior-based segments (name + description + behaviors); quantify each (total market x accessible x avg revenue = value); score attractiveness (4 criteria x 1-10, weighted); target selection with market share goals
+- **Expected outputs:** Segment definitions, quantified values, attractiveness ranking, target canvas
+
+### Current Implementation
+- **Steps:** Cover -> Intro (user details) -> Step 1 (define segments) -> Step 2 (quantify) -> Step 3 (attractiveness index) -> Step 4 (target selection + goals) -> Canvas
+- **Question keys (FROZEN):** segments_list, primary_target
+- **Reference keys:** market.segments.list, market.segments.primary_target
+- **Dependencies consumed:** none registered (should load TAM from market-size)
+- **Dependencies produced:** primary_target (used by target-segment)
+- **AI challenge:** reviewStep gates all 4 steps; submitWithChallenge on canvas
+
+### Gap Analysis: MINOR
+
+| Aspect | Expected | Actual | Status |
+|--------|----------|--------|--------|
+| Behavioral segments | 5-7 range | Dynamic, min 1 (should enforce 5-7) | MINOR gap |
+| Quantification | accessible x avg revenue = value | Yes, auto-calculated | PASS |
+| Weighted scoring | user-defined weights totaling 100% | Yes, validated | PASS |
+| Attractiveness 1-10 | 4 criteria per segment | Yes | PASS |
+| Target count | 2-3 recommended | No enforcement | MINOR gap |
+| Market share goals | current %, target %, timeline | Yes | PASS |
+| Market-size dependency | load TAM | Not implemented | MINOR gap |
+| Placeholder content | final | [PLACEHOLDER] in cognitive load | MINOR |
+
+**Missing:** Segment count enforcement (5-7), target count guidance (2-3), market-size dependency
+**Wrong:** Nothing contradicts content
+
+### Fix Priority: P2
+### Fix Scope: S (add count guidance, integrate market-size, fill placeholders)
+
+---
+
+## Tool 14: Target Segment Deep Dive (slug: target-segment-deep-dive)
+
+**Classification:** assessment + canvas (customer interviews + pains/needs/gains prioritization)
+**Completion:** individual-only
+**Meeting phase:** before (research phase)
+**Data risk:** MEDIUM (2 responses)
+
+### Intended Logic (from course content)
+
+**Source:** `frontend/content/sprint-14-target-segment/content.md` (Sprint 31: Target Segment)
+
+- **Purpose:** Conduct 1-5 customer interviews, uncover pains/needs/gains, prioritize by severity/frequency/impact, synthesize customer profile
+- **Framework:** The Mom Test (past behavior, not hypothetical) + Pains-Needs-Gains prioritization matrices
+- **Key questions:** Define target segment + interview objective + 3+ interview questions; capture 1-5 interviews (profile, pains, needs, gains, quotes, observations); score each item (severity + frequency + impact) x 2; synthesize: core profile, top 3 pains/needs/gains, insights, strategic implications
+- **Expected outputs:** Interview guide, interview notes, prioritization matrices, summary canvas
+
+### Current Implementation
+- **Steps:** Cover -> Setup -> Step 1 (interview guide) -> Step 2 (interview notes) -> Step 3 (prioritization matrices) -> Step 4 (summary) -> Canvas
+- **Question keys (FROZEN):** pains_matrix, persona, needs_gains, interview_summary
+- **Reference keys:** strategy.target.pains_matrix, strategy.target.persona, strategy.target.needs_gains, strategy.target.interview_summary
+- **Dependencies consumed:** segmentation primary_target (should auto-load)
+- **Dependencies produced:** persona, pains_matrix, needs_gains (used by value-proposition)
+- **AI challenge:** reviewStep gates all 4 steps; submitWithChallenge on canvas
+
+### Gap Analysis: MINOR
+
+| Aspect | Expected | Actual | Status |
+|--------|----------|--------|--------|
+| Interview guide | segment + objective + 3+ Qs | Yes, validated | PASS |
+| 1-5 interviews | dynamic array | Yes, min 1, max 5 | PASS |
+| Pains/Needs/Gains matrices | severity + frequency + impact scoring | Yes, score = (S+F+I) x 2 | PASS |
+| Summary synthesis | core profile + top 3 + insights | Yes, all fields | PASS |
+| Segmentation dependency | load target segment | DependencyContext present, loads via ToolDB | PASS |
+| Placeholder content | final | [PLACEHOLDER] in cognitive load | MINOR |
+
+**Missing:** Top 3 enforcement in matrices, Pains/Needs/Gains glossary
+**Wrong:** Nothing
+
+### Fix Priority: P2
+### Fix Scope: S (fill placeholders, add top-3 enforcement)
+
+---
+
+## Tool 15: Value Proposition (slug: value-proposition)
+
+**Classification:** strategy framework (VP formula + competitor analysis + stress test)
+**Completion:** individual-then-team
+**Meeting phase:** before (individual crafts) + during (team finalizes)
+**Data risk:** MEDIUM (4 responses)
+
+### Intended Logic (from course content)
+
+**Source:** `frontend/content/sprint-15-value-proposition/content.md` + LMS 18_blue_ocean + 26_mastering_vp
+
+- **Purpose:** Craft a clear, differentiated value proposition using the Fast Track Formula
+- **Framework:** Fast Track VP Formula: "For [target segment] who struggle with [pain], we provide [solution] that [core benefit], unlike [competitor weakness]" + Anti-Promise + 8-point stress test
+- **Key questions:** Define customer pain (from target segment); competitor analysis (3-5: name, strength, weakness, differentiation); craft VP using formula; define anti-promise; 8-point yes/no validation
+- **Expected outputs:** VP statement, competitor differentiation map, anti-promise, validation score
+
+### Current Implementation
+- **Steps:** Cover -> Step 1 (Define Problem) -> Step 2 (Find Your Edge: competitors) -> Step 3 (Craft Statement: formula + anti-promise) -> Step 4 (Stress Test: 8-point checklist) -> Canvas
+- **Question keys (FROZEN):** vp_statement, anti_promise, pain_mapping, differentiators
+- **Reference keys:** strategy.vp.statement, strategy.vp.anti_promise, strategy.vp.pain_mapping, strategy.vp.differentiators
+- **Dependencies consumed:** target segment persona + pains (from target-segment-deep-dive)
+- **Dependencies produced:** vp_statement (used by vp-testing, product-dev, brand-marketing, employer-branding)
+- **AI challenge:** reviewStep + submitWithChallenge
+
+### Gap Analysis: MINOR
+
+| Aspect | Expected | Actual | Status |
+|--------|----------|--------|--------|
+| Pain definition | from target segment | Step 1 text fields | PASS |
+| Competitor grid | 3-5 with analysis | Dynamic competitor array | PASS |
+| VP formula | 5 components | Template with all 5 | PASS |
+| Anti-promise | explicit exclusions | Textarea field | PASS |
+| 8-point stress test | binary validation | Step 4 checklist | PASS |
+| Live preview | yellow-highlighted formula | Yes | PASS |
+| Dependency load | target segment data | useEffect + ToolDB.getDependency | PASS |
+| Validation method | customer feedback (LMS) | self-assessment checklist | MINOR gap |
+| Placeholder content | final | [PLACEHOLDER] in cognitive load | MINOR |
+
+**Missing:** Real customer validation (self-checklist vs external feedback)
+**Wrong:** Nothing contradicts framework
+
+### Fix Priority: P2
+### Fix Scope: S (fill placeholders, consider adding customer validation note)
+
+---
+
+## Tool 16: VP Testing (slug: value-proposition-testing)
+
+**Classification:** validation (customer interview-based VP testing)
+**Completion:** individual-then-team
+**Meeting phase:** before (interviews) + during (team reviews)
+**Data risk:** LOW (0 responses)
+
+### Intended Logic (from course content)
+
+**Source:** `frontend/content/sprint-16-vp-testing/content.md` (Sprint 03: VP Test)
+
+- **Purpose:** Turn VP assumptions into certainty via real customer validation interviews (30-40 min each)
+- **Framework:** Structured interview (reconfirm problem -> present VP -> test CTA -> capture reactions) + consistency metric (6+ of 8 customers consistent = ready)
+- **Key questions:** Customer clarity reactions, hesitation tracking, reinterpretation notes, CTA testing ("what would make you act?"), consistency analysis
+- **Expected outputs:** Customer feedback array, pattern analysis, reality log, final VP (locked or iterate), next steps
+
+### Current Implementation
+- **Steps:** Preparation -> Customer Feedback -> Comparison Results -> Reality Log -> Finalize & Next Steps
+- **Question keys (FROZEN):** customer_feedback, comparison_results, reality_log, final_vp, next_steps
+- **Reference keys:** strategy.testing.customer_feedback, strategy.testing.comparison, strategy.testing.reality_log, strategy.testing.final_vp, strategy.testing.next_steps
+- **Dependencies consumed:** vp_statement from value-proposition tool
+- **Dependencies produced:** final_vp (locked version)
+- **AI challenge:** reviewStep + submitWithChallenge
+
+### Gap Analysis: MAJOR
+
+| Aspect | Expected | Actual | Status |
+|--------|----------|--------|--------|
+| Structured interview guide | 5-step meeting structure | Not visible in implementation | MAJOR gap |
+| Customer feedback array | 8-10 customer records | Likely basic input (not structured per-customer) | MAJOR gap |
+| Consistency metric | 6/8+ = ready | No decision rule visible | MAJOR gap |
+| Hesitation tracking | binary + severity | Not explicit mechanism | MAJOR gap |
+| CTA testing | "what would make you act?" | Not visible | MAJOR gap |
+| Pattern analysis | auto-detect common themes | Not visible | MAJOR gap |
+| VP dependency load | auto-load from T15 | ToolDB.getDependency pattern | PASS |
+| Placeholder content | final | [PLACEHOLDER] | MINOR |
+
+**Missing:** Core validation flow — structured interview template, per-customer feedback records, consistency decision rule, hesitation tracking, CTA field
+**Wrong:** Tool may conflate discovery with validation (should be pure validation)
+
+### Fix Priority: P0
+### Fix Scope: L (requires 5-6 new steps, structured interview logic, pattern analysis)
+
+---
+
+## Tool 17: Product Development (slug: product-development)
+
+**Classification:** canvas + strategy (product portfolio with strategic roles)
+**Completion:** individual-then-team
+**Meeting phase:** before + during
+**Data risk:** LOW (0 responses)
+
+### Intended Logic (from course content)
+
+**Source:** `frontend/content/sprint-17-product-development/content.md` (Sprint 29: Product Portfolio)
+
+- **Purpose:** Design product portfolio aligned to market segments and VP, using strategic role assignments
+- **Framework:** Strategic Roles — Storytellers (<10%, brand-building), Sales Contributors (70-80%, revenue), Profit Contributors (10-20%, margin protection). Process: list features -> interview customers on WTP -> bundle into products -> assign roles
+- **Key questions:** List 10-15 key features; customer WTP interviews; bundle features into products; assign Storyteller/Sales/Profit roles; portfolio strategy alignment
+- **Expected outputs:** Feature list with WTP data, product bundles with strategic roles, portfolio summary
+
+### Current Implementation
+- **Steps:** (Standard 4-5 step structure with cover/intro/steps/canvas)
+- **Question keys (FROZEN):** feature_list, portfolio
+- **Reference keys:** execution.product.feature_list, execution.product.portfolio
+- **Dependencies consumed:** VP from value-proposition-testing
+- **Dependencies produced:** portfolio (used by pricing)
+
+### Gap Analysis: MAJOR
+
+| Aspect | Expected | Actual | Status |
+|--------|----------|--------|--------|
+| Feature listing | 10-15 features | Likely present (basic) | Needs verification |
+| WTP data collection | customer willingness to pay | Not visible in structure | MAJOR gap |
+| Strategic role framework | Storyteller/Sales/Profit | Not visible | MAJOR gap |
+| Product bundling UI | combine features into products | Not visible | MAJOR gap |
+| Role distribution rules | <10% storytellers, 70-80% sales, 10-20% profit | Not visible | MAJOR gap |
+| Placeholder content | final | [PLACEHOLDER] | MINOR |
+
+**Missing:** Strategic role framework, WTP data, bundling logic, role distribution rules
+**Wrong:** May treat as simple feature list rather than strategic portfolio
+
+### Fix Priority: P0
+### Fix Scope: L (requires strategic role UI, WTP inputs, bundling workflow)
+
+---
+
+## Tool 18: Pricing (slug: pricing)
+
+**Classification:** calculator + strategy (value-based pricing with feature classification)
+**Completion:** individual-then-team
+**Meeting phase:** before + during
+**Data risk:** LOW (0 responses)
+
+### Intended Logic (from course content)
+
+**Source:** `frontend/content/sprint-18-pricing/content.md` (Sprint 30: Pricing)
+
+- **Purpose:** Set strategy-driven pricing using price-first thinking (not cost-plus)
+- **Framework:** Feature Classification (Must-Have/Nice-to-Have/Killer) -> Anchor Price -> Tier Design (2-3 max) -> Margin Validation
+- **Key principle:** "Pricing is the fastest profit lever. 1% price increase = ~11% profit increase."
+- **Key questions:** Classify features; choose anchor (premium/mid/entry); design 2-3 tiers with feature bundles; validate margins; competitor benchmark
+- **Expected outputs:** Feature classification, pricing tiers, anchor price, margin projections
+
+### Current Implementation
+- **Steps:** (Standard structure with cover/intro/steps/canvas)
+- **Question keys (FROZEN):** pricing_tiers, anchor_price
+- **Reference keys:** execution.pricing.tiers, execution.pricing.anchor
+- **Dependencies consumed:** portfolio from product-development
+- **Dependencies produced:** pricing_tiers (end of strategy chain)
+
+### Gap Analysis: MAJOR
+
+| Aspect | Expected | Actual | Status |
+|--------|----------|--------|--------|
+| Feature classification | Must-Have/Nice-to-Have/Killer | Not visible | MAJOR gap |
+| Anchor selection | premium/mid/entry decision | Not visible | MAJOR gap |
+| Tier design | 2-3 tiers with feature bundles | Not visible | MAJOR gap |
+| Margin calculator | cost structure -> margin per tier | Not visible | MAJOR gap |
+| Competitor benchmarks | 3-5 competitor prices | Not visible | MAJOR gap |
+| Price-first logic | "price before product" | Not visible | MAJOR gap |
+| Placeholder content | final | [PLACEHOLDER] | MINOR |
+
+**Missing:** Feature classification UI, anchor decision framework, tier bundling, margin calculator, competitor benchmarks
+**Wrong:** May default to simple price entry vs strategic pricing workflow
+
+### Fix Priority: P0
+### Fix Scope: L (requires feature classification, tier logic, margin calculations)
+
+---
+
+## Tool 19: Brand & Marketing (slug: brand-marketing)
+
+**Classification:** strategy execution (brand promise + cult brand model + marketing roadmap)
+**Completion:** individual-then-team
+**Meeting phase:** before + during
+**Data risk:** LOW (0 responses)
+
+### Intended Logic (from course content)
+
+**Source:** `frontend/content/sprint-19-brand/content.md` (Sprint 28: Brand Marketing)
+
+- **Purpose:** Build a brand rooted in strategic clarity and emotional truth, then translate into marketing action
+- **Framework:** 5-step: Brand Promise -> Brand Personality -> Cult Brand Model (employee + consumer alignment) -> Marketing Strategy (messaging pillars) -> Implementation Plan
+- **Key questions:** Brand promise (emotional transformation), personality traits + voice + archetype, cult model (employee belief vs customer experience), messaging pillars (3+) + content strategy, implementation actions (3+) + metrics + consistency
+
+### Current Implementation
+- **Steps:** Cover -> Intro -> Step 1 (Brand Promise: 4 fields) -> Step 2 (Personality: traits + voice + archetype) -> Step 3 (Cult Brand: employee + consumer) -> Step 4 (Marketing: pillars + content) -> Step 5 (Implementation: actions + metrics) -> Canvas
+- **Question keys (FROZEN):** cult_model, roadmap
+- **Reference keys:** execution.brand.cult_model, execution.brand.roadmap
+- **Dependencies consumed:** value proposition (from T15)
+- **AI challenge:** reviewStep per step + submitWithChallenge
+
+### Gap Analysis: MINOR
+
+| Aspect | Expected | Actual | Status |
+|--------|----------|--------|--------|
+| Brand promise | emotional core | 4 textareas (promise, connection, VP transform, enemy) | PASS |
+| Personality | traits + voice + archetype | Dynamic traits + voice + archetype fields | PASS |
+| Cult model | employee + consumer alignment | 6 fields (3 employee, 3 consumer) | PASS |
+| Marketing strategy | pillars + content | Dynamic pillars + content strategy | PASS |
+| Implementation | actions + metrics + consistency | Dynamic actions + metrics + checklist | PASS |
+| Placeholder content | final | [PLACEHOLDER] in cognitive load | MINOR |
+
+**Missing:** Cognitive load content only
+**Wrong:** Nothing
+
+### Fix Priority: P2
+### Fix Scope: S (fill placeholders)
+
+---
+
+## Tool 20: Customer Service (slug: customer-service)
+
+**Classification:** canvas + planning (customer journey map + WOW moments + implementation)
+**Completion:** individual-then-team
+**Meeting phase:** before + during
+**Data risk:** LOW (0 responses)
+
+### Intended Logic (from course content)
+
+**Source:** `frontend/content/sprint-20-customer-service/content.md` (Sprint 23: Customer Service)
+
+- **Purpose:** Transform customer service from reactive to strategic by mapping touchpoints, designing WOW moments, and assigning ownership
+- **Framework:** 5-step: Journey Map (5-8 stages) -> WOW Touchpoints (3) -> "Just Better" Improvements (3) -> Ownership & Metrics -> Implementation Plan
+- **Key questions:** 5-8 journey stages (goal/action/thought per stage); 3 WOW moments (memorable/emotional/action/measurement); 3 reliability improvements; 6 touchpoint owners with KPIs; execution plan + communication + tracking + quarterly review
+
+### Current Implementation
+- **Steps:** Cover -> Intro -> Step 1 (Journey: dynamic stages) -> Step 2 (WOW: 3 fixed) -> Step 3 (Just Better: 3 fixed) -> Step 4 (Ownership: 6 rows) -> Step 5 (Implementation: 4 textareas) -> Canvas
+- **Question keys (FROZEN):** journey_map, service_standards
+- **Reference keys:** execution.service.journey_map, execution.service.standards
+- **Dependencies consumed:** none registered (should link to segment/VP)
+- **AI challenge:** reviewStep + submitWithChallenge
+
+### Gap Analysis: MINOR
+
+| Aspect | Expected | Actual | Status |
+|--------|----------|--------|--------|
+| Journey stages | 5-8 dynamic | Dynamic, min 5 enforced | PASS |
+| WOW moments | 3 fixed | 3 entries with 4 fields each | PASS |
+| Just Better | 3 improvements | 3 entries with 4 fields each | PASS |
+| Ownership grid | 6 touchpoints | 6 preset rows | PASS |
+| Implementation | 4-part plan | 4 textareas | PASS |
+| Dependency load | segment/VP | Not integrated | MINOR gap |
+| Placeholder content | final | [PLACEHOLDER] | MINOR |
+
+**Missing:** Dependency integration with segment/VP tools, cognitive load content
+**Wrong:** Nothing
+
+### Fix Priority: P2
+### Fix Scope: S (fill placeholders, add dependency config)
+
+---
+
+## Tool 21: Route to Market (slug: route-to-market)
+
+**Classification:** planning + assessment (channel evaluation + scenario modeling + roadmap)
+**Completion:** individual-then-team
+**Meeting phase:** before + during
+**Data risk:** LOW (0 responses)
+
+### Intended Logic (from course content)
+
+**Source:** `frontend/content/sprint-21-route-to-market/content.md` (Sprint 08: Route to Market)
+
+- **Purpose:** Define route-to-market strategy aligned with VP, evaluate channels, model scenarios, build implementation roadmap
+- **Framework:** 5-step: Business Type -> RTM Options & Evaluation (5 yes/no criteria) -> Scenario Modeling -> RTM Decision (primary/secondary/rejected) -> Implementation Roadmap (30-day actions)
+- **Key questions:** Business type (products vs services); 3+ RTM options with scoring; 2+ scenarios with viability; primary/secondary/rejected channels with rationale; 30-day actions + resources + ownership + metrics
+
+### Current Implementation
+- **Steps:** Cover -> Intro (business type) -> Step 1 (RTM Options: dynamic + 5 criteria) -> Step 2 (Scenarios: dynamic) -> Step 3 (RTM Decision: primary/secondary/rejected) -> Step 4 (Roadmap: 6 textareas) -> Canvas
+- **Question keys (FROZEN):** channels, rtm_roadmap
+- **Reference keys:** execution.rtm.channels, execution.rtm.roadmap
+- **Dependencies consumed:** none registered (should link to VP + segment)
+- **AI challenge:** reviewStep + submitWithChallenge
+- **Special:** Business type selector changes labels contextually
+
+### Gap Analysis: MINOR
+
+| Aspect | Expected | Actual | Status |
+|--------|----------|--------|--------|
+| Business type | products vs services | Selector on intro | PASS |
+| 3+ RTM options | dynamic with evaluation | Yes, add/remove + 5 criteria | PASS |
+| 5-point scoring | yes/no criteria + tally | Yes, 0-5 score display | PASS |
+| Scenario modeling | 2+ scenarios | Dynamic, min 2 | PASS |
+| RTM decision | primary/secondary/rejected | All 3 with rationale fields | PASS |
+| Implementation | 30-day + resources + ownership | 6 textarea fields | PASS |
+| Help modal | context-specific | May be missing/incomplete | MINOR gap |
+| Placeholder content | final | [PLACEHOLDER] | MINOR |
+
+**Missing:** Help modal (possibly incomplete), cognitive load content, dependency integration
+**Wrong:** Nothing
+
+### Fix Priority: P2
+### Fix Scope: S (fill placeholders, verify help modal, add dependencies)
+
+---
+
+## Priority Summary (Session 3 Tools)
+
+| Tool | Gap Rating | Priority | Scope | Key Issue |
+|------|-----------|----------|-------|-----------|
+| 12-market-size | MODERATE | P1 | M | Scoring formula, missing SAM/SOM, no PDF export |
+| 13-segmentation | MINOR | P2 | S | Segment count guidance, market-size dependency |
+| 14-target-segment | MINOR | P2 | S | Placeholders, top-3 enforcement |
+| 15-value-proposition | MINOR | P2 | S | Placeholders, validation method note |
+| **16-vp-testing** | **MAJOR** | **P0** | **L** | **Core validation flow missing (interviews, consistency rules)** |
+| **17-product-development** | **MAJOR** | **P0** | **L** | **Strategic role framework + WTP + bundling missing** |
+| **18-pricing** | **MAJOR** | **P0** | **L** | **Feature classification + tiers + margin calc missing** |
+| 19-brand-marketing | MINOR | P2 | S | Placeholders only |
+| 20-customer-service | MINOR | P2 | S | Placeholders, missing dependency config |
+| 21-route-to-market | MINOR | P2 | S | Placeholders, help modal, missing dependency config |
+
+**Critical finding:** Tools 16, 17, 18 form a broken chain (VP Testing -> Product Dev -> Pricing). All three have MAJOR gaps where the core frameworks from the LMS course content are not implemented. These are the only P0 items found in the entire audit so far.
+
+---
+
+## Frozen Question Keys Reference (Session 3)
+
+### market-size (2 keys)
+tam, driving_forces
+
+### segmentation-target-market (2 keys)
+segments_list, primary_target
+
+### target-segment-deep-dive (4 keys)
+pains_matrix, persona, needs_gains, interview_summary
+
+### value-proposition (4 keys)
+vp_statement, anti_promise, pain_mapping, differentiators
+
+### value-proposition-testing (5 keys)
+customer_feedback, comparison_results, reality_log, final_vp, next_steps
+
+### product-development (2 keys)
+feature_list, portfolio
+
+### pricing (2 keys)
+pricing_tiers, anchor_price
+
+### brand-marketing (2 keys)
+cult_model, roadmap
+
+### customer-service (2 keys)
+journey_map, service_standards
+
+### route-to-market (2 keys)
+channels, rtm_roadmap
+
+---
+
+## Session 4 Scope (Next: Tools 22-29)
+Tools: core-activities, processes-decisions, fit-abc, org-redesign, employer-branding, agile-teams, digitalization, digital-heart (Modules 6-8: Org, People, Tech)
