@@ -1625,19 +1625,25 @@ blueprint, implementation_plan
 
 # MASTER PRIORITY SUMMARY — ALL 30 TOOLS
 
-## P0 — Fix Immediately (MAJOR gaps, core frameworks missing)
+## P0 — Fix Immediately
 
-| Tool | Module | Gap | Scope | Issue |
-|------|--------|-----|-------|-------|
-| **16-vp-testing** | Strategy | MAJOR | L | Core validation flow missing (interviews, consistency rules) |
-| **17-product-dev** | Execution | MAJOR | L | Strategic role framework (Storyteller/Sales/Profit) + WTP + bundling missing |
-| **18-pricing** | Execution | MAJOR | L | Feature classification + tier design + margin calculator missing |
-| **28-digitalization** | Tech | MAJOR | L | Framework misalignment — individual AI vs org digitalization |
+**(Empty — deep reads revealed no P0 tools remain)**
+
+Initial audit rated tools 16, 17, 18 as MAJOR/P0 based on partial reads (~200 lines).
+Full HTML deep reads revealed these tools already implement their core frameworks:
+- **16-vp-testing**: HAS 2-round interview flow, consistency checking, 7-point validation
+- **17-product-dev**: HAS strategic roles (Storyteller/Top-Line/Profit), WTP testing
+- **18-pricing**: HAS feature classification (Must-Have/Nice-to-Have/Killer), anchor + tiers
+
+These tools are downgraded to P2 (minor polish only).
+
+**28-digitalization** remains the highest-priority structural concern (individual AI focus vs org-wide digitalization framework from course), but it IS a dual-path tool (individual + team) with comprehensive implementation. Downgraded to P1.
 
 ## P1 — Fix Next (MODERATE gaps, structural issues)
 
 | Tool | Module | Gap | Scope | Issue |
 |------|--------|-----|-------|-------|
+| 28-digitalization | Tech | MODERATE | M | Framework emphasis (individual AI vs org digitalization) |
 | 10-performance | Performance | MODERATE | M | Missing useEffect dependency loading |
 | 12-market-size | Market | MODERATE | M | Scoring formula + SAM/SOM + PDF export |
 | 22-core-activities | Org | MODERATE | M | Missing dependency injection + PDF export |
@@ -1648,7 +1654,7 @@ blueprint, implementation_plan
 
 | Tool | Module | Gap | Scope | Issue |
 |------|--------|-----|-------|-------|
-| 00-woop | Intro | MINOR | S | Pre-mortem scope, placeholders |
+| 00-woop | Intro | MINOR | S | Pre-mortem scope |
 | 02-dream | Identity | MINOR | S | Progress calc bug, dependency display |
 | 03-values | Identity | MINOR | S | Missing cover image, question mappings |
 | 04-team | Identity | MINOR | M | Missing contextual prompts per dysfunction |
@@ -1657,32 +1663,38 @@ blueprint, implementation_plan
 | 13-segmentation | Market | MINOR | S | Segment count guidance |
 | 14-target-segment | Strategy | MINOR | S | Top-3 enforcement |
 | 15-value-proposition | Strategy | MINOR | S | Validation method note |
-| 19-brand-marketing | Execution | MINOR | S | Placeholders only |
-| 20-customer-service | Execution | MINOR | S | Placeholders, dependency config |
-| 21-route-to-market | Execution | MINOR | S | Placeholders, help modal |
-| 23-processes-decisions | Org | MINOR | S | Placeholders |
-| 24-fit-abc | Org | MINOR | S | Verify + placeholders |
-| 25-org-redesign | Org | MINOR | S | Verify + placeholders |
+| 16-vp-testing | Strategy | MINOR | S | Minor polish (frameworks already present) |
+| 17-product-dev | Execution | MINOR | S | Minor polish (strategic roles already present) |
+| 18-pricing | Execution | MINOR | S | Minor polish (tier design already present) |
+| 19-brand-marketing | Execution | MINOR | S | Dependency config |
+| 20-customer-service | Execution | MINOR | S | Dependency config |
+| 21-route-to-market | Execution | MINOR | S | Help modal |
+| 23-processes-decisions | Org | MINOR | S | Minor polish |
+| 24-fit-abc | Org | MINOR | S | Verify structure |
+| 25-org-redesign | Org | MINOR | S | Verify structure |
 | 27-agile-teams | People | MINOR | S | Playing-field rules |
 
 ## P3 — Cosmetic Only (pass audit)
 
 | Tool | Module | Gap | Scope | Issue |
 |------|--------|-----|-------|-------|
-| 01-know-thyself | Identity | MINOR | S | Placeholders, mock share button |
+| 01-know-thyself | Identity | MINOR | S | Mock share button |
 | 05-fit | Identity | MINOR | S | D-Player help text |
 | 08-goals | Performance | MINOR | S | CONFIG.STORAGE_KEY bug |
-| 09-focus | Performance | MINOR | S | Placeholders only |
+| 09-focus | Performance | MINOR | S | Minor polish |
 | 11-meeting-rhythm | Performance | MINOR | S | Effectiveness enum |
 
-## Pervasive Issue: [PLACEHOLDER] Content
+## ~~Pervasive Issue: [PLACEHOLDER] Content~~ RESOLVED
 
-ALL 30 tools have [PLACEHOLDER] text in cognitive load components (FastTrackInsight, ScienceBox, CaseStudy, WarningBox). This is the single most common gap and can be addressed in a batch pass after logic fixes.
+~~ALL 30 tools have [PLACEHOLDER] text in cognitive load components.~~
 
-## Recommended Fix Order (dependency chain)
+**RESOLVED (2026-02-23):** All 409 [PLACEHOLDER] instances across 26 tool files have been
+replaced with real brain juice content from each sprint's content.md — including 80/20
+key learnings, research citations, case studies, common mistakes, and field-level callouts.
+Committed as `ae4daf1`.
 
-1. **P0 tools first** (16, 17, 18, 28) — these have missing core logic
-2. **P1 tools** (10, 12, 22, 26, 29) — structural fixes
-3. **P2 batch** — minor fixes, can be parallelized
-4. **Placeholder content batch** — single pass across all 30 tools
-5. **P3 cosmetic** — optional polish
+## Recommended Fix Order (updated)
+
+1. **P1 tools** (28, 10, 12, 22, 26, 29) — structural fixes
+2. **P2 batch** — minor fixes, can be parallelized
+3. **P3 cosmetic** — optional polish
