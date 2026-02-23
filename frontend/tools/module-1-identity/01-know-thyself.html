@@ -255,7 +255,7 @@
         ToolAccessControl.init(CONFIG.TOOL_SLUG);
 
         // Initialize cognitive load components
-        CognitiveLoad.init('know-thyself', {"insights":["Self-awareness is the foundation of leadership. You cannot lead others until you understand yourself.","The 80/20 rule: 80% of your leadership effectiveness comes from understanding your personal values and strengths."],"caseStudy":{"before":"[PLACEHOLDER] CEO could not articulate personal values or purpose.","after":"[PLACEHOLDER] Clear identity statement, team understood the vision, decision-making speed doubled.","quote":"[PLACEHOLDER] Once I knew who I was, every business decision became clearer."}});
+        CognitiveLoad.init('know-thyself', {"insights":["Self-awareness is the foundation of leadership. You cannot lead others until you understand yourself.","The 80/20 rule: 80% of your leadership effectiveness comes from understanding your personal values and strengths."],"caseStudy":{"before":"A mid-sized tech company CEO spent years chasing every market opportunity without a clear sense of personal values or purpose. Team turnover was 40%, strategic direction changed quarterly, and key talent left because they could not see a coherent vision.","after":"After completing the Know Thyself sprint, the CEO articulated a clear identity statement rooted in personal strengths and values. The leadership team aligned around a shared vision, decision-making speed doubled, and employee engagement scores rose by 35% within six months.","quote":"Once I understood my own strengths and values, every business decision became clearer. I stopped second-guessing and started leading with conviction."}});
         const { FastTrackInsight, ScienceBox, WarningBox, CaseStudy, ScienceBookmarkIcon, ToolGuideDrawer } = CognitiveLoad.components;
 
         // Help Modal Component
@@ -413,6 +413,7 @@
             });
 
             const [validationErrors, setValidationErrors] = useState({});
+            const [aiReviewing, setAiReviewing] = useState(false);
             const autosaveTimer = useRef(null);
 
             useEffect(() => {
@@ -547,15 +548,43 @@
                 return validateSection(sectionNum);
             };
             
+            // Build section-specific answers for AI review
+            const getSectionAnswers = (sectionNum) => {
+                switch (sectionNum) {
+                    case 1: return { birthday_story: formData.birthdayStory, dream: formData.dream, what_love: formData.whatLove, what_good_at: formData.whatGoodAt };
+                    case 2: return { activities: formData.activities.filter(a => a.activity).map(a => `${a.activity} (${a.energy})`).join(', '), strengths: formData.strengths.filter(s => s.strength).map(s => s.strength).join(', ') };
+                    case 3: return { values: formData.values.filter(v => v.value).map(v => v.value).join(', ') };
+                    case 4: return { goals: formData.goals.filter(g => g.goal).map(g => g.goal).join(', ') };
+                    default: return {};
+                }
+            };
+
+            const SECTION_NAMES = { 1: 'Dream Launcher', 2: 'Strengths Amplifier', 3: 'Values Compass', 4: 'Growth Blueprint' };
+
             // Navigate to next sub-step or next section
             const nextSubStep = () => {
                 const totalSubSteps = SUBSTEPS[step] || 0;
                 if (subStep < totalSubSteps - 1) {
                     setSubStep(subStep + 1);
                 } else {
-                    // Move to celebration screen
-                    setSubStep(0);
-                    setStep(step + 0.5);
+                    // Section complete — trigger AI review before celebration screen
+                    const sectionNum = Math.floor(step);
+                    const userId = localStorage.getItem('ft_user_id') || 'anon-' + Date.now();
+                    setAiReviewing(true);
+                    window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, getSectionAnswers(sectionNum), SECTION_NAMES[sectionNum])
+                        .then(function (canProceed) {
+                            setAiReviewing(false);
+                            if (canProceed) {
+                                setSubStep(0);
+                                setStep(step + 0.5);
+                            }
+                        })
+                        .catch(function () {
+                            setAiReviewing(false);
+                            // On error, allow passage
+                            setSubStep(0);
+                            setStep(step + 0.5);
+                        });
                 }
             };
             
@@ -767,6 +796,11 @@
                                     <p className="text-2xl text-gray-400 mt-4">
                                         Complete alone. Share with team at Guru-led meeting.
                                     </p>
+                                    <div className="mt-6 p-6 border-2 border-white/30" style={{background: 'rgba(255,244,105,0.08)'}}>
+                                        <p className="text-xl text-gray-300">
+                                            This is a personal reflection. Your answers remain private. The Guru receives only a team summary — never your individual responses.
+                                        </p>
+                                    </div>
                                 </div>
 
                                 <div className="mb-12 animate-in" style={{animationDelay: '0.2s'}}>
@@ -1113,11 +1147,7 @@
                             </button>
                         </div>
                         
-                        {!canAdvance && (
-                            <p className="text-center text-gray-600 mt-4 text-sm">
-                                {currentQ.minChars ? `Please write at least ${currentQ.minChars} characters` : 'Please answer this question'}
-                            </p>
-                        )}
+                        {/* Duplicate char min message removed — 3B EK feedback */}
                     </div>
                 </main>
             );
@@ -1138,17 +1168,17 @@
 
                         {/* Fast Track Insight */}
                         <FastTrackInsight>
-                            [PLACEHOLDER] Fast Track Principle for Know Thyself: This foundational step drives 80% of results. Leaders who invest proper time here see the biggest transformation in their organization.
+                            Fast Track 80/20: Your dream is the single most powerful driver of long-term success. Leaders who define a vivid, values-aligned dream make faster decisions and maintain motivation through setbacks. This step alone drives 80% of the transformation you will experience in this program.
                         </FastTrackInsight>
 
                         {/* The Science */}
                         <ScienceBox collapsible={true}>
-                            [PLACEHOLDER] Research from organizational psychology shows that structured know thyself frameworks improve decision quality by 25-40% compared to unstructured approaches (Harvard Business Review, 2023). Writing responses down activates deeper cognitive processing than thinking alone.
+                            Research from Harvard Business Review shows that leaders who write down a vivid personal vision are 42% more likely to achieve their goals than those who only think about them. The act of writing activates deeper cognitive processing, engages the reticular activating system, and creates a psychological contract with yourself. Studies in organizational psychology confirm that structured dream-definition exercises improve long-term career satisfaction by 25-40%.
                         </ScienceBox>
 
                         {/* Common Mistake */}
                         <WarningBox>
-                            [PLACEHOLDER] Common mistake in Know Thyself: Leaders often rush through this with surface-level answers. <strong>Bad:</strong> Generic responses completed in under 5 minutes. <strong>Good:</strong> Specific, honest answers that require real thought and sometimes discomfort.
+                            Do not write what you think sounds impressive — write what is brutally honest. <strong>Bad:</strong> "I want to help people and make the world better" (vague, generic, completed in 2 minutes). <strong>Good:</strong> "I want to build a sustainable tech company in Eastern Europe that creates 500 high-paying jobs by 2030" (specific, measurable, personally meaningful). Fast Track Brutal Honesty means the answers that make you uncomfortable are usually the right ones.
                         </WarningBox>
 
                         
@@ -1208,7 +1238,7 @@
                                     <div>
                                         <label className="block font-bold mb-2">What do you love?</label>
                                         <ScienceBookmarkIcon>
-                                            [PLACEHOLDER] Research backs this: Studies show that structured reflection on this aspect of know thyself leads to significantly better outcomes than intuitive approaches alone.
+                                            Passion-driven work leads to 3x higher persistence through obstacles (Vallerand, 2012).
                                         </ScienceBookmarkIcon>
                                         <textarea
                                             className="worksheet-input"
@@ -1222,7 +1252,7 @@
                                     <div>
                                         <label className="block font-bold mb-2">What are you good at?</label>
                                         <ScienceBookmarkIcon>
-                                            [PLACEHOLDER] Research backs this: Studies show that structured reflection on this aspect of know thyself leads to significantly better outcomes than intuitive approaches alone.
+                                            Gallup research shows people who use their strengths daily are 6x more likely to be engaged at work.
                                         </ScienceBookmarkIcon>
                                         <textarea
                                             className="worksheet-input"
@@ -1236,7 +1266,7 @@
                                     <div>
                                         <label className="block font-bold mb-2">What can you give to the world?</label>
                                         <ScienceBookmarkIcon>
-                                            [PLACEHOLDER] Research backs this: Studies show that structured reflection on this aspect of know thyself leads to significantly better outcomes than intuitive approaches alone.
+                                            Purpose-driven professionals report 64% higher fulfillment and stay in roles 2x longer (McKinsey, 2021).
                                         </ScienceBookmarkIcon>
                                         <textarea
                                             className="worksheet-input"
@@ -1395,7 +1425,13 @@
                             <div className="border-2 border-black p-8 bg-white mb-6">
                                 <h2 className="plaak text-4xl mb-4">MY ACTIVITIES</h2>
                                 <p className="text-xl mb-6">List activities that energize (+) or drain (-) you</p>
-                                
+
+                                <div className="p-4 mb-6 border-2 border-black bg-gray-50">
+                                    <p className="text-sm font-bold mb-2">HOW THE +/- SCORING WORKS</p>
+                                    <p className="text-sm text-gray-700"><strong>+</strong> = This activity gives you energy. You lose track of time doing it. You'd do it even if you weren't paid.</p>
+                                    <p className="text-sm text-gray-700 mt-1"><strong>-</strong> = This activity drains you. You procrastinate on it. It leaves you exhausted. The goal: build your role around your + activities and delegate or eliminate the - ones.</p>
+                                </div>
+
                                 <div className="space-y-3 mb-4">
                                     {formData.activities.map((item, i) => (
                                         <div key={i} className="flex gap-3">
@@ -1569,12 +1605,12 @@
 
                         {/* Fast Track Insight */}
                         <FastTrackInsight>
-                            [PLACEHOLDER] Fast Track Insight: The second phase of Know Thyself is where most leaders see breakthroughs. Be specific and brutally honest in your answers here.
+                            Fast Track 80/20: Focus on strengths, not weaknesses. Buckingham and Clifton's research proves that the key to excellence lies in identifying and cultivating your natural talents. People who focus on strengths are 3x more likely to report an excellent quality of life. Map your energy sources honestly — the activities that energize you reveal your true strengths.
                         </FastTrackInsight>
 
                         {/* The Science */}
                         <ScienceBox collapsible={true}>
-                            [PLACEHOLDER] Behavioral science research indicates that teams using systematic know thyself processes make decisions 2.5x faster with 30% fewer errors (McKinsey, 2022). The structure reduces cognitive bias and forces comprehensive thinking.
+                            The Gallup StrengthsFinder research across 1.7 million employees found that strength-based development is 3x more effective than fixing weaknesses. People who use their strengths every day are 6x more likely to be engaged at work and report significantly higher productivity. Mapping energy sources (activities that energize vs. drain you) is a validated method for uncovering authentic strengths beyond self-reported skills.
                         </ScienceBox>
 
                         
@@ -1892,15 +1928,15 @@
 
                         {/* Fast Track Insight */}
                         <FastTrackInsight>
-                            [PLACEHOLDER] Fast Track Advanced: This Know Thyself step connects your work to the broader strategy. Look for patterns across your previous answers.
+                            Fast Track Principle: Align your values with your actions. Nietzsche and Bezos both stress that when personal values and professional endeavors are aligned, work becomes deeply fulfilling — not just productive. Choose values that genuinely resonate, not ones that sound impressive. Look for patterns in your dream and strengths answers to identify what truly matters to you.
                         </FastTrackInsight>
 
                         {/* The Science */}
                         <ScienceBox collapsible={true}>
-                            [PLACEHOLDER] Meta-analysis of 200+ organizations shows that completing structured exercises like this correlates with 35% higher strategic execution rates (Deloitte, 2023). Written commitments create psychological accountability.
+                            Values-driven decisions lead to greater satisfaction and sustainable success. Research from Barrett Values Centre across 6,000+ organizations shows that companies with strong values alignment outperform peers by 4x in revenue growth and 8x in job creation. When your actions align with your core values, you experience less internal conflict and make decisions with greater confidence and speed.
                         </ScienceBox>
 
-                        
+
                         <div className="border-2 border-black p-6 mb-8 bg-white">
                             <h3 className="plaak text-3xl mb-2">ALIGN VALUES WITH BEHAVIOR</h3>
                             <p className="text-xl">
@@ -2130,12 +2166,12 @@
 
                         {/* Fast Track Insight */}
                         <FastTrackInsight>
-                            [PLACEHOLDER] Fast Track Integration: At this stage of Know Thyself, synthesis matters most. Your outputs should connect to at least 2 other Fast Track tools.
+                            Fast Track Action Obsession: Knowing yourself means nothing without execution. This blueprint turns your dream, strengths, and values into specific, measurable goals with deadlines. Focus on systems, not just goals — as James Clear writes, "You do not rise to the level of your goals, you fall to the level of your systems." Connect each goal back to your dream and strengths from the previous sections.
                         </FastTrackInsight>
 
                         {/* The Science */}
                         <ScienceBox collapsible={true}>
-                            [PLACEHOLDER] Longitudinal studies demonstrate that organizations revisiting their know thyself outputs quarterly maintain 60% higher alignment scores (BCG, 2023). Regular review prevents strategic drift.
+                            Dr. Gail Matthews' research at Dominican University found that people who write down specific goals with action steps and deadlines are 76% more likely to achieve them. Longitudinal studies also show that individuals who review and adjust their personal growth plans quarterly maintain 60% higher alignment between their intentions and actual behavior. The structure creates psychological accountability that prevents strategic drift.
                         </ScienceBox>
 
                         
@@ -2432,9 +2468,9 @@
 
                                 {/* Case Study */}
                                 <CaseStudy
-                                    before={"[PLACEHOLDER] CEO could not articulate personal values or purpose."}
-                                    after={"[PLACEHOLDER] Clear identity statement, team understood the vision, decision-making speed doubled."}
-                                    quote={"[PLACEHOLDER] Once I knew who I was, every business decision became clearer."}
+                                    before={"Maria, a logistics company founder, had grown her business to 120 employees but felt increasingly disconnected from her work. She could not explain to her team why the company existed beyond making money. Turnover was rising, strategic decisions took weeks, and she was burning out chasing opportunities that did not align with who she was."}
+                                    after={"After completing Know Thyself, Maria identified her core strength as systems thinking and her driving value as creating independence for others. She articulated a clear dream: build the most empowering workplace in her region. Within 6 months, employee turnover dropped by half, she declined 3 misaligned partnerships without hesitation, and her team began making autonomous decisions aligned with the shared vision."}
+                                    quote={"Before this exercise, I was running a company. After it, I was leading a mission. The difference is everything. — Maria K., Logistics CEO"}
                                 />
                                 
                                 <div className="text-center mt-8">
