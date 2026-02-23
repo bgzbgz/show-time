@@ -389,5 +389,345 @@ individual_scores, abc_matrix
 
 ---
 
-## Session 2 Scope (Next: Tools 06-11)
-Tools: cash, energy, goals, focus, performance, meeting-rhythm (Module 2: Performance)
+## Tool 06: Cash Flow (slug: cash)
+
+**Classification:** calculator + planning (P&L analysis, Power of One simulator, action plan)
+**Completion:** individual-then-team
+**Meeting phase:** before (individual financial analysis) + during (team reviews)
+**Data risk:** LOW (0 responses)
+
+### Intended Logic (from course content)
+
+**Source:** `frontend/content/sprint-06-cash/content.md` (Sprint 09: Cash Flow)
+
+- **Purpose:** Master cash flow management by analyzing P&L across 2 fiscal years and identifying high-impact improvements using "Power of One" concept
+- **Framework:** Cash Flow Story (4 chapters: profit, working capital, other capital, funding) + Power of One (1% improvement per lever) + Working Capital Optimization (CCC) + Labor Efficiency Ratios
+- **Key questions it MUST ask:**
+  - Year 1 & Year 2: Full P&L (revenue, COGS, labor, overheads, interest, tax) + Balance Sheet + Working Capital (days A/R, A/P, inventory)
+  - Power of One: 9 levers (price, volume, COGS, direct labor, mgmt labor, overheads, debtor days, stock days, creditor days)
+  - Action Plan: brainstorm ideas (impact/ease) + WHO/WHAT/WHEN assignments
+- **Expected outputs:** Year-over-year P&L comparison, Power of One ranked impacts, CCC analysis, 90-day action plan
+
+### Current Implementation
+- **Steps:** Cover -> Step 1 (Year 1 P&L + BS + WC) -> Step 2 (Year 2 data) -> Step 3 (Power of One simulator: 9 sliders) -> Step 4 (Ideas brainstorm + Action Plan) -> Canvas (summary + export + submit)
+- **Question keys (FROZEN):** story_report, power_of_one, action_sheets, top_priority, ler_ratio, action_plan
+- **Reference keys:** performance.cash.story_report, performance.cash.power_of_one, performance.cash.action_sheets, performance.cash.top_priority, performance.cash.ler_ratio_analysis, performance.cash.action_plan
+- **Dependencies consumed:** identity.dream.narrative (from dream tool)
+- **Dependencies produced:** power_of_one, top_priority (used by goals, performance, meeting-rhythm)
+- **Special features:** Business model translator (manufacturing/service/retail labels), embedded financial calculations (gross margin, EBIT, net profit, LER, CCC), currency formatting (EUR hardcoded)
+
+### Gap Analysis: MINOR
+
+| Aspect | Expected | Actual | Status |
+|--------|----------|--------|--------|
+| Year 1 + Year 2 P&L | full financial snapshot | Yes, complete P&L + BS + WC | PASS |
+| Power of One (9 levers) | 1% improvement simulation | Yes, all 9 levers with cash + EBIT impact | PASS |
+| Working Capital (CCC) | days A/R + inventory - A/P | Yes, auto-calculated | PASS |
+| Labor Efficiency Ratios | direct + mgmt LER | Yes, calculated from P&L | PASS |
+| Action plan (WHO/WHAT/WHEN) | structured assignments | Yes with validation | PASS |
+| Balance sheet validation | assets = liabilities + equity | calculated but not enforced | MINOR gap |
+| P&L consistency check | revenue > COGS | revenue > 0 and COGS > 0, but no COGS > revenue check | MINOR gap |
+| Currency configurability | user's currency | EUR hardcoded | MINOR gap |
+| Placeholder content | final | [PLACEHOLDER] in cognitive load | MINOR |
+| Ideas brainstorm saved | tracked in submission | not included in questionMappings | MINOR gap |
+
+**Missing:** Balance sheet enforcement, P&L consistency validation, ideas brainstorm tracking
+**Wrong:** Nothing contradicts course content
+**Extra:** Impact/ease brainstorm matrix (good addition)
+
+### Fix Priority: P2
+### Fix Scope: S (fix placeholders, add BS validation warning)
+
+---
+
+## Tool 07: Energy (slug: energy)
+
+**Classification:** reflection + habit formation (4-pillar energy protocol + Atomic Habits)
+**Completion:** individual-only
+**Meeting phase:** before (individual prep)
+**Data risk:** LOW (0 responses)
+
+### Intended Logic (from course content)
+
+**Source:** `frontend/content/sprint-07-energy/content.md` (Sprint 15: Energy)
+
+- **Purpose:** Design a complete personal energy protocol across 4 physical pillars (Sleep, Food, Movement, Brain) plus mental energy management using Atomic Habits framework
+- **Framework:** 4 Physical Pillars + Atomic Habits (Trigger-Routine-Reward) + Mental Energy Wisdom (Control analysis, Stop/Do-Less/Do-More, Event-Gap-Response)
+- **Key questions it MUST ask:**
+  - Per pillar (x4): Rating 1-10, Do Well, Do NOT Do Well, Goals, ONE Key Habit, Trigger, Routine, Reward, Accountability Partner
+  - Mental Energy Part 1: What I CAN control vs CANNOT control
+  - Mental Energy Part 2: STOP doing (3), DO LESS (3), DO MORE (3)
+  - Mental Energy Part 3: Event-Gap-Response (recent poor reaction, gap analysis, ideal response, future plan)
+- **Expected outputs:** 4-pillar energy audit, 4 atomic habits with full T-R-R-A detail, mental energy wisdom canvas
+
+### Current Implementation
+- **Steps:** Cover -> Intro -> Sleep Protocol -> Food Protocol -> Movement Protocol -> Brain Protocol -> Transition -> Mental Energy (Parts 1-3) -> Canvas -> Submit
+- **Question keys (FROZEN):** energy_audit, habit_commitments, team_strategies, energy_woop
+- **Reference keys:** performance.energy.audit, performance.energy.habit_commitments, performance.energy.team_strategies, performance.energy.woop
+- **Dependencies consumed:** identity.strengths.matrix (from know-thyself)
+- **Dependencies produced:** energy audit + habits (used by goals, performance, focus)
+- **AI challenge:** final canvas submit only (no per-step gating)
+
+### Gap Analysis: MINOR
+
+| Aspect | Expected | Actual | Status |
+|--------|----------|--------|--------|
+| 4 pillars assessed | Sleep, Food, Movement, Brain | Yes, all 4 | PASS |
+| Rating 1-10 | numeric scale | Yes, range input | PASS |
+| Do Well / Not Well / Goals | text reflections | Yes, textarea per pillar | PASS |
+| One Key Habit per pillar | single habit x4 | Yes | PASS |
+| Atomic Habits fields | Trigger, Routine, Reward, Accountability | Yes, 5 fields per pillar | PASS |
+| Mental Energy Part 1 | control/cannot-control | Yes, 2 textareas | PASS |
+| Mental Energy Part 2 | Stop/Do-Less/Do-More (3 each) | Yes, 9 inputs | PASS |
+| Mental Energy Part 3 | Event-Gap-Response | Yes, 4 fields | PASS |
+| Validation completeness | all fields required | Only keyHabit + Trigger validated | MINOR gap |
+| Placeholder content | final | [PLACEHOLDER] in cognitive load | MINOR |
+
+**Missing:** Full field validation (most fields accept empty), tune-in questions
+**Wrong:** Nothing contradicts course content
+**Extra:** None
+
+### Fix Priority: P2
+### Fix Scope: S (fix placeholders, improve validation)
+
+---
+
+## Tool 08: Goals & Priorities (slug: goals)
+
+**Classification:** brainstorm + prioritization matrix (Impact/Easy framework)
+**Completion:** individual-only
+**Meeting phase:** before (individual prep for strategy execution)
+**Data risk:** LOW (0 responses)
+
+### Intended Logic (from course content)
+
+**Source:** `frontend/content/sprint-08-goals/content.md` (Sprint 24: Goals & Priorities)
+
+- **Purpose:** Master strategic goal-setting using Impact/Easy Matrix to ensure 80/20 focus
+- **Framework:** Impact/Easy Matrix (2D scoring: Impact 1-3 + Ease 1-3 = combined score 1-6), Big Rocks (top 5 quarterly priorities)
+- **Key questions it MUST ask:**
+  - Brainstorm: List all potential actions/ideas (20+ encouraged)
+  - Rate: Each idea scored on Impact (1-3) and Ease (1-3)
+  - Prioritize: Auto-sort by combined score, highest first
+  - Big Rocks: Top 5 priorities for 90-day focus
+- **Expected outputs:** Prioritized action list, Big Rocks selection, quarterly targets
+
+### Current Implementation
+- **Steps:** Cover -> Intro (email collection) -> Brainstorm & Rate (20-row table with Impact/Ease selects) -> Results (sorted list, top 5 highlighted, submit)
+- **Question keys (FROZEN):** quarterly_targets, impact_ease_matrix, big_rocks, elephant_breakdown
+- **Reference keys:** performance.goals.quarterly_targets, performance.goals.impact_ease_matrix, performance.goals.big_rocks, performance.goals.elephant_breakdown
+- **Dependencies consumed:** identity.dream.narrative (from dream), performance.cash.power_of_one (from cash)
+- **Dependencies produced:** quarterly_targets, big_rocks (used by focus, performance, meeting-rhythm)
+- **AI challenge:** final submit only
+
+### Gap Analysis: MINOR
+
+| Aspect | Expected | Actual | Status |
+|--------|----------|--------|--------|
+| Brainstorm (20+ ideas) | open-ended list | 20 rows provided | PASS |
+| Impact/Ease rating | 1-3 per dimension | Yes, select dropdowns | PASS |
+| Auto-sort by score | highest first | Yes | PASS |
+| Big Rocks (top 5) | quarterly priorities | Extracted via .slice(0,5) | PASS |
+| Color-coded badges | visual scoring | Yes (green/orange/red) | PASS |
+| Dependency loading | dream + cash context | Yes, DependencyContext component | PASS |
+| Validation | min 5 ideas 10+ chars | Yes | PASS |
+| CONFIG.STORAGE_KEY | defined | undefined in CONFIG | MINOR bug |
+| Placeholder content | final | [PLACEHOLDER] in cognitive load | MINOR |
+
+**Missing:** CONFIG.STORAGE_KEY definition (autosave may use wrong key)
+**Wrong:** Nothing contradicts course content
+**Extra:** PDF export, elephant_breakdown mapping
+
+### Fix Priority: P3
+### Fix Scope: S (fix STORAGE_KEY, fix placeholders)
+
+---
+
+## Tool 09: Focus & Discipline (slug: focus)
+
+**Classification:** reflection + assessment + planning (dual-path: individual 8-step + team WWW)
+**Completion:** individual-or-team (user chooses at start)
+**Meeting phase:** before (individual) or during (team discussion)
+**Data risk:** LOW (0 responses)
+
+### Intended Logic (from course content)
+
+**Source:** `frontend/content/sprint-09-focus/content.md` (Sprint 10: Focus, Discipline & Productivity)
+
+- **Purpose:** Design personal focus system across 4 elements: Focus, Flow, Discipline, Habits
+- **Framework:** Empty Brain + Impact/Easy Matrix, Daily Plan (top 3 + time blocks), Eliminate/Limit/Delegate, Distraction Reduction, Key Routines, 3 Daily Routines (Trigger-Action-Reward), Flow State Priming
+- **Key questions it MUST ask:**
+  - Individual (8 steps): brain dump tasks, impact/ease categorization, top 3 priorities + schedule, eliminate/limit/delegate lists + actions, digital/physical distractions + mitigation, morning/work/break/end routines, 3 habit loops (T-A-R), flow state elements (goals, challenge-skill, environment, ritual, feedback)
+  - Team: focus patterns, productivity challenges, collective habits, WWW analysis
+- **Expected outputs:** Prioritized task matrix, daily schedule, elimination plan, 3 core routines, flow readiness checklist
+
+### Current Implementation
+- **Steps:** Cover -> Intro (mistakes + path selection) -> [Individual: 8 sequential steps] or [Team: 1 unified form] -> Canvas -> Submit
+- **Question keys (FROZEN):** golden_hour, distraction_plan, daily_reflection, team_rituals
+- **Reference keys:** performance.focus.golden_hour, performance.focus.distraction_plan, performance.focus.daily_reflection, performance.focus.team_rituals
+- **Dependencies consumed:** (loads from DI config if available)
+- **Dependencies produced:** golden_hour, daily_reflection (advisory — not heavily consumed downstream)
+- **AI challenge:** final submit only (no per-step gating)
+
+### Gap Analysis: MINOR
+
+| Aspect | Expected | Actual | Status |
+|--------|----------|--------|--------|
+| 8 individual steps | all 4 elements covered | Yes, all 8 steps match content | PASS |
+| Team path | WWW + dynamics | Yes, 1-step team form | PASS |
+| Impact/Easy matrix | 4 quadrants | Yes, color-coded | PASS |
+| Trigger-Action-Reward | 3 daily routines | Yes, 3 x 4 fields | PASS |
+| Flow State (5 elements) | goals, challenge-skill, environment, ritual, feedback | Yes, 5 textareas | PASS |
+| Eliminate/Limit/Delegate | 3 categories x 2 parts | Yes | PASS |
+| Placeholder content | final | [PLACEHOLDER] in cognitive load | MINOR |
+
+**Missing:** Tune-in questions, mind rehearsal step
+**Wrong:** Nothing contradicts course content
+**Extra:** None
+
+### Fix Priority: P3
+### Fix Scope: S (fix placeholders)
+
+---
+
+## Tool 10: Performance & Accountability (slug: performance)
+
+**Classification:** assessment + calculator (5 Whys, 80/20, Impact/Easy, accountability framework)
+**Completion:** individual-or-team (dual-path: Individual Process Tools + Team Systems)
+**Meeting phase:** before (individual analysis) + during (team systems)
+**Data risk:** LOW (0 responses)
+
+### Intended Logic (from course content)
+
+**Source:** `frontend/content/sprint-10-performance/` (Sprint 05: Performance Analysis)
+
+- **Purpose:** Translate quarterly targets into actionable frameworks by identifying root causes of underperformance and building accountability systems
+- **Framework:** 5 Whys (root cause), 80/20 Principle (vital few vs trivial many), Impact-Easy Matrix (prioritization), Performance Dashboard + Accountability Framework
+- **Key questions it MUST ask:**
+  - Individual: Problem + 5 Whys + root cause + solution; Objective + 5 inputs + ranking + vital few; Objective + 8 ideas + matrix placement; Expectations + ownership + checkpoints + consequences + rewards
+  - Team: 5 tasks with status/reason/owner, dashboard metrics, review cadence; accountability roles + framework + transparency + timeline
+- **Expected outputs:** Root cause analysis, 80/20 rankings, prioritized matrix, accountability framework, performance dashboard
+
+### Current Implementation
+- **Steps:** Cover -> Path Selection -> [Individual: 4 steps (5 Whys, 80/20, Impact/Easy, Accountability)] or [Team: 2 steps (Performance System, Accountability System)] -> Canvas -> Submit
+- **Question keys (FROZEN):** execution_dashboard, five_why, consequences_table
+- **Reference keys:** performance.accountability.execution_dashboard, performance.accountability.five_why, performance.accountability.consequences
+- **Dependencies consumed:** goals.quarterly_targets, values.cool_not_cool, values.red_lines, cash.top_priority
+- **Dependencies produced:** execution_dashboard (used by meeting-rhythm)
+- **AI challenge:** final submit only (no per-step gating)
+
+### Gap Analysis: MODERATE
+
+| Aspect | Expected | Actual | Status |
+|--------|----------|--------|--------|
+| 5 Whys | problem → 5 whys → root cause → solution | Yes, all fields present | PASS |
+| 80/20 Principle | objective + inputs + ranking | Yes | PASS |
+| Impact/Easy Matrix | 8 ideas + 4 quadrants | Yes | PASS |
+| Accountability Framework | expectations/ownership/checkpoints/consequences | Yes | PASS |
+| Team Performance System | tasks + dashboard + review cadence | Yes | PASS |
+| Team Accountability | roles + framework + transparency + timeline | Yes | PASS |
+| Dependency auto-load | useEffect pattern | NOT implemented (missing useEffect) | MODERATE gap |
+| Per-step AI review | intermediate validation | Final only (no reviewStep) | MINOR gap |
+| Form validation | required fields | None (empty fields accepted) | MINOR gap |
+| Placeholder content | final | [PLACEHOLDER] throughout | MINOR |
+
+**Missing:** Dependency auto-load (useEffect pattern missing — deps configured in DI but not loaded in HTML), per-step AI review, form validation
+**Wrong:** Nothing contradicts course content
+**Extra:** None
+
+### Fix Priority: P1
+### Fix Scope: M (add useEffect dependency loading, add validation, fix placeholders)
+
+---
+
+## Tool 11: Meeting Rhythm (slug: meeting-rhythm)
+
+**Classification:** planning + assessment (meeting cadence design + evaluation)
+**Completion:** individual-then-team
+**Meeting phase:** before (individual planning) + during (team review)
+**Data risk:** LOW (0 responses)
+
+### Intended Logic (from course content)
+
+**Source:** `frontend/content/sprint-11-meetings/` (Sprint 12: Meeting Rhythm)
+
+- **Purpose:** Establish operational rhythm bridging strategy to execution — daily huddles (15 min), weekly tacticals (60 min), monthly strategics (half-day)
+- **Framework:** Priorities Breakdown → Meeting Readiness → Meeting Evaluation → Big Rock Discussion → Rhythm Dates Canvas
+- **Key questions it MUST ask:**
+  - Step 1: Quarterly priorities with hours breakdown and task decomposition
+  - Step 2: Meeting purpose, participants, agenda items (topic/owner/duration), pre-materials, roles (facilitator/scribe/timekeeper)
+  - Step 3: Meeting evaluation (date, type, effectiveness, what worked, what didn't, improvements)
+  - Step 4: Big Rock issue, problem statement, root cause, proposed solutions, WWW (Who/What/When)
+- **Expected outputs:** Quarterly priorities breakdown, meeting template, evaluation framework, Big Rock resolution process
+
+### Current Implementation
+- **Steps:** Cover -> Intro (user details) -> Step 1 (Priorities Breakdown) -> Step 2 (Meeting Readiness) -> Step 3 (Meeting Evaluation) -> Step 4 (Big Rock Discussion) -> Canvas (Rhythm Dates)
+- **Question keys (FROZEN):** rhythm_dates
+- **Reference keys:** performance.meetings.rhythm_dates
+- **Dependencies consumed:** goals.quarterly_targets, performance.execution_dashboard, cash.top_priority
+- **Dependencies produced:** rhythm_dates (end of performance module chain)
+- **AI challenge:** per-step review (reviewStep) + final submit — best practice among Module 2 tools
+
+### Gap Analysis: MINOR
+
+| Aspect | Expected | Actual | Status |
+|--------|----------|--------|--------|
+| Priorities breakdown | quarterly priorities + hours + tasks | Yes | PASS |
+| Meeting readiness | purpose, participants, agenda, roles | Yes, all fields | PASS |
+| Meeting evaluation | effectiveness assessment | Yes | PASS |
+| Big Rock discussion | issue → root cause → solutions → WWW | Yes | PASS |
+| Dependency auto-load | useEffect pattern | Yes, correctly implemented | PASS |
+| Per-step AI review | intermediate validation | Yes, reviewStep on all 4 steps | PASS |
+| Form validation | required fields | None (empty accepted) | MINOR gap |
+| Effectiveness rating | enum/scale | free-text (should be 1-5 scale) | MINOR gap |
+| Submission key naming | semantic | "rhythm_dates" (misleading — contains all data) | MINOR gap |
+| Placeholder content | final | [PLACEHOLDER] in cognitive load | MINOR |
+
+**Missing:** Form validation, effectiveness enum
+**Wrong:** Nothing contradicts course content
+**Extra:** None
+
+### Fix Priority: P3
+### Fix Scope: S (fix placeholders, add effectiveness enum)
+
+---
+
+## Priority Summary (Session 2 Tools)
+
+| Tool | Gap Rating | Priority | Scope | Key Issue |
+|------|-----------|----------|-------|-----------|
+| 06-cash | MINOR | P2 | S | BS validation, currency hardcoded, placeholders |
+| 07-energy | MINOR | P2 | S | Incomplete validation, placeholders |
+| 08-goals | MINOR | P3 | S | CONFIG.STORAGE_KEY undefined, placeholders |
+| 09-focus | MINOR | P3 | S | Placeholders only |
+| 10-performance | MODERATE | P1 | M | Missing useEffect dependency loading, no form validation |
+| 11-meeting-rhythm | MINOR | P3 | S | Placeholders, effectiveness should be enum |
+
+**Common pattern:** [PLACEHOLDER] content in cognitive load components persists across all 6 tools. Tool 10 (Performance) is the only P1 — it's missing the dependency auto-load pattern that all other tools have.
+
+---
+
+## Frozen Question Keys Reference (Session 2)
+
+### cash (6 keys)
+story_report, power_of_one, action_sheets, top_priority, ler_ratio, action_plan
+
+### energy (4 keys)
+energy_audit, habit_commitments, team_strategies, energy_woop
+
+### goals (4 keys)
+quarterly_targets, impact_ease_matrix, big_rocks, elephant_breakdown
+
+### focus (4 keys)
+golden_hour, distraction_plan, daily_reflection, team_rituals
+
+### performance (3 keys)
+execution_dashboard, five_why, consequences_table
+
+### meeting-rhythm (1 key)
+rhythm_dates
+
+---
+
+## Session 3 Scope (Next: Tools 12-21)
+Tools: market-size, segmentation, target-segment, value-proposition, vp-testing, product-development, pricing, brand-marketing, customer-service, route-to-market (Modules 3-5: Market, Strategy, Execution)
