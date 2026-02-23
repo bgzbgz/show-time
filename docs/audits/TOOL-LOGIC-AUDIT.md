@@ -1639,16 +1639,21 @@ These tools are downgraded to P2 (minor polish only).
 
 **28-digitalization** remains the highest-priority structural concern (individual AI focus vs org-wide digitalization framework from course), but it IS a dual-path tool (individual + team) with comprehensive implementation. Downgraded to P1.
 
-## P1 — Fix Next (MODERATE gaps, structural issues)
+## ~~P1 — Fix Next (MODERATE gaps, structural issues)~~ RESOLVED
 
-| Tool | Module | Gap | Scope | Issue |
-|------|--------|-----|-------|-------|
-| 28-digitalization | Tech | MODERATE | M | Framework emphasis (individual AI vs org digitalization) |
-| 10-performance | Performance | MODERATE | M | Missing useEffect dependency loading |
-| 12-market-size | Market | MODERATE | M | Scoring formula + SAM/SOM + PDF export |
-| 22-core-activities | Org | MODERATE | M | Missing dependency injection + PDF export |
-| 26-employer-branding | People | MODERATE | M | Step-framework mapping unclear |
-| 29-digital-heart | Tech | MODERATE | M | Missing dependency + content docs |
+**(Empty — deep reads revealed all P1 tools already have their features implemented)**
+
+Initial audit rated 6 tools as P1/MODERATE based on partial reads (~200 lines of HTML).
+Full deep reads revealed ALL 6 tools already implement the flagged features:
+
+- **10-performance**: HAS useEffect dependency loading (line 251) for goals, values, cash
+- **12-market-size**: HAS deliberate scoring formula `(2*impact + probability)` that weights impact over probability. SAM/SOM not in course framework (TAM + driving forces is the scope). Dependency loading present (line 503).
+- **22-core-activities**: HAS dependency injection loading (line 217) for VP statement + RTM channels
+- **26-employer-branding**: HAS clear 5-step framework covering all 8 EVP elements: Segment → Needs → EVP → Test → Campaign. Step labels are EMPLOYEE SEGMENTATION, NEEDS RANKING, EVP FORMULATION, EVP TESTING, CAMPAIGN PLANNING. Dependency loading present (line 545).
+- **28-digitalization**: HAS dual-path design that IS the org digitalization framework: Individual (Decisions → Processes → Implementation) feeds Team (Collect Analyses → Pattern Recognition → Company AI Strategy → Implementation Plan). Dependency loading present (line 514).
+- **29-digital-heart**: HAS dependency loading (line 640) from dream, values, VP, org-redesign, AND digitalization (both audit + baby_ai). 5 steps match course framework exactly.
+
+All downgraded to P2/P3 (minor polish only).
 
 ## P2 — Minor Fixes (MINOR gaps, content/polish)
 
@@ -1682,7 +1687,13 @@ These tools are downgraded to P2 (minor polish only).
 | 05-fit | Identity | MINOR | S | D-Player help text |
 | 08-goals | Performance | MINOR | S | CONFIG.STORAGE_KEY bug |
 | 09-focus | Performance | MINOR | S | Minor polish |
+| 10-performance | Performance | MINOR | S | Per-step AI review (final only, not per-step) |
 | 11-meeting-rhythm | Performance | MINOR | S | Effectiveness enum |
+| 12-market-size | Market | MINOR | S | Formula documentation in UI |
+| 22-core-activities | Org | MINOR | S | PDF export (text only) |
+| 26-employer-branding | People | MINOR | S | Minor polish |
+| 28-digitalization | Tech | MINOR | S | Minor instructional text polish |
+| 29-digital-heart | Tech | MINOR | S | Relaxing overly strict validation (100+ char minimums) |
 
 ## ~~Pervasive Issue: [PLACEHOLDER] Content~~ RESOLVED
 
@@ -1693,8 +1704,9 @@ replaced with real brain juice content from each sprint's content.md — includi
 key learnings, research citations, case studies, common mistakes, and field-level callouts.
 Committed as `ae4daf1`.
 
-## Recommended Fix Order (updated)
+## Recommended Fix Order (updated 2026-02-23)
 
-1. **P1 tools** (28, 10, 12, 22, 26, 29) — structural fixes
-2. **P2 batch** — minor fixes, can be parallelized
-3. **P3 cosmetic** — optional polish
+All P0 and P1 issues resolved. Remaining work is P2/P3 polish only:
+1. **P2 batch** — minor fixes (19 tools), can be parallelized
+2. **P3 cosmetic** — optional polish (11 tools)
+3. **Phase 4** — post-fix verification in browser with `?dev` mode
