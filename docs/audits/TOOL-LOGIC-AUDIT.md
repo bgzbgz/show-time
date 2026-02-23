@@ -1221,5 +1221,468 @@ channels, rtm_roadmap
 
 ---
 
-## Session 4 Scope (Next: Tools 22-29)
-Tools: core-activities, processes-decisions, fit-abc, org-redesign, employer-branding, agile-teams, digitalization, digital-heart (Modules 6-8: Org, People, Tech)
+## Tool 22: Core Activities (slug: core-activities)
+
+**Classification:** canvas + planning (activity identification + process mapping)
+**Completion:** individual-then-team
+**Meeting phase:** before + during
+**Data risk:** LOW (0 responses)
+
+### Intended Logic (from course content)
+
+**Source:** `frontend/content/sprint-22-core-activities/content.md` (Sprint 27: Core Activities)
+
+- **Purpose:** Identify 5 core activities that deliver the value proposition, then map processes + KPIs
+- **Framework:** 80/20 principle — 20% of activities = 80% of value delivery
+- **Key questions:** What's our VP? What activities must we master? What 3 processes per activity? What KPI per process?
+- **Expected outputs:** Top 5 core activities, 3 processes per activity with KPIs
+
+### Current Implementation
+- **Steps:** Cover -> Intro -> Step 1 (VP + brainstorm + select top 5 + review) -> Step 2 (Processes & KPIs per activity) -> Canvas
+- **Question keys (FROZEN):** top5_activities, activity_owners
+- **Reference keys:** org.activities.top5, org.activities.owners
+- **Dependencies consumed:** none implemented (should load from dream, team, values)
+- **Dependencies produced:** top5 (used by processes-decisions)
+- **AI challenge:** 4 step reviews + final submit
+
+### Gap Analysis: MODERATE
+
+| Aspect | Expected | Actual | Status |
+|--------|----------|--------|--------|
+| VP context | loaded from upstream | Not auto-loaded (no dependency injection) | MODERATE gap |
+| Top 5 selection | from brainstorm | Yes, 4-phase flow | PASS |
+| Processes per activity | 3 per activity + KPIs | Yes | PASS |
+| Export | PDF | Text only (no PDF) | MINOR gap |
+| Placeholder content | final | [PLACEHOLDER] | MINOR |
+
+**Missing:** Dependency injection from prior tools, PDF export
+**Wrong:** Nothing
+
+### Fix Priority: P1
+### Fix Scope: M (add dependency loading, add PDF export, fill placeholders)
+
+---
+
+## Tool 23: Processes & Decisions (slug: processes-decisions)
+
+**Classification:** canvas + planning (decisions -> data -> capabilities -> gap analysis)
+**Completion:** individual-then-team
+**Meeting phase:** before + during
+**Data risk:** LOW (0 responses)
+
+### Intended Logic (from course content)
+
+**Source:** `frontend/content/sprint-23-processes/content.md` (Sprint 19: Core Decisions)
+
+- **Purpose:** Clarify core decisions, data inputs, KPIs, required capabilities, and capability gaps per activity
+- **Framework:** Decisions -> Data -> Capabilities -> Gap Analysis (4-step progressive disclosure)
+- **Key questions:** What 3-5 decisions per activity? What data fuels them? What 2-4 KPIs measure success? What capabilities required (human, systemic, relational)? What gaps exist?
+- **Expected outputs:** Decision rights, KPI scoreboard, capability gap analysis, development plan
+
+### Current Implementation
+- **Steps:** Cover -> Intro -> Step 1 (Decisions: 3+ per activity with frequency + impact) -> Step 2 (Data & KPIs) -> Step 3 (Capabilities) -> Step 4 (Gap Analysis + Development Plan) -> Canvas
+- **Question keys (FROZEN):** decision_rights, top3_per_activity, capabilities, kpi_scoreboard
+- **Reference keys:** org.processes.decision_rights, org.processes.top3_per_activity, org.processes.capabilities, org.processes.kpi_scoreboard
+- **Dependencies consumed:** core activities from core-activities tool (loaded via DI)
+- **Dependencies produced:** decision_rights, capabilities (used by org-redesign)
+- **AI challenge:** 4 step reviews + final submit
+- **Special:** Transition screens at 25/50/75/100%, help modals per step, PDF export
+
+### Gap Analysis: MINOR
+
+| Aspect | Expected | Actual | Status |
+|--------|----------|--------|--------|
+| Decisions per activity | 3-5 with frequency + impact | Yes, validated (3+ decisions, 20+ chars) | PASS |
+| Data inputs | per decision | Yes, 50+ chars required | PASS |
+| KPIs | 2-4 per activity | Yes, 2+ required | PASS |
+| Capabilities assessment | human/systemic/relational | Yes, 100+ chars | PASS |
+| Gap analysis | current vs required | Yes, 50+ chars each | PASS |
+| Development plan | actionable | Yes, 100+ chars | PASS |
+| Dependency auto-load | core activities | Implemented | PASS |
+| Placeholder content | final | [PLACEHOLDER] in case studies | MINOR |
+
+**Missing:** Case study content
+**Wrong:** Nothing
+
+### Fix Priority: P2
+### Fix Scope: S (fill placeholders)
+
+---
+
+## Tool 24: FIT ABC Analysis (slug: fit-abc-analysis)
+
+**Classification:** assessment (team member evaluation + ABC classification)
+**Completion:** team-only (manager evaluates team)
+**Meeting phase:** during (guru-facilitated)
+**Data risk:** LOW (0 responses)
+
+### Intended Logic (from course content)
+
+**Source:** `frontend/content/sprint-24-fit-abc/content.md` (Sprint 11: FIT ABC)
+
+- **Purpose:** Assess team members on FIT (Energy, Skill, Values, Impact) + classify as A/B/C players
+- **Framework:** 4-dimensional FIT grid + 2x2 ABC matrix (Performance vs Values alignment)
+- **Key questions:** Does role energize them? Do they have talents + skills? Are values aligned? Are they making measurable contribution? A-player = high FIT + high performance
+- **Expected outputs:** FIT scores per member, ABC classification, talent gaps, A-player retention agreements
+
+### Current Implementation
+- **Steps:** (Full implementation details limited from 200-line read)
+- **Question keys (FROZEN):** classification, talent_gaps, a_player_agreements
+- **Reference keys:** org.abc.classification, org.abc.talent_gaps, org.abc.a_player_agreements
+- **Dependencies consumed:** references Sprint 3 FIT data (from tool 05)
+- **Dependencies produced:** classification (used by org-redesign)
+- **AI challenge:** likely implemented
+
+### Gap Analysis: MINOR (partial read)
+
+| Aspect | Expected | Actual | Status |
+|--------|----------|--------|--------|
+| FIT 4 dimensions | Energy, Skill, Values, Impact | Documented in content | PASS |
+| ABC classification | A/B/C matrix | 3 question keys mapped | PASS |
+| Talent gaps | identification | question key present | PASS |
+| A-player agreements | retention | question key present | PASS |
+| Placeholder content | final | Likely [PLACEHOLDER] | MINOR |
+
+**Missing:** Full implementation verification needed (only partial HTML read)
+**Wrong:** Nothing identified
+
+### Fix Priority: P2
+### Fix Scope: S (fill placeholders, verify full implementation)
+
+---
+
+## Tool 25: Org Redesign (slug: org-redesign)
+
+**Classification:** planning + integration (Sprints 1-3 synthesis into implementation)
+**Completion:** team-only (guru-facilitated)
+**Meeting phase:** during
+**Data risk:** LOW (0 responses)
+
+### Intended Logic (from course content)
+
+**Source:** `frontend/content/sprint-25-org-redesign/content.md` (Sprint 21: Org Redesign)
+
+- **Purpose:** Integrate core activities (Sprint 1), decisions/capabilities (Sprint 2), and FIT/ABC people assessments (Sprint 3) into implementation plan
+- **Framework:** Current team assessment -> new role definitions -> decision matrix -> action plan + PDPs + 90-day roadmap + communication plan
+- **Key questions:** Which people fit new roles? Who needs development (PDPs)? Who should transition out? What's the 90-day timeline? How to communicate changes?
+- **Expected outputs:** Machine blueprint (org structure), right seats (people-role assignments), strategy shadow (implementation timeline)
+
+### Current Implementation
+- **Steps:** (Full implementation details limited from partial read)
+- **Question keys (FROZEN):** machine_blueprint, right_seats, strategy_shadow
+- **Reference keys:** org.redesign.machine_blueprint, org.redesign.right_seats, org.redesign.strategy_shadow
+- **Dependencies consumed:** core-activities, processes-decisions, fit-abc outputs (all 3 prior sprints)
+- **Dependencies produced:** org redesign plan (end of org module chain)
+- **AI challenge:** likely implemented
+- **Special:** Extensive content.md with 10 "implementation killer" pitfalls + guru scripts
+
+### Gap Analysis: MINOR (partial read)
+
+| Aspect | Expected | Actual | Status |
+|--------|----------|--------|--------|
+| Sprint 1-3 integration | explicit dependency loading | Content mentions pre-sprint checklist | Needs verification |
+| Role assignment matrix | interactive | Implementation unclear | Needs verification |
+| PDP framework | per-person plans | Content includes example (David) | PASS (in content) |
+| 90-day roadmap | phased implementation | Content mentions phases 1-4 | PASS (in content) |
+| Placeholder content | final | Likely [PLACEHOLDER] | MINOR |
+
+**Missing:** Full implementation verification needed
+**Wrong:** Nothing identified
+
+### Fix Priority: P2
+### Fix Scope: S (verify implementation, fill placeholders)
+
+---
+
+## Tool 26: Employer Branding (slug: employer-branding)
+
+**Classification:** strategy + canvas (EVP formulation + recruitment strategy)
+**Completion:** individual-then-team
+**Meeting phase:** before + during
+**Data risk:** LOW (0 responses)
+
+### Intended Logic (from course content)
+
+**Source:** `frontend/content/sprint-26-employer-branding/content.md` (Sprint 25: Employer Branding)
+
+- **Purpose:** Build Employer Value Proposition (EVP) and recruitment strategy
+- **Framework:** 8-step: Target talent profile -> Internal truths -> Positioning -> Brand message -> Employee segmentation -> Needs ranking -> EVP formulation -> Recruitment strategy
+- **Key questions:** Who are target employees? What are their top 5 needs? What single need do we promise to fulfill? How do we translate into message and recruitment?
+- **Expected outputs:** EVP statement, employer brand message, recruitment playbook
+
+### Current Implementation
+- **Steps:** 6 steps (compressing 8 framework elements into fewer steps)
+- **Question keys (FROZEN):** evp, recruitment_playbook
+- **Reference keys:** people.employer.evp, people.employer.recruitment_playbook
+- **Dependencies consumed:** dream, values (for employer brand alignment)
+- **Dependencies produced:** EVP (end of people module chain)
+- **AI challenge:** step reviews + final submit
+- **Special:** 103KB HTML file (very large — complex multi-form tool)
+
+### Gap Analysis: MODERATE
+
+| Aspect | Expected | Actual | Status |
+|--------|----------|--------|--------|
+| 8 framework steps | all covered | Compressed into 6 steps | MINOR (acceptable compression) |
+| Target talent profile | who/skills/mindset | Likely present | Needs verification |
+| Internal truths | culture strengths | Likely present | Needs verification |
+| EVP formulation | focused promise | Question key present | PASS |
+| Recruitment playbook | channels/filtering/hiring | Question key present | PASS |
+| Step-framework mapping | clear labels | Step names unclear | MODERATE gap |
+| Placeholder content | final | Likely [PLACEHOLDER] | MINOR |
+
+**Missing:** Clear step-to-framework mapping labels, full verification of all 8 elements
+**Wrong:** Nothing identified
+
+### Fix Priority: P1
+### Fix Scope: M (clarify step labels, verify coverage of all 8 framework elements, fill placeholders)
+
+---
+
+## Tool 27: Agile Teams (slug: agile-teams)
+
+**Classification:** brainstorm + planning (problem prioritization + team charter)
+**Completion:** team-only
+**Meeting phase:** during
+**Data risk:** LOW (0 responses)
+
+### Intended Logic (from course content)
+
+**Source:** `frontend/content/sprint-27-agile/content.md` (Sprint 16: Agile Teams)
+
+- **Purpose:** Form rapid-response agile squads for top organizational priorities
+- **Framework:** 3-step: Brainstorm problems/opportunities -> Impact/Ease prioritization -> Define goal/rules/team/KPIs (charter)
+- **Key concepts:** "Three Killers of Speed" (illusion of control, endless waiting, sequential chains), 2-week sprints, cross-functional teams
+- **Key questions:** What are top pain points? Which 2-3 initiatives move needle fastest? What's the metric, team structure, and KPIs?
+- **Expected outputs:** Team charter, sprint design (2-week cadence)
+
+### Current Implementation
+- **Steps:** 3-step flow (brainstorm -> prioritize -> charter)
+- **Question keys (FROZEN):** team_charter, sprint_design
+- **Reference keys:** people.agile.team_charter, people.agile.sprint_design
+- **Dependencies consumed:** org structure context
+- **Dependencies produced:** sprint_design (feeds execution)
+- **AI challenge:** step reviews + final submit
+- **Special:** 99KB HTML file
+
+### Gap Analysis: MINOR
+
+| Aspect | Expected | Actual | Status |
+|--------|----------|--------|--------|
+| Brainstorm phase | problems + opportunities | Yes (inferred) | PASS |
+| Impact/Ease matrix | 1-3 scoring | JSON form (not Excel) | PASS (format change acceptable) |
+| Top 2-3 selection | prioritization | Yes (inferred) | PASS |
+| Team charter | goal/rules/team/KPIs | Question key present | PASS |
+| Sprint design | 2-week cadence | Question key present | PASS |
+| Playing-field rules | budget/scope/authority | Not visible | MINOR gap |
+| Output vs outcome KPIs | distinction | Not visible | MINOR gap |
+| Placeholder content | final | Likely [PLACEHOLDER] | MINOR |
+
+**Missing:** Playing-field rules section, output vs outcome KPI distinction
+**Wrong:** Nothing
+
+### Fix Priority: P2
+### Fix Scope: S (add playing-field rules, clarify KPIs, fill placeholders)
+
+---
+
+## Tool 28: Digitalization (slug: digitalization)
+
+**Classification:** assessment + planning (dual-path: individual AI decisions + team strategy)
+**Completion:** individual-then-team (2 modes)
+**Meeting phase:** before (individual) + during (team synthesis)
+**Data risk:** LOW (0 responses)
+
+### Intended Logic (from course content)
+
+**Source:** `frontend/content/sprint-28-digital/content.md` (Sprint 06: Digitalization Made Simple)
+
+- **Purpose:** Identify core decisions and processes to digitalize/automate with AI
+- **Framework:** 5-step: Core decisions -> Data sources -> Technology platform -> APIs -> Eliminate human in critical decisions
+- **Key questions:** What decisions consume most time? Which processes are most repetitive? What data is needed? What AI tools can automate? What success metrics?
+- **Expected outputs:** Digital audit (top decisions + processes for AI), "Baby AI" implementation plan
+
+### Current Implementation
+- **Steps:** Intro (mode selection) -> [Individual: 3 steps (decisions, processes, implementation)] or [Team: 2 steps (analyses, plan)] -> Canvas
+- **Question keys (FROZEN):** digital_audit, baby_ai
+- **Reference keys:** tech.digital.audit, tech.digital.baby_ai
+- **Dependencies consumed:** none explicit
+- **Dependencies produced:** digital_audit (used by digital-heart)
+- **AI challenge:** integrated
+- **Special:** Dual-mode (individual/team) in same tool
+
+### Gap Analysis: MAJOR
+
+| Aspect | Expected | Actual | Status |
+|--------|----------|--------|--------|
+| Individual decisions (3+) | decision name + frequency + impact + data needs | Yes | PASS |
+| Individual processes (3+) | process name + time + repetition + automation | Yes | PASS |
+| AI tools selection | per decision/process | Yes | PASS |
+| Team synthesis | pattern recognition across members | Unclear implementation | MAJOR gap |
+| 3-week implementation plan | weekly milestones | Partial | MODERATE gap |
+| Data source strategy | internal + external | Partial (individual only) | MINOR gap |
+| Technology platform design | data lake concept | Not visible | MAJOR gap |
+| API design | access strategy | Not visible | MAJOR gap |
+| Framework alignment | 5-step digitalization | 3 individual + 2 team steps (different structure) | MODERATE gap |
+| Placeholder content | final | [PLACEHOLDER] | MINOR |
+
+**Missing:** Technology platform design, API strategy, clear team synthesis flow
+**Wrong:** Framework is "digitalization" (org-level) but implementation focuses on "individual AI opportunities"
+
+### Fix Priority: P0
+### Fix Scope: L (redesign to align with 5-step framework, clarify individual/team flow)
+
+---
+
+## Tool 29: Digital Heart (slug: digital-heart)
+
+**Classification:** planning + architecture (data lake blueprint + implementation plan)
+**Completion:** individual-then-team
+**Meeting phase:** before + during
+**Data risk:** LOW (0 responses)
+
+### Intended Logic (from course content)
+
+**Source:** Sprint 07: AI Aggressive Digitalization — content documentation sparse/missing for this specific tool
+
+- **Purpose:** Build a centralized data architecture ("digital heart") to serve all digitalized decisions
+- **Framework:** 5-step: Core decisions -> Data sources -> Technology & collection -> APIs & access -> Implementation plan
+- **Key questions:** What decisions drive the business? What internal/external data sources? What collection/storage/algorithms? How do users access insights (APIs/UI)? What's the phased rollout?
+- **Expected outputs:** Blueprint (data architecture), implementation plan (phased rollout)
+
+### Current Implementation
+- **Steps:** Intro -> Step 1 (Core Decisions: 3+ with priority 1-10) -> Step 2 (Data Sources per decision: internal/external + quality + gaps) -> Step 3 (Technology: collection, storage, algorithms, processing, integration, security) -> Step 4 (APIs: endpoints, access, UI, training, controls) -> Step 5 (Implementation: timeline, actions, quick wins, resources, cost, metrics)
+- **Question keys (FROZEN):** blueprint, implementation_plan
+- **Reference keys:** tech.heart.blueprint, tech.heart.implementation_plan
+- **Dependencies consumed:** should load from digitalization tool (not implemented)
+- **Dependencies produced:** blueprint (end of tech module chain)
+- **AI challenge:** likely integrated
+
+### Gap Analysis: MODERATE
+
+| Aspect | Expected | Actual | Status |
+|--------|----------|--------|--------|
+| Core decisions (3+) | with frequency + impact + priority | Yes, strict validation (50+ chars) | PASS |
+| Data sources | internal + external per decision | Yes, quality + gaps | PASS |
+| Technology platform | collection + storage + algorithms | Yes, 6 fields | PASS |
+| API strategy | endpoints + access + UI | Yes, 6 fields | PASS |
+| Implementation plan | phased rollout | Yes, 6 fields | PASS |
+| Dependency from T28 | auto-load decisions | NOT implemented | MODERATE gap |
+| Content documentation | brain juice + guides | MISSING (no content.md found) | MODERATE gap |
+| Validation strictness | appropriate | Very strict (100+ chars for some fields) | MINOR (may frustrate users) |
+| Placeholder content | final | Likely [PLACEHOLDER] | MINOR |
+
+**Missing:** Dependency auto-load from digitalization tool, content documentation (no sprint content.md)
+**Wrong:** Nothing structurally wrong — 5 steps match framework well
+
+### Fix Priority: P1
+### Fix Scope: M (add dependency loading, create content.md, relax validation, fill placeholders)
+
+---
+
+## Priority Summary (Session 4 Tools)
+
+| Tool | Gap Rating | Priority | Scope | Key Issue |
+|------|-----------|----------|-------|-----------|
+| 22-core-activities | MODERATE | P1 | M | Missing dependency injection, no PDF export |
+| 23-processes-decisions | MINOR | P2 | S | Placeholders only |
+| 24-fit-abc | MINOR | P2 | S | Needs full verification, placeholders |
+| 25-org-redesign | MINOR | P2 | S | Needs full verification, placeholders |
+| 26-employer-branding | MODERATE | P1 | M | Step-framework mapping unclear, large file |
+| 27-agile-teams | MINOR | P2 | S | Missing playing-field rules, placeholders |
+| **28-digitalization** | **MAJOR** | **P0** | **L** | **Framework misalignment — individual AI vs org digitalization** |
+| 29-digital-heart | MODERATE | P1 | M | Missing dependency + content docs, strict validation |
+
+---
+
+## Frozen Question Keys Reference (Session 4)
+
+### core-activities (2 keys)
+top5_activities, activity_owners
+
+### processes-decisions (4 keys)
+decision_rights, top3_per_activity, capabilities, kpi_scoreboard
+
+### fit-abc-analysis (3 keys)
+classification, talent_gaps, a_player_agreements
+
+### org-redesign (3 keys)
+machine_blueprint, right_seats, strategy_shadow
+
+### employer-branding (2 keys)
+evp, recruitment_playbook
+
+### agile-teams (2 keys)
+team_charter, sprint_design
+
+### digitalization (2 keys)
+digital_audit, baby_ai
+
+### digital-heart (2 keys)
+blueprint, implementation_plan
+
+---
+
+# MASTER PRIORITY SUMMARY — ALL 30 TOOLS
+
+## P0 — Fix Immediately (MAJOR gaps, core frameworks missing)
+
+| Tool | Module | Gap | Scope | Issue |
+|------|--------|-----|-------|-------|
+| **16-vp-testing** | Strategy | MAJOR | L | Core validation flow missing (interviews, consistency rules) |
+| **17-product-dev** | Execution | MAJOR | L | Strategic role framework (Storyteller/Sales/Profit) + WTP + bundling missing |
+| **18-pricing** | Execution | MAJOR | L | Feature classification + tier design + margin calculator missing |
+| **28-digitalization** | Tech | MAJOR | L | Framework misalignment — individual AI vs org digitalization |
+
+## P1 — Fix Next (MODERATE gaps, structural issues)
+
+| Tool | Module | Gap | Scope | Issue |
+|------|--------|-----|-------|-------|
+| 10-performance | Performance | MODERATE | M | Missing useEffect dependency loading |
+| 12-market-size | Market | MODERATE | M | Scoring formula + SAM/SOM + PDF export |
+| 22-core-activities | Org | MODERATE | M | Missing dependency injection + PDF export |
+| 26-employer-branding | People | MODERATE | M | Step-framework mapping unclear |
+| 29-digital-heart | Tech | MODERATE | M | Missing dependency + content docs |
+
+## P2 — Minor Fixes (MINOR gaps, content/polish)
+
+| Tool | Module | Gap | Scope | Issue |
+|------|--------|-----|-------|-------|
+| 00-woop | Intro | MINOR | S | Pre-mortem scope, placeholders |
+| 02-dream | Identity | MINOR | S | Progress calc bug, dependency display |
+| 03-values | Identity | MINOR | S | Missing cover image, question mappings |
+| 04-team | Identity | MINOR | M | Missing contextual prompts per dysfunction |
+| 06-cash | Performance | MINOR | S | BS validation, currency |
+| 07-energy | Performance | MINOR | S | Incomplete validation |
+| 13-segmentation | Market | MINOR | S | Segment count guidance |
+| 14-target-segment | Strategy | MINOR | S | Top-3 enforcement |
+| 15-value-proposition | Strategy | MINOR | S | Validation method note |
+| 19-brand-marketing | Execution | MINOR | S | Placeholders only |
+| 20-customer-service | Execution | MINOR | S | Placeholders, dependency config |
+| 21-route-to-market | Execution | MINOR | S | Placeholders, help modal |
+| 23-processes-decisions | Org | MINOR | S | Placeholders |
+| 24-fit-abc | Org | MINOR | S | Verify + placeholders |
+| 25-org-redesign | Org | MINOR | S | Verify + placeholders |
+| 27-agile-teams | People | MINOR | S | Playing-field rules |
+
+## P3 — Cosmetic Only (pass audit)
+
+| Tool | Module | Gap | Scope | Issue |
+|------|--------|-----|-------|-------|
+| 01-know-thyself | Identity | MINOR | S | Placeholders, mock share button |
+| 05-fit | Identity | MINOR | S | D-Player help text |
+| 08-goals | Performance | MINOR | S | CONFIG.STORAGE_KEY bug |
+| 09-focus | Performance | MINOR | S | Placeholders only |
+| 11-meeting-rhythm | Performance | MINOR | S | Effectiveness enum |
+
+## Pervasive Issue: [PLACEHOLDER] Content
+
+ALL 30 tools have [PLACEHOLDER] text in cognitive load components (FastTrackInsight, ScienceBox, CaseStudy, WarningBox). This is the single most common gap and can be addressed in a batch pass after logic fixes.
+
+## Recommended Fix Order (dependency chain)
+
+1. **P0 tools first** (16, 17, 18, 28) — these have missing core logic
+2. **P1 tools** (10, 12, 22, 26, 29) — structural fixes
+3. **P2 batch** — minor fixes, can be parallelized
+4. **Placeholder content batch** — single pass across all 30 tools
+5. **P3 cosmetic** — optional polish
