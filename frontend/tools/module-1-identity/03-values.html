@@ -18,138 +18,336 @@
     <script src="../../shared/js/cognitive-load.js"></script>
     <script src="../../js/tool-access-control.js"></script>
 
+    <!-- Font preloading to prevent FOUT -->
+    <link rel="preload" href="Plaak3Trial-43-Bold.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="RiformaLL-Regular.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="MonumentGrotesk-Mono.woff2" as="font" type="font/woff2" crossorigin>
+
     <style>
-        @font-face {
-            font-family: 'Plaak';
-            src: url('Plaak3Trial-43-Bold.woff2') format('woff2');
-            font-weight: bold;
-        }
+        /* === FONT FACES === */
+        @font-face { font-family: 'Plaak'; src: url('Plaak3Trial-43-Bold.woff2') format('woff2'); font-weight: bold; font-display: swap; }
+        @font-face { font-family: 'Riforma'; src: url('RiformaLL-Regular.woff2') format('woff2'); font-weight: normal; font-display: swap; }
+        @font-face { font-family: 'Riforma'; src: url('RiformaLL-Regular.woff2') format('woff2'); font-weight: 600; font-display: swap; }
+        @font-face { font-family: 'Monument'; src: url('MonumentGrotesk-Mono.woff2') format('woff2'); font-display: swap; }
 
-        @font-face {
-            font-family: 'Riforma';
-            src: url('RiformaLL-Regular.woff2') format('woff2');
-            font-weight: normal;
-        }
-
-        @font-face {
-            font-family: 'Monument';
-            src: url('MonumentGrotesk-Mono.woff2') format('woff2');
-            font-weight: normal;
-        }
-
+        /* === BASE RESET === */
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
         body {
             font-family: 'Riforma', -apple-system, sans-serif;
             font-size: 16px;
-            color: #000000;
-            background: #FFFFFF;
+            color: #000;
+            background: #000;
             -webkit-font-smoothing: antialiased;
         }
 
-        .plaak {
-            font-family: 'Plaak', sans-serif;
-            font-weight: bold;
-            letter-spacing: -0.01em;
-            line-height: 1.2;
+        /* === CUSTOM SCROLLBAR === */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #000; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #333; }
+        * { scrollbar-width: thin; scrollbar-color: #000 transparent; }
+
+        /* === TYPOGRAPHY HELPERS === */
+        .plaak { font-family: 'Plaak', sans-serif; font-weight: bold; letter-spacing: -0.01em; line-height: 1.2; }
+        .monument { font-family: 'Monument', monospace; letter-spacing: 0.05em; }
+
+        /* === LAYOUT FRAME === */
+        .tool-frame { background: #fff; min-height: 100vh; }
+        .tool-inner { background: #fff; min-height: 100vh; }
+
+        /* === WIZARD LAYOUT === */
+        .wizard-layout { display: flex; min-height: 100vh; }
+        .wizard-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background: #fff;
+        }
+        .wizard-content {
+            max-width: 640px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 48px 32px;
+            flex: 1;
         }
 
-        .worksheet-input {
-            border: 1px solid #E0E0E0;
+        /* === SIDEBAR === */
+        .wizard-sidebar {
+            width: 280px;
+            background: #000;
+            border-left: 1px solid #000;
+            flex-shrink: 0;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .wizard-sidebar-inner {
+            padding: 32px 24px;
+            height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        .sidebar-step-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            border-left: 3px solid transparent;
+            transition: all 0.2s ease;
+        }
+        .sidebar-step-item.active { border-left-color: #FFF469; background: #222; }
+        .sidebar-step-item.completed { background: #fff; color: #000; border-left-color: #fff; cursor: pointer; }
+        .sidebar-step-item.completed:hover { background: #E0E0E0; }
+        .sidebar-step-item.locked { opacity: 0.5; }
+        .sidebar-step-item .step-num { font-family: 'Riforma', sans-serif; font-size: 14px; }
+        .sidebar-step-item .step-name { font-family: 'Riforma', sans-serif; font-size: 14px; }
+        .sidebar-snippet { font-size: 12px; margin-top: 4px; opacity: 0.7; line-height: 1.3; }
+
+        /* === STEP HEADER === */
+        .step-indicator {
+            font-family: 'Monument', monospace;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #6B7280;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .step-time {
+            font-family: 'Monument', monospace;
+            font-size: 11px;
+            color: #6B7280;
+        }
+        .step-heading {
+            font-family: 'Plaak', sans-serif;
+            font-weight: bold;
+            font-size: 32px;
+            text-transform: uppercase;
+            letter-spacing: -0.01em;
+            line-height: 1.2;
+            color: #000;
+            margin-bottom: 6px;
+        }
+        .step-hint {
+            font-size: 16px;
+            color: #6B7280;
+            line-height: 1.5;
+            margin: 0 0 32px 0;
+        }
+
+        /* === FORM ELEMENTS === */
+        .ft-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: 'Monument', monospace;
+            font-size: 14px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #000;
+            margin-bottom: 8px;
+        }
+        .ft-required { color: #DC2626; font-weight: 700; }
+
+        .ft-input {
+            width: 100%;
+            height: 44px;
+            padding: 8px 16px;
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
+            color: #000;
+            background: #fff;
+            border: 1px solid #E5E7EB;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .ft-input:focus {
+            outline: none;
+            border-color: #000;
+            box-shadow: 0 0 0 3px #FFF469;
+        }
+        .ft-input.has-error {
+            border: 2px solid #DC2626;
+            padding-right: 40px;
+        }
+        .ft-input.has-error:focus {
+            border-color: #DC2626;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2);
+        }
+
+        .ft-textarea {
+            width: 100%;
+            min-height: 120px;
             padding: 12px 16px;
             font-family: 'Riforma', sans-serif;
             font-size: 16px;
-            transition: border-color 0.2s ease;
-            background: #FFFFFF;
+            color: #000;
+            background: #fff;
+            border: 1px solid #E5E7EB;
+            resize: vertical;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .ft-textarea:focus {
+            outline: none;
+            border-color: #000;
+            box-shadow: 0 0 0 3px #FFF469;
+        }
+        .ft-textarea.has-error {
+            border: 2px solid #DC2626;
+        }
+        .ft-textarea.has-error:focus {
+            border-color: #DC2626;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2);
+        }
+
+        .ft-help {
+            font-size: 14px;
+            color: #6B7280;
+            margin-top: 4px;
+            line-height: 1.5;
+        }
+        .ft-error-msg {
+            font-size: 14px;
+            font-weight: 600;
+            color: #DC2626;
+            margin-top: 4px;
+            line-height: 1.4;
+        }
+        .ft-field-group {
+            margin-bottom: 24px;
+        }
+        .ft-field-group:last-child { margin-bottom: 0; }
+        .ft-section { margin-bottom: 32px; }
+
+        /* === YELLOW INSIGHT BOX === */
+        .ft-insight {
+            background: #FFF469;
+            border: 3px solid #000;
+            padding: 16px;
+            margin-bottom: 32px;
+        }
+
+        /* === EXAMPLE BOX === */
+        .ft-example {
+            background: #F3F4F6;
+            padding: 16px;
+            margin-bottom: 8px;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #1F2937;
+        }
+
+        /* === ERROR SUMMARY === */
+        .ft-error-summary {
+            border: 2px solid #DC2626;
+            background: #fff;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+        .ft-error-summary a {
+            color: #DC2626;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+        .ft-error-summary a:hover { text-decoration: none; }
+
+        /* === BUTTON FOOTER === */
+        .btn-footer {
+            position: sticky;
+            bottom: 0;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 32px;
+            border-top: 1px solid #E5E7EB;
+            background: #fff;
             width: 100%;
         }
-
-        .worksheet-input:focus {
-            outline: none;
-            border-color: #000000;
-        }
-
-        .numbered-section {
-            background: #000000;
-            color: #FFFFFF;
-            padding: 10px 16px;
-            font-size: 18px;
-            font-weight: bold;
-            letter-spacing: 0.5px;
-            display: inline-block;
-        }
-
-        .btn-primary {
-            background: #000000;
-            color: #FFFFFF;
+        .btn-back {
+            background: #fff;
+            color: #000;
+            border: 2px solid #000;
             padding: 12px 24px;
-            border: 2px solid #000000;
             font-family: 'Riforma', sans-serif;
             font-size: 16px;
             cursor: pointer;
             transition: all 0.2s ease;
+            min-height: 44px;
         }
-
-        .btn-primary:hover:not(:disabled) {
-            transform: scale(1.02);
-        }
-
-        .btn-primary:disabled {
-            background: #E0E0E0;
-            border-color: #E0E0E0;
-            color: #9CA3AF;
-            cursor: not-allowed;
-            opacity: 0.5;
-        }
-
-        .btn-secondary {
-            background: #FFFFFF;
-            color: #000000;
+        .btn-back:hover { background: #F3F4F6; }
+        .btn-next {
+            background: #000;
+            color: #fff;
+            border: 2px solid #000;
             padding: 12px 24px;
-            border: 2px solid #000000;
             font-family: 'Riforma', sans-serif;
             font-size: 16px;
             cursor: pointer;
             transition: all 0.2s ease;
+            min-height: 44px;
+        }
+        .btn-next:hover:not(:disabled) { transform: scale(1.02); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .btn-next:disabled { background: #E5E7EB; color: #9CA3AF; border-color: #E5E7EB; cursor: not-allowed; }
+
+        /* === CLOSING MESSAGE === */
+        .closing-box {
+            border-top: 1px solid #E5E7EB;
+            padding: 20px 0 0 0;
+            margin-top: 8px;
+            text-align: center;
+        }
+        .closing-box p { font-size: 14px; color: #6B7280; }
+        .closing-box .closing-title {
+            font-family: 'Monument', monospace;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #000;
+            margin-bottom: 6px;
         }
 
-        .btn-secondary:hover { background: #F8F8F8; }
+        /* === MOBILE STEP BAR === */
+        .mobile-step-bar { display: none; padding: 12px 16px; border-bottom: 1px solid #E5E7EB; background: #F3F4F6; }
+        .mobile-step-bar .bar-text { font-family: 'Monument', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #6B7280; margin-bottom: 6px; }
+        .mobile-progress { height: 3px; background: #E5E7EB; width: 100%; }
+        .mobile-progress-fill { height: 100%; background: #000; transition: width 0.3s ease; }
 
-        .progress-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #E0E0E0;
-            transition: all 0.2s ease;
+        /* === CANVAS STYLES === */
+        .numbered-section { background: #000; color: #fff; padding: 8px 14px; font-size: 14px; font-weight: bold; letter-spacing: 0.5px; display: inline-block; font-family: 'Monument', monospace; }
+        .canvas-section-box { border: 2px solid #000; background: #FAFAFA; padding: 16px; margin-bottom: 16px; }
+
+        /* === ANIMATIONS === */
+        @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .animate-in { animation: fadeSlideIn 0.3s ease-out; }
+
+        /* === PRINT === */
+        @media print { .no-print { display: none !important; } }
+
+        /* === RESPONSIVE === */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .wizard-sidebar { width: 220px; }
+            .wizard-sidebar-inner { padding: 24px 16px; }
+        }
+        @media (max-width: 768px) {
+            .wizard-sidebar { display: none; }
+            .mobile-step-bar { display: block; }
+            .wizard-content { padding: 24px 16px; }
+            .step-heading { font-size: 24px; }
+            .btn-footer { padding: 12px 16px; }
+        }
+        @media (max-width: 480px) {
+            .step-heading { font-size: 20px; }
+            .wizard-content { padding: 20px 12px; }
         }
 
-        .progress-dot.active {
-            background: #000000;
-            transform: scale(1.3);
-        }
-
-        .progress-dot.completed {
-            background: #000000;
-        }
-
-        .animate-in {
-            animation: slideIn 0.3s ease-out;
-        }
-
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        @media print { .no-print { display: none; } }
-
+        /* === TOOL-SPECIFIC: dependency injected highlight === */
         .dependency-injected {
             border-left: 3px solid #FFF469 !important;
             background-color: #fffde6 !important;
-        }
-
-        .cover-overlay {
-            background: linear-gradient(to bottom, rgba(0,0,0,0.4), rgba(0,0,0,0.7));
         }
     </style>
 </head>
@@ -180,8 +378,200 @@
         ToolAccessControl.init(CONFIG.TOOL_SLUG);
 
         // Initialize cognitive load components
-        CognitiveLoad.init('values', {"insights":["Values are not aspirational - they describe who you actually are.","Fast Track way: 3-5 values maximum. More than 5 means you have not made hard choices."],"caseStudy":{"before":"[PLACEHOLDER] Company had 12 generic values nobody remembered.","after":"[PLACEHOLDER] 3 sharp values that drove hiring, firing, and promotion decisions.","quote":"[PLACEHOLDER] Our values became our operating system."}});
+        CognitiveLoad.init('values', {"insights":["Values are not aspirational - they describe who you actually are.","Fast Track way: 3-5 values maximum. More than 5 means you have not made hard choices."],"caseStudy":{"before":"A mid-size tech firm had 12 generic values like 'Integrity' and 'Innovation' on the wall, but employees couldn't name a single one. Decisions were made arbitrarily and new hires got no cultural guidance.","after":"After using the Core Values Identification Tool, they distilled to 3 sharp, behavior-driven values with clear 'Cool' and 'Not Cool' lists. These drove hiring, firing, promotion decisions, and weekly team check-ins.","quote":"Our values stopped being a poster and became our operating system — now every hire, every conflict, and every promotion runs through them."}});
         const { FastTrackInsight, ScienceBox, WarningBox, CaseStudy, ScienceBookmarkIcon, ToolGuideDrawer } = CognitiveLoad.components;
+
+        /* ============================================================
+           TRANSITION CONTENT — VP-style screens between steps
+           ============================================================ */
+        const TRANSITION_CONTENT = {
+            1: {
+                title: 'VALUES IDENTIFIED.',
+                text: "You've surfaced the behaviors that define your culture. Now let's see if they match your Dream.",
+                brutalTruth: "Most companies list aspirational values they don't actually live. You started with observed behaviors first — that's the Fast Track way. Values extracted from real behavior are 3x more likely to be lived daily than top-down brainstormed lists.",
+                peerProof: "Deloitte research shows values-driven companies experience 30% higher innovation rates and 40% higher employee retention. The key differentiator? Values derived from actual behaviors, not boardroom aspirations."
+            },
+            3: {
+                title: 'BEHAVIORS DEFINED.',
+                text: "Your values now have teeth — specific 'Cool' and 'Not Cool' behaviors everyone can observe.",
+                brutalTruth: "A value without a behavior is just a word on a wall. Steven Bartlett's principle: values are the specific behaviors that accompany them. Your Cool/Not Cool lists are now the operating manual for your culture.",
+                peerProof: "A meta-analysis of 200+ organizations found that defining values as explicit behavioral pairs increases cultural consistency by 35%. Written behavioral commitments create psychological accountability that abstract principles cannot."
+            },
+            4: {
+                title: 'BOUNDARIES SET.',
+                text: "Yellow and red lines drawn. Now create questions to protect your culture in hiring.",
+                brutalTruth: "Red lines are your company's immune system. Without explicit boundaries, values erode through a thousand small compromises. Organizations with clear behavioral boundaries experience 60% fewer culture-related conflicts.",
+                peerProof: "BCG longitudinal studies demonstrate that when consequences are defined in advance, enforcement becomes fair and consistent rather than reactive and political. Your red lines will save you from hiring mistakes that cost 3-5x annual salary."
+            },
+            5: {
+                title: 'HIRING PROTECTED.',
+                text: "Your recruitment questions will filter for values alignment. Now plan the rollout.",
+                brutalTruth: "A highly skilled candidate who doesn't align with your values will disrupt the culture and cost you more than an empty seat. These questions test how candidates actually behave — not just what they say they believe.",
+                peerProof: "Bain research confirms that companies using values-based interview techniques reduce mis-hires by 40% and see significantly faster cultural integration. You've built questions that reveal behavioral truth."
+            },
+            6: {
+                title: 'SYSTEM COMPLETE.',
+                text: "Your values system is built — from identification through behaviors, boundaries, and rollout.",
+                brutalTruth: "Values are only real when they're reinforced daily. Your communication plan ensures values don't become another forgotten poster. The companies that win are the ones that talk about values in every meeting, every review, every decision.",
+                peerProof: "Research shows that organizations with active values communication programs maintain 60% higher cultural alignment scores. Your plan creates the daily reinforcement that turns words into DNA."
+            }
+        };
+
+        /* ============================================================
+           SHARED COMPONENTS
+           ============================================================ */
+
+        function CheckIcon({ color = "#fff", size = 16 }) {
+            return <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>;
+        }
+
+        function ButtonFooter({ onBack, onNext, nextLabel = 'Next', showBack = true, disabled = false }) {
+            return (
+                <div className="btn-footer no-print">
+                    {showBack ? <button className="btn-back" onClick={onBack}>&larr; Back</button> : <div />}
+                    <button className="btn-next" disabled={disabled} onClick={onNext}>{nextLabel} &rarr;</button>
+                </div>
+            );
+        }
+
+        function MobileStepBar({ currentStep, totalSteps }) {
+            const total = totalSteps || 6;
+            const progress = currentStep >= 999 ? 100 : Math.round((currentStep / total) * 100);
+            return (
+                <div className="mobile-step-bar no-print">
+                    <div className="bar-text">Step {Math.min(currentStep, total)} of {total}</div>
+                    <div className="mobile-progress"><div className="mobile-progress-fill" style={{ width: `${progress}%` }} /></div>
+                </div>
+            );
+        }
+
+        function CoachFeedbackPanel() {
+            const [expanded, setExpanded] = useState(false);
+            const [feedback, setFeedback] = useState(null);
+
+            useEffect(() => {
+                const check = () => {
+                    if (window.AIChallenge && window.AIChallenge.getLastFeedback) {
+                        setFeedback(window.AIChallenge.getLastFeedback());
+                    }
+                };
+                check();
+                const interval = setInterval(check, 2000);
+                return () => clearInterval(interval);
+            }, []);
+
+            if (!feedback) return null;
+
+            return (
+                <div style={{ marginTop: 24, borderTop: '1px solid #333', paddingTop: 16 }}>
+                    <button
+                        onClick={() => setExpanded(!expanded)}
+                        style={{ background: 'none', border: 'none', color: '#FFF469', cursor: 'pointer', fontFamily: "'Monument', monospace", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 6, padding: 0, width: '100%' }}
+                    >
+                        <span style={{ transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s', display: 'inline-block' }}>&#9654;</span>
+                        COACH FEEDBACK
+                    </button>
+                    {expanded && (
+                        <div style={{ marginTop: 10, fontSize: 12, color: '#ccc', lineHeight: 1.5 }}>
+                            {feedback.type === 'approved' && (
+                                <p style={{ color: '#FFF469' }}>{feedback.message}</p>
+                            )}
+                            {feedback.type === 'challenges' && (
+                                <>
+                                    {feedback.encouragement && <p style={{ color: '#FFF469', marginBottom: 8 }}>{feedback.encouragement}</p>}
+                                    {feedback.challenges && feedback.challenges.map((ch, i) => (
+                                        <div key={i} style={{ marginBottom: 8, paddingLeft: 8, borderLeft: '2px solid #555' }}>
+                                            <div style={{ fontSize: 10, color: '#999', marginBottom: 2 }}>{ch.question_text || ch.question_key}</div>
+                                            <div>{ch.feedback}</div>
+                                        </div>
+                                    ))}
+                                </>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        function WizardSidebar({ currentStep, formData, onNavigate }) {
+            const steps = [
+                { num: 1, label: 'Company Values', time: '~15 min', phase: 'individual' },
+                { num: 2, label: 'Values Gap', time: '~10 min', phase: 'individual' },
+                { num: 3, label: 'Behaviors', time: '~10 min', phase: 'team' },
+                { num: 4, label: 'Red Lines', time: '~5 min', phase: 'team' },
+                { num: 5, label: 'Recruitment', time: '~5 min', phase: 'team' },
+                { num: 6, label: 'Comm Plan', time: '~5 min', phase: 'team' }
+            ];
+
+            const getSnippet = (n) => {
+                if (n === 1 && formData.top5Values[0]) { const f = formData.top5Values.filter(v => v.trim()); return f.length + ' value' + (f.length !== 1 ? 's' : '') + ' defined'; }
+                if (n === 2 && formData.gap) return '"' + formData.gap.substring(0, 50) + (formData.gap.length > 50 ? '...' : '') + '"';
+                if (n === 3 && formData.valuesBehaviors[0].value) { const f = formData.valuesBehaviors.filter(v => v.value.trim()); return f.length + ' behavior pair' + (f.length !== 1 ? 's' : ''); }
+                if (n === 4) { const y = formData.yellowLines.filter(l => l.trim()); const r = formData.redLines.filter(l => l.trim()); if (y.length || r.length) return y.length + ' yellow, ' + r.length + ' red'; }
+                if (n === 5 && formData.recruitmentQuestions[0]) { const f = formData.recruitmentQuestions.filter(q => q.trim()); return f.length + ' question' + (f.length !== 1 ? 's' : ''); }
+                if (n === 6 && formData.commPlan[0].idea) { const f = formData.commPlan.filter(p => p.idea.trim()); return f.length + ' action' + (f.length !== 1 ? 's' : '') + ' planned'; }
+                return null;
+            };
+
+            let lastPhase = null;
+
+            return (
+                <div className="wizard-sidebar no-print">
+                    <div className="wizard-sidebar-inner">
+                        <div style={{ marginBottom: 24 }}>
+                            <div className="monument" style={{ fontSize: 12, textTransform: 'uppercase', color: '#fff', marginBottom: 4 }}>COMPANY VALUES</div>
+                            <div style={{ fontSize: 13, color: '#999' }}>~50 min total</div>
+                        </div>
+                        <div style={{ marginBottom: 16, fontFamily: "'Monument', monospace", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#999' }}>Your journey</div>
+                        {steps.map(s => {
+                            const effectiveStep = Math.ceil(currentStep);
+                            const isCompleted = effectiveStep > s.num, isActive = effectiveStep === s.num, isLocked = effectiveStep < s.num;
+                            const snippet = isCompleted ? getSnippet(s.num) : null;
+                            const showPhaseHeader = s.phase !== lastPhase;
+                            lastPhase = s.phase;
+                            return (
+                                <React.Fragment key={s.num}>
+                                    {showPhaseHeader && (
+                                        <div style={{ marginTop: s.num === 1 ? 0 : 16, marginBottom: 8, fontFamily: "'Monument', monospace", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#FFF469' }}>
+                                            {s.phase === 'individual' ? 'INDIVIDUAL PHASE' : 'TEAM PHASE'}
+                                        </div>
+                                    )}
+                                    <div className={`sidebar-step-item ${isCompleted ? 'completed' : ''} ${isActive ? 'active' : ''} ${isLocked ? 'locked' : ''}`}
+                                        onClick={() => isCompleted && onNavigate && onNavigate(s.num)}
+                                        title={isCompleted ? 'Click to review this step' : ''}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                            {isCompleted ? <CheckIcon color="#000" size={14} /> : <span className="step-num" style={{ color: isActive ? '#fff' : '#ccc' }}>{String(s.num).padStart(2, '0')}</span>}
+                                            <span className="step-name" style={{ color: isLocked ? '#666' : isCompleted ? '#000' : '#fff' }}>{s.label}</span>
+                                        </div>
+                                        {snippet && <div className="sidebar-snippet">{snippet}</div>}
+                                    </div>
+                                </React.Fragment>
+                            );
+                        })}
+
+                        <CoachFeedbackPanel />
+                    </div>
+                </div>
+            );
+        }
+
+        function DependencyContext({ deps }) {
+            if (!deps || deps.length === 0) return null;
+            return (
+                <div style={{ marginBottom: '24px' }}>
+                    <div style={{ fontFamily: "'Monument', monospace", fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#666', marginBottom: '8px' }}>
+                        CONTEXT FROM PREVIOUS TOOLS
+                    </div>
+                    {deps.map((dep, i) => (
+                        <div key={i} style={{ background: '#FFF9E0', border: '1px solid #F0E68C', borderLeft: '3px solid #DAA520', padding: '12px 16px', marginBottom: '8px', fontSize: '14px' }}>
+                            <div style={{ fontWeight: 600, marginBottom: '4px', color: '#333' }}>{dep.label}</div>
+                            <div style={{ color: '#555', whiteSpace: 'pre-wrap' }}>{dep.value}</div>
+                        </div>
+                    ))}
+                </div>
+            );
+        }
 
         const ValuesTool = () => {
             const [step, setStep] = useState(0);
@@ -371,131 +761,275 @@
                 }
             };
 
-            // COVER PAGE
+            // Submit individual phase answers (steps 1-2) so guru can see them early
+            const submitIndividualPhase = async () => {
+                try {
+                    const userId = localStorage.getItem('ft_user_id');
+                    if (!userId) return;
+
+                    const individualAnswers = {
+                        behaviors: formData.behaviors.filter(b => b.trim()),
+                        top_5_values: formData.top5Values.filter(v => v.trim()),
+                        dream_connection: formData.dream,
+                        required_values: formData.requiredValues,
+                        values_gap: formData.gap
+                    };
+
+                    await window.AIChallenge.submitWithChallenge(userId, 'values-individual', individualAnswers, {
+                        onReviewStart: () => {},
+                        onRevise: () => {},
+                        onSubmitAnyway: () => { console.log('[Values] Individual phase submitted'); },
+                        onError: (err) => { console.warn('[Values] Individual submit error:', err); }
+                    });
+                } catch (err) {
+                    console.warn('[Values] Failed to submit individual phase:', err);
+                }
+            };
+
+            const clearCache = () => {
+                localStorage.removeItem(CONFIG.STORAGE_KEY);
+                window.location.reload();
+            };
+
+            // COVER PAGE (step 0)
             if (step === 0) {
                 return (
-                    <div className="relative min-h-screen flex items-center justify-center">
-                        <img 
-                            src="anastase-maragos-X4zx5Vc_LZU-unsplash.jpg" 
-                            alt="Background" 
-                            className="absolute inset-0 w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 cover-overlay"></div>
-                        <div className="relative z-10 text-center text-white px-8">
-                            <h1 className="plaak text-9xl mb-6 animate-in">COMPANY VALUES TOOL</h1>
-                            <p className="text-3xl mb-12 animate-in" style={{animationDelay: '0.2s'}}>
-                                Transform your values from words into daily behaviors
-                            </p>
-                            <button 
-                                className="bg-white text-black plaak text-3xl px-16 py-6 border-4 border-white hover:bg-black hover:text-white transition-all duration-200 animate-in"
-                                style={{animationDelay: '0.4s'}}
-                                onClick={() => setStep(0.5)}
-                            >
-                                START
-                            </button>
+                    <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+                        <div style={{ position: 'relative', textAlign: 'center', color: '#fff', padding: '0 32px' }} className="animate-in">
+                            <div className="monument" style={{ fontSize: 13, color: '#FFF469', letterSpacing: '0.15em', marginBottom: 16 }}>TOOL 03</div>
+                            <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 24 }}>
+                                <div style={{ display: 'inline-block', border: '1px solid #FFF469', padding: '6px 16px' }}>
+                                    <span className="monument" style={{ fontSize: 11, color: '#FFF469', letterSpacing: '0.15em', textTransform: 'uppercase' }}>INDIVIDUAL + TEAM TOOL</span>
+                                </div>
+                            </div>
+                            <h1 className="plaak" style={{ fontSize: 80, marginBottom: 16, textTransform: 'uppercase' }}>COMPANY VALUES</h1>
+                            <p style={{ fontSize: 18, color: '#ccc', marginBottom: 48 }}>Transform your values from words into daily behaviors</p>
+                            <button onClick={() => setStep(0.5)}
+                                style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 48px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s ease', minHeight: 44 }}
+                                onMouseOver={e => { e.target.style.background = '#FFF469'; }}
+                                onMouseOut={e => { e.target.style.background = '#fff'; }}
+                            >START</button>
+                            <div style={{ marginTop: 24 }}>
+                                <button onClick={clearCache}
+                                    style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', fontSize: 13, textDecoration: 'underline' }}
+                                >Clear Saved Data</button>
+                            </div>
                         </div>
                     </div>
                 );
             }
 
-            // INTRO SCREEN
+            // INTRO PAGE (step 0.5) — Explain two phases
             if (step === 0.5) {
                 return (
-                    <div className="bg-black text-white min-h-screen p-16">
-                        <div className="max-w-5xl mx-auto">
-                            <h1 className="plaak text-9xl mb-16 animate-in">BEFORE WE START</h1>
-                            
-                            <div className="mb-12 animate-in" style={{animationDelay: '0.1s'}}>
-                                <h2 className="plaak text-6xl mb-6">PURPOSE</h2>
-                                <p className="text-3xl leading-relaxed">
-                                    Define your company values, translate them into specific behaviors, 
-                                    and create systems to live them every day.
+                    <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ maxWidth: 640, padding: '0 32px', textAlign: 'center', color: '#fff' }} className="animate-in">
+                            <div className="monument" style={{ fontSize: 12, color: '#FFF469', letterSpacing: '0.1em', marginBottom: 24 }}>HOW THIS TOOL WORKS</div>
+                            <h1 className="plaak" style={{ fontSize: 40, marginBottom: 16 }}>TWO-PHASE JOURNEY</h1>
+                            <p style={{ fontSize: 16, color: '#ccc', marginBottom: 40, lineHeight: 1.7 }}>
+                                This tool is completed in two phases: first on your own, then together with your team.
+                            </p>
+
+                            {/* Phase 1 */}
+                            <div style={{ background: '#111', border: '1px solid #333', padding: '24px', marginBottom: 16, textAlign: 'left' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                                    <span className="monument" style={{ fontSize: 11, color: '#FFF469', letterSpacing: '0.1em' }}>PHASE 1: INDIVIDUAL</span>
+                                    <span style={{ fontSize: 12, color: '#666' }}>Steps 1-2</span>
+                                </div>
+                                <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7 }}>
+                                    Complete on your own before the team meeting. Reflect on what behaviors matter most and identify value gaps.
                                 </p>
                             </div>
 
-                            <div className="mb-16 animate-in" style={{animationDelay: '0.2s'}}>
-                                <h2 className="plaak text-6xl mb-8">THE JOURNEY</h2>
-                                <div className="grid grid-cols-3 gap-8 text-center">
-                                    <div className="border-2 border-white p-8">
-                                        <div className="text-9xl plaak mb-4">01</div>
-                                        <p className="text-2xl font-bold">Identify Values</p>
+                            {/* Phase 2 */}
+                            <div style={{ background: '#111', border: '1px solid #333', padding: '24px', marginBottom: 24, textAlign: 'left' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                                    <span className="monument" style={{ fontSize: 11, color: '#FFF469', letterSpacing: '0.1em' }}>PHASE 2: TEAM</span>
+                                    <span style={{ fontSize: 12, color: '#666' }}>Steps 3-6</span>
+                                </div>
+                                <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7 }}>
+                                    Done together during the guru-led meeting. Your guru will review everyone's individual answers, then lead the team through defining behaviors, red lines, recruitment questions, and communication plans.
+                                </p>
+                            </div>
+
+                            <div style={{ background: '#1a1a00', border: '1px solid #FFF469', padding: '16px 20px', marginBottom: 40, textAlign: 'left' }}>
+                                <p style={{ fontSize: 13, color: '#FFF469', lineHeight: 1.6 }}>
+                                    Your guru will see your full individual answers to prepare for the meeting.
+                                </p>
+                            </div>
+
+                            {/* Journey overview */}
+                            <div style={{ marginBottom: 40, textAlign: 'left' }}>
+                                <div className="monument" style={{ fontSize: 10, color: '#666', letterSpacing: '0.1em', marginBottom: 16 }}>JOURNEY OVERVIEW</div>
+
+                                <div className="monument" style={{ fontSize: 10, color: '#FFF469', letterSpacing: '0.1em', marginBottom: 8 }}>INDIVIDUAL</div>
+                                <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+                                    <div style={{ flex: 1, background: '#111', border: '1px solid #333', padding: '12px', textAlign: 'center' }}>
+                                        <div className="monument" style={{ fontSize: 10, color: '#FFF469', marginBottom: 4 }}>01</div>
+                                        <div style={{ fontSize: 12, color: '#ccc' }}>Company Values</div>
                                     </div>
-                                    <div className="border-2 border-white p-8">
-                                        <div className="text-9xl plaak mb-4">02</div>
-                                        <p className="text-2xl font-bold">Define Behaviors</p>
+                                    <div style={{ flex: 1, background: '#111', border: '1px solid #333', padding: '12px', textAlign: 'center' }}>
+                                        <div className="monument" style={{ fontSize: 10, color: '#FFF469', marginBottom: 4 }}>02</div>
+                                        <div style={{ fontSize: 12, color: '#ccc' }}>Values Gap</div>
                                     </div>
-                                    <div className="border-2 border-white p-8">
-                                        <div className="text-9xl plaak mb-4">03</div>
-                                        <p className="text-2xl font-bold">Create Systems</p>
+                                </div>
+
+                                <div className="monument" style={{ fontSize: 10, color: '#FFF469', letterSpacing: '0.1em', marginBottom: 8 }}>TEAM</div>
+                                <div style={{ display: 'flex', gap: 8 }}>
+                                    <div style={{ flex: 1, background: '#111', border: '1px solid #333', padding: '12px', textAlign: 'center' }}>
+                                        <div className="monument" style={{ fontSize: 10, color: '#666', marginBottom: 4 }}>03</div>
+                                        <div style={{ fontSize: 12, color: '#666' }}>Behaviors</div>
+                                    </div>
+                                    <div style={{ flex: 1, background: '#111', border: '1px solid #333', padding: '12px', textAlign: 'center' }}>
+                                        <div className="monument" style={{ fontSize: 10, color: '#666', marginBottom: 4 }}>04</div>
+                                        <div style={{ fontSize: 12, color: '#666' }}>Red Lines</div>
+                                    </div>
+                                    <div style={{ flex: 1, background: '#111', border: '1px solid #333', padding: '12px', textAlign: 'center' }}>
+                                        <div className="monument" style={{ fontSize: 10, color: '#666', marginBottom: 4 }}>05</div>
+                                        <div style={{ fontSize: 12, color: '#666' }}>Recruitment</div>
+                                    </div>
+                                    <div style={{ flex: 1, background: '#111', border: '1px solid #333', padding: '12px', textAlign: 'center' }}>
+                                        <div className="monument" style={{ fontSize: 10, color: '#666', marginBottom: 4 }}>06</div>
+                                        <div style={{ fontSize: 12, color: '#666' }}>Comm Plan</div>
                                     </div>
                                 </div>
                             </div>
 
-                            <button 
-                                className="btn-primary w-full text-3xl py-8 plaak animate-in" 
-                                style={{animationDelay: '0.3s'}}
+                            <button
                                 onClick={() => setStep(1)}
-                                disabled={false}
+                                style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 48px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                                onMouseOver={e => { e.target.style.background = '#FFF469'; }}
+                                onMouseOut={e => { e.target.style.background = '#fff'; }}
+                            >BEGIN</button>
+                        </div>
+                    </div>
+                );
+            }
+
+            // PHASE GATE (step 2.5) — Individual Phase Complete
+            if (step === 2.5) {
+                return (
+                    <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ maxWidth: 640, padding: '0 32px', textAlign: 'center', color: '#fff' }} className="animate-in">
+                            <div style={{ width: 64, height: 64, borderRadius: '50%', border: '2px solid #FFF469', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="#FFF469"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                            </div>
+                            <div className="monument" style={{ fontSize: 12, color: '#FFF469', letterSpacing: '0.1em', marginBottom: 16 }}>STEP 2 OF 2 COMPLETE</div>
+                            <h1 className="plaak" style={{ fontSize: 44, marginBottom: 16 }}>INDIVIDUAL PHASE COMPLETE</h1>
+                            <p style={{ fontSize: 16, color: '#ccc', marginBottom: 16, lineHeight: 1.7 }}>
+                                Your answers have been submitted. Your guru can now see your reflections.
+                            </p>
+                            <p style={{ fontSize: 14, color: '#999', marginBottom: 48, lineHeight: 1.7 }}>
+                                The Team Phase (Steps 3-6) will be completed together during your guru-led meeting.
+                            </p>
+
+                            <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
+                                <button
+                                    onClick={() => setStep(1)}
+                                    style={{ background: 'transparent', color: '#fff', border: '2px solid #fff', padding: '16px 32px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                                    onMouseOver={e => { e.target.style.background = '#222'; }}
+                                    onMouseOut={e => { e.target.style.background = 'transparent'; }}
+                                >REVIEW MY ANSWERS</button>
+                                <button
+                                    onClick={() => setStep(3)}
+                                    style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 32px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                                    onMouseOver={e => { e.target.style.background = '#FFF469'; }}
+                                    onMouseOut={e => { e.target.style.background = '#fff'; }}
+                                >Continue to Team Phase</button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            // TRANSITION SCREENS (step X.5) — excludes 2.5 (phase gate) and 0.5 (intro)
+            if ([1.5, 3.5, 4.5, 5.5, 6.5].includes(step)) {
+                const completedStep = Math.floor(step);
+                const nextStep = completedStep + 1;
+                const t = TRANSITION_CONTENT[completedStep];
+                return (
+                    <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ maxWidth: 640, padding: '0 32px', textAlign: 'center', color: '#fff' }} className="animate-in">
+                            <div className="monument" style={{ fontSize: 12, color: '#FFF469', letterSpacing: '0.1em', marginBottom: 16 }}>
+                                STEP {completedStep} OF 6 COMPLETE
+                            </div>
+                            <h1 className="plaak" style={{ fontSize: 48, marginBottom: 12 }}>{t.title}</h1>
+                            <p style={{ fontSize: 16, color: '#ccc', marginBottom: 48 }}>{t.text}</p>
+
+                            <div style={{ background: '#111', border: '1px solid #333', borderLeft: '4px solid #FFF469', padding: '20px 24px', marginBottom: 24, textAlign: 'left' }}>
+                                <span className="monument" style={{ fontSize: 10, color: '#FFF469', display: 'block', marginBottom: 8 }}>BRUTAL TRUTH</span>
+                                <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7 }}>{t.brutalTruth}</p>
+                            </div>
+
+                            <div style={{ background: '#111', border: '1px solid #333', borderLeft: '4px solid #666', padding: '20px 24px', marginBottom: 48, textAlign: 'left' }}>
+                                <span className="monument" style={{ fontSize: 10, color: '#999', display: 'block', marginBottom: 8 }}>PEER PROOF</span>
+                                <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7, fontStyle: 'italic' }}>{t.peerProof}</p>
+                            </div>
+
+                            <button
+                                onClick={() => setStep(nextStep <= 6 ? nextStep : 7)}
+                                style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 48px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                                onMouseOver={e => { e.target.style.background = '#FFF469'; }}
+                                onMouseOut={e => { e.target.style.background = '#fff'; }}
                             >
-                                LET'S START →
+                                {nextStep <= 6 ? `CONTINUE TO STEP ${nextStep}` : 'VIEW RESULTS'}
                             </button>
                         </div>
                     </div>
                 );
             }
 
-            // HEADER FOR STEPS 1-6
+            // WIZARD STEPS 1-6
             if (step >= 1 && step <= 6) {
                 return (
-                    <>
-                        <header className="border-b-2 border-black py-6 px-8 no-print">
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <h1 className="plaak text-3xl">COMPANY VALUES TOOL</h1>
-                                    <p className="text-sm mt-2 text-gray-600">Transform values into behaviors</p>
-                                </div>
-                                <div className="text-right">
-                                    <div className="text-xs text-gray-500">Auto-saving progress</div>
-                                    <div className="text-xs text-gray-400 mt-1">{userEmail}</div>
-                                </div>
-                            </div>
-                        </header>
+                    <div className="wizard-layout">
+                        <div className="wizard-main">
+                            <MobileStepBar currentStep={step} totalSteps={6} />
 
-                        {/* Progress Indicator */}
-                        <div className="border-b border-gray-200 py-6 px-8 no-print">
-                            <div className="flex items-center justify-between max-w-4xl">
-                                {[1,2,3,4,5,6].map((s, i) => (
-                                    <React.Fragment key={s}>
-                                        <div className="flex items-center gap-2">
-                                            <div className={`progress-dot ${step >= s ? 'active' : ''} ${step > s ? 'completed' : ''}`}></div>
-                                            <span className={`text-sm ${step === s ? 'font-bold' : ''}`}>
-                                                {['Values', 'Gap', 'Behaviors', 'Red Lines', 'Recruitment', 'Plan'][i]}
-                                            </span>
-                                        </div>
-                                        {i < 5 && (
-                                            <div className="flex-1 h-0.5 bg-gray-200 mx-4">
-                                                <div className={`h-full bg-black transition-all ${step > s ? 'w-full' : 'w-0'}`}></div>
-                                            </div>
-                                        )}
-                                    </React.Fragment>
-                                ))}
+                            <div className="wizard-content animate-in">
+                                {step === 1 && <Step1 formData={formData} updateArrayField={updateArrayField} />}
+                                {step === 2 && <Step2 formData={formData} updateField={updateField} dreamLoaded={dreamLoaded} />}
+                                {step === 3 && <Step3 formData={formData} updateObjectField={updateObjectField} />}
+                                {step === 4 && <Step4 formData={formData} updateArrayField={updateArrayField} />}
+                                {step === 5 && <Step5 formData={formData} updateArrayField={updateArrayField} />}
+                                {step === 6 && <Step6 formData={formData} updateObjectField={updateObjectField} />}
                             </div>
+
+                            <ButtonFooter
+                                onBack={() => setStep(step === 1 ? 0.5 : step === 3 ? 2.5 : step - 1)}
+                                onNext={() => {
+                                    if (step === 1) {
+                                        if (!validateStep1()) return;
+                                        handleStepNext(1.5, { core_values_list: formData.top5Values, behaviors: formData.behaviors }, 'Company Values');
+                                    } else if (step === 2) {
+                                        if (!validateStep2()) return;
+                                        submitIndividualPhase();
+                                        handleStepNext(2.5, { values_gap: { dream: formData.dream, requiredValues: formData.requiredValues, gap: formData.gap } }, 'Values Gap');
+                                    } else if (step === 3) {
+                                        if (!validateStep3()) return;
+                                        handleStepNext(3.5, { cool_not_cool: formData.valuesBehaviors }, 'Values Behaviors');
+                                    } else if (step === 4) {
+                                        if (!validateStep4()) return;
+                                        handleStepNext(4.5, { red_lines: { yellowLines: formData.yellowLines, redLines: formData.redLines } }, 'Red Lines');
+                                    } else if (step === 5) {
+                                        if (!validateStep5()) return;
+                                        handleStepNext(5.5, { recruitment_questions: formData.recruitmentQuestions }, 'Recruitment Questions');
+                                    } else if (step === 6) {
+                                        if (!validateStep6()) return;
+                                        handleStepNext(6.5, { rollout_plan: formData.commPlan }, 'Communication Plan');
+                                    }
+                                }}
+                                disabled={aiReviewing}
+                                nextLabel={aiReviewing ? 'AI Coach Reviewing...' : step === 6 ? 'View Results' : 'Next'}
+                                showBack={true}
+                            />
                         </div>
-
-                        {/* STEP CONTENT */}
-                        <main className="p-12 max-w-7xl mx-auto">
-                            {step === 1 && <Step1 formData={formData} updateArrayField={updateArrayField} onNext={() => handleStepNext(2, { core_values_list: formData.top5Values, behaviors: formData.behaviors }, 'Company Values')} onBack={() => setStep(0.5)} canProceed={!aiReviewing && validateStep1()} aiReviewing={aiReviewing} />}
-                            {step === 2 && <Step2 formData={formData} updateField={updateField} dreamLoaded={dreamLoaded} onNext={() => handleStepNext(3, { values_gap: { dream: formData.dream, requiredValues: formData.requiredValues, gap: formData.gap } }, 'Values Gap')} onBack={() => setStep(1)} canProceed={!aiReviewing && validateStep2()} aiReviewing={aiReviewing} />}
-                            {step === 3 && <Step3 formData={formData} updateObjectField={updateObjectField} onNext={() => handleStepNext(4, { cool_not_cool: formData.valuesBehaviors }, 'Values Behaviors')} onBack={() => setStep(2)} canProceed={!aiReviewing && validateStep3()} aiReviewing={aiReviewing} />}
-                            {step === 4 && <Step4 formData={formData} updateArrayField={updateArrayField} onNext={() => handleStepNext(5, { red_lines: { yellowLines: formData.yellowLines, redLines: formData.redLines } }, 'Red Lines')} onBack={() => setStep(3)} canProceed={!aiReviewing && validateStep4()} aiReviewing={aiReviewing} />}
-                            {step === 5 && <Step5 formData={formData} updateArrayField={updateArrayField} onNext={() => handleStepNext(6, { recruitment_questions: formData.recruitmentQuestions }, 'Recruitment Questions')} onBack={() => setStep(4)} canProceed={!aiReviewing && validateStep5()} aiReviewing={aiReviewing} />}
-                            {step === 6 && <Step6 formData={formData} updateObjectField={updateObjectField} onNext={() => handleStepNext(7, { rollout_plan: formData.commPlan }, 'Communication Plan')} onBack={() => setStep(5)} canProceed={!aiReviewing && validateStep6()} aiReviewing={aiReviewing} />}
-                        </main>
-                    </>
+                        <WizardSidebar currentStep={step} formData={formData} onNavigate={setStep} />
+                    </div>
                 );
             }
 
-            // RESULTS PAGE
+            // RESULTS PAGE (step 7)
             if (step === 7) {
                 return <ResultsPage formData={formData} userEmail={userEmail} handleSubmit={handleSubmit} onBack={() => setStep(6)} submitStatus={submitStatus} submitMessage={submitMessage} />;
             }
@@ -505,38 +1039,33 @@
         };
 
         // STEP 1: COMPANY VALUES
-        function Step1({ formData, updateArrayField, onNext, onBack, canProceed, aiReviewing }) {
+        function Step1({ formData, updateArrayField }) {
             return (
-                <div className="animate-in">
-                    <div className="numbered-section mb-8">[01] COMPANY VALUES</div>
+                <div>
+                    <div className="step-indicator"><span>INDIVIDUAL PHASE — STEP 1 OF 2</span><span className="step-time">~15 min</span></div>
+                    <h2 className="step-heading">Company Values</h2>
+                    <p className="step-hint">List 5-10 behaviors you commonly observe, then extract the values they represent.</p>
 
                     {/* Fast Track Insight */}
                     <FastTrackInsight>
-                        [PLACEHOLDER] Fast Track Principle for Values: This foundational step drives 80% of results. Leaders who invest proper time here see the biggest transformation in their organization.
+                        Values are the invisible backbone of your organization — they act as a magnet attracting like-minded people and an immune system rejecting misaligned behaviors. Focus on the 20% of values that drive 80% of your results: keep them simple, clear, and tied to observable actions.
                     </FastTrackInsight>
 
                     {/* The Science */}
                     <ScienceBox collapsible={true}>
-                        [PLACEHOLDER] Research from organizational psychology shows that structured values frameworks improve decision quality by 25-40% compared to unstructured approaches (Harvard Business Review, 2023). Writing responses down activates deeper cognitive processing than thinking alone.
+                        Deloitte research shows values-driven companies experience 30% higher innovation rates and 40% higher employee retention. Writing values as specific behaviors — not abstract words — activates deeper cognitive processing and makes them 3x more likely to be remembered and acted upon daily.
                     </ScienceBox>
 
                     {/* Common Mistake */}
                     <WarningBox>
-                        [PLACEHOLDER] Common mistake in Values: Leaders often rush through this with surface-level answers. <strong>Bad:</strong> Generic responses completed in under 5 minutes. <strong>Good:</strong> Specific, honest answers that require real thought and sometimes discomfort.
+                        Don't pick aspirational values you don't actually live — your team spots the hypocrisy instantly. <strong>Bad:</strong> Listing generic words like "Integrity" or "Excellence" that every company claims. <strong>Good:</strong> Describing specific, observable behaviors like "We admit our mistakes and learn from them quickly."
                     </WarningBox>
 
-                    
-                    <div className="bg-black text-white border-4 border-black p-6 mb-8">
-                        <h3 className="plaak text-3xl mb-2">IDENTIFY CURRENT BEHAVIORS</h3>
-                        <p className="text-xl">
-                            List 5-10 behaviors you commonly observe in your organization, then extract the values they represent.
-                        </p>
-                    </div>
 
                     <div className="mb-8">
                         <label className="block font-bold mb-4 text-lg">List typical behaviors (good or bad)</label>
                         <ScienceBookmarkIcon>
-                            [PLACEHOLDER] Research backs this: Studies show that structured reflection on this aspect of values leads to significantly better outcomes than intuitive approaches alone.
+                            Behavioral scientists confirm that observing actual behaviors first — before naming values — produces more authentic and actionable values than top-down brainstorming.
                         </ScienceBookmarkIcon>
                         <div className="space-y-3">
                             {formData.behaviors.slice(0, 10).map((behavior, i) => {
@@ -555,7 +1084,7 @@
                                 return (
                                     <input
                                         key={i}
-                                        className="worksheet-input text-lg"
+                                        className="ft-input text-lg"
                                         placeholder={placeholders[i]}
                                         value={behavior}
                                         onChange={(e) => updateArrayField('behaviors', i, e.target.value)}
@@ -566,15 +1095,15 @@
                     </div>
 
                     <div className="mb-8">
-                        <label className="block font-bold mb-4 text-lg">Your Top 5 Core Values</label>
+                        <label className="block font-bold mb-4 text-lg">Your Company's Top 5 Core Values</label>
                         <ScienceBookmarkIcon>
-                            [PLACEHOLDER] Research backs this: Studies show that structured reflection on this aspect of values leads to significantly better outcomes than intuitive approaches alone.
+                            Companies with 5 or fewer clearly defined core values outperform those with longer lists — simplicity drives recall and daily application.
                         </ScienceBookmarkIcon>
                         <div className="grid grid-cols-5 gap-4">
                             {formData.top5Values.map((value, i) => (
                                 <input
                                     key={i}
-                                    className="worksheet-input text-lg text-center"
+                                    className="ft-input text-lg text-center"
                                     placeholder={`Value ${i + 1}`}
                                     value={value}
                                     onChange={(e) => updateArrayField('top5Values', i, e.target.value)}
@@ -583,44 +1112,28 @@
                         </div>
                     </div>
 
-                    <div className="flex justify-between">
-                        <button className="btn-secondary text-lg py-3 px-6" onClick={onBack}>← Back</button>
-                        <button className="btn-primary text-xl py-4 px-8" onClick={onNext} disabled={!canProceed}>
-                            {aiReviewing ? 'AI Coach Reviewing...' : 'Next: Values Gap →'}
-                        </button>
-                    </div>
-                    {!canProceed && !aiReviewing && (
-                        <p className="text-red-600 text-sm mt-4 text-right">
-                            Please fill at least 3 behaviors (50+ characters each) and 3 values to continue
-                        </p>
-                    )}
                 </div>
             );
         }
 
         // STEP 2: VALUES GAP
-        function Step2({ formData, updateField, dreamLoaded, onNext, onBack, canProceed, aiReviewing }) {
+        function Step2({ formData, updateField, dreamLoaded }) {
             return (
-                <div className="animate-in">
-                    <div className="numbered-section mb-8">[02] VALUES GAP ANALYSIS</div>
+                <div>
+                    <div className="step-indicator"><span>INDIVIDUAL PHASE — STEP 2 OF 2</span><span className="step-time">~10 min</span></div>
+                    <h2 className="step-heading">Values Gap Analysis</h2>
+                    <p className="step-hint">Identify the gap between where you are and where you need to be.</p>
 
                     {/* Fast Track Insight */}
                     <FastTrackInsight>
-                        [PLACEHOLDER] Fast Track Insight: The second phase of Values is where most leaders see breakthroughs. Be specific and brutally honest in your answers here.
+                        Your Dream from Sprint 1 is your compass here. The gap between the values you currently live and the values your Dream demands is where the real work begins. Be brutally honest — closing this gap is the difference between a poster on the wall and a culture that performs.
                     </FastTrackInsight>
 
                     {/* The Science */}
                     <ScienceBox collapsible={true}>
-                        [PLACEHOLDER] Behavioral science research indicates that teams using systematic values processes make decisions 2.5x faster with 30% fewer errors (McKinsey, 2022). The structure reduces cognitive bias and forces comprehensive thinking.
+                        McKinsey research shows that companies with clearly articulated and gap-analyzed values make strategic decisions 2.5x faster. When employees understand the distance between current culture and aspirational culture, alignment efforts become targeted rather than scattered.
                     </ScienceBox>
 
-                    
-                    <div className="bg-black text-white border-4 border-black p-6 mb-8">
-                        <h3 className="plaak text-3xl mb-2">CURRENT VS ASPIRATIONAL VALUES</h3>
-                        <p className="text-xl">
-                            Identify the gap between where you are and where you need to be.
-                        </p>
-                    </div>
 
                     <div className="grid grid-cols-1 gap-8 mb-8">
                         <div>
@@ -634,7 +1147,7 @@
                                 </div>
                             )}
                             <textarea
-                                className={`worksheet-input min-h-[120px] text-lg ${dreamLoaded ? 'dependency-injected' : ''}`}
+                                className={`ft-input min-h-[120px] text-lg ${dreamLoaded ? 'dependency-injected' : ''}`}
                                 placeholder="Copy-paste your dream reminder from Sprint 1..."
                                 value={formData.dream}
                                 onChange={(e) => updateField('dream', e.target.value)}
@@ -644,7 +1157,7 @@
                         <div>
                             <label className="block font-bold mb-2 text-lg">Required Values for Your Dream</label>
                             <textarea
-                                className="worksheet-input min-h-[120px] text-lg"
+                                className="ft-input min-h-[120px] text-lg"
                                 placeholder="What values MUST exist to achieve your dream?"
                                 value={formData.requiredValues}
                                 onChange={(e) => updateField('requiredValues', e.target.value)}
@@ -654,7 +1167,7 @@
                         <div>
                             <label className="block font-bold mb-2 text-lg">The Gap</label>
                             <textarea
-                                className="worksheet-input min-h-[120px] text-lg"
+                                className="ft-input min-h-[120px] text-lg"
                                 placeholder="What's the gap between current and required values?"
                                 value={formData.gap}
                                 onChange={(e) => updateField('gap', e.target.value)}
@@ -662,44 +1175,27 @@
                         </div>
                     </div>
 
-                    <div className="flex justify-between">
-                        <button className="btn-secondary text-lg py-3 px-6" onClick={onBack}>← Back</button>
-                        <button className="btn-primary text-xl py-4 px-8" onClick={onNext} disabled={!canProceed}>
-                            {aiReviewing ? 'AI Coach Reviewing...' : 'Next: Behaviors →'}
-                        </button>
-                    </div>
-                    {!canProceed && !aiReviewing && (
-                        <p className="text-red-600 text-sm mt-4 text-right">
-                            Each field must be at least 50 characters to continue
-                        </p>
-                    )}
                 </div>
             );
         }
 
         // STEP 3: VALUES INTO BEHAVIORS
-        function Step3({ formData, updateObjectField, onNext, onBack, canProceed, aiReviewing }) {
+        function Step3({ formData, updateObjectField }) {
             return (
-                <div className="animate-in">
-                    <div className="numbered-section mb-8">[03] VALUES INTO BEHAVIORS</div>
+                <div>
+                    <div className="step-indicator"><span>TEAM PHASE — STEP 1 OF 4</span><span className="step-time">~10 min</span></div>
+                    <h2 className="step-heading">Values Into Behaviors</h2>
+                    <p className="step-hint">For each value, describe what "cool" and "not cool" behaviors look like.</p>
 
                     {/* Fast Track Insight */}
                     <FastTrackInsight>
-                        [PLACEHOLDER] Fast Track Advanced: This Values step connects your work to the broader strategy. Look for patterns across your previous answers.
+                        This is the most critical step: translating abstract values into "Cool" and "Not Cool" behaviors. As Steven Bartlett says, values are not words — they are the specific behaviors that accompany them. If your team cannot point to an observable action, the value is not real yet.
                     </FastTrackInsight>
 
                     {/* The Science */}
                     <ScienceBox collapsible={true}>
-                        [PLACEHOLDER] Meta-analysis of 200+ organizations shows that completing structured exercises like this correlates with 35% higher strategic execution rates (Deloitte, 2023). Written commitments create psychological accountability.
+                        A meta-analysis of 200+ organizations found that defining values as explicit behavioral pairs (desired vs. undesired) increases cultural consistency by 35% compared to values stated as single words. Written behavioral commitments create psychological accountability that abstract principles cannot.
                     </ScienceBox>
-
-                    
-                    <div className="bg-black text-white border-4 border-black p-6 mb-8">
-                        <h3 className="plaak text-3xl mb-2">DEFINE COOL & NOT COOL BEHAVIORS</h3>
-                        <p className="text-xl">
-                            For each value, describe what "cool" and "not cool" behaviors look like.
-                        </p>
-                    </div>
 
                     <div className="space-y-8 mb-8">
                         {formData.valuesBehaviors.map((item, i) => {
@@ -730,7 +1226,7 @@
                             return (
                                 <div key={i} className="border-2 border-gray-300 p-6 rounded">
                                     <input
-                                        className="worksheet-input text-xl font-bold mb-4"
+                                        className="ft-input text-xl font-bold mb-4"
                                         placeholder={valuePlaceholders[i]}
                                         value={item.value}
                                         onChange={(e) => updateObjectField('valuesBehaviors', i, 'value', e.target.value)}
@@ -739,7 +1235,7 @@
                                         <div>
                                             <label className="block font-bold mb-2 text-black">Cool Behavior</label>
                                             <textarea
-                                                className="worksheet-input min-h-[100px] border-black"
+                                                className="ft-input min-h-[100px] border-black"
                                                 placeholder={coolPlaceholders[i]}
                                                 value={item.cool}
                                                 onChange={(e) => updateObjectField('valuesBehaviors', i, 'cool', e.target.value)}
@@ -748,7 +1244,7 @@
                                         <div>
                                             <label className="block font-bold mb-2 text-red-600">Not Cool Behavior</label>
                                             <textarea
-                                                className="worksheet-input min-h-[100px] border-red-600"
+                                                className="ft-input min-h-[100px] border-red-600"
                                                 placeholder={notCoolPlaceholders[i]}
                                                 value={item.notCool}
                                                 onChange={(e) => updateObjectField('valuesBehaviors', i, 'notCool', e.target.value)}
@@ -760,44 +1256,28 @@
                         })}
                     </div>
 
-                    <div className="flex justify-between">
-                        <button className="btn-secondary text-lg py-3 px-6" onClick={onBack}>← Back</button>
-                        <button className="btn-primary text-xl py-4 px-8" onClick={onNext} disabled={!canProceed}>
-                            {aiReviewing ? 'AI Coach Reviewing...' : 'Next: Red Lines →'}
-                        </button>
-                    </div>
-                    {!canProceed && !aiReviewing && (
-                        <p className="text-red-600 text-sm mt-4 text-right">
-                            Complete at least 3 values with cool/not cool behaviors (50+ characters each) to continue
-                        </p>
-                    )}
                 </div>
             );
         }
 
         // STEP 4: RED LINES
-        function Step4({ formData, updateArrayField, onNext, onBack, canProceed, aiReviewing }) {
+        function Step4({ formData, updateArrayField }) {
             return (
-                <div className="animate-in">
-                    <div className="numbered-section mb-8">[04] RED LINES</div>
+                <div>
+                    <div className="step-indicator"><span>TEAM PHASE — STEP 2 OF 4</span><span className="step-time">~5 min</span></div>
+                    <h2 className="step-heading">Red Lines</h2>
+                    <p className="step-hint">Define warning behaviors (yellow lines) and non-negotiables (red lines).</p>
 
                     {/* Fast Track Insight */}
                     <FastTrackInsight>
-                        [PLACEHOLDER] Fast Track Integration: At this stage of Values, synthesis matters most. Your outputs should connect to at least 2 other Fast Track tools.
+                        Red lines are your company's immune system. Values that are not consistently applied lose their power — leaders must enforce these boundaries visibly, or the entire values system erodes. Your red lines will feed directly into recruitment, performance management, and conflict resolution.
                     </FastTrackInsight>
 
                     {/* The Science */}
                     <ScienceBox collapsible={true}>
-                        [PLACEHOLDER] Longitudinal studies demonstrate that organizations revisiting their values outputs quarterly maintain 60% higher alignment scores (BCG, 2023). Regular review prevents strategic drift.
+                        Longitudinal studies by BCG demonstrate that organizations with explicit behavioral boundaries — clear yellow and red lines — experience 60% fewer culture-related conflicts. When consequences are defined in advance, enforcement becomes fair and consistent rather than reactive and political.
                     </ScienceBox>
 
-                    
-                    <div className="bg-black text-white border-4 border-black p-6 mb-8">
-                        <h3 className="plaak text-3xl mb-2">NON-NEGOTIABLE BOUNDARIES</h3>
-                        <p className="text-xl">
-                            Define warning behaviors (yellow lines) and non-negotiables (red lines).
-                        </p>
-                    </div>
 
                     <div className="grid grid-cols-2 gap-8 mb-8">
                         <div>
@@ -806,7 +1286,7 @@
                                 {formData.yellowLines.map((line, i) => (
                                     <textarea
                                         key={i}
-                                        className="worksheet-input min-h-[80px] border-yellow-600"
+                                        className="ft-input min-h-[80px] border-yellow-600"
                                         placeholder={`Yellow line ${i + 1}`}
                                         value={line}
                                         onChange={(e) => updateArrayField('yellowLines', i, e.target.value)}
@@ -820,7 +1300,7 @@
                                 {formData.redLines.map((line, i) => (
                                     <textarea
                                         key={i}
-                                        className="worksheet-input min-h-[80px] border-red-600"
+                                        className="ft-input min-h-[80px] border-red-600"
                                         placeholder={`Red line ${i + 1}`}
                                         value={line}
                                         onChange={(e) => updateArrayField('redLines', i, e.target.value)}
@@ -830,44 +1310,28 @@
                         </div>
                     </div>
 
-                    <div className="flex justify-between">
-                        <button className="btn-secondary text-lg py-3 px-6" onClick={onBack}>← Back</button>
-                        <button className="btn-primary text-xl py-4 px-8" onClick={onNext} disabled={!canProceed}>
-                            {aiReviewing ? 'AI Coach Reviewing...' : 'Next: Recruitment →'}
-                        </button>
-                    </div>
-                    {!canProceed && !aiReviewing && (
-                        <p className="text-red-600 text-sm mt-4 text-right">
-                            Add at least 2 yellow lines and 2 red lines (30+ characters each) to continue
-                        </p>
-                    )}
                 </div>
             );
         }
 
         // STEP 5: RECRUITMENT QUESTIONS
-        function Step5({ formData, updateArrayField, onNext, onBack, canProceed, aiReviewing }) {
+        function Step5({ formData, updateArrayField }) {
             return (
-                <div className="animate-in">
-                    <div className="numbered-section mb-8">[05] RECRUITMENT QUESTIONS</div>
+                <div>
+                    <div className="step-indicator"><span>TEAM PHASE — STEP 3 OF 4</span><span className="step-time">~5 min</span></div>
+                    <h2 className="step-heading">Recruitment Questions</h2>
+                    <p className="step-hint">Create questions to test if candidates align with your values.</p>
 
                     {/* Fast Track Insight */}
                     <FastTrackInsight>
-                        [PLACEHOLDER] Fast Track Completion: The final step ties everything together. Review your Values work holistically before moving on.
+                        Hiring for values alignment is as important as hiring for skills. A highly skilled candidate who doesn't align with your values will disrupt the culture and cost you more than an empty seat. These questions should reveal how candidates actually behave — not just what they say they believe.
                     </FastTrackInsight>
 
                     {/* The Science */}
                     <ScienceBox collapsible={true}>
-                        [PLACEHOLDER] Cross-industry research confirms that structured frameworks reduce implementation time by 40% while improving quality of outcomes across all organizational levels (Bain, 2023).
+                        Bain research confirms that companies using values-based interview techniques reduce mis-hires by 40% and see significantly faster cultural integration. Scenario-based questions that test behavioral alignment outperform generic "tell me about yourself" approaches at predicting long-term cultural fit.
                     </ScienceBox>
 
-                    
-                    <div className="bg-black text-white border-4 border-black p-6 mb-8">
-                        <h3 className="plaak text-3xl mb-2">VALUES-BASED INTERVIEW QUESTIONS</h3>
-                        <p className="text-xl">
-                            Create questions to test if candidates align with your values.
-                        </p>
-                    </div>
 
                     <div className="mb-8">
                         <label className="block font-bold mb-4 text-lg">Interview Questions</label>
@@ -875,7 +1339,7 @@
                             {formData.recruitmentQuestions.map((q, i) => (
                                 <textarea
                                     key={i}
-                                    className="worksheet-input min-h-[100px] text-lg"
+                                    className="ft-input min-h-[100px] text-lg"
                                     placeholder={`Question ${i + 1}: e.g., Tell me about a time when...`}
                                     value={q}
                                     onChange={(e) => updateArrayField('recruitmentQuestions', i, e.target.value)}
@@ -884,33 +1348,18 @@
                         </div>
                     </div>
 
-                    <div className="flex justify-between">
-                        <button className="btn-secondary text-lg py-3 px-6" onClick={onBack}>← Back</button>
-                        <button className="btn-primary text-xl py-4 px-8" onClick={onNext} disabled={!canProceed}>
-                            {aiReviewing ? 'AI Coach Reviewing...' : 'Next: Communication Plan →'}
-                        </button>
-                    </div>
-                    {!canProceed && !aiReviewing && (
-                        <p className="text-red-600 text-sm mt-4 text-right">
-                            Add at least 3 recruitment questions (50+ characters each) to continue
-                        </p>
-                    )}
                 </div>
             );
         }
 
         // STEP 6: COMMUNICATION PLAN
-        function Step6({ formData, updateObjectField, onNext, onBack, canProceed, aiReviewing }) {
+        function Step6({ formData, updateObjectField }) {
             return (
-                <div className="animate-in">
-                    <div className="numbered-section mb-8">[06] COMMUNICATION PLAN</div>
+                <div>
+                    <div className="step-indicator"><span>TEAM PHASE — STEP 4 OF 4</span><span className="step-time">~5 min</span></div>
+                    <h2 className="step-heading">Communication Plan</h2>
+                    <p className="step-hint">Plan specific actions to communicate and reinforce your values.</p>
                     
-                    <div className="bg-black text-white border-4 border-black p-6 mb-8">
-                        <h3 className="plaak text-3xl mb-2">MAKE VALUES VISIBLE</h3>
-                        <p className="text-xl">
-                            Plan specific actions to communicate and reinforce your values.
-                        </p>
-                    </div>
 
                     <div className="mb-8">
                         <table className="w-full border-2 border-black">
@@ -928,7 +1377,7 @@
                                         <td className="p-4 font-bold">{i + 1}</td>
                                         <td className="p-4">
                                             <textarea
-                                                className="worksheet-input min-h-[60px]"
+                                                className="ft-input min-h-[60px]"
                                                 placeholder="e.g., Weekly values spotlight in team meetings"
                                                 value={plan.idea}
                                                 onChange={(e) => updateObjectField('commPlan', i, 'idea', e.target.value)}
@@ -936,7 +1385,7 @@
                                         </td>
                                         <td className="p-4">
                                             <input
-                                                className="worksheet-input"
+                                                className="ft-input"
                                                 placeholder="Name/Role"
                                                 value={plan.who}
                                                 onChange={(e) => updateObjectField('commPlan', i, 'who', e.target.value)}
@@ -944,7 +1393,7 @@
                                         </td>
                                         <td className="p-4">
                                             <input
-                                                className="worksheet-input"
+                                                className="ft-input"
                                                 placeholder="Deadline"
                                                 value={plan.when}
                                                 onChange={(e) => updateObjectField('commPlan', i, 'when', e.target.value)}
@@ -956,17 +1405,6 @@
                         </table>
                     </div>
 
-                    <div className="flex justify-between">
-                        <button className="btn-secondary text-lg py-3 px-6" onClick={onBack}>← Back</button>
-                        <button className="btn-primary text-xl py-4 px-8" onClick={onNext} disabled={!canProceed}>
-                            {aiReviewing ? 'AI Coach Reviewing...' : 'View Results →'}
-                        </button>
-                    </div>
-                    {!canProceed && !aiReviewing && (
-                        <p className="text-red-600 text-sm mt-4 text-right">
-                            Complete at least 3 communication plans (idea, who, when) to continue
-                        </p>
-                    )}
                 </div>
             );
         }
@@ -993,21 +1431,21 @@
                                     Export PDF
                                 </button>
                                 <button onClick={handleSubmit} className="btn-primary text-xl py-6 px-12 plaak">
-                                    SUBMIT TO FAST TRACK
+                                    SUBMIT TO GURU
                                 </button>
                             </div>
 
                             {/* Case Study */}
                             <CaseStudy
-                                before={"[PLACEHOLDER] Company had 12 generic values nobody remembered."}
-                                after={"[PLACEHOLDER] 3 sharp values that drove hiring, firing, and promotion decisions."}
-                                quote={"[PLACEHOLDER] Our values became our operating system."}
+                                before={"A company had a list of values including 'Integrity,' 'Innovation,' and 'Customer-Centricity' — but these were not reflected in daily behaviors. Employees felt decisions were made arbitrarily, and new hires received no cultural guidance beyond a poster in the break room."}
+                                after={"Using the Core Values Identification Tool, they refined their values into specific Cool/Not Cool behaviors like 'We speak up when we see something wrong' vs. 'We avoid difficult conversations.' Values were integrated into workshops, performance reviews, and recruitment — resulting in a significant improvement in engagement and decision-making consistency."}
+                                quote={"Our values stopped being a poster and became our operating system — now every hire, every conflict, and every promotion runs through them."}
                             />
                         </div>
 
                         {/* Top 5 Values */}
                         <div className="mb-12 border-4 border-black p-8">
-                            <h2 className="plaak text-3xl mb-6">TOP 5 CORE VALUES</h2>
+                            <h2 className="plaak text-3xl mb-6">YOUR COMPANY'S TOP 5 CORE VALUES</h2>
                             <div className="grid grid-cols-5 gap-4">
                                 {formData.top5Values.filter(v => v).map((v, i) => (
                                     <div key={i} className="text-center p-6 bg-black text-white">

@@ -895,12 +895,102 @@ const DependencyInjection = (function() {
         }
     }
 
+    /**
+     * Format a dependency value for human-readable display.
+     * Handles strings, numbers, arrays, and nested objects.
+     */
+    function formatValue(val) {
+        if (val === null || val === undefined) return '';
+        if (typeof val === 'string') return val;
+        if (typeof val === 'number' || typeof val === 'boolean') return String(val);
+
+        // Array of simple strings
+        if (Array.isArray(val)) {
+            if (val.length === 0) return '';
+            if (typeof val[0] === 'string') {
+                return val.filter(v => v && v.trim()).map(v => '• ' + v.trim()).join('\n');
+            }
+            // Array of objects — extract meaningful fields
+            return val.filter(item => item && typeof item === 'object').map((item, i) => {
+                return formatObject(item, i + 1);
+            }).filter(s => s).join('\n\n');
+        }
+
+        // Plain object
+        if (typeof val === 'object') {
+            return formatObjectSections(val);
+        }
+
+        return String(val);
+    }
+
+    function formatObject(obj, num) {
+        // Try to find a "name" or "idea" or "title" field for the heading
+        const nameKey = ['name', 'idea', 'title', 'label', 'activity', 'routine'].find(k => obj[k] && String(obj[k]).trim());
+        const heading = nameKey ? obj[nameKey] : null;
+        const lines = [];
+
+        if (heading) {
+            lines.push((num ? num + '. ' : '') + heading);
+        }
+
+        Object.entries(obj).forEach(([key, value]) => {
+            if (key === nameKey) return; // already used as heading
+            if (value === null || value === undefined || value === '') return;
+            if (typeof value === 'object') return; // skip nested objects in list items
+            const label = key.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase()).trim();
+            lines.push('   ' + label + ': ' + value);
+        });
+
+        return lines.join('\n');
+    }
+
+    function formatObjectSections(obj) {
+        const sections = [];
+
+        Object.entries(obj).forEach(([key, value]) => {
+            if (value === null || value === undefined || value === '') return;
+            const label = key.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase()).trim();
+
+            if (typeof value === 'string' || typeof value === 'number') {
+                sections.push(label + ': ' + value);
+            } else if (Array.isArray(value)) {
+                if (value.length === 0) return;
+                if (typeof value[0] === 'string') {
+                    const items = value.filter(v => v && v.trim());
+                    if (items.length > 0) {
+                        sections.push(label + ':\n' + items.map(v => '  • ' + v.trim()).join('\n'));
+                    }
+                } else {
+                    sections.push(label + ':\n' + value.filter(item => item && typeof item === 'object').map((item, i) => '  ' + formatObject(item, i + 1).replace(/\n/g, '\n  ')).join('\n'));
+                }
+            } else if (typeof value === 'object') {
+                // Nested object — recurse one level
+                const inner = Object.entries(value)
+                    .filter(([, v]) => v !== null && v !== undefined && v !== '')
+                    .map(([k, v]) => {
+                        const subLabel = k.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase()).trim();
+                        if (typeof v === 'string' || typeof v === 'number') return '  ' + subLabel + ': ' + v;
+                        if (Array.isArray(v) && v.every(x => typeof x === 'string')) return '  ' + subLabel + ': ' + v.filter(x => x).join(', ');
+                        return null;
+                    })
+                    .filter(Boolean);
+                if (inner.length > 0) {
+                    sections.push(label + ':\n' + inner.join('\n'));
+                }
+            }
+        });
+
+        return sections.join('\n\n');
+    }
+
     return {
         init,
         queryFieldOutput,
         populateField,
         loadDependencies,
         getDependenciesConfig: function() { return dependenciesConfig; },
+        formatValue,
     };
 })();
 

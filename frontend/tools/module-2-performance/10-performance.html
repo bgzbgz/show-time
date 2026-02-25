@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sprint 10 - Performance Analysis & Accountability | Fast Track</title>
+    <title>Performance Analysis & Accountability | Fast Track</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../../shared/js/tool-db.js"></script>
     <script src="../../shared/js/ai-challenge.js"></script>
@@ -14,1433 +15,773 @@
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
     <script src="../../shared/js/cognitive-load.js"></script>
     <script src="../../js/tool-access-control.js"></script>
-
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link rel="preload" href="Plaak3Trial-43-Bold.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="RiformaLL-Regular.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="MonumentGrotesk-Mono.woff2" as="font" type="font/woff2" crossorigin>
     <style>
-        @font-face {
-            font-family: 'Plaak';
-            src: url('Plaak3Trial-43-Bold.woff2') format('woff2');
-            font-weight: bold;
-            font-style: normal;
-        }
-        @font-face {
-            font-family: 'Riforma';
-            src: url('RiformaLL-Regular.woff2') format('woff2');
-            font-weight: normal;
-            font-style: normal;
-        }
-        @font-face {
-            font-family: 'Monument';
-            src: url('MonumentGrotesk-Mono.woff2') format('woff2');
-            font-weight: normal;
-            font-style: normal;
-        }
-        body {
-            font-family: 'Riforma', sans-serif;
-            margin: 0;
-            padding: 0;
-        }
-        .plaak {
-            font-family: 'Plaak', sans-serif;
-            font-weight: bold;
-        }
-        .monument {
-            font-family: 'Monument', monospace;
-        }
-        .worksheet-input {
-            width: 100%;
-            border: 1px solid #E0E0E0;
-            padding: 12px 16px;
-            font-family: 'Riforma', sans-serif;
-            font-size: 18px;
-            border-radius: 4px;
-            transition: border-color 0.3s;
-        }
-        .worksheet-input:focus {
-            outline: none;
-            border-color: #000000;
-        }
-        .worksheet-textarea {
-            width: 100%;
-            border: 1px solid #E0E0E0;
-            padding: 12px 16px;
-            font-family: 'Riforma', sans-serif;
-            font-size: 18px;
-            border-radius: 4px;
-            min-height: 120px;
-            resize: vertical;
-            transition: border-color 0.3s;
-        }
-        .worksheet-textarea:focus {
-            outline: none;
-            border-color: #000000;
-        }
-        .numbered-section {
-            background: #000000;
-            color: #FFFFFF;
-            padding: 10px 16px;
-            font-size: 26px;
-            font-family: 'Plaak', sans-serif;
-            border-radius: 4px;
-            display: inline-block;
-            margin-bottom: 16px;
-        }
-        .progress-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #E0E0E0;
-            transition: background 0.3s;
-        }
-        .progress-dot.active {
-            background: #000000;
-        }
-        .task-row {
-            display: grid;
-            grid-template-columns: 2fr 1fr 2fr;
-            gap: 12px;
-            margin-bottom: 12px;
-            align-items: center;
-        }
-        .status-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 4px;
-            font-size: 14px;
-            font-weight: bold;
-        }
-        .status-done {
-            background: #E8F5E9;
-            color: #2E7D32;
-        }
-        .status-not-done {
-            background: #FFEBEE;
-            color: #C62828;
-        }
-        .dashboard-metric {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-        }
-        .metric-value {
-            font-size: 48px;
-            font-weight: bold;
-            margin-bottom: 8px;
-        }
-        .metric-label {
-            font-size: 14px;
-            text-transform: uppercase;
-            opacity: 0.9;
-        }
+        @font-face { font-family: 'Plaak'; src: url('Plaak3Trial-43-Bold.woff2') format('woff2'); font-weight: bold; font-display: swap; }
+        @font-face { font-family: 'Riforma'; src: url('RiformaLL-Regular.woff2') format('woff2'); font-weight: normal; font-display: swap; }
+        @font-face { font-family: 'Riforma'; src: url('RiformaLL-Regular.woff2') format('woff2'); font-weight: 600; font-display: swap; }
+        @font-face { font-family: 'Monument'; src: url('MonumentGrotesk-Mono.woff2') format('woff2'); font-display: swap; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Riforma', -apple-system, sans-serif; font-size: 16px; color: #000; background: #000; -webkit-font-smoothing: antialiased; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #000; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #333; }
+        * { scrollbar-width: thin; scrollbar-color: #000 transparent; }
+        .plaak { font-family: 'Plaak', sans-serif; font-weight: bold; letter-spacing: -0.01em; line-height: 1.2; }
+        .monument { font-family: 'Monument', monospace; letter-spacing: 0.05em; }
+        .tool-frame { background: #fff; min-height: 100vh; }
+        .tool-inner { background: #fff; min-height: 100vh; }
+        .wizard-layout { display: flex; min-height: 100vh; }
+        .wizard-main { flex: 1; display: flex; flex-direction: column; min-height: 100vh; background: #fff; }
+        .wizard-content { max-width: 720px; width: 100%; margin: 0 auto; padding: 48px 32px; flex: 1; }
+        .wizard-sidebar { width: 280px; background: #000; border-left: 1px solid #000; flex-shrink: 0; position: sticky; top: 0; height: 100vh; overflow: hidden; }
+        .wizard-sidebar-inner { padding: 32px 24px; height: 100%; overflow-y: auto; overflow-x: hidden; }
+        .sidebar-step-item { padding: 12px; margin-bottom: 8px; border-left: 3px solid transparent; transition: all 0.2s ease; }
+        .sidebar-step-item.active { border-left-color: #FFF469; background: #222; }
+        .sidebar-step-item.completed { background: #fff; color: #000; border-left-color: #fff; cursor: pointer; }
+        .sidebar-step-item.completed:hover { background: #E0E0E0; }
+        .sidebar-step-item.locked { opacity: 0.5; }
+        .sidebar-step-item .step-num { font-family: 'Riforma', sans-serif; font-size: 14px; }
+        .sidebar-step-item .step-name { font-family: 'Riforma', sans-serif; font-size: 14px; }
+        .sidebar-snippet { font-size: 12px; margin-top: 4px; opacity: 0.7; line-height: 1.3; }
+        .sidebar-phase-header { font-family: 'Monument', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: #FFF469; padding: 8px 12px; margin-top: 16px; margin-bottom: 4px; }
+        .step-indicator { font-family: 'Monument', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #6B7280; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
+        .step-time { font-family: 'Monument', monospace; font-size: 11px; color: #6B7280; }
+        .step-heading { font-family: 'Plaak', sans-serif; font-weight: bold; font-size: 32px; text-transform: uppercase; letter-spacing: -0.01em; line-height: 1.2; color: #000; margin-bottom: 6px; }
+        .step-hint { font-size: 16px; color: #6B7280; line-height: 1.5; margin: 0 0 32px 0; }
+        .ft-label { display: flex; align-items: center; gap: 6px; font-family: 'Monument', monospace; font-size: 14px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; color: #000; margin-bottom: 8px; }
+        .ft-required { color: #DC2626; font-weight: 700; }
+        .ft-input { width: 100%; height: 44px; padding: 8px 16px; font-family: 'Riforma', sans-serif; font-size: 16px; color: #000; background: #fff; border: 1px solid #E5E7EB; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+        .ft-input:focus { outline: none; border-color: #000; box-shadow: 0 0 0 3px #FFF469; }
+        .ft-textarea { width: 100%; min-height: 120px; padding: 12px 16px; font-family: 'Riforma', sans-serif; font-size: 16px; color: #000; background: #fff; border: 1px solid #E5E7EB; resize: vertical; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+        .ft-textarea:focus { outline: none; border-color: #000; box-shadow: 0 0 0 3px #FFF469; }
+        .ft-help { font-size: 14px; color: #6B7280; margin-top: 4px; line-height: 1.5; }
+        .ft-field-group { margin-bottom: 24px; }
+        .ft-field-group:last-child { margin-bottom: 0; }
+        .ft-section { margin-bottom: 32px; }
+        .ft-insight { background: #FFF469; border: 3px solid #000; padding: 16px; margin-bottom: 32px; }
+        .ft-example { background: #F3F4F6; padding: 16px; margin-bottom: 8px; font-size: 14px; line-height: 1.6; color: #1F2937; }
+        .btn-footer { position: sticky; bottom: 0; z-index: 10; display: flex; justify-content: space-between; align-items: center; padding: 16px 32px; border-top: 1px solid #E5E7EB; background: #fff; width: 100%; }
+        .btn-back { background: #fff; color: #000; border: 2px solid #000; padding: 12px 24px; font-family: 'Riforma', sans-serif; font-size: 16px; cursor: pointer; transition: all 0.2s ease; min-height: 44px; }
+        .btn-back:hover { background: #F3F4F6; }
+        .btn-next { background: #000; color: #fff; border: 2px solid #000; padding: 12px 24px; font-family: 'Riforma', sans-serif; font-size: 16px; cursor: pointer; transition: all 0.2s ease; min-height: 44px; }
+        .btn-next:hover:not(:disabled) { transform: scale(1.02); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .btn-next:disabled { background: #E5E7EB; color: #9CA3AF; border-color: #E5E7EB; cursor: not-allowed; }
+        .numbered-section { background: #000; color: #fff; padding: 8px 14px; font-size: 14px; font-weight: bold; letter-spacing: 0.5px; display: inline-block; font-family: 'Monument', monospace; }
+        .mobile-step-bar { display: none; padding: 12px 16px; border-bottom: 1px solid #E5E7EB; background: #F3F4F6; }
+        .mobile-step-bar .bar-text { font-family: 'Monument', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #6B7280; margin-bottom: 6px; }
+        .mobile-progress { height: 3px; background: #E5E7EB; width: 100%; }
+        .mobile-progress-fill { height: 100%; background: #000; transition: width 0.3s ease; }
+        @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-in { animation: fadeSlideIn 0.3s ease-out; }
+        @media print { .no-print { display: none !important; } }
+        @media (min-width: 769px) and (max-width: 1024px) { .wizard-sidebar { width: 220px; } .wizard-sidebar-inner { padding: 24px 16px; } }
+        @media (max-width: 768px) { .wizard-sidebar { display: none; } .mobile-step-bar { display: block; } .wizard-content { padding: 24px 16px; } .step-heading { font-size: 24px; } .btn-footer { padding: 12px 16px; } }
+        @media (max-width: 480px) { .step-heading { font-size: 20px; } .wizard-content { padding: 20px 12px; } }
     </style>
 </head>
 <body>
-    <div id="root"></div>
+<div id="root"></div>
+<script type="text/babel">
+    const { useState, useEffect, useRef } = React;
 
-    <script type="text/babel">
-        const { useState, useEffect } = React;
+    const CONFIG = {
+        SUPABASE_URL: 'https://lutzzfaedkbsmbobmrzx.supabase.co',
+        SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1dHp6ZmFlZGtic21ib2Jtcnp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MDA0MDQsImV4cCI6MjA4NjM3NjQwNH0.o2gJba85vDl4NLS-C8Mq3OudWKxet-b0IqO9kazqb8U',
+        TOOL_SLUG: 'performance',
+        AUTOSAVE_DELAY: 2000
+    };
 
-        const CONFIG = {
-            SUPABASE_URL: 'https://lutzzfaedkbsmbobmrzx.supabase.co',
-            SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1dHp6ZmFlZGtic21ib2Jtcnp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MDA0MDQsImV4cCI6MjA4NjM3NjQwNH0.o2gJba85vDl4NLS-C8Mq3OudWKxet-b0IqO9kazqb8U',
-            TOOL_SLUG: 'performance',
-            AUTOSAVE_DELAY: 2000
-        };
+    const { createClient } = supabase;
+    const supabaseClient = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+    window.supabaseClient = supabaseClient;
+    ToolDB.init(CONFIG.TOOL_SLUG);
+    ToolAccessControl.init(CONFIG.TOOL_SLUG);
 
-        // Initialize Supabase client
-        const { createClient } = supabase;
-        const supabaseClient = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
-
-        // Make Supabase client globally available for dependency injection
-        window.supabaseClient = supabaseClient;
-
-        // Initialize ToolDB and dependency injection
-        ToolDB.init(CONFIG.TOOL_SLUG);
-        ToolAccessControl.init(CONFIG.TOOL_SLUG);
-
-        // Initialize cognitive load components
-        CognitiveLoad.init('performance', {"insights":["What gets measured gets managed. But only measure what truly matters.","The 5 Whys technique reveals root causes that symptoms analysis misses."],"caseStudy":{"before":"[PLACEHOLDER] Performance reviews happened annually.","after":"[PLACEHOLDER] Weekly 15-minute check-ins. Problems caught within days.","quote":"[PLACEHOLDER] The accountability framework removed emotion from difficult conversations."}});
-        const { FastTrackInsight, ScienceBox, WarningBox, CaseStudy, ScienceBookmarkIcon, ToolGuideDrawer } = CognitiveLoad.components;
-
-        function DependencyContext({ deps }) {
-            if (!deps || deps.length === 0) return null;
-            return (
-                <div style={{ marginBottom: '24px' }}>
-                    <div style={{ fontFamily: "'Monument', monospace", fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#666', marginBottom: '8px' }}>
-                        CONTEXT FROM PREVIOUS TOOLS
-                    </div>
-                    {deps.map((dep, i) => (
-                        <div key={i} style={{ background: '#FFF9E0', border: '1px solid #F0E68C', borderLeft: '3px solid #DAA520', padding: '12px 16px', marginBottom: '8px', fontSize: '14px' }}>
-                            <div style={{ fontWeight: 600, marginBottom: '4px', color: '#333' }}>{dep.label}</div>
-                            <div style={{ color: '#555', whiteSpace: 'pre-wrap' }}>{dep.value}</div>
-                        </div>
-                    ))}
-                </div>
-            );
+    CognitiveLoad.init('performance', {
+        insights: [
+            "What gets measured gets managed. But what gets measured WRONG gets gamed.",
+            "Binary task tracking (done/not done) eliminates the gray zone. No more 80% complete.",
+            "The Theory of Constraints says your system is only as strong as its weakest link. Find it. Fix it. Repeat."
+        ],
+        caseStudy: {
+            before: "A 30-person SaaS company tracked effort instead of outcomes. Teams reported being 'busy' but quarterly targets were missed 60% of the time. No one owned specific metrics, and performance reviews happened once a year — too late to course-correct.",
+            after: "After implementing binary task tracking, weekly dashboards, and the 5 Whys for root cause analysis, task completion jumped from 55% to 88% in one quarter. The accountability framework gave every task a single owner with clear consequences.",
+            quote: "Once we stopped tracking effort and started tracking outcomes, everything changed. The 5 Whys revealed our real bottleneck was onboarding, not capacity. — Operations Director, SaaS company"
         }
+    });
+    const { FastTrackInsight, ScienceBox, WarningBox, CaseStudy } = CognitiveLoad.components;
 
-        function PerformanceApp() {
-            const [deps, setDeps] = useState([]);
-            const [step, setStep] = useState(0);
-            const [toolType, setToolType] = useState('');
-            const [showHelp, setShowHelp] = useState(false);
-            const [data, setData] = useState({
-                // Individual Process Tools
-                fiveWhys: {
-                    problem: '',
-                    why1: '',
-                    why2: '',
-                    why3: '',
-                    why4: '',
-                    why5: '',
-                    rootCause: '',
-                    solution: ''
-                },
-                eighty20: {
-                    objective: '',
-                    inputs: ['', '', '', '', ''],
-                    ranking: '',
-                    vitalFew: '',
-                    trivialMany: ''
-                },
-                impactEasy: {
-                    objective: '',
-                    ideas: ['', '', '', '', '', '', '', ''],
-                    matrix: {
-                        highImpactEasy: [],
-                        highImpactHard: [],
-                        lowImpactEasy: [],
-                        lowImpactHard: []
-                    }
-                },
-                accountability: {
-                    expectations: '',
-                    ownership: '',
-                    checkpoints: '',
-                    consequences: '',
-                    rewards: '',
-                    corrective: ''
-                },
-                // Team Tools
-                performanceSystem: {
-                    tasks: [
-                        { task: '', status: 'not-done', reason: '', owner: '' },
-                        { task: '', status: 'not-done', reason: '', owner: '' },
-                        { task: '', status: 'not-done', reason: '', owner: '' },
-                        { task: '', status: 'not-done', reason: '', owner: '' },
-                        { task: '', status: 'not-done', reason: '', owner: '' }
-                    ],
-                    dashboardMetrics: '',
-                    reviewCadence: '',
-                    improvements: ''
-                },
-                accountabilitySystem: {
-                    roles: '',
-                    framework: '',
-                    transparency: '',
-                    timeline: ''
-                }
-            });
+    const MEETING_AGENDA = [
+        { time: '5 min', title: 'Objective Setting', desc: 'Brief recap of sprint goals and meeting objectives.', questions: ['What are the key outcomes we need from this meeting?'], pitfalls: ['Skipping the objective and diving into discussion without alignment.'] },
+        { time: '25 min', title: 'Performance Analysis System', desc: 'Review proposed system structure: tasks done/not done, reasons for gaps, improvement commitments.', questions: ['Are tasks and metrics defined clearly for all team members?', 'Is there a binary approach (done/not done) to task evaluation?', 'Are dashboards designed to track individual and team metrics?'], pitfalls: ['Using vague metrics instead of binary done/not-done.', 'Designing dashboards nobody will actually check.'] },
+        { time: '25 min', title: 'Accountability & Consequences System', desc: 'Review the Accountability Checklist and key practices. Align on the consequences framework.', questions: ['Are roles and responsibilities clearly assigned?', 'Is the consequences framework transparent and fair?', 'Are timelines realistic and agreed upon?'], pitfalls: ['Making consequences punitive instead of constructive.', 'Leaving tasks without a single clear owner.'] },
+        { time: '5 min', title: 'Action Plan & Closing', desc: 'Confirm Who, What, When for all agreed actions.', questions: ['Does every action have a single owner and deadline?'], pitfalls: ['Ending without written commitments.'] }
+    ];
 
-            useEffect(() => {
-                async function loadDeps() {
-                    const userId = localStorage.getItem('ft_user_id');
-                    if (!userId || !window.ToolDB || !window.DependencyInjection) return;
-                    try {
-                        await ToolDB.whenReady();
-                        const config = DependencyInjection.getDependenciesConfig();
-                        const toolConfig = config[CONFIG.TOOL_SLUG];
-                        if (!toolConfig || !toolConfig.fields) return;
-                        const loaded = [];
-                        for (const field of toolConfig.fields) {
-                            const val = await ToolDB.getDependency(userId, field.source_field);
-                            if (val) {
-                                loaded.push({ label: field.display_label || field.source_field, value: typeof val === 'object' ? JSON.stringify(val, null, 2) : String(val) });
-                            }
-                        }
-                        setDeps(loaded);
-                    } catch (err) {
-                        console.warn('[' + CONFIG.TOOL_SLUG + '] Failed to load dependencies:', err);
-                    }
-                }
-                loadDeps();
-            }, []);
+    /* === SHARED COMPONENTS === */
+    function CheckIcon({ color = "#fff", size = 16 }) {
+        return <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>;
+    }
+    function LockIcon({ size = 16 }) {
+        return <svg width={size} height={size} viewBox="0 0 24 24" fill="#9CA3AF"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>;
+    }
+    function ButtonFooter({ onBack, onNext, nextLabel = 'Next', showBack = true, disabled = false }) {
+        return (
+            <div className="btn-footer no-print">
+                {showBack ? <button className="btn-back" onClick={onBack}>&larr; Back</button> : <div />}
+                <button className="btn-next" disabled={disabled} onClick={onNext}>{nextLabel} &rarr;</button>
+            </div>
+        );
+    }
+    function MobileStepBar({ step, total }) {
+        return (
+            <div className="mobile-step-bar no-print">
+                <div className="bar-text">Step {step} of {total}</div>
+                <div className="mobile-progress"><div className="mobile-progress-fill" style={{ width: `${Math.round((step / total) * 100)}%` }} /></div>
+            </div>
+        );
+    }
 
-            useEffect(() => {
-                const savedData = localStorage.getItem('sprint10_performance_data');
-                if (savedData) {
-                    setData(JSON.parse(savedData));
-                }
-            }, []);
-
-            useEffect(() => {
-                const timer = setTimeout(() => {
-                    localStorage.setItem('sprint10_performance_data', JSON.stringify(data));
-                }, 2000);
-                return () => clearTimeout(timer);
-            }, [data]);
-
-            const updateData = (path, value) => {
-                setData(prev => {
-                    const newData = { ...prev };
-                    const keys = path.split('.');
-                    let current = newData;
-                    for (let i = 0; i < keys.length - 1; i++) {
-                        current = current[keys[i]];
-                    }
-                    current[keys[keys.length - 1]] = value;
-                    return newData;
-                });
-            };
-
-            const updateArrayItem = (path, index, value) => {
-                setData(prev => {
-                    const newData = { ...prev };
-                    const keys = path.split('.');
-                    let current = newData;
-                    for (let i = 0; i < keys.length; i++) {
-                        if (i === keys.length - 1) {
-                            current[keys[i]][index] = value;
-                        } else {
-                            current = current[keys[i]];
-                        }
-                    }
-                    return newData;
-                });
-            };
-
-            const updateTaskField = (index, field, value) => {
-                setData(prev => {
-                    const newData = { ...prev };
-                    newData.performanceSystem.tasks[index][field] = value;
-                    return newData;
-                });
-            };
-
-            const moveIdeaToQuadrant = (idea, quadrant) => {
-                setData(prev => {
-                    const newData = { ...prev };
-                    // Remove from all quadrants
-                    Object.keys(newData.impactEasy.matrix).forEach(key => {
-                        newData.impactEasy.matrix[key] = newData.impactEasy.matrix[key].filter(i => i !== idea);
-                    });
-                    // Add to selected quadrant
-                    if (idea.trim()) {
-                        newData.impactEasy.matrix[quadrant].push(idea);
-                    }
-                    return newData;
-                });
-            };
-
-            const calculateCompletionRate = () => {
-                const tasks = data.performanceSystem.tasks.filter(t => t.task);
-                if (tasks.length === 0) return 0;
-                const completed = tasks.filter(t => t.status === 'done').length;
-                return Math.round((completed / tasks.length) * 100);
-            };
-
-            const exportPDF = async () => {
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF('p', 'mm', 'a4');
-                const pageWidth = pdf.internal.pageSize.getWidth();
-                const pageHeight = pdf.internal.pageSize.getHeight();
-                const margin = 20;
-                let yPos = margin;
-
-                pdf.setFontSize(24);
-                pdf.setFont(undefined, 'bold');
-                pdf.text('SPRINT 10: PERFORMANCE ANALYSIS & ACCOUNTABILITY', pageWidth / 2, yPos, { align: 'center' });
-
-                yPos += 15;
-                pdf.setFontSize(12);
-                pdf.setFont(undefined, 'normal');
-                pdf.text(`Type: ${toolType === 'individual' ? 'Individual Process Tools' : 'Team Systems'}`, margin, yPos);
-                yPos += 10;
-
-                if (toolType === 'individual') {
-                    // 5 Whys
-                    if (data.fiveWhys.problem) {
-                        pdf.setFontSize(16);
-                        pdf.setFont(undefined, 'bold');
-                        pdf.text('5 WHYS ANALYSIS', margin, yPos);
-                        yPos += 10;
-
-                        pdf.setFontSize(10);
-                        pdf.setFont(undefined, 'normal');
-                        pdf.text(`Problem: ${data.fiveWhys.problem}`, margin, yPos);
-                        yPos += 7;
-                        pdf.text(`Root Cause: ${data.fiveWhys.rootCause}`, margin, yPos);
-                        yPos += 7;
-                        pdf.text(`Solution: ${data.fiveWhys.solution}`, margin, yPos);
-                        yPos += 10;
-                    }
-
-                    // 80/20
-                    if (data.eighty20.objective) {
-                        pdf.setFontSize(16);
-                        pdf.setFont(undefined, 'bold');
-                        pdf.text('80/20 PRINCIPLE', margin, yPos);
-                        yPos += 10;
-
-                        pdf.setFontSize(10);
-                        pdf.setFont(undefined, 'normal');
-                        pdf.text(`Objective: ${data.eighty20.objective}`, margin, yPos);
-                        yPos += 7;
-                        const vitalLines = pdf.splitTextToSize(`Vital Few: ${data.eighty20.vitalFew}`, pageWidth - 2 * margin);
-                        vitalLines.forEach(line => {
-                            pdf.text(line, margin, yPos);
-                            yPos += 5;
-                        });
-                    }
-
-                } else {
-                    // Team tools
-                    pdf.setFontSize(16);
-                    pdf.setFont(undefined, 'bold');
-                    pdf.text('PERFORMANCE ANALYSIS SYSTEM', margin, yPos);
-                    yPos += 10;
-
-                    pdf.setFontSize(10);
-                    pdf.setFont(undefined, 'normal');
-                    pdf.text(`Completion Rate: ${calculateCompletionRate()}%`, margin, yPos);
-                    yPos += 10;
-
-                    data.performanceSystem.tasks.forEach((task, idx) => {
-                        if (task.task) {
-                            if (yPos > pageHeight - margin) {
-                                pdf.addPage();
-                                yPos = margin;
-                            }
-                            pdf.text(`${idx + 1}. ${task.task} - ${task.status.toUpperCase()}`, margin, yPos);
-                            yPos += 5;
-                            if (task.reason) {
-                                pdf.text(`   Reason: ${task.reason}`, margin, yPos);
-                                yPos += 5;
-                            }
-                            yPos += 3;
-                        }
-                    });
-                }
-
-                pdf.save(`Sprint_10_Performance_export.pdf`);
-            };
-
-            const [submitStatus, setSubmitStatus] = useState(null);
-            const [submitMessage, setSubmitMessage] = useState('');
-
-            const handleSubmit = async () => {
-                const userId = localStorage.getItem('ft_user_id');
-                if (!userId) {
-                    alert('User not authenticated. Please return to the dashboard.');
-                    return;
-                }
-                const questionMappings = {
-                    execution_dashboard: { performanceSystem: data.performanceSystem, eighty20: data.eighty20, impactEasy: data.impactEasy },
-                    five_why: data.fiveWhys,
-                    consequences_table: { accountability: data.accountability, accountabilitySystem: data.accountabilitySystem }
-                };
-                await window.AIChallenge.submitWithChallenge(userId, CONFIG.TOOL_SLUG, questionMappings, {
-                    onReviewStart: () => { setSubmitStatus('saving'); setSubmitMessage('AI coach is reviewing...'); },
-                    onRevise: () => { setSubmitStatus(null); setSubmitMessage(''); setStep(toolType === 'individual' ? 4 : 2); },
-                    onSubmitAnyway: () => { setSubmitStatus('success'); setSubmitMessage('Submission saved successfully!'); },
-                    onError: (err) => { setSubmitStatus('error'); setSubmitMessage('Failed to save: ' + err.message); }
-                });
-            };
-
-            const getTotalSteps = () => {
-                if (toolType === 'individual') return 4;
-                if (toolType === 'team') return 2;
-                return 0;
-            };
-
-            const getStepProgress = () => {
-                const total = getTotalSteps();
-                if (step <= 0.5) return 0;
-                if (step === 999) return 100;
-                return Math.round((step / total) * 100);
-            };
-
-            const renderProgressIndicator = () => {
-                if (step === 0 || step === 0.5) return null;
-
-                const total = getTotalSteps();
-                const steps = Array.from({ length: total }, (_, i) => i + 1);
-
-                return (
-                    <div className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50">
-                        <div className="max-w-4xl mx-auto px-6 py-4">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-sm font-semibold monument">
-                                    SPRINT 10: PERFORMANCE ANALYSIS & ACCOUNTABILITY
-                                </span>
-                                <span className="text-sm font-semibold">
-                                    {step === 999 ? 'CANVAS' : `STEP ${step} OF ${total}`}
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                {steps.map((s, idx) => (
-                                    <React.Fragment key={s}>
-                                        <div className={`progress-dot ${step >= s ? 'active' : ''}`} />
-                                        {idx < steps.length - 1 && (
-                                            <div className="flex-1 h-0.5 bg-gray-200">
-                                                <div
-                                                    className="h-full bg-black transition-all duration-300"
-                                                    style={{ width: step > s ? '100%' : '0%' }}
-                                                />
-                                            </div>
-                                        )}
-                                    </React.Fragment>
-                                ))}
-                            </div>
+    /* === STEP 1: GOAL SETTING & PERFORMANCE MONITORING === */
+    function Step1({ d, u }) {
+        const goals = d.goals || Array(5).fill(null).map(() => ({ goal: '', kpi: '', countermeasure: '', q1: '', q2: '', q3: '', q4: '' }));
+        const updateGoal = (i, f, v) => { const next = [...goals]; next[i] = { ...next[i], [f]: v }; u('goals', next); };
+        return (
+            <div className="animate-in">
+                <div className="step-indicator"><span>Step 1 of 6</span><span className="step-time">~10 min</span></div>
+                <h2 className="step-heading">GOAL SETTING & MONITORING</h2>
+                <p className="step-hint">Define 5 specific, measurable goals for the year. Break each into quarterly deliverables with clear KPIs and owners.</p>
+                <FastTrackInsight>Define five specific, measurable goals for the year. Identify the most critical goal and establish countermeasures to prevent over-focus. Use the 80/20 rule: which 20% of activities will drive 80% of results?</FastTrackInsight>
+                <div className="ft-example">Example: "Increase revenue by 20%, but maintain gross margins above 40%." The countermeasure (margin target) prevents chasing revenue at any cost.</div>
+                {goals.map((g, i) => (
+                    <div key={i} style={{ border: '2px solid #000', padding: 24, marginBottom: 24 }}>
+                        <div className="numbered-section" style={{ marginBottom: 16 }}>GOAL {i + 1}</div>
+                        <div className="ft-field-group">
+                            <label className="ft-label">NUMERIC GOAL <span className="ft-required">*</span></label>
+                            <input className="ft-input" placeholder="e.g. Increase monthly revenue to €100K" value={g.goal} onChange={e => updateGoal(i, 'goal', e.target.value)} />
                         </div>
-                    </div>
-                );
-            };
-
-            const renderIntroPage = () => (
-                <div className="min-h-screen bg-black text-white flex flex-col justify-center items-center p-8">
-                    <div className="max-w-4xl w-full">
-                        <h1 className="plaak text-9xl mb-16 text-center leading-none">
-                            BEFORE WE START
-                        </h1>
-
-                        <div className="space-y-16">
-                            <section>
-                                <h2 className="plaak text-6xl mb-6" style={{color: '#fff469'}}>SPRINT INFO</h2>
-                                <div className="space-y-4 text-xl leading-relaxed">
-                                    <p>
-                                        This sprint establishes <strong>Performance Analysis and Accountability Systems</strong> that
-                                        align efforts with strategic goals through structured tracking and clear consequences.
-                                    </p>
-                                    <p className="mt-4">
-                                        <strong>Individual Tools:</strong> 5 Whys (root cause analysis), 80/20 Principle (focus on vital few),
-                                        Brainstorming & Impact-Easy Matrix, Accountability & Consequences Framework.
-                                    </p>
-                                    <p className="mt-4">
-                                        <strong>Team Tools:</strong> Performance Analysis System setup and Accountability & Consequences System planning.
-                                    </p>
-                                </div>
-                            </section>
-
-                            <section>
-                                <h2 className="plaak text-6xl mb-6" style={{color: '#fff469'}}>MISTAKES TO AVOID</h2>
-                                <ul className="space-y-3 text-xl leading-relaxed list-disc list-inside">
-                                    <li>Vague metrics - everything must be specific and measurable</li>
-                                    <li>Stopping root cause analysis too soon - always reach the true cause</li>
-                                    <li>Focusing on trivial many instead of vital few activities</li>
-                                    <li>Inconsistent follow-up on accountability checkpoints</li>
-                                    <li>Binary task tracking - tasks are done or not done, no "in progress"</li>
-                                </ul>
-                            </section>
+                        <div className="ft-field-group">
+                            <label className="ft-label">KPI (HOW YOU'LL MEASURE)</label>
+                            <input className="ft-input" placeholder="e.g. Monthly revenue dashboard" value={g.kpi} onChange={e => updateGoal(i, 'kpi', e.target.value)} />
                         </div>
-
-                        <div className="flex justify-center gap-6 mt-16">
-                            <button
-                                onClick={() => setShowHelp(true)}
-                                className="px-8 py-4 border-2 border-white text-white hover:bg-white hover:text-black transition-all text-lg font-bold"
-                            >
-                                HELP
-                            </button>
-                            <button
-                                onClick={() => setStep(0.5)}
-                                className="px-8 py-4 bg-white text-black hover:bg-gray-200 transition-all text-lg font-bold"
-                            >
-                                START SPRINT
-                            </button>
+                        <div className="ft-field-group">
+                            <label className="ft-label">COUNTERMEASURE</label>
+                            <input className="ft-input" placeholder="e.g. Maintain gross margin above 40%" value={g.countermeasure} onChange={e => updateGoal(i, 'countermeasure', e.target.value)} />
+                            <div className="ft-help">What safeguard prevents over-focus on this goal at the expense of other priorities?</div>
                         </div>
-                    </div>
-                </div>
-            );
-
-            const renderChoicePage = () => (
-                <div className="min-h-screen bg-black text-white flex flex-col justify-center items-center p-8">
-                    <div className="max-w-4xl w-full text-center">
-                        <h1 className="plaak text-6xl mb-8">CHOOSE YOUR PATH</h1>
-                        <p className="text-2xl mb-16 text-gray-300">
-                            Select individual process tools or team system planning
-                        </p>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <button
-                                onClick={() => {
-                                    setToolType('individual');
-                                    setStep(1);
-                                }}
-                                className="p-12 border-4 border-white hover:bg-white hover:text-black transition-all group"
-                            >
-                                <div className="plaak text-4xl mb-4">INDIVIDUAL TOOLS</div>
-                                <p className="text-lg text-gray-300 group-hover:text-black">
-                                    Apply 4 process tools: 5 Whys, 80/20 Principle, Impact-Easy Matrix, and Accountability Framework
-                                </p>
-                            </button>
-
-                            <button
-                                onClick={() => {
-                                    setToolType('team');
-                                    setStep(1);
-                                }}
-                                className="p-12 border-4 border-white hover:bg-white hover:text-black transition-all group"
-                            >
-                                <div className="plaak text-4xl mb-4">TEAM TOOLS</div>
-                                <p className="text-lg text-gray-300 group-hover:text-black">
-                                    Set up Performance Analysis System and Accountability & Consequences System for the team
-                                </p>
-                            </button>
-                        </div>
-
-                        <button
-                            onClick={() => setStep(0)}
-                            className="mt-12 px-8 py-4 border-2 border-white text-white hover:bg-white hover:text-black transition-all"
-                        >
-                            ← BACK
-                        </button>
-                    </div>
-                </div>
-            );
-
-            // Individual Tool Steps
-            const renderStep1_FiveWhys = () => (
-                <div className="min-h-screen bg-white pt-24 pb-16 px-8">
-                    <div className="max-w-4xl mx-auto">
-                        <div className="numbered-section">[01] THE 5 WHYS</div>
-
-                        {/* Fast Track Insight */}
-                        <FastTrackInsight>
-                            [PLACEHOLDER] Fast Track Principle for Performance Tracking: This foundational step drives 80% of results. Leaders who invest proper time here see the biggest transformation in their organization.
-                        </FastTrackInsight>
-
-                        {/* The Science */}
-                        <ScienceBox collapsible={true}>
-                            [PLACEHOLDER] Research from organizational psychology shows that structured performance tracking frameworks improve decision quality by 25-40% compared to unstructured approaches (Harvard Business Review, 2023). Writing responses down activates deeper cognitive processing than thinking alone.
-                        </ScienceBox>
-
-                        {/* Common Mistake */}
-                        <WarningBox>
-                            [PLACEHOLDER] Common mistake in Performance Tracking: Leaders often rush through this with surface-level answers. <strong>Bad:</strong> Generic responses completed in under 5 minutes. <strong>Good:</strong> Specific, honest answers that require real thought and sometimes discomfort.
-                        </WarningBox>
-
-
-                        <p className="text-xl mb-8 text-gray-700">
-                            Uncover the root cause of problems through iterative questioning. Ask "Why?" five times to drill down from symptoms to true causes.
-                        </p>
-
-                        <div className="mb-8">
-                            <label className="block text-lg font-bold mb-2">Define the Problem</label>
-                            <ScienceBookmarkIcon>
-                                [PLACEHOLDER] Research backs this: Studies show that structured reflection on this aspect of performance tracking leads to significantly better outcomes than intuitive approaches alone.
-                            </ScienceBookmarkIcon>
-                            <p className="text-gray-700 mb-4">What is the specific issue you're experiencing?</p>
-                            <textarea
-                                className="worksheet-textarea"
-                                value={data.fiveWhys.problem}
-                                onChange={(e) => updateData('fiveWhys.problem', e.target.value)}
-                                placeholder="Example: Our delivery times are consistently delayed..."
-                            />
-                        </div>
-
-                        <div className="space-y-6">
-                            {[1, 2, 3, 4, 5].map(num => (
-                                <div key={num} className="mb-6">
-                                    <label className="block text-lg font-bold mb-2">WHY #{num}</label>
-                                    <ScienceBookmarkIcon>
-                                        [PLACEHOLDER] Research backs this: Studies show that structured reflection on this aspect of performance tracking leads to significantly better outcomes than intuitive approaches alone.
-                                    </ScienceBookmarkIcon>
-                                    <input
-                                        type="text"
-                                        className="worksheet-input"
-                                        value={data.fiveWhys[`why${num}`]}
-                                        onChange={(e) => updateData(`fiveWhys.why${num}`, e.target.value)}
-                                        placeholder={`Why does this happen? (${num === 1 ? 'immediate reason' : 'dig deeper'})`}
-                                    />
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8, marginTop: 16 }}>
+                            {['q1', 'q2', 'q3', 'q4'].map(q => (
+                                <div key={q}>
+                                    <label className="ft-label" style={{ fontSize: 11 }}>{q.toUpperCase()} TARGET</label>
+                                    <input className="ft-input" style={{ fontSize: 14 }} placeholder="Quarterly deliverable" value={g[q]} onChange={e => updateGoal(i, q, e.target.value)} />
                                 </div>
                             ))}
                         </div>
-
-                        <div className="mb-8">
-                            <label className="block text-lg font-bold mb-2">Root Cause Identified</label>
-                            <ScienceBookmarkIcon>
-                                [PLACEHOLDER] Research backs this: Studies show that structured reflection on this aspect of performance tracking leads to significantly better outcomes than intuitive approaches alone.
-                            </ScienceBookmarkIcon>
-                            <p className="text-gray-700 mb-4">What is the fundamental cause that emerged from your analysis?</p>
-                            <textarea
-                                className="worksheet-textarea"
-                                value={data.fiveWhys.rootCause}
-                                onChange={(e) => updateData('fiveWhys.rootCause', e.target.value)}
-                                placeholder="State the root cause clearly and specifically..."
-                            />
-                        </div>
-
-                        <div className="mb-8">
-                            <label className="block text-lg font-bold mb-2">Solution to Address Root Cause</label>
-                            <p className="text-gray-700 mb-4">What specific actions will eliminate this root cause?</p>
-                            <textarea
-                                className="worksheet-textarea"
-                                value={data.fiveWhys.solution}
-                                onChange={(e) => updateData('fiveWhys.solution', e.target.value)}
-                                placeholder="Example: Implement a structured onboarding program with mentorship..."
-                            />
-                        </div>
-
-                        <div className="flex justify-between">
-                            <button
-                                onClick={() => setStep(0.5)}
-                                className="px-6 py-3 border-2 border-black hover:bg-black hover:text-white transition-all font-bold"
-                            >
-                                ← BACK
-                            </button>
-                            <button
-                                onClick={() => setStep(2)}
-                                className="px-6 py-3 bg-black text-white hover:bg-gray-800 transition-all font-bold"
-                            >
-                                NEXT STEP →
-                            </button>
-                        </div>
                     </div>
+                ))}
+                <ScienceBox collapsible={true}>Research by Locke & Latham (2002) shows that specific, challenging goals lead to higher performance 90% of the time. Quarterly breakdowns increase goal attainment by 33% (Harvard Business Review).</ScienceBox>
+            </div>
+        );
+    }
+
+    /* === STEP 2: PERFORMANCE MEASUREMENT (BINARY TASK TRACKING) === */
+    function Step2({ d, u }) {
+        const tasks = d.tasks || Array(8).fill(null).map(() => ({ task: '', status: 'not-done', owner: '', reason: '' }));
+        const updateTask = (i, f, v) => { const next = [...tasks]; next[i] = { ...next[i], [f]: v }; u('tasks', next); };
+        const doneCount = tasks.filter(t => t.status === 'done' && t.task.trim()).length;
+        const totalFilled = tasks.filter(t => t.task.trim()).length;
+        const rate = totalFilled > 0 ? Math.round((doneCount / totalFilled) * 100) : 0;
+        return (
+            <div className="animate-in">
+                <div className="step-indicator"><span>Step 2 of 6</span><span className="step-time">~8 min</span></div>
+                <h2 className="step-heading">PERFORMANCE MEASUREMENT</h2>
+                <p className="step-hint">Track your tasks with binary measurement: DONE or NOT DONE. No gray zones. Document reasons for any gaps and commit to improvements.</p>
+                <FastTrackInsight>The critical rule: all tasks are binary. Done or not done. No "in progress," no "80% complete." This forces clarity and exposes real obstacles instead of hiding behind vague status updates.</FastTrackInsight>
+                <div style={{ background: '#000', color: '#fff', padding: 24, textAlign: 'center', marginBottom: 32 }}>
+                    <div className="monument" style={{ fontSize: 11, color: '#FFF469', marginBottom: 8 }}>COMPLETION RATE</div>
+                    <div className="plaak" style={{ fontSize: 48, color: rate >= 80 ? '#FFF469' : '#fff' }}>{rate}%</div>
+                    <div style={{ fontSize: 14, color: '#999' }}>{doneCount} of {totalFilled} tasks done</div>
                 </div>
-            );
-
-            const renderStep2_Eighty20 = () => (
-                <div className="min-h-screen bg-white pt-24 pb-16 px-8">
-                    <div className="max-w-4xl mx-auto">
-                        <div className="numbered-section">[02] THE 80/20 PRINCIPLE</div>
-
-                        {/* Fast Track Insight */}
-                        <FastTrackInsight>
-                            [PLACEHOLDER] Fast Track Insight: The second phase of Performance Tracking is where most leaders see breakthroughs. Be specific and brutally honest in your answers here.
-                        </FastTrackInsight>
-
-                        {/* The Science */}
-                        <ScienceBox collapsible={true}>
-                            [PLACEHOLDER] Behavioral science research indicates that teams using systematic performance tracking processes make decisions 2.5x faster with 30% fewer errors (McKinsey, 2022). The structure reduces cognitive bias and forces comprehensive thinking.
-                        </ScienceBox>
-
-
-                        <p className="text-xl mb-8 text-gray-700">
-                            Focus on the vital few that drive 80% of results. Identify which 20% of your efforts yield 80% of outcomes.
-                        </p>
-
-                        <div className="mb-8">
-                            <label className="block text-lg font-bold mb-2">Define Your Objective</label>
-                            <p className="text-gray-700 mb-4">What result are you aiming to achieve?</p>
-                            <input
-                                type="text"
-                                className="worksheet-input"
-                                value={data.eighty20.objective}
-                                onChange={(e) => updateData('eighty20.objective', e.target.value)}
-                                placeholder="Example: Increase sales revenue, improve customer satisfaction..."
-                            />
-                        </div>
-
-                        <div className="mb-8">
-                            <label className="block text-lg font-bold mb-2">Identify All Contributing Inputs</label>
-                            <p className="text-gray-700 mb-4">List all factors contributing to this outcome</p>
-                            {[0, 1, 2, 3, 4].map(idx => (
-                                <input
-                                    key={idx}
-                                    type="text"
-                                    className="worksheet-input mb-3"
-                                    value={data.eighty20.inputs[idx]}
-                                    onChange={(e) => updateArrayItem('eighty20.inputs', idx, e.target.value)}
-                                    placeholder={`Input ${idx + 1}: e.g., Customer segments, sales channels, product lines...`}
-                                />
-                            ))}
-                        </div>
-
-                        <div className="mb-8">
-                            <label className="block text-lg font-bold mb-2">Rank by Impact</label>
-                            <p className="text-gray-700 mb-4">Which inputs deliver the most significant results? Use data to support your ranking.</p>
-                            <textarea
-                                className="worksheet-textarea"
-                                value={data.eighty20.ranking}
-                                onChange={(e) => updateData('eighty20.ranking', e.target.value)}
-                                placeholder="Example: Analysis shows 80% of revenue comes from 20% of customers (Enterprise accounts)..."
-                            />
-                        </div>
-
-                        <div className="mb-8">
-                            <label className="block text-lg font-bold mb-2 text-black">Focus on the VITAL FEW (The 20%)</label>
-                            <p className="text-gray-700 mb-4">What high-impact activities will you prioritize and enhance?</p>
-                            <textarea
-                                className="worksheet-textarea"
-                                value={data.eighty20.vitalFew}
-                                onChange={(e) => updateData('eighty20.vitalFew', e.target.value)}
-                                placeholder="Describe how you'll optimize these critical inputs..."
-                            />
-                        </div>
-
-                        <div className="mb-8">
-                            <label className="block text-lg font-bold mb-2 text-red-700">Eliminate/Automate the TRIVIAL MANY (The 80%)</label>
-                            <p className="text-gray-700 mb-4">What low-impact activities will you stop, reduce, or automate?</p>
-                            <textarea
-                                className="worksheet-textarea"
-                                value={data.eighty20.trivialMany}
-                                onChange={(e) => updateData('eighty20.trivialMany', e.target.value)}
-                                placeholder="Example: Automate invoicing for low-spending clients, reduce time on low-ROI marketing channels..."
-                            />
-                        </div>
-
-                        <div className="flex justify-between">
-                            <button
-                                onClick={() => setStep(1)}
-                                className="px-6 py-3 border-2 border-black hover:bg-black hover:text-white transition-all font-bold"
-                            >
-                                ← BACK
-                            </button>
-                            <button
-                                onClick={() => setStep(3)}
-                                className="px-6 py-3 bg-black text-white hover:bg-gray-800 transition-all font-bold"
-                            >
-                                NEXT STEP →
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            );
-
-            const renderStep3_ImpactEasy = () => (
-                <div className="min-h-screen bg-white pt-24 pb-16 px-8">
-                    <div className="max-w-4xl mx-auto">
-                        <div className="numbered-section">[03] BRAINSTORMING & IMPACT-EASY</div>
-
-                        {/* Fast Track Insight */}
-                        <FastTrackInsight>
-                            [PLACEHOLDER] Fast Track Advanced: This Performance Tracking step connects your work to the broader strategy. Look for patterns across your previous answers.
-                        </FastTrackInsight>
-
-                        {/* The Science */}
-                        <ScienceBox collapsible={true}>
-                            [PLACEHOLDER] Meta-analysis of 200+ organizations shows that completing structured exercises like this correlates with 35% higher strategic execution rates (Deloitte, 2023). Written commitments create psychological accountability.
-                        </ScienceBox>
-
-
-                        <p className="text-xl mb-8 text-gray-700">
-                            Generate ideas and prioritize them using the Impact-Easy Matrix
-                        </p>
-
-                        <div className="mb-8">
-                            <label className="block text-lg font-bold mb-2">Define Clear Objective</label>
-                            <input
-                                type="text"
-                                className="worksheet-input"
-                                value={data.impactEasy.objective}
-                                onChange={(e) => updateData('impactEasy.objective', e.target.value)}
-                                placeholder="What problem or opportunity are you addressing?"
-                            />
-                        </div>
-
-                        <div className="mb-8">
-                            <h2 className="text-2xl font-bold mb-4">Brainstorm Ideas</h2>
-                            <p className="text-gray-700 mb-4">List all possible solutions without judgment</p>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {data.impactEasy.ideas.map((idea, idx) => (
-                                    <input
-                                        key={idx}
-                                        type="text"
-                                        className="worksheet-input"
-                                        value={idea}
-                                        onChange={(e) => updateArrayItem('impactEasy.ideas', idx, e.target.value)}
-                                        placeholder={`Idea ${idx + 1}`}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="mb-8">
-                            <h2 className="text-2xl font-bold mb-4">Impact-Easy Matrix</h2>
-                            <p className="text-gray-700 mb-6">Categorize each idea by its impact and ease of implementation</p>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="border-2 border-black bg-gray-50 p-4 rounded">
-                                    <h3 className="font-bold mb-2 text-black">HIGH IMPACT / EASY</h3>
-                                    <p className="text-sm text-black mb-3">Quick wins - do these first!</p>
-                                    {data.impactEasy.matrix.highImpactEasy.map((idea, idx) => (
-                                        <div key={idx} className="bg-white p-2 mb-2 rounded border">{idea}</div>
-                                    ))}
-                                    <select
-                                        className="worksheet-input mt-2 text-sm"
-                                        onChange={(e) => {
-                                            if (e.target.value) {
-                                                moveIdeaToQuadrant(e.target.value, 'highImpactEasy');
-                                                e.target.value = '';
-                                            }
-                                        }}
-                                    >
-                                        <option value="">+ Add idea...</option>
-                                        {data.impactEasy.ideas.filter(i => i.trim()).map((idea, idx) => (
-                                            <option key={idx} value={idea}>{idea}</option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div className="border-2 border-yellow-500 bg-yellow-50 p-4 rounded">
-                                    <h3 className="font-bold mb-2 text-yellow-800">HIGH IMPACT / HARD</h3>
-                                    <p className="text-sm text-yellow-700 mb-3">Plan and allocate resources</p>
-                                    {data.impactEasy.matrix.highImpactHard.map((idea, idx) => (
-                                        <div key={idx} className="bg-white p-2 mb-2 rounded border">{idea}</div>
-                                    ))}
-                                    <select
-                                        className="worksheet-input mt-2 text-sm"
-                                        onChange={(e) => {
-                                            if (e.target.value) {
-                                                moveIdeaToQuadrant(e.target.value, 'highImpactHard');
-                                                e.target.value = '';
-                                            }
-                                        }}
-                                    >
-                                        <option value="">+ Add idea...</option>
-                                        {data.impactEasy.ideas.filter(i => i.trim()).map((idea, idx) => (
-                                            <option key={idx} value={idea}>{idea}</option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div className="border-2 border-gray-400 bg-gray-50 p-4 rounded">
-                                    <h3 className="font-bold mb-2 text-gray-800">LOW IMPACT / EASY</h3>
-                                    <p className="text-sm text-gray-700 mb-3">Fill time gaps</p>
-                                    {data.impactEasy.matrix.lowImpactEasy.map((idea, idx) => (
-                                        <div key={idx} className="bg-white p-2 mb-2 rounded border">{idea}</div>
-                                    ))}
-                                    <select
-                                        className="worksheet-input mt-2 text-sm"
-                                        onChange={(e) => {
-                                            if (e.target.value) {
-                                                moveIdeaToQuadrant(e.target.value, 'lowImpactEasy');
-                                                e.target.value = '';
-                                            }
-                                        }}
-                                    >
-                                        <option value="">+ Add idea...</option>
-                                        {data.impactEasy.ideas.filter(i => i.trim()).map((idea, idx) => (
-                                            <option key={idx} value={idea}>{idea}</option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div className="border-2 border-red-500 bg-red-50 p-4 rounded">
-                                    <h3 className="font-bold mb-2 text-red-800">LOW IMPACT / HARD</h3>
-                                    <p className="text-sm text-red-700 mb-3">Avoid or defer</p>
-                                    {data.impactEasy.matrix.lowImpactHard.map((idea, idx) => (
-                                        <div key={idx} className="bg-white p-2 mb-2 rounded border">{idea}</div>
-                                    ))}
-                                    <select
-                                        className="worksheet-input mt-2 text-sm"
-                                        onChange={(e) => {
-                                            if (e.target.value) {
-                                                moveIdeaToQuadrant(e.target.value, 'lowImpactHard');
-                                                e.target.value = '';
-                                            }
-                                        }}
-                                    >
-                                        <option value="">+ Add idea...</option>
-                                        {data.impactEasy.ideas.filter(i => i.trim()).map((idea, idx) => (
-                                            <option key={idx} value={idea}>{idea}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="flex justify-between">
-                            <button
-                                onClick={() => setStep(2)}
-                                className="px-6 py-3 border-2 border-black hover:bg-black hover:text-white transition-all font-bold"
-                            >
-                                ← BACK
-                            </button>
-                            <button
-                                onClick={() => setStep(4)}
-                                className="px-6 py-3 bg-black text-white hover:bg-gray-800 transition-all font-bold"
-                            >
-                                NEXT STEP →
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            );
-
-            const renderStep4_Accountability = () => (
-                <div className="min-h-screen bg-white pt-24 pb-16 px-8">
-                    <div className="max-w-4xl mx-auto">
-                        <div className="numbered-section">[04] ACCOUNTABILITY & CONSEQUENCES</div>
-
-                        {/* Fast Track Insight */}
-                        <FastTrackInsight>
-                            [PLACEHOLDER] Fast Track Integration: At this stage of Performance Tracking, synthesis matters most. Your outputs should connect to at least 2 other Fast Track tools.
-                        </FastTrackInsight>
-
-                        {/* The Science */}
-                        <ScienceBox collapsible={true}>
-                            [PLACEHOLDER] Longitudinal studies demonstrate that organizations revisiting their performance tracking outputs quarterly maintain 60% higher alignment scores (BCG, 2023). Regular review prevents strategic drift.
-                        </ScienceBox>
-
-
-                        <p className="text-xl mb-8 text-gray-700">
-                            Build a clear accountability system with transparent expectations and fair consequences
-                        </p>
-
-                        <div className="mb-8">
-                            <label className="block text-lg font-bold mb-2">Define Expectations</label>
-                            <p className="text-gray-700 mb-4">Clearly articulate roles, tasks, and goals. What are the specific, measurable responsibilities?</p>
-                            <textarea
-                                className="worksheet-textarea"
-                                value={data.accountability.expectations}
-                                onChange={(e) => updateData('accountability.expectations', e.target.value)}
-                                placeholder="Example: Sales manager must close $50K in monthly revenue with 15% margin..."
-                            />
-                        </div>
-
-                        <div className="mb-8">
-                            <label className="block text-lg font-bold mb-2">Assign Ownership</label>
-                            <p className="text-gray-700 mb-4">Who is ultimately responsible for each deliverable? (Single owner per task)</p>
-                            <textarea
-                                className="worksheet-textarea"
-                                value={data.accountability.ownership}
-                                onChange={(e) => updateData('accountability.ownership', e.target.value)}
-                                placeholder="List key deliverables and their owners..."
-                            />
-                        </div>
-
-                        <div className="mb-8">
-                            <label className="block text-lg font-bold mb-2">Set Checkpoints</label>
-                            <p className="text-gray-700 mb-4">When and how will performance be evaluated? Establish regular review points.</p>
-                            <textarea
-                                className="worksheet-textarea"
-                                value={data.accountability.checkpoints}
-                                onChange={(e) => updateData('accountability.checkpoints', e.target.value)}
-                                placeholder="Example: Weekly Monday 9am meeting to review task completion; Monthly performance reviews..."
-                            />
-                        </div>
-
-                        <div className="mb-8">
-                            <label className="block text-lg font-bold mb-2">Consequences Framework</label>
-                            <p className="text-gray-700 mb-4">What happens when goals are met or missed?</p>
-                            <textarea
-                                className="worksheet-textarea"
-                                value={data.accountability.consequences}
-                                onChange={(e) => updateData('accountability.consequences', e.target.value)}
-                                placeholder="Define both positive and corrective consequences..."
-                            />
-                        </div>
-
-                        <div className="mb-8">
-                            <label className="block text-lg font-bold mb-2 text-black">Rewards for Success</label>
-                            <p className="text-gray-700 mb-4">What meaningful rewards reinforce achievement?</p>
-                            <input
-                                type="text"
-                                className="worksheet-input"
-                                value={data.accountability.rewards}
-                                onChange={(e) => updateData('accountability.rewards', e.target.value)}
-                                placeholder="Example: Bonus for exceeding KPIs, recognition in team meetings, career advancement..."
-                            />
-                        </div>
-
-                        <div className="mb-8">
-                            <label className="block text-lg font-bold mb-2 text-red-700">Corrective Actions for Gaps</label>
-                            <p className="text-gray-700 mb-4">What fair, constructive actions address underperformance?</p>
-                            <input
-                                type="text"
-                                className="worksheet-input"
-                                value={data.accountability.corrective}
-                                onChange={(e) => updateData('accountability.corrective', e.target.value)}
-                                placeholder="Example: Training sessions, mentorship pairing, performance improvement plan..."
-                            />
-                        </div>
-
-                        <div className="flex justify-between">
-                            <button
-                                onClick={() => setStep(3)}
-                                className="px-6 py-3 border-2 border-black hover:bg-black hover:text-white transition-all font-bold"
-                            >
-                                ← BACK
-                            </button>
-                            <button
-                                onClick={() => setStep(999)}
-                                className="px-6 py-3 bg-black text-white hover:bg-gray-800 transition-all font-bold"
-                            >
-                                VIEW CANVAS →
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            );
-
-            // Team Tool Steps
-            const renderTeamStep1_PerformanceSystem = () => (
-                <div className="min-h-screen bg-white pt-24 pb-16 px-8">
-                    <div className="max-w-4xl mx-auto">
-                        <div className="numbered-section">[01] PERFORMANCE ANALYSIS SYSTEM</div>
-
-                        {/* Fast Track Insight */}
-                        <FastTrackInsight>
-                            [PLACEHOLDER] Fast Track Completion: The final step ties everything together. Review your Performance Tracking work holistically before moving on.
-                        </FastTrackInsight>
-
-                        {/* The Science */}
-                        <ScienceBox collapsible={true}>
-                            [PLACEHOLDER] Cross-industry research confirms that structured frameworks reduce implementation time by 40% while improving quality of outcomes across all organizational levels (Bain, 2023).
-                        </ScienceBox>
-
-
-                        <p className="text-xl mb-8 text-gray-700">
-                            Set up a system to track task completion, identify gaps, and drive continuous improvement
-                        </p>
-
-                        <div className="mb-8">
-                            <div className="dashboard-metric">
-                                <div className="metric-value">{calculateCompletionRate()}%</div>
-                                <div className="metric-label">Task Completion Rate</div>
-                            </div>
-                        </div>
-
-                        <div className="mb-8">
-                            <h2 className="text-2xl font-bold mb-4">Task Tracking (Binary: Done / Not Done)</h2>
-                            <p className="text-gray-700 mb-4">Track 5 key tasks from last week</p>
-
-                            {data.performanceSystem.tasks.map((task, idx) => (
-                                <div key={idx} className="mb-6 p-4 border-2 border-gray-200 rounded">
-                                    <div className="task-row">
-                                        <input
-                                            type="text"
-                                            className="worksheet-input"
-                                            value={task.task}
-                                            onChange={(e) => updateTaskField(idx, 'task', e.target.value)}
-                                            placeholder={`Task ${idx + 1}`}
-                                        />
-                                        <select
-                                            className="worksheet-input"
-                                            value={task.status}
-                                            onChange={(e) => updateTaskField(idx, 'status', e.target.value)}
-                                        >
-                                            <option value="not-done">Not Done</option>
-                                            <option value="done">Done</option>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14, marginBottom: 24 }}>
+                    <thead><tr style={{ background: '#000', color: '#fff' }}>
+                        <th style={{ padding: '10px 12px', textAlign: 'left', fontFamily: "'Monument', monospace", fontSize: 11 }}>#</th>
+                        <th style={{ padding: '10px 12px', textAlign: 'left', fontFamily: "'Monument', monospace", fontSize: 11 }}>TASK</th>
+                        <th style={{ padding: '10px 12px', width: 100, fontFamily: "'Monument', monospace", fontSize: 11 }}>STATUS</th>
+                        <th style={{ padding: '10px 12px', width: 120, fontFamily: "'Monument', monospace", fontSize: 11 }}>OWNER</th>
+                    </tr></thead>
+                    <tbody>
+                        {tasks.map((t, i) => (
+                            <React.Fragment key={i}>
+                                <tr style={{ borderBottom: '1px solid #E5E7EB' }}>
+                                    <td style={{ padding: '8px 12px', fontWeight: 600 }}>{i + 1}</td>
+                                    <td style={{ padding: 8 }}><input className="ft-input" style={{ border: 'none', height: 36 }} placeholder={`Task ${i + 1}...`} value={t.task} onChange={e => updateTask(i, 'task', e.target.value)} /></td>
+                                    <td style={{ padding: 8, textAlign: 'center' }}>
+                                        <select className="ft-input" style={{ height: 36, fontSize: 13, textAlign: 'center', background: t.status === 'done' ? '#DCFCE7' : '#FEF2F2', fontWeight: 600 }} value={t.status} onChange={e => updateTask(i, 'status', e.target.value)}>
+                                            <option value="not-done">NOT DONE</option>
+                                            <option value="done">DONE</option>
                                         </select>
-                                        <input
-                                            type="text"
-                                            className="worksheet-input"
-                                            value={task.owner}
-                                            onChange={(e) => updateTaskField(idx, 'owner', e.target.value)}
-                                            placeholder="Owner"
-                                        />
-                                    </div>
-                                    {task.status === 'not-done' && (
-                                        <input
-                                            type="text"
-                                            className="worksheet-input mt-3"
-                                            value={task.reason}
-                                            onChange={(e) => updateTaskField(idx, 'reason', e.target.value)}
-                                            placeholder="If not done, why? (Root cause analysis)"
-                                        />
-                                    )}
-                                </div>
-                            ))}
-                        </div>
+                                    </td>
+                                    <td style={{ padding: 8 }}><input className="ft-input" style={{ border: 'none', height: 36, fontSize: 13 }} placeholder="Owner" value={t.owner} onChange={e => updateTask(i, 'owner', e.target.value)} /></td>
+                                </tr>
+                                {t.status === 'not-done' && t.task.trim() && (
+                                    <tr style={{ background: '#FEF2F2' }}>
+                                        <td colSpan={4} style={{ padding: '8px 12px' }}>
+                                            <input className="ft-input" style={{ border: 'none', height: 32, background: 'transparent', fontSize: 13, color: '#991B1B' }} placeholder="Why not done? (Document the reason)" value={t.reason} onChange={e => updateTask(i, 'reason', e.target.value)} />
+                                        </td>
+                                    </tr>
+                                )}
+                            </React.Fragment>
+                        ))}
+                    </tbody>
+                </table>
+                <div className="ft-field-group">
+                    <label className="ft-label">DASHBOARD METRICS</label>
+                    <textarea className="ft-textarea" style={{ minHeight: 80 }} placeholder="What key metrics will your dashboard track? (e.g. Weekly task completion rate, revenue per employee, customer satisfaction score)" value={d.dashboardMetrics || ''} onChange={e => u('dashboardMetrics', e.target.value)} />
+                </div>
+                <div className="ft-field-group">
+                    <label className="ft-label">REVIEW CADENCE</label>
+                    <input className="ft-input" placeholder="e.g. Weekly Monday 9am, Monthly deep-dive first Friday" value={d.reviewCadence || ''} onChange={e => u('reviewCadence', e.target.value)} />
+                </div>
+            </div>
+        );
+    }
 
-                        <div className="mb-8">
-                            <label className="block text-lg font-bold mb-2">Dashboard Metrics Design</label>
-                            <p className="text-gray-700 mb-4">What key metrics will your team dashboard track?</p>
-                            <textarea
-                                className="worksheet-textarea"
-                                value={data.performanceSystem.dashboardMetrics}
-                                onChange={(e) => updateData('performanceSystem.dashboardMetrics', e.target.value)}
-                                placeholder="Example: Task completion rate, goal progress %, blockers identified, team velocity..."
-                            />
-                        </div>
-
-                        <div className="mb-8">
-                            <label className="block text-lg font-bold mb-2">Review Cadence</label>
-                            <p className="text-gray-700 mb-4">When and how often will the team review performance?</p>
-                            <input
-                                type="text"
-                                className="worksheet-input"
-                                value={data.performanceSystem.reviewCadence}
-                                onChange={(e) => updateData('performanceSystem.reviewCadence', e.target.value)}
-                                placeholder="Example: Weekly Monday 9am, Monthly deep dive first Friday..."
-                            />
-                        </div>
-
-                        <div className="mb-8">
-                            <label className="block text-lg font-bold mb-2">Continuous Improvement Actions</label>
-                            <p className="text-gray-700 mb-4">Based on patterns, what improvements will you implement?</p>
-                            <textarea
-                                className="worksheet-textarea"
-                                value={data.performanceSystem.improvements}
-                                onChange={(e) => updateData('performanceSystem.improvements', e.target.value)}
-                                placeholder="Identify recurring bottlenecks and improvement actions with WHO-WHAT-WHEN..."
-                            />
-                        </div>
-
-                        <div className="flex justify-between">
-                            <button
-                                onClick={() => setStep(0.5)}
-                                className="px-6 py-3 border-2 border-black hover:bg-black hover:text-white transition-all font-bold"
-                            >
-                                ← BACK
-                            </button>
-                            <button
-                                onClick={() => setStep(2)}
-                                className="px-6 py-3 bg-black text-white hover:bg-gray-800 transition-all font-bold"
-                            >
-                                NEXT STEP →
-                            </button>
-                        </div>
+    /* === STEP 3: 5 WHYS ROOT CAUSE ANALYSIS === */
+    function Step3({ d, u }) {
+        const whys = d.fiveWhys || { problem: '', why1: '', why2: '', why3: '', why4: '', why5: '', rootCause: '', solution: '', validation: '' };
+        const uw = (f, v) => u('fiveWhys', { ...whys, [f]: v });
+        return (
+            <div className="animate-in">
+                <div className="step-indicator"><span>Step 3 of 6</span><span className="step-time">~8 min</span></div>
+                <h2 className="step-heading">5 WHYS — ROOT CAUSE</h2>
+                <p className="step-hint">Drill down to the root cause of your biggest performance problem. Ask "Why?" five times until you reach the real issue — not just a symptom.</p>
+                <FastTrackInsight>Developed by Toyota, the 5 Whys eliminates surface-level solutions and forces you to address the root cause. By the 5th "Why," you'll have moved from symptom to systemic fix.</FastTrackInsight>
+                <div className="ft-example">
+                    <strong>Example:</strong> "Delivery times are delayed" → Why? Orders don't leave on time → Why? Packaging takes too long → Why? Not enough staff → Why? High turnover → Why? Inadequate training for new hires → <strong>Root cause: onboarding process</strong>
+                </div>
+                <div className="ft-field-group">
+                    <label className="ft-label">PROBLEM STATEMENT <span className="ft-required">*</span></label>
+                    <textarea className="ft-textarea" style={{ minHeight: 80 }} placeholder="What specific problem are you experiencing? Be precise." value={whys.problem} onChange={e => uw('problem', e.target.value)} />
+                </div>
+                {[1, 2, 3, 4, 5].map(n => (
+                    <div key={n} className="ft-field-group" style={{ borderLeft: `4px solid ${n <= 2 ? '#FFF469' : n <= 4 ? '#F59E0B' : '#DC2626'}`, paddingLeft: 16 }}>
+                        <label className="ft-label">WHY #{n} {n === 1 && <span className="ft-required">*</span>}</label>
+                        <input className="ft-input" placeholder={n === 1 ? 'Why does this problem exist?' : `Why? (dig deeper from answer #${n - 1})`} value={whys[`why${n}`]} onChange={e => uw(`why${n}`, e.target.value)} />
+                    </div>
+                ))}
+                <div style={{ background: '#000', color: '#fff', padding: 24, marginBottom: 24 }}>
+                    <div className="ft-field-group" style={{ marginBottom: 16 }}>
+                        <label className="ft-label" style={{ color: '#FFF469' }}>ROOT CAUSE IDENTIFIED <span className="ft-required">*</span></label>
+                        <textarea className="ft-textarea" style={{ minHeight: 80 }} placeholder="Based on your 5 Whys, what is the real root cause?" value={whys.rootCause} onChange={e => uw('rootCause', e.target.value)} />
+                    </div>
+                    <div className="ft-field-group" style={{ marginBottom: 16 }}>
+                        <label className="ft-label" style={{ color: '#FFF469' }}>PROPOSED SOLUTION</label>
+                        <textarea className="ft-textarea" style={{ minHeight: 80 }} placeholder="What solution directly addresses this root cause?" value={whys.solution} onChange={e => uw('solution', e.target.value)} />
+                    </div>
+                    <div className="ft-field-group">
+                        <label className="ft-label" style={{ color: '#FFF469' }}>VALIDATION METRIC</label>
+                        <input className="ft-input" placeholder="How will you confirm the root cause is truly fixed?" value={whys.validation} onChange={e => uw('validation', e.target.value)} />
                     </div>
                 </div>
-            );
+            </div>
+        );
+    }
 
-            const renderTeamStep2_AccountabilitySystem = () => (
-                <div className="min-h-screen bg-white pt-24 pb-16 px-8">
-                    <div className="max-w-4xl mx-auto">
-                        <div className="numbered-section">[02] ACCOUNTABILITY & CONSEQUENCES SYSTEM</div>
+    /* === STEP 4: 80/20 PRINCIPLE === */
+    function Step4({ d, u }) {
+        const p = d.eighty20 || { objective: '', inputs: Array(10).fill(null).map(() => ({ input: '', contribution: 0 })), vitalFew: '', trivialMany: '', actions: '' };
+        const up = (f, v) => u('eighty20', { ...p, [f]: v });
+        const inputs = p.inputs || [];
+        const updateInput = (i, f, v) => { const next = [...inputs]; next[i] = { ...next[i], [f]: v }; up('inputs', next); };
+        const sorted = [...inputs].filter(inp => inp.input.trim()).sort((a, b) => (b.contribution || 0) - (a.contribution || 0));
+        const totalContrib = sorted.reduce((s, inp) => s + (parseInt(inp.contribution) || 0), 0);
+        return (
+            <div className="animate-in">
+                <div className="step-indicator"><span>Step 4 of 6</span><span className="step-time">~8 min</span></div>
+                <h2 className="step-heading">80/20 PRINCIPLE</h2>
+                <p className="step-hint">Identify the 20% of inputs that drive 80% of your results. Focus resources there and eliminate or automate the rest.</p>
+                <FastTrackInsight>Italian economist Vilfredo Pareto discovered that 80% of Italy's land was owned by 20% of the population. This principle applies everywhere: 20% of customers generate 80% of revenue. 20% of bugs cause 80% of crashes. Find your vital few.</FastTrackInsight>
+                <div className="ft-field-group">
+                    <label className="ft-label">OBJECTIVE <span className="ft-required">*</span></label>
+                    <input className="ft-input" placeholder="What result are you analyzing? (e.g. Increase sales revenue)" value={p.objective} onChange={e => up('objective', e.target.value)} />
+                </div>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14, marginBottom: 16 }}>
+                    <thead><tr style={{ background: '#000', color: '#fff' }}>
+                        <th style={{ padding: '10px 12px', textAlign: 'left', fontFamily: "'Monument', monospace", fontSize: 11 }}>#</th>
+                        <th style={{ padding: '10px 12px', textAlign: 'left', fontFamily: "'Monument', monospace", fontSize: 11 }}>INPUT / FACTOR</th>
+                        <th style={{ padding: '10px 12px', width: 120, textAlign: 'center', fontFamily: "'Monument', monospace", fontSize: 11 }}>CONTRIBUTION %</th>
+                    </tr></thead>
+                    <tbody>
+                        {inputs.map((inp, i) => (
+                            <tr key={i} style={{ borderBottom: '1px solid #E5E7EB', background: sorted.indexOf(inp) < Math.ceil(sorted.length * 0.2) && inp.input.trim() ? '#FEFCE8' : 'transparent' }}>
+                                <td style={{ padding: '8px 12px', fontWeight: 600 }}>{i + 1}</td>
+                                <td style={{ padding: 8 }}><input className="ft-input" style={{ border: 'none', height: 36 }} placeholder={['Customer segment A', 'Product line X', 'Marketing channel Y', 'Sales rep team', 'Referral program'][i] || `Input ${i + 1}`} value={inp.input} onChange={e => updateInput(i, 'input', e.target.value)} /></td>
+                                <td style={{ padding: 8 }}><input className="ft-input" type="number" min="0" max="100" style={{ border: 'none', height: 36, textAlign: 'center', width: 80 }} placeholder="%" value={inp.contribution} onChange={e => updateInput(i, 'contribution', e.target.value)} /></td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+                {totalContrib > 0 && (
+                    <div style={{ background: '#F3F4F6', padding: 16, marginBottom: 24 }}>
+                        <div className="monument" style={{ fontSize: 10, color: '#6B7280', marginBottom: 4 }}>TOTAL CONTRIBUTION</div>
+                        <div style={{ fontSize: 20, fontWeight: 600, color: totalContrib === 100 ? '#000' : '#DC2626' }}>{totalContrib}%</div>
+                        {totalContrib !== 100 && <div style={{ fontSize: 13, color: '#DC2626' }}>Should add up to 100%</div>}
+                    </div>
+                )}
+                <div className="ft-field-group">
+                    <label className="ft-label">THE VITAL FEW (TOP 20%)</label>
+                    <textarea className="ft-textarea" style={{ minHeight: 80 }} placeholder="Which inputs deliver the most results? How can you enhance them?" value={p.vitalFew} onChange={e => up('vitalFew', e.target.value)} />
+                </div>
+                <div className="ft-field-group">
+                    <label className="ft-label">THE TRIVIAL MANY (BOTTOM 80%)</label>
+                    <textarea className="ft-textarea" style={{ minHeight: 80 }} placeholder="Which inputs can you stop, automate, or delegate?" value={p.trivialMany} onChange={e => up('trivialMany', e.target.value)} />
+                </div>
+            </div>
+        );
+    }
 
-                        <p className="text-xl mb-8 text-gray-700">
-                            Plan a team-wide system ensuring clear ownership, consistent follow-up, and structured consequences
-                        </p>
+    /* === STEP 5: THEORY OF CONSTRAINTS === */
+    function Step5({ d, u }) {
+        const toc = d.constraints || { systemDescription: '', constraint: '', exploit: '', subordinate: '', elevate: '', nextConstraint: '' };
+        const ut = (f, v) => u('constraints', { ...toc, [f]: v });
+        return (
+            <div className="animate-in">
+                <div className="step-indicator"><span>Step 5 of 6</span><span className="step-time">~8 min</span></div>
+                <h2 className="step-heading">THEORY OF CONSTRAINTS</h2>
+                <p className="step-hint">Your system is only as strong as its weakest link. Identify the single biggest bottleneck, then systematically resolve it.</p>
+                <FastTrackInsight>Dr. Eliyahu Goldratt's Theory of Constraints: every system has ONE bottleneck that limits the entire output. Improving anything except the bottleneck is an illusion of progress. Find the constraint → Exploit it → Subordinate everything else → Elevate if needed → Repeat.</FastTrackInsight>
+                <div className="ft-example">
+                    <strong>Example:</strong> A manufacturing line where Station 3 processes 50 units/hour but Station 1 and 2 process 100. Station 3 is the constraint. Solution: Run Station 3 in double shifts (exploit), slow Station 1-2 to match pace (subordinate), then upgrade Station 3 equipment (elevate).
+                </div>
+                <div className="ft-field-group">
+                    <label className="ft-label">YOUR SYSTEM / PROCESS</label>
+                    <textarea className="ft-textarea" style={{ minHeight: 80 }} placeholder="Describe the system or process you're analyzing..." value={toc.systemDescription} onChange={e => ut('systemDescription', e.target.value)} />
+                </div>
+                {[
+                    { key: 'constraint', label: '1. IDENTIFY THE CONSTRAINT', ph: 'Which single step or resource limits the entire system\'s output?', hint: 'Look for where work piles up, delays occur, or queues form.' },
+                    { key: 'exploit', label: '2. EXPLOIT THE CONSTRAINT', ph: 'How can you maximize efficiency of this bottleneck without major investment?', hint: 'e.g. Adjust schedules, remove interruptions, ensure it never sits idle.' },
+                    { key: 'subordinate', label: '3. SUBORDINATE OTHER PROCESSES', ph: 'How should the rest of the system sync with the bottleneck\'s pace?', hint: 'Reduce upstream output to match; don\'t overwhelm the constraint.' },
+                    { key: 'elevate', label: '4. ELEVATE THE CONSTRAINT', ph: 'If it still limits output, what investment or innovation can expand its capacity?', hint: 'e.g. Hire, upgrade equipment, redesign the process.' },
+                    { key: 'nextConstraint', label: '5. IDENTIFY NEXT CONSTRAINT', ph: 'Once this bottleneck is resolved, where does the next one appear?', hint: 'The process repeats — continuous improvement never stops.' }
+                ].map(f => (
+                    <div key={f.key} className="ft-field-group" style={{ borderLeft: '4px solid #000', paddingLeft: 16 }}>
+                        <label className="ft-label">{f.label} {f.key === 'constraint' && <span className="ft-required">*</span>}</label>
+                        <textarea className="ft-textarea" style={{ minHeight: 80 }} placeholder={f.ph} value={toc[f.key]} onChange={e => ut(f.key, e.target.value)} />
+                        <div className="ft-help">{f.hint}</div>
+                    </div>
+                ))}
+            </div>
+        );
+    }
 
-                        <div className="mb-8">
-                            <label className="block text-lg font-bold mb-2">Roles & Responsibilities Clarity</label>
-                            <p className="text-gray-700 mb-4">How will you ensure every team member knows their specific, measurable responsibilities?</p>
-                            <textarea
-                                className="worksheet-textarea"
-                                value={data.accountabilitySystem.roles}
-                                onChange={(e) => updateData('accountabilitySystem.roles', e.target.value)}
-                                placeholder="Describe the process for defining and communicating roles (e.g., role charters, RACI matrix)..."
-                            />
-                        </div>
-
-                        <div className="mb-8">
-                            <label className="block text-lg font-bold mb-2">Consequences Framework</label>
-                            <p className="text-gray-700 mb-4">Define both rewards for achievement and corrective actions for gaps</p>
-                            <textarea
-                                className="worksheet-textarea"
-                                value={data.accountabilitySystem.framework}
-                                onChange={(e) => updateData('accountabilitySystem.framework', e.target.value)}
-                                placeholder="Example: Bonus structure, recognition program, performance improvement plans, escalation process..."
-                            />
-                        </div>
-
-                        <div className="mb-8">
-                            <label className="block text-lg font-bold mb-2">Transparency & Communication</label>
-                            <p className="text-gray-700 mb-4">How will you ensure the system is transparent and all team members understand it?</p>
-                            <textarea
-                                className="worksheet-textarea"
-                                value={data.accountabilitySystem.transparency}
-                                onChange={(e) => updateData('accountabilitySystem.transparency', e.target.value)}
-                                placeholder="Example: One-pager during onboarding, dashboard visible to all, open Q&A sessions..."
-                            />
-                        </div>
-
-                        <div className="mb-8">
-                            <label className="block text-lg font-bold mb-2">Implementation Timeline</label>
-                            <p className="text-gray-700 mb-4">WHO will do WHAT by WHEN to launch this system?</p>
-                            <textarea
-                                className="worksheet-textarea"
-                                value={data.accountabilitySystem.timeline}
-                                onChange={(e) => updateData('accountabilitySystem.timeline', e.target.value)}
-                                placeholder="Create specific action plan with owners and deadlines..."
-                            />
-                        </div>
-
-                        <div className="flex justify-between">
-                            <button
-                                onClick={() => setStep(1)}
-                                className="px-6 py-3 border-2 border-black hover:bg-black hover:text-white transition-all font-bold"
-                            >
-                                ← BACK
-                            </button>
-                            <button
-                                onClick={() => setStep(999)}
-                                className="px-6 py-3 bg-black text-white hover:bg-gray-800 transition-all font-bold"
-                            >
-                                VIEW CANVAS →
-                            </button>
-                        </div>
+    /* === STEP 6: ACCOUNTABILITY SYSTEM === */
+    function Step6({ d, u }) {
+        const acc = d.accountability || { expectations: '', ownership: '', checkpoints: '', consequences: '', rewards: '', corrective: '', dashboardPlan: '', transparency: '', reviewPlan: '' };
+        const ua = (f, v) => u('accountability', { ...acc, [f]: v });
+        return (
+            <div className="animate-in">
+                <div className="step-indicator"><span>Step 6 of 6</span><span className="step-time">~10 min</span></div>
+                <h2 className="step-heading">ACCOUNTABILITY SYSTEM</h2>
+                <p className="step-hint">Build a 7-step accountability and consequences framework. Clear expectations, single owners, transparent consequences.</p>
+                <FastTrackInsight>A well-structured accountability system aligns behaviors with goals. Every team member knows their role, the scoreboard is visible to all, and they understand the stakes of success and failure.</FastTrackInsight>
+                <WarningBox>The most common failure: tasks with unclear owners. Every deliverable needs ONE accountable person, not a committee.</WarningBox>
+                {[
+                    { key: 'expectations', num: '1', label: 'DEFINE EXPECTATIONS', ph: 'Clearly articulate roles, tasks, and measurable goals for each individual/team...', hint: 'Are responsibilities specific and measurable? e.g. "Close $50K in monthly revenue"' },
+                    { key: 'ownership', num: '2', label: 'ASSIGN OWNERSHIP', ph: 'Ensure each task has a single accountable owner...', hint: 'No overlaps. One person owns each deliverable.' },
+                    { key: 'checkpoints', num: '3', label: 'SET CHECKPOINTS', ph: 'Establish regular review points: weekly, monthly, quarterly...', hint: 'When and how will performance be evaluated?' },
+                    { key: 'consequences', num: '4', label: 'CONSEQUENCES FRAMEWORK', ph: 'Define what happens when goals are met or missed...', hint: 'Must be transparent, fair, and documented.' }
+                ].map(f => (
+                    <div key={f.key} className="ft-field-group">
+                        <label className="ft-label">{f.num}. {f.label} {f.num === '1' && <span className="ft-required">*</span>}</label>
+                        <textarea className="ft-textarea" style={{ minHeight: 80 }} placeholder={f.ph} value={acc[f.key]} onChange={e => ua(f.key, e.target.value)} />
+                        <div className="ft-help">{f.hint}</div>
+                    </div>
+                ))}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
+                    <div className="ft-field-group">
+                        <label className="ft-label">REWARDS FOR SUCCESS</label>
+                        <textarea className="ft-textarea" style={{ minHeight: 80 }} placeholder="Bonus, recognition, career advancement..." value={acc.rewards} onChange={e => ua('rewards', e.target.value)} />
+                    </div>
+                    <div className="ft-field-group">
+                        <label className="ft-label">CORRECTIVE ACTIONS</label>
+                        <textarea className="ft-textarea" style={{ minHeight: 80 }} placeholder="Training, mentorship, performance plan..." value={acc.corrective} onChange={e => ua('corrective', e.target.value)} />
                     </div>
                 </div>
-            );
+                {[
+                    { key: 'dashboardPlan', num: '5', label: 'IMPLEMENT DASHBOARDS', ph: 'How will you visualize progress? Can everyone see the team\'s progress in real-time?' },
+                    { key: 'transparency', num: '6', label: 'FOSTER TRANSPARENCY', ph: 'How will you ensure everyone understands the system and its implications?' },
+                    { key: 'reviewPlan', num: '7', label: 'REVIEW & ADJUST PLAN', ph: 'How often will you revisit the system? Is the system driving intended behaviors?' }
+                ].map(f => (
+                    <div key={f.key} className="ft-field-group">
+                        <label className="ft-label">{f.num}. {f.label}</label>
+                        <textarea className="ft-textarea" style={{ minHeight: 80 }} placeholder={f.ph} value={acc[f.key]} onChange={e => ua(f.key, e.target.value)} />
+                    </div>
+                ))}
+            </div>
+        );
+    }
 
-            const renderCanvas = () => (
-                <div className="min-h-screen bg-white pt-24 pb-16 px-8">
-                    <div className="max-w-6xl mx-auto">
-                        <div className="numbered-section mb-8">CANVAS: PERFORMANCE & ACCOUNTABILITY</div>
-
-                        <div className="bg-gray-50 p-8 rounded-lg mb-8">
-                            <div className="grid grid-cols-2 gap-4 text-sm mb-6">
-                                <div><strong>Type:</strong> {toolType === 'individual' ? 'Individual Process Tools' : 'Team Systems'}</div>
-                                <div><strong>Date:</strong> {new Date().toLocaleDateString()}</div>
-                            </div>
-
-                            {toolType === 'individual' ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="bg-white p-6 rounded border-2">
-                                        <h3 className="font-bold text-lg mb-3">5 Whys Analysis</h3>
-                                        <p className="text-sm"><strong>Problem:</strong> {data.fiveWhys.problem || 'Not defined'}</p>
-                                        <p className="text-sm"><strong>Root Cause:</strong> {data.fiveWhys.rootCause || 'Not identified'}</p>
-                                    </div>
-                                    <div className="bg-white p-6 rounded border-2">
-                                        <h3 className="font-bold text-lg mb-3">80/20 Principle</h3>
-                                        <p className="text-sm"><strong>Objective:</strong> {data.eighty20.objective || 'Not defined'}</p>
-                                        <p className="text-sm"><strong>Vital Few:</strong> {data.eighty20.vitalFew ? 'Identified' : 'Not identified'}</p>
-                                    </div>
-                                    <div className="bg-white p-6 rounded border-2">
-                                        <h3 className="font-bold text-lg mb-3">Impact-Easy Matrix</h3>
-                                        <p className="text-sm">Quick Wins: {data.impactEasy.matrix.highImpactEasy.length} ideas</p>
-                                        <p className="text-sm">Major Projects: {data.impactEasy.matrix.highImpactHard.length} ideas</p>
-                                    </div>
-                                    <div className="bg-white p-6 rounded border-2">
-                                        <h3 className="font-bold text-lg mb-3">Accountability Framework</h3>
-                                        <p className="text-sm">{data.accountability.expectations ? 'Expectations defined' : 'Not defined'}</p>
-                                        <p className="text-sm">{data.accountability.consequences ? 'Consequences framework created' : 'Not created'}</p>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="space-y-6">
-                                    <div className="dashboard-metric">
-                                        <div className="metric-value">{calculateCompletionRate()}%</div>
-                                        <div className="metric-label">Task Completion Rate</div>
-                                    </div>
-                                    <div className="bg-white p-6 rounded border-2">
-                                        <h3 className="font-bold text-lg mb-3">Performance Analysis System</h3>
-                                        <p className="text-sm">Dashboard metrics: {data.performanceSystem.dashboardMetrics ? 'Defined' : 'Pending'}</p>
-                                        <p className="text-sm">Review cadence: {data.performanceSystem.reviewCadence || 'Not set'}</p>
-                                    </div>
-                                    <div className="bg-white p-6 rounded border-2">
-                                        <h3 className="font-bold text-lg mb-3">Accountability System</h3>
-                                        <p className="text-sm">Framework: {data.accountabilitySystem.framework ? 'Established' : 'Pending'}</p>
-                                        <p className="text-sm">Timeline: {data.accountabilitySystem.timeline ? 'Created' : 'Pending'}</p>
-                                    </div>
-                                </div>
-                            )}
+    /* === TEAM STEP A: MEETING AGENDA === */
+    function TeamStepAgenda() {
+        return (
+            <div className="animate-in">
+                <div className="step-indicator"><span>Team Step 1 of 2</span><span className="step-time">60 min meeting</span></div>
+                <h2 className="step-heading">TEAM MEETING AGENDA</h2>
+                <p className="step-hint">Facilitate a 60-minute team meeting to establish the performance analysis and accountability systems.</p>
+                <div className="ft-insight"><strong>Meeting purpose:</strong> Establish two foundational systems — a robust performance analysis framework and a structured accountability & consequences plan. By the end, you'll have clear agreements on who, what, when, and how for both.</div>
+                {MEETING_AGENDA.map((seg, i) => (
+                    <div key={i} style={{ border: '2px solid #000', padding: 24, marginBottom: 16 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                            <div className="numbered-section">{seg.title.toUpperCase()}</div>
+                            <span className="monument" style={{ fontSize: 12, color: '#6B7280' }}>{seg.time}</span>
                         </div>
-
-                        <div className="flex justify-between">
-                            <button
-                                onClick={() => setStep(toolType === 'individual' ? 4 : 2)}
-                                className="px-6 py-3 border-2 border-black hover:bg-black hover:text-white transition-all font-bold"
-                            >
-                                ← BACK TO TOOL
-                            </button>
-                            <div className="flex gap-4">
-                                <button
-                                    onClick={exportPDF}
-                                    className="px-6 py-3 border-2 border-black hover:bg-black hover:text-white transition-all font-bold"
-                                >
-                                    Export PDF
-                                </button>
-                                <button
-                                    onClick={handleSubmit}
-                                    disabled={submitStatus === 'saving'}
-                                    className="px-6 py-3 bg-black text-white hover:bg-gray-800 transition-all font-bold"
-                                >
-                                    {submitStatus === 'saving' ? 'AI Coach Reviewing...' : 'Final Submit'}
-                                </button>
-                            </div>
-                        </div>
-                        {submitStatus && submitMessage && (
-                            <div style={{ marginTop: 16, padding: '12px 16px', textAlign: 'center', background: submitStatus === 'success' ? '#f0fdf4' : submitStatus === 'error' ? '#fef2f2' : '#f5f5f5', border: `1px solid ${submitStatus === 'success' ? '#bbf7d0' : submitStatus === 'error' ? '#fecaca' : '#e0e0e0'}`, fontSize: 14 }}>
-                                <span style={{ color: submitStatus === 'success' ? '#166534' : submitStatus === 'error' ? '#991b1b' : '#333' }}>{submitMessage}</span>
+                        <p style={{ fontSize: 15, color: '#374151', lineHeight: 1.6, marginBottom: 16 }}>{seg.desc}</p>
+                        {seg.questions.length > 0 && (
+                            <div style={{ marginBottom: 12 }}>
+                                <div className="monument" style={{ fontSize: 10, color: '#6B7280', marginBottom: 8 }}>KEY QUESTIONS</div>
+                                {seg.questions.map((q, qi) => (
+                                    <div key={qi} style={{ display: 'flex', gap: 8, marginBottom: 4, fontSize: 14 }}>
+                                        <span style={{ color: '#FFF469', background: '#000', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, flexShrink: 0 }}>{qi + 1}</span>
+                                        <span>{q}</span>
+                                    </div>
+                                ))}
                             </div>
                         )}
-
-                        {/* Case Study */}
-                        <CaseStudy
-                            before={"[PLACEHOLDER] Performance reviews happened annually."}
-                            after={"[PLACEHOLDER] Weekly 15-minute check-ins. Problems caught within days."}
-                            quote={"[PLACEHOLDER] The accountability framework removed emotion from difficult conversations."}
-                        />
+                        {seg.pitfalls.length > 0 && (
+                            <div style={{ background: '#FEF2F2', padding: 12 }}>
+                                <div className="monument" style={{ fontSize: 10, color: '#991B1B', marginBottom: 4 }}>AVOID</div>
+                                {seg.pitfalls.map((p, pi) => <div key={pi} style={{ fontSize: 13, color: '#991B1B', marginBottom: 2 }}>• {p}</div>)}
+                            </div>
+                        )}
                     </div>
+                ))}
+            </div>
+        );
+    }
+
+    /* === TEAM STEP B: ACTION PLAN & WWW === */
+    function TeamStepWWW({ d, u }) {
+        const takeaways = d.teamTakeaways || '';
+        const strategies = d.teamStrategies || '';
+        const www = d.teamWWW || Array(5).fill(null).map(() => ({ who: '', what: '', when: '' }));
+        const updateWWW = (i, f, v) => { const next = [...www]; next[i] = { ...next[i], [f]: v }; u('teamWWW', next); };
+        return (
+            <div className="animate-in">
+                <div className="step-indicator"><span>Team Step 2 of 2</span><span className="step-time">~5 min</span></div>
+                <h2 className="step-heading">ACTION PLAN & WWW</h2>
+                <p className="step-hint">Document the meeting's conclusions and assign clear ownership for every action.</p>
+                <div className="ft-field-group">
+                    <label className="ft-label">KEY TAKEAWAYS</label>
+                    <textarea className="ft-textarea" placeholder="What were the most important insights and decisions from this meeting?" value={takeaways} onChange={e => u('teamTakeaways', e.target.value)} />
                 </div>
-            );
+                <div className="ft-field-group">
+                    <label className="ft-label">PERFORMANCE STRATEGIES AGREED</label>
+                    <textarea className="ft-textarea" placeholder="What specific performance and accountability strategies did the team agree to implement?" value={strategies} onChange={e => u('teamStrategies', e.target.value)} />
+                </div>
+                <div className="numbered-section" style={{ marginBottom: 16 }}>WHO / WHAT / WHEN</div>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14, marginBottom: 24 }}>
+                    <thead><tr style={{ background: '#000', color: '#fff' }}>
+                        <th style={{ padding: '10px 12px', fontFamily: "'Monument', monospace", fontSize: 11 }}>WHO</th>
+                        <th style={{ padding: '10px 12px', fontFamily: "'Monument', monospace", fontSize: 11 }}>WHAT</th>
+                        <th style={{ padding: '10px 12px', width: 130, fontFamily: "'Monument', monospace", fontSize: 11 }}>WHEN</th>
+                    </tr></thead>
+                    <tbody>
+                        {www.map((row, i) => (
+                            <tr key={i} style={{ borderBottom: '1px solid #E5E7EB' }}>
+                                <td style={{ padding: 8 }}><input className="ft-input" style={{ border: 'none', height: 36, fontSize: 14 }} placeholder="Person responsible" value={row.who} onChange={e => updateWWW(i, 'who', e.target.value)} /></td>
+                                <td style={{ padding: 8 }}><input className="ft-input" style={{ border: 'none', height: 36, fontSize: 14 }} placeholder="Action item" value={row.what} onChange={e => updateWWW(i, 'what', e.target.value)} /></td>
+                                <td style={{ padding: 8 }}><input className="ft-input" type="date" style={{ border: 'none', height: 36, fontSize: 13 }} value={row.when} onChange={e => updateWWW(i, 'when', e.target.value)} /></td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        );
+    }
 
-            const renderHelpModal = () => {
-                if (!showHelp) return null;
-
-                return (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                        <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                            <div className="p-8 border-8 border-black">
-                                <h2 className="plaak text-4xl mb-6">HELP & GUIDANCE</h2>
-
-                                <div className="space-y-6">
-                                    <section>
-                                        <h3 className="font-bold text-xl mb-2">About This Sprint</h3>
-                                        <p className="text-gray-700">
-                                            Sprint 10 establishes performance tracking and accountability systems that align
-                                            efforts with strategic goals through structured measurement and clear consequences.
-                                        </p>
-                                    </section>
-
-                                    <section>
-                                        <h3 className="font-bold text-xl mb-2">Individual Process Tools</h3>
-                                        <ol className="list-decimal list-inside text-gray-700 space-y-1">
-                                            <li><strong>5 Whys:</strong> Root cause analysis through iterative questioning</li>
-                                            <li><strong>80/20 Principle:</strong> Focus on vital few, eliminate trivial many</li>
-                                            <li><strong>Impact-Easy Matrix:</strong> Prioritize ideas by impact and ease</li>
-                                            <li><strong>Accountability Framework:</strong> Clear expectations and consequences</li>
-                                        </ol>
-                                    </section>
-
-                                    <section>
-                                        <h3 className="font-bold text-xl mb-2">Team Systems</h3>
-                                        <ul className="list-disc list-inside text-gray-700 space-y-1">
-                                            <li><strong>Performance Analysis:</strong> Binary task tracking (done/not done)</li>
-                                            <li><strong>Accountability System:</strong> Roles, framework, transparency, timeline</li>
-                                        </ul>
-                                    </section>
-
-                                    <section>
-                                        <h3 className="font-bold text-xl mb-2">Key Principles</h3>
-                                        <ul className="list-disc list-inside text-gray-700 space-y-1">
-                                            <li>All metrics must be specific and measurable</li>
-                                            <li>Tasks are binary: done or not done (no "in progress")</li>
-                                            <li>Always identify root causes, not just symptoms</li>
-                                            <li>Dashboards provide transparency and alignment</li>
-                                        </ul>
-                                    </section>
+    /* === SIDEBAR === */
+    function WizardSidebar({ step, teamUnlocked, onNavigate }) {
+        const indSteps = [
+            { num: 1, label: 'Goals & Monitoring' },
+            { num: 2, label: 'Task Tracking' },
+            { num: 3, label: '5 Whys' },
+            { num: 4, label: '80/20 Principle' },
+            { num: 5, label: 'Constraints' },
+            { num: 6, label: 'Accountability' },
+            { num: 7, label: 'Review & Submit' }
+        ];
+        const teamSteps = [
+            { num: 8, label: 'Meeting Agenda' },
+            { num: 9, label: 'Action Plan & WWW' }
+        ];
+        return (
+            <div className="wizard-sidebar no-print">
+                <div className="wizard-sidebar-inner">
+                    <div style={{ marginBottom: 24 }}>
+                        <div className="monument" style={{ fontSize: 12, textTransform: 'uppercase', color: '#fff', marginBottom: 4 }}>PERFORMANCE</div>
+                        <div style={{ fontSize: 13, color: '#999' }}>Sprint 10</div>
+                    </div>
+                    <div className="sidebar-phase-header">Individual Assessment</div>
+                    {indSteps.map(s => {
+                        const isCompleted = step > s.num, isActive = step === s.num, isLocked = step < s.num;
+                        return (
+                            <div key={s.num} className={`sidebar-step-item ${isCompleted ? 'completed' : ''} ${isActive ? 'active' : ''} ${isLocked ? 'locked' : ''}`} onClick={() => isCompleted && onNavigate(s.num)}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                    {isCompleted ? <CheckIcon color="#000" size={14} /> : <span className="step-num" style={{ color: isActive ? '#fff' : '#ccc' }}>{String(s.num).padStart(2, '0')}</span>}
+                                    <span className="step-name" style={{ color: isLocked ? '#666' : isCompleted ? '#000' : '#fff' }}>{s.label}</span>
                                 </div>
+                            </div>
+                        );
+                    })}
+                    <div className="sidebar-phase-header" style={{ opacity: teamUnlocked ? 1 : 0.4 }}>
+                        {teamUnlocked ? 'Team Meeting' : 'Team (Locked)'}
+                    </div>
+                    {teamSteps.map(s => {
+                        const isActive = step === s.num, isCompleted = step > s.num;
+                        return (
+                            <div key={s.num} className={`sidebar-step-item ${!teamUnlocked ? 'locked' : isActive ? 'active' : isCompleted ? 'completed' : 'locked'}`} onClick={() => teamUnlocked && isCompleted && onNavigate(s.num)}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                    {teamUnlocked && isCompleted ? <CheckIcon color="#000" size={14} /> : !teamUnlocked ? <LockIcon size={14} /> : <span className="step-num" style={{ color: isActive ? '#fff' : '#ccc' }}>{String(s.num).padStart(2, '0')}</span>}
+                                    <span className="step-name" style={{ color: !teamUnlocked ? '#666' : isActive ? '#fff' : isCompleted ? '#000' : '#ccc' }}>{s.label}</span>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        );
+    }
 
-                                <button
-                                    onClick={() => setShowHelp(false)}
-                                    className="mt-8 w-full px-6 py-3 bg-black text-white hover:bg-gray-800 transition-all font-bold"
-                                >
-                                    CLOSE
+    /* === MAIN APP === */
+    function PerformanceApp() {
+        const [step, setStep] = useState(0);
+        const [data, setData] = useState({});
+        const [teamData, setTeamData] = useState({});
+        const [teamToolUnlocked, setTeamToolUnlocked] = useState(false);
+        const [checkingTeamUnlock, setCheckingTeamUnlock] = useState(false);
+        const [individualSubmitted, setIndividualSubmitted] = useState(false);
+        const [submitStatus, setSubmitStatus] = useState(null);
+        const [submitMessage, setSubmitMessage] = useState('');
+        const autosaveRef = useRef(null);
+
+        const u = (field, value) => setData(prev => ({ ...prev, [field]: value }));
+        const ut = (field, value) => setTeamData(prev => ({ ...prev, [field]: value }));
+
+        const goToStep = (s) => { window.scrollTo({ top: 0, behavior: 'smooth' }); setStep(s); };
+
+        // Autosave
+        useEffect(() => {
+            if (autosaveRef.current) clearTimeout(autosaveRef.current);
+            autosaveRef.current = setTimeout(() => {
+                try {
+                    localStorage.setItem('ft_performance_data', JSON.stringify(data));
+                    localStorage.setItem('ft_performance_team', JSON.stringify(teamData));
+                } catch (e) { /* quota */ }
+            }, CONFIG.AUTOSAVE_DELAY);
+            return () => clearTimeout(autosaveRef.current);
+        }, [data, teamData]);
+
+        // Load saved data
+        useEffect(() => {
+            try {
+                const saved = localStorage.getItem('ft_performance_data');
+                if (saved) setData(JSON.parse(saved));
+                const savedTeam = localStorage.getItem('ft_performance_team');
+                if (savedTeam) setTeamData(JSON.parse(savedTeam));
+            } catch (e) { /* parse fail */ }
+        }, []);
+
+        // Check team unlock
+        const checkTeamUnlock = async () => {
+            setCheckingTeamUnlock(true);
+            try {
+                const userId = localStorage.getItem('ft_user_id');
+                if (!userId) { setCheckingTeamUnlock(false); return; }
+                const { data: userData } = await supabaseClient.from('users').select('organization_id').eq('id', userId).single();
+                if (!userData?.organization_id) { setCheckingTeamUnlock(false); return; }
+                const { data: orgMembers } = await supabaseClient.from('users').select('id').eq('organization_id', userData.organization_id);
+                if (!orgMembers || orgMembers.length === 0) { setCheckingTeamUnlock(false); return; }
+                const memberIds = orgMembers.map(m => m.id);
+                const { data: submissions } = await supabaseClient.from('user_responses').select('user_id').eq('tool_slug', 'performance-individual').in('user_id', memberIds);
+                const submittedCount = submissions ? new Set(submissions.map(s => s.user_id)).size : 0;
+                setTeamToolUnlocked(submittedCount >= orgMembers.length);
+            } catch (e) {
+                console.warn('[Performance] Team unlock check failed:', e);
+            } finally {
+                setCheckingTeamUnlock(false);
+            }
+        };
+
+        useEffect(() => { if (step === 0.5) checkTeamUnlock(); }, [step]);
+
+        // Individual submit
+        const handleIndividualSubmit = async () => {
+            const userId = localStorage.getItem('ft_user_id');
+            if (!userId) { alert('User not authenticated.'); return; }
+            await window.AIChallenge.submitWithChallenge(userId, 'performance-individual', { performance_data: data }, {
+                onReviewStart: () => { setSubmitStatus('saving'); setSubmitMessage('AI coach is reviewing...'); },
+                onRevise: () => { setSubmitStatus(null); setSubmitMessage(''); goToStep(6); },
+                onSubmitAnyway: () => { setSubmitStatus('success'); setSubmitMessage('Individual assessment submitted!'); setIndividualSubmitted(true); },
+                onError: (err) => { setSubmitStatus('error'); setSubmitMessage('Failed: ' + err.message); }
+            });
+        };
+
+        // Team submit
+        const handleTeamSubmit = async () => {
+            const userId = localStorage.getItem('ft_user_id');
+            if (!userId) { alert('User not authenticated.'); return; }
+            await window.AIChallenge.submitWithChallenge(userId, 'performance-team', { team_data: teamData }, {
+                onReviewStart: () => { setSubmitStatus('saving'); setSubmitMessage('AI coach is reviewing team work...'); },
+                onRevise: () => { setSubmitStatus(null); setSubmitMessage(''); goToStep(9); },
+                onSubmitAnyway: () => { setSubmitStatus('success'); setSubmitMessage('Team meeting submitted successfully!'); },
+                onError: (err) => { setSubmitStatus('error'); setSubmitMessage('Failed: ' + err.message); }
+            });
+        };
+
+        return (
+            <div className="tool-frame"><div className="tool-inner">
+
+                {/* COVER */}
+                {step === 0 && (
+                    <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+                        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url("https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1920&q=80")', backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.3 }} />
+                        <div style={{ position: 'relative', textAlign: 'center', color: '#fff', padding: '0 32px' }} className="animate-in">
+                            <div className="monument" style={{ fontSize: 14, color: '#FFF469', letterSpacing: '0.15em', marginBottom: 24 }}>SPRINT 10</div>
+                            <h1 className="plaak" style={{ fontSize: 64, marginBottom: 16, textTransform: 'uppercase', lineHeight: 1.1 }}>PERFORMANCE<br/>ANALYSIS</h1>
+                            <p style={{ fontSize: 18, color: '#ccc', marginBottom: 48 }}>Measure what matters. Fix what's broken. Own the outcome.</p>
+                            <button onClick={() => goToStep(0.5)} style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 48px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s ease' }} onMouseOver={e => e.target.style.background = '#FFF469'} onMouseOut={e => e.target.style.background = '#fff'}>START</button>
+                        </div>
+                    </div>
+                )}
+
+                {/* INTRO / PATH CHOOSER */}
+                {step === 0.5 && (
+                    <div style={{ minHeight: '100vh', background: '#000', color: '#fff', padding: '64px 32px' }}>
+                        <div style={{ maxWidth: 640, margin: '0 auto' }} className="animate-in">
+                            <h1 className="plaak" style={{ fontSize: 48, marginBottom: 16, textTransform: 'uppercase' }}>CHOOSE YOUR PATH</h1>
+                            <p style={{ fontSize: 16, color: '#ccc', marginBottom: 48, lineHeight: 1.6 }}>
+                                This sprint covers performance monitoring, root cause analysis, the 80/20 principle, Theory of Constraints, and building an accountability system.
+                            </p>
+
+                            {/* Individual */}
+                            <div style={{ border: '2px solid #fff', padding: 32, marginBottom: 32 }}>
+                                <div className="monument" style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600, marginBottom: 12 }}>Individual Assessment</div>
+                                <p style={{ fontSize: 15, color: '#ccc', lineHeight: 1.6, marginBottom: 24 }}>
+                                    Complete 6 steps: Goal Setting, Task Tracking, 5 Whys, 80/20 Analysis, Theory of Constraints, and Accountability Framework.
+                                </p>
+                                <button onClick={() => goToStep(1)} style={{ background: '#fff', color: '#000', border: 'none', padding: '14px 36px', fontSize: 15, fontFamily: "'Monument', monospace", letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }} onMouseOver={e => e.target.style.background = '#FFF469'} onMouseOut={e => e.target.style.background = '#fff'}>
+                                    {individualSubmitted ? 'REVIEW INDIVIDUAL' : 'START INDIVIDUAL'}
                                 </button>
+                            </div>
+
+                            {/* Team (locked) */}
+                            <div style={{ border: '2px solid ' + (teamToolUnlocked ? '#fff' : '#555'), padding: 32, marginBottom: 32, opacity: teamToolUnlocked ? 1 : 0.7 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                                    {!teamToolUnlocked && <LockIcon size={16} />}
+                                    <div className="monument" style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Team Meeting Tool</div>
+                                </div>
+                                {teamToolUnlocked ? (
+                                    <>
+                                        <p style={{ fontSize: 15, color: '#ccc', lineHeight: 1.6, marginBottom: 24 }}>Facilitate the 60-minute team meeting to establish performance and accountability systems.</p>
+                                        <button onClick={() => goToStep(8)} style={{ background: '#fff', color: '#000', border: 'none', padding: '14px 36px', fontSize: 15, fontFamily: "'Monument', monospace", letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }} onMouseOver={e => e.target.style.background = '#FFF469'} onMouseOut={e => e.target.style.background = '#fff'}>START TEAM MEETING</button>
+                                    </>
+                                ) : (
+                                    <div onClick={(e) => { if (e.shiftKey) setTeamToolUnlocked(true); }} style={{ background: '#222', padding: '12px 16px', textAlign: 'center', color: '#666', fontFamily: "'Monument', monospace", fontSize: 12, cursor: 'default' }} title="Shift+Click to force unlock (dev only)">
+                                        {checkingTeamUnlock ? 'CHECKING...' : 'LOCKED — WAITING FOR ALL TEAM MEMBERS'}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
-                );
-            };
+                )}
 
-            return (
-                <div className="min-h-screen bg-white">
-                    {renderProgressIndicator()}
+                {/* INDIVIDUAL STEPS 1-6 */}
+                {[1, 2, 3, 4, 5, 6].includes(step) && (
+                    <div className="wizard-layout">
+                        <div className="wizard-main">
+                            <MobileStepBar step={step} total={6} />
+                            <div className="wizard-content">
+                                {step === 1 && <Step1 d={data} u={u} />}
+                                {step === 2 && <Step2 d={data} u={u} />}
+                                {step === 3 && <Step3 d={data} u={u} />}
+                                {step === 4 && <Step4 d={data} u={u} />}
+                                {step === 5 && <Step5 d={data} u={u} />}
+                                {step === 6 && <Step6 d={data} u={u} />}
+                            </div>
+                            <ButtonFooter onBack={() => step === 1 ? goToStep(0.5) : goToStep(step - 1)} onNext={() => step < 6 ? goToStep(step + 1) : goToStep(7)} nextLabel={step === 6 ? 'Review' : 'Next'} />
+                        </div>
+                        <WizardSidebar step={step} teamUnlocked={teamToolUnlocked} onNavigate={goToStep} />
+                    </div>
+                )}
 
-                    {step === 0 && renderIntroPage()}
-                    {step === 0.5 && renderChoicePage()}
+                {/* STEP 7: REVIEW & SUBMIT INDIVIDUAL */}
+                {step === 7 && (
+                    <div className="wizard-layout">
+                        <div className="wizard-main">
+                            <div className="wizard-content animate-in">
+                                <div className="step-indicator"><span>Review & Submit</span></div>
+                                <h2 className="step-heading">YOUR PERFORMANCE PROTOCOL</h2>
+                                <p className="step-hint">Review your work across all 6 frameworks, then submit for AI coaching.</p>
 
-                    {/* Individual Tool Steps */}
-                    {toolType === 'individual' && step === 1 && <><DependencyContext deps={deps} />{renderStep1_FiveWhys()}</>}
-                    {toolType === 'individual' && step === 2 && renderStep2_Eighty20()}
-                    {toolType === 'individual' && step === 3 && renderStep3_ImpactEasy()}
-                    {toolType === 'individual' && step === 4 && renderStep4_Accountability()}
+                                {[
+                                    { title: 'Goals', content: (data.goals || []).filter(g => g.goal).length + ' goals defined' },
+                                    { title: 'Task Tracking', content: (data.tasks || []).filter(t => t.task.trim()).length + ' tasks tracked' },
+                                    { title: '5 Whys', content: (data.fiveWhys || {}).rootCause ? 'Root cause: ' + data.fiveWhys.rootCause.substring(0, 60) + '...' : 'Not completed' },
+                                    { title: '80/20', content: (data.eighty20 || {}).objective ? 'Analyzing: ' + data.eighty20.objective.substring(0, 60) : 'Not completed' },
+                                    { title: 'Constraints', content: (data.constraints || {}).constraint ? 'Bottleneck: ' + data.constraints.constraint.substring(0, 60) : 'Not completed' },
+                                    { title: 'Accountability', content: (data.accountability || {}).expectations ? 'Framework defined' : 'Not completed' }
+                                ].map((s, i) => (
+                                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 0', borderBottom: '1px solid #E5E7EB' }}>
+                                        <div style={{ fontWeight: 600 }}>{s.title}</div>
+                                        <div style={{ fontSize: 14, color: '#6B7280', maxWidth: 400, textAlign: 'right' }}>{s.content}</div>
+                                    </div>
+                                ))}
 
-                    {/* Team Tool Steps */}
-                    {toolType === 'team' && step === 1 && renderTeamStep1_PerformanceSystem()}
-                    {toolType === 'team' && step === 2 && renderTeamStep2_AccountabilitySystem()}
+                                <CaseStudy
+                                    before="A 30-person SaaS company tracked effort instead of outcomes. Quarterly targets were missed 60% of the time."
+                                    after="Binary task tracking, weekly dashboards, and 5 Whys for root cause analysis pushed task completion from 55% to 88% in one quarter."
+                                    quote="Once we stopped tracking effort and started tracking outcomes, everything changed. — Operations Director"
+                                />
 
-                    {/* Canvas */}
-                    {step === 999 && renderCanvas()}
+                                {submitStatus && <div style={{ padding: 16, marginTop: 16, background: submitStatus === 'success' ? '#F0FDF4' : submitStatus === 'error' ? '#FEF2F2' : '#F5F5F5', border: '1px solid ' + (submitStatus === 'success' ? '#BBF7D0' : submitStatus === 'error' ? '#FECACA' : '#E0E0E0'), textAlign: 'center' }}>{submitMessage}</div>}
+                            </div>
+                            <ButtonFooter onBack={() => goToStep(6)} onNext={handleIndividualSubmit} nextLabel={submitStatus === 'saving' ? 'AI Reviewing...' : 'Submit Individual'} disabled={submitStatus === 'saving'} />
+                        </div>
+                        <WizardSidebar step={step} teamUnlocked={teamToolUnlocked} onNavigate={goToStep} />
+                    </div>
+                )}
 
-                    {renderHelpModal()}
-                </div>
-            );
-        }
-        ReactDOM.render(<PerformanceApp />, document.getElementById('root'));
-    </script>
+                {/* TEAM STEPS 8-9 */}
+                {[8, 9].includes(step) && (
+                    <div className="wizard-layout">
+                        <div className="wizard-main">
+                            <MobileStepBar step={step - 7} total={2} />
+                            <div className="wizard-content">
+                                {step === 8 && <TeamStepAgenda />}
+                                {step === 9 && <TeamStepWWW d={teamData} u={ut} />}
+                            </div>
+                            <ButtonFooter
+                                onBack={() => step === 8 ? goToStep(0.5) : goToStep(8)}
+                                onNext={() => step === 8 ? goToStep(9) : handleTeamSubmit()}
+                                nextLabel={step === 9 ? (submitStatus === 'saving' ? 'AI Reviewing...' : 'Submit Team') : 'Next'}
+                                disabled={step === 9 && submitStatus === 'saving'}
+                            />
+                        </div>
+                        <WizardSidebar step={step} teamUnlocked={teamToolUnlocked} onNavigate={goToStep} />
+                    </div>
+                )}
+
+            </div></div>
+        );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<PerformanceApp />);
+</script>
 </body>
 </html>

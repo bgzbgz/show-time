@@ -1002,15 +1002,41 @@
                 if (e.target === e.currentTarget) onClose();
             };
 
+            const formatComplexValue = (val) => {
+                if (Array.isArray(val)) {
+                    // Array of strings — bullet list
+                    if (val.length > 0 && typeof val[0] === 'string') {
+                        return val.map((item, i) => <div key={i} style={{ paddingLeft: 12, marginBottom: 4 }}>• {item}</div>);
+                    }
+                    // Array of objects — extract name/title/idea as heading
+                    return val.map((item, i) => {
+                        if (typeof item !== 'object' || item === null) return <div key={i}>• {String(item)}</div>;
+                        const heading = item.name || item.title || item.idea || item.activity || null;
+                        const rest = Object.entries(item).filter(([k]) => !['name','title','idea','activity'].includes(k));
+                        return (
+                            <div key={i} style={{ borderLeft: '2px solid #444', paddingLeft: 12, marginBottom: 8 }}>
+                                {heading && <div style={{ fontWeight: 600, marginBottom: 2 }}>{heading}</div>}
+                                {rest.map(([k, v]) => v ? <div key={k} style={{ fontSize: 13, color: '#aaa' }}>{k}: {String(v)}</div> : null)}
+                            </div>
+                        );
+                    });
+                }
+                if (typeof val === 'object') {
+                    return Object.entries(val).map(([k, v]) => v ? (
+                        <div key={k} style={{ borderLeft: '2px solid #444', paddingLeft: 12, marginBottom: 6 }}>
+                            <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#888', marginBottom: 2 }}>{k}</div>
+                            <div style={{ fontSize: 14 }}>{typeof v === 'object' ? JSON.stringify(v) : String(v)}</div>
+                        </div>
+                    ) : null);
+                }
+                return String(val);
+            };
+
             const renderValue = (section) => {
                 const val = section.value;
-                if (val === null || val === undefined) return <em>No answer</em>;
+                if (val === null || val === undefined) return <em style={{ color: '#666' }}>No answer</em>;
                 if (typeof val === 'object') {
-                    return (
-                        <div className="submission-section__content submission-section__content--json">
-                            {JSON.stringify(val, null, 2)}
-                        </div>
-                    );
+                    return <div className="submission-section__content">{formatComplexValue(val)}</div>;
                 }
                 return <div className="submission-section__content">{String(val)}</div>;
             };
