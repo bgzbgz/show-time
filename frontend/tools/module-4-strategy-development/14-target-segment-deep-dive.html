@@ -723,6 +723,8 @@
                 setData(prev => ({ ...prev, interviews: prev.interviews.filter((_, i) => i !== index) }));
             };
 
+            const [openInterviewIdx, setOpenInterviewIdx] = useState(0);
+
             const updatePriority = (type, index, field, value) => {
                 setData(prev => ({
                     ...prev,
@@ -915,55 +917,71 @@
 
                                             <div className="questions-grid">
                                                 {data.interviews.map((interview, idx) => (
-                                                    <div key={idx} style={{ border: '1px solid #E0E0E0', padding: 24, marginBottom: 24, background: '#FAFAFA' }}>
-                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                                                            <span className="monument" style={{ fontSize: 11, textTransform: 'uppercase', color: '#666' }}>INTERVIEW {idx + 1}</span>
-                                                            {data.interviews.length > 1 && (
-                                                                <button onClick={() => removeInterview(idx)} style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: '#999' }}>&times;</button>
-                                                            )}
-                                                        </div>
+                                                    <div key={idx} style={{ marginBottom: 8 }}>
+                                                        <button
+                                                            onClick={() => setOpenInterviewIdx(openInterviewIdx === idx ? null : idx)}
+                                                            style={{
+                                                                width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                                                background: openInterviewIdx === idx ? '#000' : '#f9f9f9',
+                                                                color: openInterviewIdx === idx ? '#fff' : '#000',
+                                                                border: '1px solid #000', padding: '12px 16px', cursor: 'pointer',
+                                                                fontFamily: "'Monument', monospace", fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em'
+                                                            }}
+                                                        >
+                                                            <span>INTERVIEW {idx + 1}{interview.customerName ? ' — ' + interview.customerName : ''}</span>
+                                                            <span style={{ fontSize: 16 }}>{openInterviewIdx === idx ? '−' : '+'}</span>
+                                                        </button>
+                                                        {openInterviewIdx === idx && (
+                                                            <div style={{ border: '1px solid #000', borderTop: 'none', padding: '20px', background: '#FAFAFA' }}>
+                                                                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+                                                                    {data.interviews.length > 1 && (
+                                                                        <button onClick={() => { removeInterview(idx); setOpenInterviewIdx(0); }} style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: '#999', padding: 0 }}>&times; Remove</button>
+                                                                    )}
+                                                                </div>
 
-                                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
-                                                            <div>
-                                                                <label className="field-label">Customer Name</label>
-                                                                <input type="text" className="field-input" value={interview.customerName} onChange={e => updateInterview(idx, 'customerName', e.target.value)} placeholder="Name or identifier" />
+                                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                                                                    <div>
+                                                                        <label className="field-label">Customer Name</label>
+                                                                        <input type="text" className="field-input" value={interview.customerName} onChange={e => updateInterview(idx, 'customerName', e.target.value)} placeholder="Name or identifier" />
+                                                                    </div>
+                                                                    <div>
+                                                                        <label className="field-label">
+                                                                            Profile Fit
+                                                                            <HelpAccordion id={`profileFit${idx}`} activeHelp={questionHelp} setActiveHelp={setQuestionHelp}>
+                                                                                Does this person match your target segment description? Note key characteristics.
+                                                                            </HelpAccordion>
+                                                                        </label>
+                                                                        <input type="text" className="field-input" value={interview.customerProfile} onChange={e => updateInterview(idx, 'customerProfile', e.target.value)} placeholder="e.g. CEO, 50 employees, manufacturing" />
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="field-group" style={{ marginBottom: 16 }}>
+                                                                    <label className="field-label">Pains (what frustrates them?)</label>
+                                                                    <textarea className="field-textarea" style={{ minHeight: 70 }} value={interview.pains} onChange={e => updateInterview(idx, 'pains', e.target.value)} placeholder="What problems, frustrations, and undesirable outcomes did they describe?" />
+                                                                </div>
+
+                                                                <div className="field-group" style={{ marginBottom: 16 }}>
+                                                                    <label className="field-label">Needs (what do they require?)</label>
+                                                                    <textarea className="field-textarea" style={{ minHeight: 70 }} value={interview.needs} onChange={e => updateInterview(idx, 'needs', e.target.value)} placeholder="What functional, social, or emotional jobs are they trying to get done?" />
+                                                                </div>
+
+                                                                <div className="field-group" style={{ marginBottom: 16 }}>
+                                                                    <label className="field-label">Gains (what do they desire?)</label>
+                                                                    <textarea className="field-textarea" style={{ minHeight: 70 }} value={interview.gains} onChange={e => updateInterview(idx, 'gains', e.target.value)} placeholder="What outcomes, benefits, or aspirations excite them?" />
+                                                                </div>
+
+                                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                                                                    <div className="field-group" style={{ marginBottom: 0 }}>
+                                                                        <label className="field-label">Key Quotes</label>
+                                                                        <textarea className="field-textarea" style={{ minHeight: 60 }} value={interview.quotes} onChange={e => updateInterview(idx, 'quotes', e.target.value)} placeholder="Exact words they used..." />
+                                                                    </div>
+                                                                    <div className="field-group" style={{ marginBottom: 0 }}>
+                                                                        <label className="field-label">Observations</label>
+                                                                        <textarea className="field-textarea" style={{ minHeight: 60 }} value={interview.observations} onChange={e => updateInterview(idx, 'observations', e.target.value)} placeholder="Body language, emotions, workarounds..." />
+                                                                    </div>
+                                                                </div>
                                                             </div>
-                                                            <div>
-                                                                <label className="field-label">
-                                                                    Profile Fit
-                                                                    <HelpAccordion id={`profileFit${idx}`} activeHelp={questionHelp} setActiveHelp={setQuestionHelp}>
-                                                                        Does this person match your target segment description? Note key characteristics.
-                                                                    </HelpAccordion>
-                                                                </label>
-                                                                <input type="text" className="field-input" value={interview.customerProfile} onChange={e => updateInterview(idx, 'customerProfile', e.target.value)} placeholder="e.g. CEO, 50 employees, manufacturing" />
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="field-group" style={{ marginBottom: 16 }}>
-                                                            <label className="field-label">Pains (what frustrates them?)</label>
-                                                            <textarea className="field-textarea" style={{ minHeight: 70 }} value={interview.pains} onChange={e => updateInterview(idx, 'pains', e.target.value)} placeholder="What problems, frustrations, and undesirable outcomes did they describe?" />
-                                                        </div>
-
-                                                        <div className="field-group" style={{ marginBottom: 16 }}>
-                                                            <label className="field-label">Needs (what do they require?)</label>
-                                                            <textarea className="field-textarea" style={{ minHeight: 70 }} value={interview.needs} onChange={e => updateInterview(idx, 'needs', e.target.value)} placeholder="What functional, social, or emotional jobs are they trying to get done?" />
-                                                        </div>
-
-                                                        <div className="field-group" style={{ marginBottom: 16 }}>
-                                                            <label className="field-label">Gains (what do they desire?)</label>
-                                                            <textarea className="field-textarea" style={{ minHeight: 70 }} value={interview.gains} onChange={e => updateInterview(idx, 'gains', e.target.value)} placeholder="What outcomes, benefits, or aspirations excite them?" />
-                                                        </div>
-
-                                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                                                            <div className="field-group" style={{ marginBottom: 0 }}>
-                                                                <label className="field-label">Key Quotes</label>
-                                                                <textarea className="field-textarea" style={{ minHeight: 60 }} value={interview.quotes} onChange={e => updateInterview(idx, 'quotes', e.target.value)} placeholder="Exact words they used..." />
-                                                            </div>
-                                                            <div className="field-group" style={{ marginBottom: 0 }}>
-                                                                <label className="field-label">Observations</label>
-                                                                <textarea className="field-textarea" style={{ minHeight: 60 }} value={interview.observations} onChange={e => updateInterview(idx, 'observations', e.target.value)} placeholder="Body language, emotions, workarounds..." />
-                                                            </div>
-                                                        </div>
+                                                        )}
                                                     </div>
                                                 ))}
 

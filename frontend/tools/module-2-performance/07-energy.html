@@ -792,7 +792,26 @@
            ============================================================ */
 
         const PillarSection = ({ pillar, title, stepNum, formData, updateField }) => {
+            const [openSection, setOpenSection] = useState('assessment');
             const ph = PILLAR_PLACEHOLDERS[pillar];
+
+            const AccordionButton = ({ sectionId, label }) => (
+                <button
+                    onClick={() => setOpenSection(openSection === sectionId ? null : sectionId)}
+                    style={{
+                        width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        background: openSection === sectionId ? '#000' : '#f5f5f5',
+                        color: openSection === sectionId ? '#fff' : '#000',
+                        border: '2px solid #000', padding: '12px 16px', cursor: 'pointer', marginBottom: 16,
+                        fontFamily: "'Monument', monospace", fontSize: 11,
+                        textTransform: 'uppercase', letterSpacing: '0.06em'
+                    }}
+                >
+                    <span>{label}</span>
+                    <span style={{ fontSize: 18 }}>{openSection === sectionId ? '−' : '+'}</span>
+                </button>
+            );
+
             return (
                 <div>
                     <div className="step-indicator">
@@ -810,110 +829,116 @@
                         Don't confuse busyness with productivity. <strong>Bad:</strong> "I want to {title.toLowerCase()} better." <strong>Good:</strong> Be specific about what, when, and how.
                     </WarningBox>
 
-                    {/* Current State */}
-                    <div className="ft-section" style={{ border: '2px solid #000', padding: 24 }}>
-                        <h3 className="plaak" style={{ fontSize: 24, marginBottom: 16 }}>Current State Assessment</h3>
-                        <div className="ft-field-group">
-                            <label className="ft-label">Rate your current {title} (1-10):</label>
-                            <ScienceBookmarkIcon>
-                                Self-assessment accuracy improves by 27% when you rate specific habits rather than general feelings.
-                            </ScienceBookmarkIcon>
-                            <div className="flex items-center gap-4">
-                                <input
-                                    type="range"
-                                    min="1"
-                                    max="10"
-                                    className="flex-1"
-                                    value={formData[pillar + 'Rating']}
-                                    onChange={(e) => updateField(pillar + 'Rating', e.target.value)}
+                    {/* Current State Assessment */}
+                    <AccordionButton sectionId="assessment" label="Current State Assessment" />
+                    {openSection === 'assessment' && (
+                        <div className="ft-section" style={{ border: '2px solid #000', borderTop: 'none', padding: 24, marginBottom: 16 }}>
+                            <div className="ft-field-group">
+                                <label className="ft-label">Rate your current {title} (1-10):</label>
+                                <ScienceBookmarkIcon>
+                                    Self-assessment accuracy improves by 27% when you rate specific habits rather than general feelings.
+                                </ScienceBookmarkIcon>
+                                <div className="flex items-center gap-4">
+                                    <input
+                                        type="range"
+                                        min="1"
+                                        max="10"
+                                        className="flex-1"
+                                        value={formData[pillar + 'Rating']}
+                                        onChange={(e) => updateField(pillar + 'Rating', e.target.value)}
+                                    />
+                                    <span className="plaak text-4xl w-12">{formData[pillar + 'Rating']}</span>
+                                </div>
+                            </div>
+                            <div className="ft-field-group">
+                                <label className="ft-label">What I do WELL:</label>
+                                <textarea
+                                    className="ft-textarea"
+                                    value={formData[pillar + 'DoWell']}
+                                    onChange={(e) => updateField(pillar + 'DoWell', e.target.value)}
+                                    placeholder={ph.doWell}
                                 />
-                                <span className="plaak text-4xl w-12">{formData[pillar + 'Rating']}</span>
+                            </div>
+                            <div className="ft-field-group">
+                                <label className="ft-label">What I do NOT do well:</label>
+                                <textarea
+                                    className="ft-textarea"
+                                    value={formData[pillar + 'NotDoWell']}
+                                    onChange={(e) => updateField(pillar + 'NotDoWell', e.target.value)}
+                                    placeholder={ph.notDoWell}
+                                />
+                                <p className="ft-help">Identify triggers that lead to negative behaviors.</p>
                             </div>
                         </div>
-                        <div className="ft-field-group">
-                            <label className="ft-label">What I do WELL:</label>
-                            <textarea
-                                className="ft-textarea"
-                                value={formData[pillar + 'DoWell']}
-                                onChange={(e) => updateField(pillar + 'DoWell', e.target.value)}
-                                placeholder={ph.doWell}
-                            />
-                        </div>
-                        <div className="ft-field-group">
-                            <label className="ft-label">What I do NOT do well:</label>
-                            <textarea
-                                className="ft-textarea"
-                                value={formData[pillar + 'NotDoWell']}
-                                onChange={(e) => updateField(pillar + 'NotDoWell', e.target.value)}
-                                placeholder={ph.notDoWell}
-                            />
-                            <p className="ft-help">Identify triggers that lead to negative behaviors.</p>
-                        </div>
-                    </div>
+                    )}
 
                     {/* Goals */}
-                    <div className="ft-section" style={{ border: '2px solid #000', padding: 24 }}>
-                        <h3 className="plaak" style={{ fontSize: 24, marginBottom: 16 }}>My Goals for {title}</h3>
-                        <textarea
-                            className="ft-textarea"
-                            value={formData[pillar + 'Goals']}
-                            onChange={(e) => updateField(pillar + 'Goals', e.target.value)}
-                            placeholder={ph.goals}
-                        />
-                        <p className="ft-help">Be specific, not vague. Avoid "I want to be healthier" -- say exactly what you will do.</p>
-                    </div>
-
-                    {/* ONE KEY HABIT */}
-                    <div style={{ border: '2px solid #000', padding: 24, background: '#FFFBEB' }}>
-                        <h3 className="plaak" style={{ fontSize: 28, marginBottom: 8 }}>ONE KEY HABIT TO DEVELOP</h3>
-                        <p style={{ color: '#6B7280', marginBottom: 16 }}>Using the Atomic Habits framework</p>
-
-                        <div className="ft-field-group">
-                            <label className="ft-label">My Key Habit: <span className="ft-required">*</span></label>
-                            <input
-                                className="ft-input"
-                                value={formData[pillar + 'KeyHabit']}
-                                onChange={(e) => updateField(pillar + 'KeyHabit', e.target.value)}
-                                placeholder={ph.keyHabit}
-                            />
-                        </div>
-                        <div className="ft-field-group">
-                            <label className="ft-label">Trigger/Reminder: <span className="ft-required">*</span></label>
-                            <input
-                                className="ft-input"
-                                value={formData[pillar + 'Trigger']}
-                                onChange={(e) => updateField(pillar + 'Trigger', e.target.value)}
-                                placeholder={ph.trigger}
-                            />
-                        </div>
-                        <div className="ft-field-group">
-                            <label className="ft-label">Routine (Specific actions):</label>
+                    <AccordionButton sectionId="goals" label="My Goals" />
+                    {openSection === 'goals' && (
+                        <div className="ft-section" style={{ border: '2px solid #000', borderTop: 'none', padding: 24, marginBottom: 16 }}>
                             <textarea
                                 className="ft-textarea"
-                                value={formData[pillar + 'Routine']}
-                                onChange={(e) => updateField(pillar + 'Routine', e.target.value)}
-                                placeholder={ph.routine}
+                                value={formData[pillar + 'Goals']}
+                                onChange={(e) => updateField(pillar + 'Goals', e.target.value)}
+                                placeholder={ph.goals}
                             />
+                            <p className="ft-help">Be specific, not vague. Avoid "I want to be healthier" -- say exactly what you will do.</p>
                         </div>
-                        <div className="ft-field-group">
-                            <label className="ft-label">Reward (What you get):</label>
-                            <input
-                                className="ft-input"
-                                value={formData[pillar + 'Reward']}
-                                onChange={(e) => updateField(pillar + 'Reward', e.target.value)}
-                                placeholder={ph.reward}
-                            />
+                    )}
+
+                    {/* ONE KEY HABIT */}
+                    <AccordionButton sectionId="habit" label="One Key Habit To Develop" />
+                    {openSection === 'habit' && (
+                        <div style={{ border: '2px solid #000', borderTop: 'none', padding: 24, background: '#FFFBEB', marginBottom: 16 }}>
+                            <p style={{ color: '#6B7280', marginBottom: 16 }}>Using the Atomic Habits framework</p>
+
+                            <div className="ft-field-group">
+                                <label className="ft-label">My Key Habit: <span className="ft-required">*</span></label>
+                                <input
+                                    className="ft-input"
+                                    value={formData[pillar + 'KeyHabit']}
+                                    onChange={(e) => updateField(pillar + 'KeyHabit', e.target.value)}
+                                    placeholder={ph.keyHabit}
+                                />
+                            </div>
+                            <div className="ft-field-group">
+                                <label className="ft-label">Trigger/Reminder: <span className="ft-required">*</span></label>
+                                <input
+                                    className="ft-input"
+                                    value={formData[pillar + 'Trigger']}
+                                    onChange={(e) => updateField(pillar + 'Trigger', e.target.value)}
+                                    placeholder={ph.trigger}
+                                />
+                            </div>
+                            <div className="ft-field-group">
+                                <label className="ft-label">Routine (Specific actions):</label>
+                                <textarea
+                                    className="ft-textarea"
+                                    value={formData[pillar + 'Routine']}
+                                    onChange={(e) => updateField(pillar + 'Routine', e.target.value)}
+                                    placeholder={ph.routine}
+                                />
+                            </div>
+                            <div className="ft-field-group">
+                                <label className="ft-label">Reward (What you get):</label>
+                                <input
+                                    className="ft-input"
+                                    value={formData[pillar + 'Reward']}
+                                    onChange={(e) => updateField(pillar + 'Reward', e.target.value)}
+                                    placeholder={ph.reward}
+                                />
+                            </div>
+                            <div className="ft-field-group">
+                                <label className="ft-label">Accountability Partner:</label>
+                                <input
+                                    className="ft-input"
+                                    value={formData[pillar + 'AccountabilityPartner']}
+                                    onChange={(e) => updateField(pillar + 'AccountabilityPartner', e.target.value)}
+                                    placeholder={ph.accountabilityPartner}
+                                />
+                            </div>
                         </div>
-                        <div className="ft-field-group">
-                            <label className="ft-label">Accountability Partner:</label>
-                            <input
-                                className="ft-input"
-                                value={formData[pillar + 'AccountabilityPartner']}
-                                onChange={(e) => updateField(pillar + 'AccountabilityPartner', e.target.value)}
-                                placeholder={ph.accountabilityPartner}
-                            />
-                        </div>
-                    </div>
+                    )}
                 </div>
             );
         };
@@ -923,6 +948,25 @@
            ============================================================ */
 
         function MentalFocusStep({ formData, updateField }) {
+            const [openPart, setOpenPart] = useState('define');
+
+            const AccordionButton = ({ partId, label }) => (
+                <button
+                    onClick={() => setOpenPart(openPart === partId ? null : partId)}
+                    style={{
+                        width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        background: openPart === partId ? '#000' : '#f5f5f5',
+                        color: openPart === partId ? '#fff' : '#000',
+                        border: '2px solid #000', padding: '12px 16px', cursor: 'pointer', marginBottom: 16,
+                        fontFamily: "'Monument', monospace", fontSize: 11,
+                        textTransform: 'uppercase', letterSpacing: '0.06em'
+                    }}
+                >
+                    <span>{label}</span>
+                    <span style={{ fontSize: 18 }}>{openPart === partId ? '−' : '+'}</span>
+                </button>
+            );
+
             return (
                 <div>
                     <div className="step-indicator">
@@ -941,71 +985,75 @@
                     </ScienceBox>
 
                     {/* Part 1: Control */}
-                    <div className="ft-section" style={{ border: '2px solid #000', padding: 24 }}>
-                        <h3 className="plaak" style={{ fontSize: 24, marginBottom: 16 }}>Part 1: Define What Matters</h3>
-                        <div className="ft-field-group">
-                            <label className="ft-label">Things that matter to me that I CAN control: <span className="ft-required">*</span></label>
-                            <textarea
-                                className="ft-textarea"
-                                value={formData.mentalCanControl}
-                                onChange={(e) => updateField('mentalCanControl', e.target.value)}
-                                placeholder="List things within your control (e.g., my daily routine, my reactions, my habits, how I prepare for meetings)"
-                            />
+                    <AccordionButton partId="define" label="Part 1: Define What Matters" />
+                    {openPart === 'define' && (
+                        <div className="ft-section" style={{ border: '2px solid #000', borderTop: 'none', padding: 24, marginBottom: 16 }}>
+                            <div className="ft-field-group">
+                                <label className="ft-label">Things that matter to me that I CAN control: <span className="ft-required">*</span></label>
+                                <textarea
+                                    className="ft-textarea"
+                                    value={formData.mentalCanControl}
+                                    onChange={(e) => updateField('mentalCanControl', e.target.value)}
+                                    placeholder="List things within your control (e.g., my daily routine, my reactions, my habits, how I prepare for meetings)"
+                                />
+                            </div>
+                            <div className="ft-field-group">
+                                <label className="ft-label">Things that matter to me that I CANNOT control:</label>
+                                <textarea
+                                    className="ft-textarea"
+                                    value={formData.mentalCannotControl}
+                                    onChange={(e) => updateField('mentalCannotControl', e.target.value)}
+                                    placeholder="List things outside your control (e.g., other people's opinions, market conditions, competitor actions)"
+                                />
+                            </div>
                         </div>
-                        <div className="ft-field-group">
-                            <label className="ft-label">Things that matter to me that I CANNOT control:</label>
-                            <textarea
-                                className="ft-textarea"
-                                value={formData.mentalCannotControl}
-                                onChange={(e) => updateField('mentalCannotControl', e.target.value)}
-                                placeholder="List things outside your control (e.g., other people's opinions, market conditions, competitor actions)"
-                            />
-                        </div>
-                    </div>
+                    )}
 
                     {/* Part 2: Stop/Do Less/Do More */}
-                    <div className="ft-section" style={{ border: '2px solid #000', padding: 24 }}>
-                        <h3 className="plaak" style={{ fontSize: 24, marginBottom: 16 }}>Part 2: Strategic Decisions</h3>
-                        <div className="ft-field-group">
-                            <label className="ft-label">STOP doing completely (3 things):</label>
-                            {[1,2,3].map(i => (
-                                <input
-                                    key={i}
-                                    className="ft-input"
-                                    style={{ marginBottom: 8 }}
-                                    value={formData['stopDoing' + i]}
-                                    onChange={(e) => updateField('stopDoing' + i, e.target.value)}
-                                    placeholder={i + '. e.g., Checking email before 9am'}
-                                />
-                            ))}
+                    <AccordionButton partId="decisions" label="Part 2: Strategic Decisions" />
+                    {openPart === 'decisions' && (
+                        <div className="ft-section" style={{ border: '2px solid #000', borderTop: 'none', padding: 24, marginBottom: 16 }}>
+                            <div className="ft-field-group">
+                                <label className="ft-label">STOP doing completely (3 things):</label>
+                                {[1,2,3].map(i => (
+                                    <input
+                                        key={i}
+                                        className="ft-input"
+                                        style={{ marginBottom: 8 }}
+                                        value={formData['stopDoing' + i]}
+                                        onChange={(e) => updateField('stopDoing' + i, e.target.value)}
+                                        placeholder={i + '. e.g., Checking email before 9am'}
+                                    />
+                                ))}
+                            </div>
+                            <div className="ft-field-group">
+                                <label className="ft-label">DO LESS of starting today (3 things):</label>
+                                {[1,2,3].map(i => (
+                                    <input
+                                        key={i}
+                                        className="ft-input"
+                                        style={{ marginBottom: 8 }}
+                                        value={formData['doLess' + i]}
+                                        onChange={(e) => updateField('doLess' + i, e.target.value)}
+                                        placeholder={i + '. e.g., Attending non-essential meetings'}
+                                    />
+                                ))}
+                            </div>
+                            <div className="ft-field-group">
+                                <label className="ft-label">DO MORE of starting today (3 things):</label>
+                                {[1,2,3].map(i => (
+                                    <input
+                                        key={i}
+                                        className="ft-input"
+                                        style={{ marginBottom: 8 }}
+                                        value={formData['doMore' + i]}
+                                        onChange={(e) => updateField('doMore' + i, e.target.value)}
+                                        placeholder={i + '. e.g., Deep work sessions, walking meetings'}
+                                    />
+                                ))}
+                            </div>
                         </div>
-                        <div className="ft-field-group">
-                            <label className="ft-label">DO LESS of starting today (3 things):</label>
-                            {[1,2,3].map(i => (
-                                <input
-                                    key={i}
-                                    className="ft-input"
-                                    style={{ marginBottom: 8 }}
-                                    value={formData['doLess' + i]}
-                                    onChange={(e) => updateField('doLess' + i, e.target.value)}
-                                    placeholder={i + '. e.g., Attending non-essential meetings'}
-                                />
-                            ))}
-                        </div>
-                        <div className="ft-field-group">
-                            <label className="ft-label">DO MORE of starting today (3 things):</label>
-                            {[1,2,3].map(i => (
-                                <input
-                                    key={i}
-                                    className="ft-input"
-                                    style={{ marginBottom: 8 }}
-                                    value={formData['doMore' + i]}
-                                    onChange={(e) => updateField('doMore' + i, e.target.value)}
-                                    placeholder={i + '. e.g., Deep work sessions, walking meetings'}
-                                />
-                            ))}
-                        </div>
-                    </div>
+                    )}
                 </div>
             );
         }

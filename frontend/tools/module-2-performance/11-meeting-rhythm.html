@@ -315,54 +315,113 @@
 
     /* === STEP 3: MEETING EVALUATION === */
     function Step3({ d, u }) {
+        const [openSection, setOpenSection] = useState('context');
         const eff = parseInt(d.effectiveness) || 0;
+
+        const AccordionButton = ({ sectionId, label }) => (
+            <button
+                onClick={() => setOpenSection(openSection === sectionId ? null : sectionId)}
+                style={{
+                    width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    background: openSection === sectionId ? '#000' : '#f5f5f5',
+                    color: openSection === sectionId ? '#fff' : '#000',
+                    border: '2px solid #000', padding: '12px 16px', cursor: 'pointer', marginBottom: 16,
+                    fontFamily: "'Monument', monospace", fontSize: 11,
+                    textTransform: 'uppercase', letterSpacing: '0.06em'
+                }}
+            >
+                <span>{label}</span>
+                <span style={{ fontSize: 18 }}>{openSection === sectionId ? '−' : '+'}</span>
+            </button>
+        );
+
         return (
             <div className="animate-in">
                 <div className="step-indicator"><span>Step 3 of 4</span><span className="step-time">~6 min</span></div>
                 <h2 className="step-heading">MEETING EVALUATION</h2>
                 <p className="step-hint">Review a recent meeting's effectiveness. What worked? What didn't? What will you change next time?</p>
                 <FastTrackInsight>Without post-meeting evaluation, you're destined to repeat the same mistakes. Tannenbaum and Cerasoli (2013) showed structured debriefs improve team performance by 20-25%. Discomfort is the price of improvement.</FastTrackInsight>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
-                    <div className="ft-field-group" style={{ marginBottom: 0 }}>
-                        <label className="ft-label">MEETING DATE</label>
-                        <input className="ft-input" type="date" value={d.meetingDate || ''} onChange={e => u('meetingDate', e.target.value)} />
+
+                {/* Meeting Context Section */}
+                <AccordionButton sectionId="context" label="Meeting Context" />
+                {openSection === 'context' && (
+                    <div style={{ border: '2px solid #000', borderTop: 'none', padding: 20, marginBottom: 16 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 0 }}>
+                            <div className="ft-field-group" style={{ marginBottom: 0 }}>
+                                <label className="ft-label">MEETING DATE</label>
+                                <input className="ft-input" type="date" value={d.meetingDate || ''} onChange={e => u('meetingDate', e.target.value)} />
+                            </div>
+                            <div className="ft-field-group" style={{ marginBottom: 0 }}>
+                                <label className="ft-label">MEETING TYPE</label>
+                                <input className="ft-input" placeholder="e.g. Weekly tactical, Monthly review" value={d.meetingType || ''} onChange={e => u('meetingType', e.target.value)} />
+                            </div>
+                        </div>
                     </div>
-                    <div className="ft-field-group" style={{ marginBottom: 0 }}>
-                        <label className="ft-label">MEETING TYPE</label>
-                        <input className="ft-input" placeholder="e.g. Weekly tactical, Monthly review" value={d.meetingType || ''} onChange={e => u('meetingType', e.target.value)} />
+                )}
+
+                {/* Effectiveness Rating Section */}
+                <AccordionButton sectionId="rating" label="Effectiveness Rating" />
+                {openSection === 'rating' && (
+                    <div style={{ border: '2px solid #000', borderTop: 'none', padding: 20, marginBottom: 16 }}>
+                        <div className="ft-field-group" style={{ marginBottom: 0 }}>
+                            <label className="ft-label">EFFECTIVENESS RATING</label>
+                            <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                                {[1, 2, 3, 4, 5].map(n => (
+                                    <button key={n} onClick={() => u('effectiveness', n)} style={{ width: 48, height: 48, border: '2px solid ' + (eff === n ? '#000' : '#E5E7EB'), background: eff === n ? '#000' : '#fff', color: eff === n ? '#FFF469' : '#000', fontWeight: 700, fontSize: 18, cursor: 'pointer' }}>{n}</button>
+                                ))}
+                            </div>
+                            <div className="ft-help">{eff <= 2 && eff > 0 ? 'Needs major improvement' : eff === 3 ? 'Average — room to grow' : eff >= 4 ? 'Strong meeting' : 'Rate 1-5'}</div>
+                        </div>
                     </div>
-                </div>
-                <div className="ft-field-group">
-                    <label className="ft-label">EFFECTIVENESS RATING</label>
-                    <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                        {[1, 2, 3, 4, 5].map(n => (
-                            <button key={n} onClick={() => u('effectiveness', n)} style={{ width: 48, height: 48, border: '2px solid ' + (eff === n ? '#000' : '#E5E7EB'), background: eff === n ? '#000' : '#fff', color: eff === n ? '#FFF469' : '#000', fontWeight: 700, fontSize: 18, cursor: 'pointer' }}>{n}</button>
-                        ))}
+                )}
+
+                {/* Feedback Section */}
+                <AccordionButton sectionId="feedback" label="Meeting Feedback" />
+                {openSection === 'feedback' && (
+                    <div style={{ border: '2px solid #000', borderTop: 'none', padding: 20, marginBottom: 16 }}>
+                        <div className="ft-field-group">
+                            <label className="ft-label">WHAT WORKED WELL <span className="ft-required">*</span></label>
+                            <textarea className="ft-textarea" placeholder="What made this meeting productive? What should we keep doing?" value={d.whatWorked || ''} onChange={e => u('whatWorked', e.target.value)} />
+                        </div>
+                        <div className="ft-field-group">
+                            <label className="ft-label">WHAT DIDN'T WORK <span className="ft-required">*</span></label>
+                            <textarea className="ft-textarea" placeholder="What wasted time? What caused confusion? Where did we go off-track?" value={d.whatDidntWork || ''} onChange={e => u('whatDidntWork', e.target.value)} />
+                        </div>
+                        <div className="ft-field-group" style={{ marginBottom: 0 }}>
+                            <label className="ft-label">IMPROVEMENTS FOR NEXT TIME <span className="ft-required">*</span></label>
+                            <textarea className="ft-textarea" placeholder="Specific changes you'll implement in the next meeting." value={d.improvements || ''} onChange={e => u('improvements', e.target.value)} />
+                        </div>
                     </div>
-                    <div className="ft-help">{eff <= 2 && eff > 0 ? 'Needs major improvement' : eff === 3 ? 'Average — room to grow' : eff >= 4 ? 'Strong meeting' : 'Rate 1-5'}</div>
-                </div>
-                <div className="ft-field-group">
-                    <label className="ft-label">WHAT WORKED WELL <span className="ft-required">*</span></label>
-                    <textarea className="ft-textarea" placeholder="What made this meeting productive? What should we keep doing?" value={d.whatWorked || ''} onChange={e => u('whatWorked', e.target.value)} />
-                </div>
-                <div className="ft-field-group">
-                    <label className="ft-label">WHAT DIDN'T WORK <span className="ft-required">*</span></label>
-                    <textarea className="ft-textarea" placeholder="What wasted time? What caused confusion? Where did we go off-track?" value={d.whatDidntWork || ''} onChange={e => u('whatDidntWork', e.target.value)} />
-                </div>
-                <div className="ft-field-group">
-                    <label className="ft-label">IMPROVEMENTS FOR NEXT TIME <span className="ft-required">*</span></label>
-                    <textarea className="ft-textarea" placeholder="Specific changes you'll implement in the next meeting." value={d.improvements || ''} onChange={e => u('improvements', e.target.value)} />
-                </div>
+                )}
             </div>
         );
     }
 
     /* === STEP 4: BIG ROCK DISCUSSION === */
     function Step4({ d, u }) {
+        const [openSection, setOpenSection] = useState('clarify');
         const br = d.bigRock || { issue: '', problemStatement: '', firstPrinciples: '', constraint: '', subtraction: '', why1: '', why2: '', why3: '', why4: '', why5: '', rootCause: '', eighty20: '', solutions: '', www: Array(3).fill(null).map(() => ({ who: '', what: '', when: '' })) };
         const ub = (f, v) => u('bigRock', { ...br, [f]: v });
         const www = br.www || [];
         const updateWWW = (i, f, v) => { const next = [...www]; next[i] = { ...next[i], [f]: v }; ub('www', next); };
+
+        const AccordionButton = ({ sectionId, label, borderColor }) => (
+            <button
+                onClick={() => setOpenSection(openSection === sectionId ? null : sectionId)}
+                style={{
+                    width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    background: openSection === sectionId ? '#000' : '#f5f5f5',
+                    color: openSection === sectionId ? '#fff' : '#000',
+                    border: '2px solid #000', padding: '12px 16px', cursor: 'pointer', marginBottom: 16,
+                    fontFamily: "'Monument', monospace", fontSize: 11,
+                    textTransform: 'uppercase', letterSpacing: '0.06em'
+                }}
+            >
+                <span>{label}</span>
+                <span style={{ fontSize: 18 }}>{openSection === sectionId ? '−' : '+'}</span>
+            </button>
+        );
+
         return (
             <div className="animate-in">
                 <div className="step-indicator"><span>Step 4 of 4</span><span className="step-time">~10 min</span></div>
@@ -371,81 +430,93 @@
                 <FastTrackInsight>The Big Rock Discussion uses first principles thinking, Theory of Constraints, 80/20, and the Law of Subtraction to strip problems to their core. The goal: a crystal-clear problem statement, root cause, and 2-3 high-impact solutions in 30 minutes.</FastTrackInsight>
 
                 {/* Phase 1: Clarify (5 min) */}
-                <div style={{ borderLeft: '4px solid #FFF469', paddingLeft: 16, marginBottom: 32 }}>
-                    <div className="numbered-section" style={{ marginBottom: 12 }}>1. CLARIFY THE CORE PROBLEM (5 MIN)</div>
-                    <div className="ft-field-group">
-                        <label className="ft-label">THE BIG ROCK ISSUE <span className="ft-required">*</span></label>
-                        <textarea className="ft-textarea" style={{ minHeight: 80 }} placeholder="What is the issue at its most basic level? If you had to explain it to a 10-year-old, how would you phrase it?" value={br.issue} onChange={e => ub('issue', e.target.value)} />
+                <AccordionButton sectionId="clarify" label="1. Clarify the Core Problem (5 min)" />
+                {openSection === 'clarify' && (
+                    <div style={{ borderLeft: '4px solid #FFF469', paddingLeft: 16, marginBottom: 16, border: '2px solid #000', borderLeft: '4px solid #FFF469', padding: 20 }}>
+                        <div className="ft-field-group">
+                            <label className="ft-label">THE BIG ROCK ISSUE <span className="ft-required">*</span></label>
+                            <textarea className="ft-textarea" style={{ minHeight: 80 }} placeholder="What is the issue at its most basic level? If you had to explain it to a 10-year-old, how would you phrase it?" value={br.issue} onChange={e => ub('issue', e.target.value)} />
+                        </div>
+                        <div className="ft-field-group" style={{ marginBottom: 0 }}>
+                            <label className="ft-label">PROBLEM STATEMENT <span className="ft-required">*</span></label>
+                            <textarea className="ft-textarea" style={{ minHeight: 60 }} placeholder="Crystal clear, razor-sharp. Why is this the most important thing to address NOW? What measurable outcome defines success?" value={br.problemStatement} onChange={e => ub('problemStatement', e.target.value)} />
+                        </div>
                     </div>
-                    <div className="ft-field-group">
-                        <label className="ft-label">PROBLEM STATEMENT <span className="ft-required">*</span></label>
-                        <textarea className="ft-textarea" style={{ minHeight: 60 }} placeholder="Crystal clear, razor-sharp. Why is this the most important thing to address NOW? What measurable outcome defines success?" value={br.problemStatement} onChange={e => ub('problemStatement', e.target.value)} />
-                    </div>
-                </div>
+                )}
 
                 {/* Phase 2: Deconstruct (5 min) */}
-                <div style={{ borderLeft: '4px solid #F59E0B', paddingLeft: 16, marginBottom: 32 }}>
-                    <div className="numbered-section" style={{ marginBottom: 12 }}>2. DECONSTRUCT THE PROBLEM (5 MIN)</div>
-                    <div className="ft-field-group">
-                        <label className="ft-label">FIRST PRINCIPLES</label>
-                        <textarea className="ft-textarea" style={{ minHeight: 60 }} placeholder="What do we know to be absolutely true? What assumptions haven't we validated? If we ignored conventional approaches, how would we start from scratch?" value={br.firstPrinciples} onChange={e => ub('firstPrinciples', e.target.value)} />
+                <AccordionButton sectionId="deconstruct" label="2. Deconstruct the Problem (5 min)" />
+                {openSection === 'deconstruct' && (
+                    <div style={{ borderLeft: '4px solid #F59E0B', paddingLeft: 16, marginBottom: 16, border: '2px solid #000', borderLeft: '4px solid #F59E0B', padding: 20 }}>
+                        <div className="ft-field-group">
+                            <label className="ft-label">FIRST PRINCIPLES</label>
+                            <textarea className="ft-textarea" style={{ minHeight: 60 }} placeholder="What do we know to be absolutely true? What assumptions haven't we validated? If we ignored conventional approaches, how would we start from scratch?" value={br.firstPrinciples} onChange={e => ub('firstPrinciples', e.target.value)} />
+                        </div>
+                        <div className="ft-field-group">
+                            <label className="ft-label">THEORY OF CONSTRAINTS</label>
+                            <textarea className="ft-textarea" style={{ minHeight: 60 }} placeholder="What is the single biggest bottleneck? Is it internal or external? If we addressed ONLY this constraint, how much would the problem improve?" value={br.constraint} onChange={e => ub('constraint', e.target.value)} />
+                        </div>
+                        <div className="ft-field-group" style={{ marginBottom: 0 }}>
+                            <label className="ft-label">LAW OF SUBTRACTION</label>
+                            <textarea className="ft-textarea" style={{ minHeight: 60 }} placeholder="What can we REMOVE or STOP doing that would simplify the problem? What would this look like with a clean slate?" value={br.subtraction} onChange={e => ub('subtraction', e.target.value)} />
+                        </div>
                     </div>
-                    <div className="ft-field-group">
-                        <label className="ft-label">THEORY OF CONSTRAINTS</label>
-                        <textarea className="ft-textarea" style={{ minHeight: 60 }} placeholder="What is the single biggest bottleneck? Is it internal or external? If we addressed ONLY this constraint, how much would the problem improve?" value={br.constraint} onChange={e => ub('constraint', e.target.value)} />
-                    </div>
-                    <div className="ft-field-group">
-                        <label className="ft-label">LAW OF SUBTRACTION</label>
-                        <textarea className="ft-textarea" style={{ minHeight: 60 }} placeholder="What can we REMOVE or STOP doing that would simplify the problem? What would this look like with a clean slate?" value={br.subtraction} onChange={e => ub('subtraction', e.target.value)} />
-                    </div>
-                </div>
+                )}
 
                 {/* Phase 3: Root Cause (10 min) */}
-                <div style={{ borderLeft: '4px solid #DC2626', paddingLeft: 16, marginBottom: 32 }}>
-                    <div className="numbered-section" style={{ marginBottom: 12 }}>3. ROOT CAUSE — 5 WHYS (10 MIN)</div>
-                    {[1, 2, 3, 4, 5].map(n => (
-                        <div key={n} className="ft-field-group">
-                            <label className="ft-label">WHY #{n}</label>
-                            <input className="ft-input" placeholder={n === 1 ? 'Why does this issue exist?' : `Why? (dig deeper from #${n - 1})`} value={br[`why${n}`]} onChange={e => ub(`why${n}`, e.target.value)} />
+                <AccordionButton sectionId="rootcause" label="3. Root Cause — 5 Whys (10 min)" />
+                {openSection === 'rootcause' && (
+                    <div style={{ borderLeft: '4px solid #DC2626', paddingLeft: 16, marginBottom: 16, border: '2px solid #000', borderLeft: '4px solid #DC2626', padding: 20 }}>
+                        {[1, 2, 3, 4, 5].map(n => (
+                            <div key={n} className="ft-field-group">
+                                <label className="ft-label">WHY #{n}</label>
+                                <input className="ft-input" placeholder={n === 1 ? 'Why does this issue exist?' : `Why? (dig deeper from #${n - 1})`} value={br[`why${n}`]} onChange={e => ub(`why${n}`, e.target.value)} />
+                            </div>
+                        ))}
+                        <div className="ft-field-group">
+                            <label className="ft-label">80/20 INSIGHT</label>
+                            <input className="ft-input" placeholder="Which 20% of factors drive 80% of this issue's impact?" value={br.eighty20} onChange={e => ub('eighty20', e.target.value)} />
                         </div>
-                    ))}
-                    <div className="ft-field-group">
-                        <label className="ft-label">80/20 INSIGHT</label>
-                        <input className="ft-input" placeholder="Which 20% of factors drive 80% of this issue's impact?" value={br.eighty20} onChange={e => ub('eighty20', e.target.value)} />
+                        <div style={{ background: '#000', color: '#fff', padding: 20, marginTop: 16 }}>
+                            <label className="ft-label" style={{ color: '#FFF469' }}>ROOT CAUSE <span className="ft-required">*</span></label>
+                            <textarea className="ft-textarea" style={{ minHeight: 60 }} placeholder="Concise statement of the root cause(s) identified" value={br.rootCause} onChange={e => ub('rootCause', e.target.value)} />
+                        </div>
                     </div>
-                    <div style={{ background: '#000', color: '#fff', padding: 20, marginTop: 16 }}>
-                        <label className="ft-label" style={{ color: '#FFF469' }}>ROOT CAUSE <span className="ft-required">*</span></label>
-                        <textarea className="ft-textarea" style={{ minHeight: 60 }} placeholder="Concise statement of the root cause(s) identified" value={br.rootCause} onChange={e => ub('rootCause', e.target.value)} />
-                    </div>
-                </div>
+                )}
 
                 {/* Phase 4: Solutions (7 min) */}
-                <div style={{ borderLeft: '4px solid #16A34A', paddingLeft: 16, marginBottom: 32 }}>
-                    <div className="numbered-section" style={{ marginBottom: 12 }}>4. HIGH-IMPACT SOLUTIONS (7 MIN)</div>
-                    <div className="ft-field-group">
-                        <label className="ft-label">2-3 PRIORITIZED SOLUTIONS</label>
-                        <textarea className="ft-textarea" placeholder="Brainstorm solutions that directly address the bottleneck/root cause. Apply impact/easy. Apply Law of Subtraction: what's the minimum viable solution? Can it be implemented with existing resources?" value={br.solutions} onChange={e => ub('solutions', e.target.value)} />
+                <AccordionButton sectionId="solutions" label="4. High-Impact Solutions (7 min)" />
+                {openSection === 'solutions' && (
+                    <div style={{ borderLeft: '4px solid #16A34A', paddingLeft: 16, marginBottom: 16, border: '2px solid #000', borderLeft: '4px solid #16A34A', padding: 20 }}>
+                        <div className="ft-field-group" style={{ marginBottom: 0 }}>
+                            <label className="ft-label">2-3 PRIORITIZED SOLUTIONS</label>
+                            <textarea className="ft-textarea" placeholder="Brainstorm solutions that directly address the bottleneck/root cause. Apply impact/easy. Apply Law of Subtraction: what's the minimum viable solution? Can it be implemented with existing resources?" value={br.solutions} onChange={e => ub('solutions', e.target.value)} />
+                        </div>
                     </div>
-                </div>
+                )}
 
                 {/* Phase 5: WWW (3 min) */}
-                <div className="numbered-section" style={{ marginBottom: 12 }}>5. WHO / WHAT / WHEN</div>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
-                    <thead><tr style={{ background: '#000', color: '#fff' }}>
-                        <th style={{ padding: '10px 12px', fontFamily: "'Monument', monospace", fontSize: 11 }}>WHO</th>
-                        <th style={{ padding: '10px 12px', fontFamily: "'Monument', monospace", fontSize: 11 }}>WHAT</th>
-                        <th style={{ padding: '10px 12px', width: 130, fontFamily: "'Monument', monospace", fontSize: 11 }}>WHEN</th>
-                    </tr></thead>
-                    <tbody>
-                        {www.map((row, i) => (
-                            <tr key={i} style={{ borderBottom: '1px solid #E5E7EB' }}>
-                                <td style={{ padding: 4 }}><input className="ft-input" style={{ border: 'none', height: 36 }} placeholder="Owner" value={row.who} onChange={e => updateWWW(i, 'who', e.target.value)} /></td>
-                                <td style={{ padding: 4 }}><input className="ft-input" style={{ border: 'none', height: 36 }} placeholder="Action" value={row.what} onChange={e => updateWWW(i, 'what', e.target.value)} /></td>
-                                <td style={{ padding: 4 }}><input className="ft-input" type="date" style={{ border: 'none', height: 36, fontSize: 13 }} value={row.when} onChange={e => updateWWW(i, 'when', e.target.value)} /></td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                <AccordionButton sectionId="www" label="5. Who / What / When" />
+                {openSection === 'www' && (
+                    <div style={{ border: '2px solid #000', padding: 20, marginBottom: 16 }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+                            <thead><tr style={{ background: '#000', color: '#fff' }}>
+                                <th style={{ padding: '10px 12px', fontFamily: "'Monument', monospace", fontSize: 11 }}>WHO</th>
+                                <th style={{ padding: '10px 12px', fontFamily: "'Monument', monospace", fontSize: 11 }}>WHAT</th>
+                                <th style={{ padding: '10px 12px', width: 130, fontFamily: "'Monument', monospace", fontSize: 11 }}>WHEN</th>
+                            </tr></thead>
+                            <tbody>
+                                {www.map((row, i) => (
+                                    <tr key={i} style={{ borderBottom: '1px solid #E5E7EB' }}>
+                                        <td style={{ padding: 4 }}><input className="ft-input" style={{ border: 'none', height: 36 }} placeholder="Owner" value={row.who} onChange={e => updateWWW(i, 'who', e.target.value)} /></td>
+                                        <td style={{ padding: 4 }}><input className="ft-input" style={{ border: 'none', height: 36 }} placeholder="Action" value={row.what} onChange={e => updateWWW(i, 'what', e.target.value)} /></td>
+                                        <td style={{ padding: 4 }}><input className="ft-input" type="date" style={{ border: 'none', height: 36, fontSize: 13 }} value={row.when} onChange={e => updateWWW(i, 'when', e.target.value)} /></td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
                 <WarningBox>Rules: Use a timer to stay within time limits. Assign a strong moderator to maintain focus and flow.</WarningBox>
             </div>
         );
