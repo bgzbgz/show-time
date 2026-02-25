@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Impact/Easy Matrix | Fast Track</title>
-    
+    <title>Goals, Priorities & Planning | Fast Track</title>
+
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -19,142 +19,558 @@
     <script src="../../shared/js/cognitive-load.js"></script>
     <script src="../../js/tool-access-control.js"></script>
 
+    <!-- Font preloading to prevent FOUT -->
+    <link rel="preload" href="Plaak3Trial-43-Bold.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="RiformaLL-Regular.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="MonumentGrotesk-Mono.woff2" as="font" type="font/woff2" crossorigin>
+
     <style>
-        @font-face {
-            font-family: 'Plaak';
-            src: url('Plaak3Trial-43-Bold.woff2') format('woff2');
-            font-weight: bold;
-        }
+        /* === FONT FACES === */
+        @font-face { font-family: 'Plaak'; src: url('Plaak3Trial-43-Bold.woff2') format('woff2'); font-weight: bold; font-display: swap; }
+        @font-face { font-family: 'Riforma'; src: url('RiformaLL-Regular.woff2') format('woff2'); font-weight: normal; font-display: swap; }
+        @font-face { font-family: 'Riforma'; src: url('RiformaLL-Regular.woff2') format('woff2'); font-weight: 600; font-display: swap; }
+        @font-face { font-family: 'Monument'; src: url('MonumentGrotesk-Mono.woff2') format('woff2'); font-display: swap; }
 
-        @font-face {
-            font-family: 'Riforma';
-            src: url('RiformaLL-Regular.woff2') format('woff2');
-            font-weight: normal;
-        }
-
-        @font-face {
-            font-family: 'Monument';
-            src: url('MonumentGrotesk-Mono.woff2') format('woff2');
-            font-weight: normal;
-        }
-
+        /* === BASE RESET === */
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
         body {
             font-family: 'Riforma', -apple-system, sans-serif;
             font-size: 16px;
-            color: #000000;
-            background: #FFFFFF;
+            color: #000;
+            background: #000;
             -webkit-font-smoothing: antialiased;
         }
 
-        .plaak {
-            font-family: 'Plaak', sans-serif;
-            font-weight: bold;
-            letter-spacing: -0.01em;
-            line-height: 1.2;
+        /* === CUSTOM SCROLLBAR === */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #000; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #333; }
+        * { scrollbar-width: thin; scrollbar-color: #000 transparent; }
+
+        /* === TYPOGRAPHY HELPERS === */
+        .plaak { font-family: 'Plaak', sans-serif; font-weight: bold; letter-spacing: -0.01em; line-height: 1.2; }
+        .monument { font-family: 'Monument', monospace; letter-spacing: 0.05em; }
+
+        /* === LAYOUT FRAME === */
+        .tool-frame { background: #fff; min-height: 100vh; }
+        .tool-inner { background: #fff; min-height: 100vh; }
+
+        /* === WIZARD LAYOUT === */
+        .wizard-layout { display: flex; min-height: 100vh; }
+        .wizard-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background: #fff;
+        }
+        .wizard-content {
+            max-width: 720px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 48px 32px;
+            flex: 1;
         }
 
-        .worksheet-input {
-            border: 1px solid #E0E0E0;
+        /* === SIDEBAR === */
+        .wizard-sidebar {
+            width: 280px;
+            background: #000;
+            border-left: 1px solid #000;
+            flex-shrink: 0;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .wizard-sidebar-inner {
+            padding: 32px 24px;
+            height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        .sidebar-step-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            border-left: 3px solid transparent;
+            transition: all 0.2s ease;
+        }
+        .sidebar-step-item.active { border-left-color: #FFF469; background: #222; }
+        .sidebar-step-item.completed { background: #fff; color: #000; border-left-color: #fff; cursor: pointer; }
+        .sidebar-step-item.completed:hover { background: #E0E0E0; }
+        .sidebar-step-item.locked { opacity: 0.5; }
+        .sidebar-step-item .step-num { font-family: 'Riforma', sans-serif; font-size: 14px; }
+        .sidebar-step-item .step-name { font-family: 'Riforma', sans-serif; font-size: 14px; }
+        .sidebar-snippet { font-size: 12px; margin-top: 4px; opacity: 0.7; line-height: 1.3; }
+
+        /* === STEP HEADER === */
+        .step-indicator {
+            font-family: 'Monument', monospace;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #6B7280;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .step-time {
+            font-family: 'Monument', monospace;
+            font-size: 11px;
+            color: #6B7280;
+        }
+        .step-heading {
+            font-family: 'Plaak', sans-serif;
+            font-weight: bold;
+            font-size: 32px;
+            text-transform: uppercase;
+            letter-spacing: -0.01em;
+            line-height: 1.2;
+            color: #000;
+            margin-bottom: 6px;
+        }
+        .step-hint {
+            font-size: 16px;
+            color: #6B7280;
+            line-height: 1.5;
+            margin: 0 0 32px 0;
+        }
+
+        /* === FORM ELEMENTS === */
+        .ft-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: 'Monument', monospace;
+            font-size: 14px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #000;
+            margin-bottom: 8px;
+        }
+        .ft-required { color: #DC2626; font-weight: 700; }
+
+        .ft-input {
+            width: 100%;
+            height: 44px;
+            padding: 8px 16px;
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
+            color: #000;
+            background: #fff;
+            border: 1px solid #E5E7EB;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .ft-input:focus {
+            outline: none;
+            border-color: #000;
+            box-shadow: 0 0 0 3px #FFF469;
+        }
+        .ft-input.has-error {
+            border: 2px solid #DC2626;
+        }
+
+        .ft-textarea {
+            width: 100%;
+            min-height: 120px;
             padding: 12px 16px;
             font-family: 'Riforma', sans-serif;
             font-size: 16px;
-            transition: border-color 0.2s ease;
-            background: #FFFFFF;
+            color: #000;
+            background: #fff;
+            border: 1px solid #E5E7EB;
+            resize: vertical;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .ft-textarea:focus {
+            outline: none;
+            border-color: #000;
+            box-shadow: 0 0 0 3px #FFF469;
+        }
+
+        .ft-help {
+            font-size: 14px;
+            color: #6B7280;
+            margin-top: 4px;
+            line-height: 1.5;
+        }
+        .ft-error-msg {
+            font-size: 14px;
+            font-weight: 600;
+            color: #DC2626;
+            margin-top: 4px;
+            line-height: 1.4;
+        }
+        .ft-field-group {
+            margin-bottom: 24px;
+        }
+        .ft-field-group:last-child { margin-bottom: 0; }
+        .ft-section { margin-bottom: 32px; }
+
+        /* === YELLOW INSIGHT BOX === */
+        .ft-insight {
+            background: #FFF469;
+            border: 3px solid #000;
+            padding: 16px;
+            margin-bottom: 32px;
+        }
+
+        /* === EXAMPLE BOX === */
+        .ft-example {
+            background: #F3F4F6;
+            padding: 16px;
+            margin-bottom: 8px;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #1F2937;
+        }
+
+        /* === ERROR SUMMARY === */
+        .ft-error-summary {
+            border: 2px solid #DC2626;
+            background: #fff;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        /* === BUTTON FOOTER === */
+        .btn-footer {
+            position: sticky;
+            bottom: 0;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 32px;
+            border-top: 1px solid #E5E7EB;
+            background: #fff;
             width: 100%;
         }
-
-        .worksheet-input:focus {
-            outline: none;
-            border-color: #000000;
-        }
-
-        .numbered-section {
-            background: #000000;
-            color: #FFFFFF;
-            padding: 10px 16px;
-            font-size: 18px;
-            font-weight: bold;
-            letter-spacing: 0.5px;
-            display: inline-block;
-        }
-
-        .btn-primary {
-            background: #000000;
-            color: #FFFFFF;
+        .btn-back {
+            background: #fff;
+            color: #000;
+            border: 2px solid #000;
             padding: 12px 24px;
-            border: 2px solid #000000;
             font-family: 'Riforma', sans-serif;
             font-size: 16px;
             cursor: pointer;
             transition: all 0.2s ease;
+            min-height: 44px;
         }
-
-        .btn-primary:hover:not(:disabled) {
-            transform: scale(1.02);
-        }
-
-        .btn-primary:disabled {
-            background: #E0E0E0;
-            border-color: #E0E0E0;
-            color: #9CA3AF;
-            cursor: not-allowed;
-            opacity: 0.5;
-        }
-
-        .btn-secondary {
-            background: #FFFFFF;
-            color: #000000;
+        .btn-back:hover { background: #F3F4F6; }
+        .btn-next {
+            background: #000;
+            color: #fff;
+            border: 2px solid #000;
             padding: 12px 24px;
-            border: 2px solid #000000;
             font-family: 'Riforma', sans-serif;
             font-size: 16px;
             cursor: pointer;
             transition: all 0.2s ease;
+            min-height: 44px;
+        }
+        .btn-next:hover:not(:disabled) { transform: scale(1.02); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .btn-next:disabled { background: #E5E7EB; color: #9CA3AF; border-color: #E5E7EB; cursor: not-allowed; }
+
+        /* === MOBILE STEP BAR === */
+        .mobile-step-bar { display: none; padding: 12px 16px; border-bottom: 1px solid #E5E7EB; background: #F3F4F6; }
+        .mobile-step-bar .bar-text { font-family: 'Monument', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #6B7280; margin-bottom: 6px; }
+        .mobile-progress { height: 3px; background: #E5E7EB; width: 100%; }
+        .mobile-progress-fill { height: 100%; background: #000; transition: width 0.3s ease; }
+
+        /* === ANIMATIONS === */
+        @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .animate-in { animation: fadeSlideIn 0.3s ease-out; }
+
+        /* === PRINT === */
+        @media print { .no-print { display: none !important; } }
+
+        /* === RESPONSIVE === */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .wizard-sidebar { width: 220px; }
+            .wizard-sidebar-inner { padding: 24px 16px; }
+        }
+        @media (max-width: 768px) {
+            .wizard-sidebar { display: none; }
+            .mobile-step-bar { display: block; }
+            .wizard-content { padding: 24px 16px; }
+            .step-heading { font-size: 24px; }
+            .btn-footer { padding: 12px 16px; }
+        }
+        @media (max-width: 480px) {
+            .step-heading { font-size: 20px; }
+            .wizard-content { padding: 20px 12px; }
         }
 
-        .btn-secondary:hover { background: #F8F8F8; }
-
+        /* === TOOL-SPECIFIC: Score Badge === */
         .score-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 40px;
+            padding: 6px 14px;
+            border-radius: 6px;
             font-weight: bold;
-            font-size: 14px;
+            font-size: 18px;
+            font-family: 'Plaak', sans-serif;
         }
-
         .score-high { background: #10B981; color: white; }
         .score-medium { background: #F59E0B; color: white; }
         .score-low { background: #EF4444; color: white; }
 
-        .animate-in {
-            animation: slideIn 0.3s ease-out;
+        /* === TOOL-SPECIFIC: Priority Row === */
+        .priority-row { transition: background-color 0.2s ease; }
+        .priority-row:hover { background-color: #F9FAFB; }
+
+        /* === TOOL-SPECIFIC: Checklist Toggle === */
+        .checklist-toggle {
+            display: flex;
+            gap: 0;
+            border: 2px solid #E5E7EB;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .checklist-toggle button {
+            flex: 1;
+            padding: 8px 16px;
+            font-family: 'Riforma', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 60px;
+            background: #fff;
+            color: #9CA3AF;
+        }
+        .checklist-toggle button.toggle-yes {
+            border-right: 1px solid #E5E7EB;
+        }
+        .checklist-toggle button.toggle-no {
+            border-left: 1px solid #E5E7EB;
+        }
+        .checklist-toggle button.active-yes {
+            background: #10B981;
+            color: #fff;
+        }
+        .checklist-toggle button.active-no {
+            background: #EF4444;
+            color: #fff;
         }
 
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        /* === TOOL-SPECIFIC: Elephant Card === */
+        .elephant-card {
+            border: 2px solid #000;
+            margin-bottom: 24px;
+        }
+        .elephant-card-header {
+            background: #000;
+            color: #fff;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .elephant-card-body {
+            padding: 16px;
+        }
+        .elephant-step-row {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #F3F4F6;
+        }
+        .elephant-step-row:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        .elephant-step-num {
+            width: 28px;
+            height: 28px;
+            min-width: 28px;
+            background: #000;
+            color: #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Monument', monospace;
+            font-size: 11px;
+            font-weight: bold;
+            margin-top: 8px;
+        }
+        .elephant-step-fields {
+            flex: 1;
+            display: flex;
+            gap: 12px;
+        }
+        .elephant-step-fields .ft-input {
+            flex: 1;
+        }
+        .elephant-step-fields input[type="date"] {
+            width: 160px;
+            min-width: 140px;
+            height: 44px;
+            padding: 8px 12px;
+            font-family: 'Riforma', sans-serif;
+            font-size: 14px;
+            color: #000;
+            background: #fff;
+            border: 1px solid #E5E7EB;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .elephant-step-fields input[type="date"]:focus {
+            outline: none;
+            border-color: #000;
+            box-shadow: 0 0 0 3px #FFF469;
         }
 
-        @media print { .no-print { display: none; } }
-
-        .cover-overlay {
-            background: linear-gradient(to bottom, rgba(0,0,0,0.4), rgba(0,0,0,0.7));
-        }
-
-        .priority-row {
+        /* === TOOL-SPECIFIC: Checklist Item === */
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            border: 1px solid #E5E7EB;
+            margin-bottom: 8px;
             transition: background-color 0.2s ease;
         }
+        .checklist-item:hover {
+            background: #FAFAFA;
+        }
+        .checklist-item .checklist-text {
+            flex: 1;
+            font-size: 15px;
+            line-height: 1.5;
+        }
 
-        .priority-row:hover {
-            background-color: #F9FAFB;
+        /* === TOOL-SPECIFIC: Score Summary === */
+        .score-summary {
+            padding: 20px 24px;
+            border: 2px solid #000;
+            text-align: center;
+            margin-top: 24px;
+            margin-bottom: 24px;
+        }
+        .score-summary .score-number {
+            font-family: 'Plaak', sans-serif;
+            font-size: 48px;
+            font-weight: bold;
+            line-height: 1;
+        }
+        .score-summary .score-label {
+            font-family: 'Monument', monospace;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 4px;
+        }
+        .score-strong { border-color: #10B981; }
+        .score-strong .score-number { color: #10B981; }
+        .score-strong .score-label { color: #10B981; }
+        .score-needs-work { border-color: #F59E0B; }
+        .score-needs-work .score-number { color: #F59E0B; }
+        .score-needs-work .score-label { color: #F59E0B; }
+        .score-critical { border-color: #EF4444; }
+        .score-critical .score-number { color: #EF4444; }
+        .score-critical .score-label { color: #EF4444; }
+
+        /* === TOOL-SPECIFIC: Signs Box === */
+        .signs-box {
+            padding: 16px;
+            margin-bottom: 24px;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+        .signs-box.signs-good {
+            background: #f0fdf4;
+            border-left: 4px solid #10B981;
+        }
+        .signs-box.signs-bad {
+            background: #fef2f2;
+            border-left: 4px solid #EF4444;
+        }
+
+        /* === TOOL-SPECIFIC: Top Priority Star === */
+        .top-priority-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: #FFF469;
+            color: #000;
+            padding: 2px 8px;
+            font-family: 'Monument', monospace;
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* === TOOL-SPECIFIC: Quick Wins Box === */
+        .quick-wins-box {
+            border: 2px solid #10B981;
+            background: #f0fdf4;
+            padding: 16px;
+            margin-top: 24px;
+            margin-bottom: 24px;
+        }
+        .quick-wins-box h4 {
+            font-family: 'Plaak', sans-serif;
+            font-size: 18px;
+            color: #10B981;
+            margin-bottom: 12px;
+        }
+        .quick-win-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 0;
+            border-bottom: 1px solid #d1fae5;
+        }
+        .quick-win-item:last-child { border-bottom: none; }
+
+        /* === Review section === */
+        .review-section {
+            border: 1px solid #E5E7EB;
+            margin-bottom: 24px;
+        }
+        .review-section-header {
+            background: #F3F4F6;
+            padding: 12px 16px;
+            font-family: 'Plaak', sans-serif;
+            font-size: 18px;
+            text-transform: uppercase;
+            border-bottom: 1px solid #E5E7EB;
+        }
+        .review-section-body {
+            padding: 16px;
+        }
+
+        @media (max-width: 768px) {
+            .elephant-step-fields {
+                flex-direction: column;
+            }
+            .elephant-step-fields input[type="date"] {
+                width: 100%;
+            }
+            .checklist-item {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+            }
         }
     </style>
 </head>
 <body>
     <div id="root"></div>
-    
+
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
@@ -180,6 +596,173 @@
         CognitiveLoad.init('goals', {"insights":["Goals without alignment are chaos. Every goal must connect to the dream.","OKRs work because they create transparency and focus. Maximum 3-5 objectives per quarter."],"caseStudy":{"before":"A mid-size tech company had 47 scattered goals across departments with no alignment to a central strategy. Teams duplicated effort, pulled in conflicting directions, and only 20% of goals were completed each quarter.","after":"Using the Impact/Easy Matrix, leadership narrowed focus to 3 company-level OKRs broken into quarterly priorities. Goal completion rate jumped from 20% to 75%, and cross-team alignment improved dramatically within one cycle.","quote":"When we stopped trying to do everything, we finally started achieving the things that mattered. Fewer goals meant better goals."}});
         const { FastTrackInsight, ScienceBox, WarningBox, CaseStudy, ScienceBookmarkIcon, ToolGuideDrawer } = CognitiveLoad.components;
 
+        /* VP-style transition content between steps */
+        const TRANSITION_CONTENT = {
+            1: {
+                title: 'IDEAS SCORED.',
+                text: "You've brainstormed and rated your actions. Now see them ranked by real priority -- impact meets ease of execution.",
+                brutalTruth: "Most leaders rate everything as 'high impact' to avoid making hard choices. The matrix forces honest differentiation. If every idea scores 7+, you haven't done the work. Go back and make real trade-offs.",
+                peerProof: "Locke and Latham's goal-setting research shows that specific, challenging goals lead to 90% better performance than vague 'do your best' targets. Companies using structured prioritization matrices report 25% higher follow-through rates."
+            },
+            2: {
+                title: 'PRIORITIES LOCKED.',
+                text: "Your top actions are identified. Now break them into bite-sized steps.",
+                brutalTruth: "Having priorities without an execution plan is just wishful thinking. 'Cut the Elephant' forces you to define the first step so simply that starting becomes inevitable.",
+                peerProof: "Research shows that breaking goals into specific sub-tasks increases completion rates by 44%. Teams that define the first step as 'embarrassingly easy' start 3x faster than those who plan complex rollouts."
+            },
+            3: {
+                title: 'ELEPHANTS CUT.',
+                text: "Your big priorities are now bite-sized. Time to check if your team has the accountability muscle to execute.",
+                brutalTruth: "Teams lacking accountability see project failure rates increase by 30%. The checklist doesn't lie -- if you're answering 'No' more than 'Yes', your priorities won't get done no matter how well they're planned.",
+                peerProof: "Teams with high accountability show 50% higher performance than those without. They achieve targets consistently and drive growth (Fast Track research across 200+ leadership teams)."
+            },
+            4: {
+                title: 'ACCOUNTABILITY ASSESSED.',
+                text: "Now check if your priorities actually align with where the company is headed.",
+                brutalTruth: "Misalignment costs companies 33% in employee morale and 29% in profitability. If your team's priorities don't connect to company strategy, you're running fast in the wrong direction.",
+                peerProof: "Organizations with highly aligned teams are 72% more likely to achieve project success. Alignment not only streamlines efforts but maximizes resource utilization."
+            }
+        };
+
+        /* ============================================================
+           SHARED COMPONENTS
+           ============================================================ */
+
+        function CheckIcon({ color = "#fff", size = 16 }) {
+            return <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>;
+        }
+
+        function ButtonFooter({ onBack, onNext, nextLabel = 'Next', showBack = true, disabled = false }) {
+            return (
+                <div className="btn-footer no-print">
+                    {showBack ? <button className="btn-back" onClick={onBack}>&larr; Back</button> : <div />}
+                    <button className="btn-next" disabled={disabled} onClick={onNext}>{nextLabel} &rarr;</button>
+                </div>
+            );
+        }
+
+        function MobileStepBar({ currentStep, totalSteps }) {
+            const total = totalSteps || 5;
+            const progress = currentStep >= 999 ? 100 : Math.round((currentStep / total) * 100);
+            return (
+                <div className="mobile-step-bar no-print">
+                    <div className="bar-text">Step {Math.min(currentStep, total)} of {total}</div>
+                    <div className="mobile-progress"><div className="mobile-progress-fill" style={{ width: `${progress}%` }} /></div>
+                </div>
+            );
+        }
+
+        function CoachFeedbackPanel() {
+            const [expanded, setExpanded] = useState(false);
+            const [feedback, setFeedback] = useState(null);
+
+            useEffect(() => {
+                const check = () => {
+                    if (window.AIChallenge && window.AIChallenge.getLastFeedback) {
+                        setFeedback(window.AIChallenge.getLastFeedback());
+                    }
+                };
+                check();
+                const interval = setInterval(check, 2000);
+                return () => clearInterval(interval);
+            }, []);
+
+            if (!feedback) return null;
+
+            return (
+                <div style={{ marginTop: 24, borderTop: '1px solid #333', paddingTop: 16 }}>
+                    <button
+                        onClick={() => setExpanded(!expanded)}
+                        style={{ background: 'none', border: 'none', color: '#FFF469', cursor: 'pointer', fontFamily: "'Monument', monospace", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 6, padding: 0, width: '100%' }}
+                    >
+                        <span style={{ transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s', display: 'inline-block' }}>&#9654;</span>
+                        COACH FEEDBACK
+                    </button>
+                    {expanded && (
+                        <div style={{ marginTop: 10, fontSize: 12, color: '#ccc', lineHeight: 1.5 }}>
+                            {feedback.type === 'approved' && <p style={{ color: '#FFF469' }}>{feedback.message}</p>}
+                            {feedback.type === 'challenges' && (
+                                <>
+                                    {feedback.encouragement && <p style={{ color: '#FFF469', marginBottom: 8 }}>{feedback.encouragement}</p>}
+                                    {feedback.challenges && feedback.challenges.map((ch, i) => (
+                                        <div key={i} style={{ marginBottom: 8, paddingLeft: 8, borderLeft: '2px solid #555' }}>
+                                            <div style={{ fontSize: 10, color: '#999', marginBottom: 2 }}>{ch.question_text || ch.question_key}</div>
+                                            <div>{ch.feedback}</div>
+                                        </div>
+                                    ))}
+                                </>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        function WizardSidebar({ currentStep, formData, onNavigate, getSortedIdeas }) {
+            const steps = [
+                { num: 1, label: 'Brainstorm & Rate', time: '~15 min' },
+                { num: 2, label: 'Priority Rankings', time: '~5 min' },
+                { num: 3, label: 'Cut the Elephant', time: '~15 min' },
+                { num: 4, label: 'Accountability', time: '~5 min' },
+                { num: 5, label: 'Alignment', time: '~5 min' },
+                { num: 6, label: 'Review & Submit', time: '~5 min' }
+            ];
+
+            const getSnippet = (n) => {
+                if (n === 1) {
+                    const validIdeas = formData.ideas.filter(i => i.idea.trim().length > 0);
+                    if (validIdeas.length > 0) return validIdeas.length + ' idea' + (validIdeas.length !== 1 ? 's' : '') + ' rated';
+                }
+                if (n === 2) return 'View rankings';
+                if (n === 3) {
+                    const filled = formData.elephants.filter(e => e.steps[0] && e.steps[0].action.trim().length > 0);
+                    if (filled.length > 0) return filled.length + ' priorit' + (filled.length !== 1 ? 'ies' : 'y') + ' broken down';
+                }
+                if (n === 4) {
+                    const answered = formData.accountabilityChecks.filter(c => c !== null).length;
+                    if (answered > 0) return answered + '/8 answered';
+                }
+                if (n === 5) {
+                    const answered = formData.alignmentChecks.filter(c => c !== null).length;
+                    if (answered > 0) return answered + '/8 answered';
+                }
+                if (n === 6) return 'Final review';
+                return null;
+            };
+
+            return (
+                <div className="wizard-sidebar no-print">
+                    <div className="wizard-sidebar-inner">
+                        <div style={{ marginBottom: 24 }}>
+                            <div className="monument" style={{ fontSize: 12, textTransform: 'uppercase', color: '#fff', marginBottom: 4 }}>GOALS & PRIORITIES</div>
+                            <div style={{ fontSize: 13, color: '#999' }}>~50 min total</div>
+                        </div>
+                        <div style={{ marginBottom: 16, fontFamily: "'Monument', monospace", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#999' }}>Your journey</div>
+                        {steps.map(s => {
+                            const effectiveStep = Math.ceil(currentStep);
+                            const isCompleted = effectiveStep > s.num, isActive = effectiveStep === s.num, isLocked = effectiveStep < s.num;
+                            const snippet = isCompleted ? getSnippet(s.num) : null;
+                            return (
+                                <div key={s.num} className={`sidebar-step-item ${isCompleted ? 'completed' : ''} ${isActive ? 'active' : ''} ${isLocked ? 'locked' : ''}`}
+                                    onClick={() => isCompleted && onNavigate && onNavigate(s.num)}
+                                    title={isCompleted ? 'Click to review this step' : ''}
+                                >
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                        {isCompleted ? <CheckIcon color="#000" size={14} /> : <span className="step-num" style={{ color: isActive ? '#fff' : '#ccc' }}>{String(s.num).padStart(2, '0')}</span>}
+                                        <span className="step-name" style={{ color: isLocked ? '#666' : isCompleted ? '#000' : '#fff' }}>{s.label}</span>
+                                    </div>
+                                    <div style={{ fontSize: 11, color: isLocked ? '#555' : isCompleted ? '#666' : '#888', marginTop: 2, paddingLeft: 24 }}>{s.time}</div>
+                                    {snippet && <div className="sidebar-snippet">{snippet}</div>}
+                                </div>
+                            );
+                        })}
+
+                        <CoachFeedbackPanel />
+                    </div>
+                </div>
+            );
+        }
+
         function DependencyContext({ deps }) {
             if (!deps || deps.length === 0) return null;
             return (
@@ -197,16 +780,43 @@
             );
         }
 
-        const ImpactEasyMatrix = () => {
+        /* ============================================================
+           CHECKLIST TOGGLE COMPONENT
+           ============================================================ */
+        function ChecklistToggle({ value, onChange }) {
+            return (
+                <div className="checklist-toggle">
+                    <button
+                        type="button"
+                        className={`toggle-yes ${value === true ? 'active-yes' : ''}`}
+                        onClick={() => onChange(value === true ? null : true)}
+                    >Yes</button>
+                    <button
+                        type="button"
+                        className={`toggle-no ${value === false ? 'active-no' : ''}`}
+                        onClick={() => onChange(value === false ? null : false)}
+                    >No</button>
+                </div>
+            );
+        }
+
+        /* ============================================================
+           MAIN APP COMPONENT
+           ============================================================ */
+        const GoalsPrioritiesPlanning = () => {
             const [deps, setDeps] = useState([]);
             const [step, setStep] = useState(0);
-            const [userEmail, setUserEmail] = useState('');
             const [formData, setFormData] = useState({
-                ideas: Array(20).fill(null).map(() => ({ 
-                    idea: '', 
-                    impact: 3, 
-                    easy: 3 
+                ideas: Array(20).fill(null).map(() => ({
+                    idea: '',
+                    impact: 0,
+                    easy: 0
                 })),
+                elephants: [],
+                accountabilityChecks: Array(8).fill(null),
+                accountabilityAction: '',
+                alignmentChecks: Array(8).fill(null),
+                alignmentAction: ''
             });
 
             useEffect(() => {
@@ -222,7 +832,7 @@
                         for (const field of toolConfig.fields) {
                             const val = await ToolDB.getDependency(userId, field.source_field);
                             if (val) {
-                                loaded.push({ label: field.display_label || field.source_field, value: typeof val === 'object' ? JSON.stringify(val, null, 2) : String(val) });
+                                loaded.push({ label: field.display_label || field.source_field, value: window.DependencyInjection ? DependencyInjection.formatValue(val) : (typeof val === 'object' ? JSON.stringify(val, null, 2) : String(val)) });
                             }
                         }
                         setDeps(loaded);
@@ -239,8 +849,17 @@
                 if (saved) {
                     try {
                         const parsed = JSON.parse(saved);
-                        if (parsed.formData) setFormData(parsed.formData);
-                        if (parsed.userEmail) setUserEmail(parsed.userEmail);
+                        if (parsed.formData) {
+                            setFormData(prev => ({
+                                ...prev,
+                                ...parsed.formData,
+                                // Ensure arrays exist with correct lengths
+                                ideas: parsed.formData.ideas || prev.ideas,
+                                elephants: parsed.formData.elephants || prev.elephants,
+                                accountabilityChecks: parsed.formData.accountabilityChecks || prev.accountabilityChecks,
+                                alignmentChecks: parsed.formData.alignmentChecks || prev.alignmentChecks
+                            }));
+                        }
                     } catch (e) {}
                 }
             }, []);
@@ -248,25 +867,26 @@
             // Auto-save
             useEffect(() => {
                 const timer = setTimeout(() => {
-                    if (userEmail) {
+                    const userId = localStorage.getItem('ft_user_id');
+                    if (userId) {
                         localStorage.setItem('sprint08_goals_data', JSON.stringify({
-                            formData, step, userEmail, lastSaved: new Date().toISOString()
+                            formData, step, lastSaved: new Date().toISOString()
                         }));
                     }
                 }, CONFIG.AUTOSAVE_DELAY);
                 return () => clearTimeout(timer);
-            }, [formData, step, userEmail]);
+            }, [formData, step]);
 
             const updateIdea = (index, field, value) => {
                 setFormData(prev => ({
                     ...prev,
-                    ideas: prev.ideas.map((item, i) => 
+                    ideas: prev.ideas.map((item, i) =>
                         i === index ? { ...item, [field]: value } : item
                     )
                 }));
             };
 
-            const calculateScore = (impact, easy) => impact + easy;
+            const calculateScore = (impact, easy) => (impact * 2) + easy;
 
             const getSortedIdeas = () => {
                 return formData.ideas
@@ -275,19 +895,89 @@
                         score: calculateScore(idea.impact, idea.easy),
                         originalIndex: index
                     }))
-                    .filter(idea => idea.idea.trim().length > 0)
+                    .filter(idea => idea.idea.trim().length > 0 && idea.impact > 0 && idea.easy > 0)
                     .sort((a, b) => b.score - a.score);
             };
 
             const getScoreClass = (score) => {
-                if (score >= 5) return 'score-high';
-                if (score >= 4) return 'score-medium';
+                if (score >= 7) return 'score-high';
+                if (score >= 5) return 'score-medium';
                 return 'score-low';
             };
 
+            const getChecklistScoreClass = (score) => {
+                if (score >= 7) return 'score-strong';
+                if (score >= 4) return 'score-needs-work';
+                return 'score-critical';
+            };
+
+            const getChecklistLabel = (score) => {
+                if (score >= 7) return 'Strong';
+                if (score >= 4) return 'Needs Work';
+                return 'Critical Gap';
+            };
+
+            // Validation
             const validateStep1 = () => {
-                const validIdeas = formData.ideas.filter(i => i.idea.trim().length >= 10);
+                const validIdeas = formData.ideas.filter(i => i.idea.trim().length >= 10 && i.impact > 0 && i.easy > 0);
                 return validIdeas.length >= 5;
+            };
+
+            const validateStep3 = () => {
+                return formData.elephants.some(e =>
+                    e.steps[0] && e.steps[0].action.trim().length > 0 && e.steps[0].deadline.trim().length > 0
+                );
+            };
+
+            const validateStep4 = () => {
+                const answered = formData.accountabilityChecks.filter(c => c !== null).length;
+                return answered >= 6 && formData.accountabilityAction.trim().length > 0;
+            };
+
+            const validateStep5 = () => {
+                const answered = formData.alignmentChecks.filter(c => c !== null).length;
+                return answered >= 6 && formData.alignmentAction.trim().length > 0;
+            };
+
+            // Auto-populate elephants when moving from step 2 to step 3
+            const populateElephants = () => {
+                const sorted = getSortedIdeas().slice(0, 5);
+                setFormData(prev => ({
+                    ...prev,
+                    elephants: sorted.map(s => ({
+                        idea: s.idea,
+                        score: s.score,
+                        steps: Array(5).fill(null).map(() => ({ action: '', deadline: '' }))
+                    }))
+                }));
+            };
+
+            const updateElephantStep = (elephantIdx, stepIdx, field, value) => {
+                setFormData(prev => ({
+                    ...prev,
+                    elephants: prev.elephants.map((el, ei) =>
+                        ei === elephantIdx ? {
+                            ...el,
+                            steps: el.steps.map((s, si) =>
+                                si === stepIdx ? { ...s, [field]: value } : s
+                            )
+                        } : el
+                    )
+                }));
+            };
+
+            const updateChecklistItem = (type, index, value) => {
+                if (type === 'accountability') {
+                    setFormData(prev => ({
+                        ...prev,
+                        accountabilityChecks: prev.accountabilityChecks.map((c, i) => i === index ? value : c)
+                    }));
+                } else {
+                    setFormData(prev => ({
+                        ...prev,
+                        alignmentChecks: prev.alignmentChecks.map((c, i) => i === index ? value : c)
+                    }));
+                }
             };
 
             const [submitStatus, setSubmitStatus] = useState(null);
@@ -302,10 +992,13 @@
 
                 const sortedIdeas = getSortedIdeas();
                 const questionMappings = {
-                    quarterly_targets: formData.ideas.filter(i => i.idea.trim()),
                     impact_ease_matrix: sortedIdeas,
-                    big_rocks: sortedIdeas.slice(0, 5),
-                    elephant_breakdown: sortedIdeas.map(i => ({ idea: i.idea, impact: i.impact, easy: i.easy, score: i.score }))
+                    top_priorities: sortedIdeas.slice(0, 5),
+                    elephant_breakdowns: formData.elephants,
+                    accountability_score: formData.accountabilityChecks.filter(c => c === true).length,
+                    accountability_action: formData.accountabilityAction,
+                    alignment_score: formData.alignmentChecks.filter(c => c === true).length,
+                    alignment_action: formData.alignmentAction
                 };
                 await window.AIChallenge.submitWithChallenge(userId, CONFIG.TOOL_SLUG, questionMappings, {
                     onReviewStart: () => { setSubmitStatus('saving'); setSubmitMessage('AI coach is reviewing...'); },
@@ -315,353 +1008,781 @@
                 });
             };
 
-            // COVER PAGE
+            const goToStep = (s) => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                setStep(s);
+            };
+
+            /* ============================================================
+               COVER PAGE (step 0)
+               ============================================================ */
             if (step === 0) {
                 return (
-                    <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-black">
-                        <div className="absolute inset-0 cover-overlay"></div>
-                        <div className="relative z-10 text-center text-white px-8">
-                            <h1 className="plaak text-9xl mb-6 animate-in">IMPACT/EASY MATRIX</h1>
-                            <p className="text-3xl mb-12 animate-in" style={{animationDelay: '0.2s'}}>
-                                Prioritize actions that deliver maximum value with minimum complexity
-                            </p>
-                            <button 
-                                className="bg-white text-black plaak text-3xl px-16 py-6 border-4 border-white hover:bg-black hover:text-white transition-all duration-200 animate-in"
-                                style={{animationDelay: '0.4s'}}
-                                onClick={() => setStep(0.5)}
-                            >
-                                START
-                            </button>
+                    <div className="tool-frame">
+                        <div className="tool-inner">
+                            <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+                                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.4), rgba(0,0,0,0.7))' }} />
+                                <div style={{ position: 'relative', textAlign: 'center', color: '#fff', padding: '0 32px' }} className="animate-in">
+                                    <div className="monument" style={{ fontSize: 14, color: '#FFF469', letterSpacing: '0.1em', marginBottom: 16 }}>TOOL 08</div>
+                                    <h1 className="plaak" style={{ fontSize: 64, marginBottom: 16, textTransform: 'uppercase' }}>GOALS, PRIORITIES<br/>& PLANNING</h1>
+                                    <p style={{ fontSize: 18, color: '#ccc', marginBottom: 32 }}>Set targets, prioritize with the Impact/Easy Matrix, and break down your biggest priorities</p>
+                                    <div style={{ marginBottom: 48 }}>
+                                        <span className="monument" style={{ fontSize: 11, color: '#FFF469', letterSpacing: '0.1em', background: 'rgba(255,244,105,0.15)', padding: '6px 16px', border: '1px solid rgba(255,244,105,0.3)' }}>INDIVIDUAL TOOL</span>
+                                    </div>
+                                    <button onClick={() => goToStep(0.5)}
+                                        style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 48px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s ease', minHeight: 44 }}
+                                        onMouseOver={e => { e.target.style.background = '#FFF469'; }}
+                                        onMouseOut={e => { e.target.style.background = '#fff'; }}
+                                    >START</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 );
             }
 
-            // INTRO SCREEN
+            /* ============================================================
+               INTRO SCREEN (step 0.5)
+               ============================================================ */
             if (step === 0.5) {
                 return (
-                    <div className="bg-black text-white min-h-screen p-16">
-                        <div className="max-w-5xl mx-auto">
-                            <h1 className="plaak text-9xl mb-16 animate-in">BEFORE WE START</h1>
-                            
-                            <div className="mb-12 animate-in" style={{animationDelay: '0.05s'}}>
-                                <h2 className="plaak text-6xl mb-6">YOUR EMAIL</h2>
-                                <input
-                                    type="email"
-                                    className="worksheet-input text-3xl w-full text-black"
-                                    placeholder="your@email.com"
-                                    value={userEmail}
-                                    onChange={(e) => setUserEmail(e.target.value)}
-                                />
-                                <p className="text-xl text-gray-400 mt-3">
-                                    We'll use this to save your progress.
-                                </p>
-                            </div>
+                    <div className="tool-frame">
+                        <div className="tool-inner">
+                            <div style={{ minHeight: '100vh', background: '#000', color: '#fff', padding: 64 }}>
+                                <div style={{ maxWidth: 640, margin: '0 auto' }} className="animate-in">
+                                    <h1 className="plaak" style={{ fontSize: 64, marginBottom: 48 }}>HOW THIS TOOL WORKS</h1>
 
-                            <div className="mb-12 animate-in" style={{animationDelay: '0.1s'}}>
-                                <h2 className="plaak text-6xl mb-6">PURPOSE</h2>
-                                <p className="text-3xl leading-relaxed">
-                                    The Impact/Easy Matrix helps you cut through indecision by focusing 
-                                    your team's energy on high-impact, easy-to-implement actions. 
-                                    It's the 80/20 principle in action.
-                                </p>
-                            </div>
+                                    <div style={{ marginBottom: 48 }}>
+                                        <div style={{ fontSize: 16, lineHeight: 2.2, color: '#ccc' }}>
+                                            {[
+                                                'Set your quarterly targets, brainstorm actions, rate Impact (1-3) and Ease (1-3)',
+                                                'See your priorities ranked automatically -- top scores win',
+                                                'Cut the Elephant -- break your top 3-5 priorities into bite-sized steps',
+                                                'Accountability check -- assess your team\'s accountability habits',
+                                                'Alignment check -- verify your priorities align with company goals'
+                                            ].map((text, i) => (
+                                                <div key={i} style={{ display: 'flex', gap: 16, alignItems: 'flex-start', marginBottom: 8 }}>
+                                                    <span className="monument" style={{ color: '#FFF469', fontSize: 14, minWidth: 24, marginTop: 2 }}>{i + 1}.</span>
+                                                    <span>{text}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
 
-                            <div className="mb-16 animate-in" style={{animationDelay: '0.2s'}}>
-                                <h2 className="plaak text-6xl mb-8">HOW IT WORKS</h2>
-                                <div className="space-y-6 text-2xl">
-                                    <div className="flex items-start gap-4">
-                                        <div className="plaak text-4xl">1</div>
-                                        <p>List all potential actions or ideas</p>
+                                    <div style={{ background: '#111', border: '1px solid #333', padding: '16px 20px', marginBottom: 48, fontSize: 14, color: '#999', lineHeight: 1.6 }}>
+                                        <span className="monument" style={{ fontSize: 10, color: '#FFF469', display: 'block', marginBottom: 8 }}>ESTIMATED TIME</span>
+                                        ~50 minutes total across 5 steps. You can save and return at any time.
                                     </div>
-                                    <div className="flex items-start gap-4">
-                                        <div className="plaak text-4xl">2</div>
-                                        <p>Rate each for Impact (1-3) and Ease (1-3)</p>
-                                    </div>
-                                    <div className="flex items-start gap-4">
-                                        <div className="plaak text-4xl">3</div>
-                                        <p>Score = Impact + Easy (max 6 points)</p>
-                                    </div>
-                                    <div className="flex items-start gap-4">
-                                        <div className="plaak text-4xl">4</div>
-                                        <p>Prioritize high scores first</p>
-                                    </div>
+
+                                    <button
+                                        onClick={() => goToStep(1)}
+                                        style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 48px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                                        onMouseOver={e => { e.target.style.background = '#FFF469'; }}
+                                        onMouseOut={e => { e.target.style.background = '#fff'; }}
+                                    >LET'S START</button>
                                 </div>
                             </div>
-
-                            <button 
-                                className="btn-primary w-full text-3xl py-8 plaak animate-in" 
-                                style={{animationDelay: '0.3s'}}
-                                onClick={() => setStep(1)}
-                                disabled={!userEmail || !userEmail.includes('@')}
-                            >
-                                LET'S START →
-                            </button>
                         </div>
                     </div>
                 );
             }
 
-            // STEP 1: BRAINSTORM & RATE
-            if (step === 1) {
+            /* ============================================================
+               TRANSITION SCREENS (steps 1.5, 2.5, 3.5, 4.5)
+               ============================================================ */
+            if (step === 1.5 || step === 2.5 || step === 3.5 || step === 4.5) {
+                const tKey = Math.floor(step);
+                const t = TRANSITION_CONTENT[tKey];
+                const nextStep = tKey + 1;
+                const completedStep = tKey;
+
+                const handleContinue = () => {
+                    if (tKey === 2) {
+                        populateElephants();
+                    }
+                    goToStep(nextStep);
+                };
+
                 return (
-                    <>
-                        <DependencyContext deps={deps} />
-                        <header className="border-b-2 border-black py-6 px-8 no-print">
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <h1 className="plaak text-3xl">IMPACT/EASY MATRIX</h1>
-                                    <p className="text-sm mt-2 text-gray-600">Prioritize with precision</p>
-                                </div>
-                                <div className="text-right">
-                                    <div className="text-xs text-gray-500">Auto-saving progress</div>
-                                    <div className="text-xs text-gray-400 mt-1">{userEmail}</div>
-                                </div>
-                            </div>
-                        </header>
-
-                        <main className="p-12 max-w-7xl mx-auto">
-                            <div className="animate-in">
-                                <div className="numbered-section mb-8">[01] BRAINSTORM & RATE IDEAS</div>
-
-                                {/* Fast Track Insight */}
-                                <FastTrackInsight>
-                                    What you do is more important than how you do it. The 80/20 rule applies directly here: 20% of your actions will deliver 80% of results. Invest time rating impact and ease honestly — leaders who rigorously prioritize using this matrix focus their teams on the few critical activities that drive the most significant outcomes.
-                                </FastTrackInsight>
-
-                                {/* The Science */}
-                                <ScienceBox collapsible={true}>
-                                    Locke and Latham's goal-setting theory (1990, 2002) demonstrated that specific, challenging goals lead to 90% better performance than vague "do your best" targets. Additionally, research on the Eisenhower Matrix and impact/ease frameworks shows that structured prioritization reduces decision fatigue and improves follow-through by up to 25% (Bazerman & Moore, "Judgment in Managerial Decision Making"). Writing goals down activates deeper cognitive processing — a Dominican University study found that people who wrote goals were 42% more likely to achieve them.
-                                </ScienceBox>
-
-                                {/* Common Mistake */}
-                                <WarningBox>
-                                    The biggest mistake is listing too many ideas without honestly differentiating impact. Leaders tend to rate everything as "high impact" to avoid making hard choices. <strong>Bad:</strong> 20 vaguely worded ideas all rated 3/3, completed in 5 minutes with no real trade-offs. <strong>Good:</strong> Honest, specific actions with differentiated scores — some items deliberately rated low, forcing you to confront which activities truly move the needle.
-                                </WarningBox>
-
-                                
-                                <div className="bg-black text-white border-4 border-black p-6 mb-8">
-                                    <h3 className="plaak text-3xl mb-2">LIST YOUR IDEAS</h3>
-                                    <p className="text-xl">
-                                        Brainstorm potential actions, then rate each for Impact (1=low, 3=high) 
-                                        and Easy (1=hard, 3=easy). The tool will automatically calculate and rank them.
-                                    </p>
-                                </div>
-
-                                <div className="bg-gray-50 p-6 mb-6 border-l-4 border-black">
-                                    <h4 className="font-bold text-lg mb-2">Scoring Guide:</h4>
-                                    <div className="grid grid-cols-2 gap-6 text-sm">
-                                        <div>
-                                            <p className="font-bold mb-1">IMPACT:</p>
-                                            <p>3 = Biggest impact on goals</p>
-                                            <p>2 = Moderate impact</p>
-                                            <p>1 = Least impact</p>
-                                        </div>
-                                        <div>
-                                            <p className="font-bold mb-1">EASY:</p>
-                                            <p>3 = Very easy to implement</p>
-                                            <p>2 = Moderate difficulty</p>
-                                            <p>1 = Very difficult</p>
-                                        </div>
+                    <div className="tool-frame">
+                        <div className="tool-inner">
+                            <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <div style={{ maxWidth: 640, padding: '0 32px', textAlign: 'center', color: '#fff' }} className="animate-in">
+                                    <div className="monument" style={{ fontSize: 12, color: '#FFF469', letterSpacing: '0.1em', marginBottom: 16 }}>
+                                        STEP {completedStep} OF 5 COMPLETE
                                     </div>
-                                </div>
+                                    <h1 className="plaak" style={{ fontSize: 48, marginBottom: 12 }}>{t.title}</h1>
+                                    <p style={{ fontSize: 16, color: '#ccc', marginBottom: 48 }}>{t.text}</p>
 
-                                <table className="w-full border-2 border-black mb-8">
-                                    <thead>
-                                        <tr className="bg-black text-white">
-                                            <th className="p-4 text-left plaak text-lg w-12">#</th>
-                                            <th className="p-4 text-left plaak text-lg">Idea / Action</th>
-                                            <th className="p-4 text-center plaak text-lg w-32">Impact</th>
-                                            <th className="p-4 text-center plaak text-lg w-32">Easy</th>
-                                            <th className="p-4 text-center plaak text-lg w-32">Score</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {formData.ideas.map((idea, i) => {
-                                            const score = calculateScore(idea.impact, idea.easy);
-                                            return (
-                                                <tr key={i} className="border-t border-gray-300 priority-row">
-                                                    <td className="p-4 font-bold text-gray-500">{i + 1}</td>
-                                                    <td className="p-4">
-                                                        <input
-                                                            className="worksheet-input"
-                                                            placeholder={`Idea ${i + 1}`}
-                                                            value={idea.idea}
-                                                            onChange={(e) => updateIdea(i, 'idea', e.target.value)}
-                                                        />
-                                                    </td>
-                                                    <td className="p-4 text-center">
-                                                        <select
-                                                            className="worksheet-input text-center font-bold"
-                                                            value={idea.impact}
-                                                            onChange={(e) => updateIdea(i, 'impact', parseInt(e.target.value))}
-                                                        >
-                                                            <option value={3}>3</option>
-                                                            <option value={2}>2</option>
-                                                            <option value={1}>1</option>
-                                                        </select>
-                                                    </td>
-                                                    <td className="p-4 text-center">
-                                                        <select
-                                                            className="worksheet-input text-center font-bold"
-                                                            value={idea.easy}
-                                                            onChange={(e) => updateIdea(i, 'easy', parseInt(e.target.value))}
-                                                        >
-                                                            <option value={3}>3</option>
-                                                            <option value={2}>2</option>
-                                                            <option value={1}>1</option>
-                                                        </select>
-                                                    </td>
-                                                    <td className="p-4 text-center">
-                                                        {idea.idea.trim() && (
-                                                            <span className={`score-badge ${getScoreClass(score)}`}>
-                                                                {score}
-                                                            </span>
-                                                        )}
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })}
-                                    </tbody>
-                                </table>
+                                    <div style={{ background: '#111', border: '1px solid #333', borderLeft: '4px solid #FFF469', padding: '20px 24px', marginBottom: 24, textAlign: 'left' }}>
+                                        <span className="monument" style={{ fontSize: 10, color: '#FFF469', display: 'block', marginBottom: 8 }}>BRUTAL TRUTH</span>
+                                        <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7 }}>{t.brutalTruth}</p>
+                                    </div>
 
-                                <div className="flex justify-between">
-                                    <button className="btn-secondary text-lg py-3 px-6" onClick={() => setStep(0.5)}>← Back</button>
-                                    <button 
-                                        className="btn-primary text-xl py-4 px-8" 
-                                        onClick={() => setStep(2)} 
-                                        disabled={!validateStep1()}
-                                    >
-                                        View Priorities →
-                                    </button>
+                                    <div style={{ background: '#111', border: '1px solid #333', borderLeft: '4px solid #666', padding: '20px 24px', marginBottom: 48, textAlign: 'left' }}>
+                                        <span className="monument" style={{ fontSize: 10, color: '#999', display: 'block', marginBottom: 8 }}>PEER PROOF</span>
+                                        <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7, fontStyle: 'italic' }}>{t.peerProof}</p>
+                                    </div>
+
+                                    <button
+                                        onClick={handleContinue}
+                                        style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 48px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                                        onMouseOver={e => { e.target.style.background = '#FFF469'; }}
+                                        onMouseOut={e => { e.target.style.background = '#fff'; }}
+                                    >CONTINUE</button>
                                 </div>
-                                {!validateStep1() && (
-                                    <p className="text-red-600 text-sm mt-4 text-right">
-                                        Add at least 5 ideas (10+ characters each) to continue
-                                    </p>
-                                )}
                             </div>
-                        </main>
-                    </>
+                        </div>
+                    </div>
                 );
             }
 
-            // RESULTS PAGE
-            if (step === 2) {
-                const sortedIdeas = getSortedIdeas();
-                
-                return (
-                    <div className="min-h-screen bg-white p-12">
-                        <div className="max-w-6xl mx-auto">
-                            <div className="mb-12 no-print">
-                                <h1 className="plaak text-5xl mb-6">YOUR PRIORITIZED ACTION LIST</h1>
-                                <div className="bg-black text-white p-6 mb-6 border-4 border-black">
-                                    <p className="text-xl mb-4">
-                                        Your ideas are now ranked by score (Impact + Easy). 
-                                        Focus on the high-scoring items first—they deliver maximum value with minimum complexity.
-                                    </p>
-                                </div>
-                                <div className="flex gap-4">
-                                    <button onClick={() => window.print()} className="btn-secondary text-xl py-4 px-8">
-                                        Export PDF
-                                    </button>
-                                    <button onClick={handleSubmit} className="btn-primary text-xl py-6 px-12 plaak" disabled={submitStatus === 'saving'}>
-                                        {submitStatus === 'saving' ? 'AI COACH REVIEWING...' : 'SUBMIT TO FAST TRACK'}
-                                    </button>
-                                </div>
-                                {submitStatus && submitMessage && (
-                                    <div style={{ marginTop: 16, padding: '12px 16px', textAlign: 'center', background: submitStatus === 'success' ? '#f0fdf4' : submitStatus === 'error' ? '#fef2f2' : '#f5f5f5', border: `1px solid ${submitStatus === 'success' ? '#bbf7d0' : submitStatus === 'error' ? '#fecaca' : '#e0e0e0'}`, fontSize: 14 }}>
-                                        <span style={{ color: submitStatus === 'success' ? '#166534' : submitStatus === 'error' ? '#991b1b' : '#333' }}>{submitMessage}</span>
-                                    </div>
-                                )}
+            /* ============================================================
+               WIZARD STEPS (1-6)
+               ============================================================ */
+            const intStep = Math.ceil(step);
 
-                                {/* Case Study */}
-                                <CaseStudy
-                                    before={"A mid-size tech company had 47 scattered goals across departments with no alignment to a central strategy. Teams duplicated effort, pulled in conflicting directions, and only 20% of goals were completed each quarter."}
-                                    after={"Using the Impact/Easy Matrix, leadership narrowed focus to 3 company-level OKRs broken into quarterly priorities. Goal completion rate jumped from 20% to 75%, and cross-team alignment improved dramatically within one cycle."}
-                                    quote={"When we stopped trying to do everything, we finally started achieving the things that mattered. Fewer goals meant better goals."}
-                                />
+            /* ---- STEP 1: Impact/Easy Matrix ---- */
+            const renderStep1 = () => (
+                <div>
+                    <DependencyContext deps={deps} />
+                    <div className="step-indicator">
+                        <span>Step 1 of 5</span>
+                        <span className="step-time">~15 min</span>
+                    </div>
+                    <h2 className="step-heading">Brainstorm & Rate</h2>
+                    <p className="step-hint">List all potential actions, rate Impact (1-3, weight 2x) and Ease (1-3, weight 1x). Score = (Impact x 2) + Ease. Maximum 9 points.</p>
+
+                    <FastTrackInsight>
+                        What you do is more important than how you do it. The 80/20 rule applies directly here: 20% of your actions will deliver 80% of results. Rate impact and ease honestly.
+                    </FastTrackInsight>
+
+                    <ScienceBox collapsible={true}>
+                        Locke and Latham's goal-setting theory demonstrated that specific, challenging goals lead to 90% better performance than vague "do your best" targets. Structured prioritization reduces decision fatigue and improves follow-through by up to 25%.
+                    </ScienceBox>
+
+                    <WarningBox>
+                        The biggest mistake is listing too many ideas without honestly differentiating impact. <strong>Bad:</strong> 20 vaguely worded ideas all rated 3/3. <strong>Good:</strong> Honest, specific actions with differentiated scores.
+                    </WarningBox>
+
+                    <div style={{ background: '#F3F4F6', padding: 16, marginBottom: 24, borderLeft: '4px solid #000' }}>
+                        <h4 style={{ fontWeight: 'bold', fontSize: 16, marginBottom: 8 }}>Scoring Guide: Score = Impact x 2 + Ease. Max = 9</h4>
+                        <div className="grid grid-cols-2 gap-6 text-sm">
+                            <div>
+                                <p style={{ fontWeight: 'bold', marginBottom: 4 }}>IMPACT (weight 2x):</p>
+                                <p>3 = Biggest impact on goals</p>
+                                <p>2 = Moderate impact</p>
+                                <p>1 = Least impact</p>
                             </div>
+                            <div>
+                                <p style={{ fontWeight: 'bold', marginBottom: 4 }}>EASE (weight 1x):</p>
+                                <p>3 = Very easy to implement</p>
+                                <p>2 = Moderate difficulty</p>
+                                <p>1 = Very difficult</p>
+                            </div>
+                        </div>
+                    </div>
 
-                            {/* Priority Rankings */}
-                            <div className="mb-12 border-4 border-black">
-                                <div className="bg-black text-white p-4">
-                                    <h2 className="plaak text-3xl">PRIORITY RANKINGS</h2>
-                                </div>
-                                
-                                <table className="w-full">
-                                    <thead>
-                                        <tr className="bg-gray-100 border-b-2 border-black">
-                                            <th className="p-4 text-left plaak text-lg w-16">Rank</th>
-                                            <th className="p-4 text-left plaak text-lg">Action / Idea</th>
-                                            <th className="p-4 text-center plaak text-lg w-32">Impact</th>
-                                            <th className="p-4 text-center plaak text-lg w-32">Easy</th>
-                                            <th className="p-4 text-center plaak text-lg w-32">Score</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {sortedIdeas.map((idea, i) => (
-                                            <tr key={i} className="border-b border-gray-200 hover:bg-gray-50">
-                                                <td className="p-4">
-                                                    <div className="plaak text-3xl text-gray-400">#{i + 1}</div>
-                                                </td>
-                                                <td className="p-4">
-                                                    <p className="text-lg">{idea.idea}</p>
-                                                </td>
-                                                <td className="p-4 text-center">
-                                                    <div className="font-bold text-2xl">{idea.impact}</div>
-                                                </td>
-                                                <td className="p-4 text-center">
-                                                    <div className="font-bold text-2xl">{idea.easy}</div>
-                                                </td>
-                                                <td className="p-4 text-center">
-                                                    <span className={`score-badge text-xl px-4 py-2 ${getScoreClass(idea.score)}`}>
-                                                        {idea.score}
+                    <div style={{ overflowX: 'auto' }}>
+                        <table className="w-full" style={{ border: '2px solid #000' }}>
+                            <thead>
+                                <tr style={{ background: '#000', color: '#fff' }}>
+                                    <th className="p-3 text-left plaak" style={{ width: 40 }}>#</th>
+                                    <th className="p-3 text-left plaak">Idea / Action</th>
+                                    <th className="p-3 text-center plaak" style={{ width: 80 }}>Impact</th>
+                                    <th className="p-3 text-center plaak" style={{ width: 80 }}>Easy</th>
+                                    <th className="p-3 text-center plaak" style={{ width: 80 }}>Score</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {formData.ideas.map((idea, i) => {
+                                    const score = calculateScore(idea.impact, idea.easy);
+                                    return (
+                                        <tr key={i} className="border-t border-gray-300 priority-row">
+                                            <td className="p-3 font-bold text-gray-500">{i + 1}</td>
+                                            <td className="p-3" style={{ minWidth: 280 }}>
+                                                <input
+                                                    className="ft-input"
+                                                    style={{ fontSize: 15, padding: '10px 12px', height: 'auto' }}
+                                                    placeholder={`Idea ${i + 1}`}
+                                                    value={idea.idea}
+                                                    onChange={(e) => updateIdea(i, 'idea', e.target.value)}
+                                                />
+                                            </td>
+                                            <td className="p-3 text-center">
+                                                <select
+                                                    className="ft-input text-center font-bold"
+                                                    style={{ minWidth: 64, fontSize: 16, padding: '8px 4px' }}
+                                                    value={idea.impact}
+                                                    onChange={(e) => updateIdea(i, 'impact', parseInt(e.target.value))}
+                                                >
+                                                    <option value={0}>–</option>
+                                                    <option value={1}>1</option>
+                                                    <option value={2}>2</option>
+                                                    <option value={3}>3</option>
+                                                </select>
+                                            </td>
+                                            <td className="p-3 text-center">
+                                                <select
+                                                    className="ft-input text-center font-bold"
+                                                    style={{ minWidth: 64, fontSize: 16, padding: '8px 4px' }}
+                                                    value={idea.easy}
+                                                    onChange={(e) => updateIdea(i, 'easy', parseInt(e.target.value))}
+                                                >
+                                                    <option value={0}>–</option>
+                                                    <option value={1}>1</option>
+                                                    <option value={2}>2</option>
+                                                    <option value={3}>3</option>
+                                                </select>
+                                            </td>
+                                            <td className="p-3 text-center">
+                                                {idea.idea.trim() && idea.impact > 0 && idea.easy > 0 && (
+                                                    <span className={`score-badge ${getScoreClass(score)}`}>
+                                                        {score}
                                                     </span>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Quick Wins Summary */}
+                    {(() => {
+                        const sorted = getSortedIdeas();
+                        const top5 = sorted.slice(0, 5);
+                        if (top5.length === 0) return null;
+                        return (
+                            <div className="quick-wins-box">
+                                <h4>TOP {Math.min(5, top5.length)} QUICK WINS</h4>
+                                {top5.map((item, i) => (
+                                    <div key={i} className="quick-win-item">
+                                        <span className={`score-badge ${getScoreClass(item.score)}`}>{item.score}</span>
+                                        <span style={{ fontSize: 15 }}>{item.idea}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        );
+                    })()}
+
+                    {!validateStep1() && (
+                        <p className="ft-error-msg" style={{ marginTop: 16, textAlign: 'right' }}>
+                            Add at least 5 ideas (10+ characters each) and rate Impact &amp; Ease to continue
+                        </p>
+                    )}
+                </div>
+            );
+
+            /* ---- STEP 2: Priority Rankings ---- */
+            const renderStep2 = () => {
+                const sortedIdeas = getSortedIdeas();
+
+                return (
+                    <div>
+                        <div className="step-indicator">
+                            <span>Step 2 of 5</span>
+                            <span className="step-time">~5 min</span>
+                        </div>
+                        <h2 className="step-heading">Your Prioritized Action List</h2>
+                        <p className="step-hint">Your ideas are ranked by score (Impact x 2 + Ease). Focus on high-scoring items first.</p>
+
+                        <div style={{ border: '2px solid #000', marginBottom: 32 }}>
+                            <div style={{ background: '#000', color: '#fff', padding: 16 }}>
+                                <h3 className="plaak" style={{ fontSize: 24 }}>PRIORITY RANKINGS</h3>
                             </div>
 
-                            {/* Next Steps */}
-                            <div className="border-4 border-black p-8 mb-12">
-                                <h2 className="plaak text-3xl mb-6">NEXT STEPS</h2>
-                                <div className="space-y-4 text-lg">
-                                    <div className="flex items-start gap-4">
-                                        <div className="plaak text-2xl">1.</div>
-                                        <p>Focus on your top 3-5 highest-scoring actions first</p>
-                                    </div>
-                                    <div className="flex items-start gap-4">
-                                        <div className="plaak text-2xl">2.</div>
-                                        <p>Use the "Cut the Elephant" tool to break large actions into smaller steps</p>
-                                    </div>
-                                    <div className="flex items-start gap-4">
-                                        <div className="plaak text-2xl">3.</div>
-                                        <p>Assign clear owners and deadlines for each priority</p>
-                                    </div>
-                                    <div className="flex items-start gap-4">
-                                        <div className="plaak text-2xl">4.</div>
-                                        <p>Revisit this matrix regularly as new opportunities emerge</p>
-                                    </div>
-                                </div>
-                            </div>
+                            <table className="w-full">
+                                <thead>
+                                    <tr style={{ background: '#F3F4F6', borderBottom: '2px solid #000' }}>
+                                        <th className="p-3 text-left plaak" style={{ width: 60 }}>Rank</th>
+                                        <th className="p-3 text-left plaak">Action / Idea</th>
+                                        <th className="p-3 text-center plaak" style={{ width: 70 }}>Impact</th>
+                                        <th className="p-3 text-center plaak" style={{ width: 70 }}>Easy</th>
+                                        <th className="p-3 text-center plaak" style={{ width: 70 }}>Score</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {sortedIdeas.map((idea, i) => (
+                                        <tr key={i} className="border-b border-gray-200 hover:bg-gray-50" style={i < 5 ? { background: '#FFFDE7' } : {}}>
+                                            <td className="p-3">
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                    <span className="plaak text-2xl text-gray-400">#{i + 1}</span>
+                                                    {i < 5 && <span className="top-priority-badge">TOP 5</span>}
+                                                </div>
+                                            </td>
+                                            <td className="p-3">
+                                                <p style={{ fontWeight: i < 5 ? 600 : 400 }}>{idea.idea}</p>
+                                            </td>
+                                            <td className="p-3 text-center font-bold text-lg">{idea.impact}</td>
+                                            <td className="p-3 text-center font-bold text-lg">{idea.easy}</td>
+                                            <td className="p-3 text-center">
+                                                <span className={`score-badge ${getScoreClass(idea.score)}`}>
+                                                    {idea.score}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
 
-                            <button onClick={() => setStep(1)} className="btn-secondary text-lg py-3 px-6 no-print">
-                                ← Edit Rankings
-                            </button>
+                        <div style={{ background: '#FFF469', border: '3px solid #000', padding: '16px 20px', marginBottom: 32, fontSize: 15, lineHeight: 1.6 }}>
+                            <strong>These top {Math.min(5, sortedIdeas.length)} priorities will flow into the Cut the Elephant step</strong>, where you will break each one into 5 incremental steps with deadlines.
                         </div>
                     </div>
                 );
-            }
+            };
 
-            return null;
+            /* ---- STEP 3: Cut the Elephant ---- */
+            const renderStep3 = () => {
+                const stepLabels = [
+                    'The simplest possible first action',
+                    'Gradually increasing complexity',
+                    'Gradually increasing complexity',
+                    'Gradually increasing complexity',
+                    'Final milestone'
+                ];
+
+                return (
+                    <div>
+                        <div className="step-indicator">
+                            <span>Step 3 of 5</span>
+                            <span className="step-time">~15 min</span>
+                        </div>
+                        <h2 className="step-heading">Cut the Elephant</h2>
+                        <p className="step-hint">Break each top priority into 5 incremental steps. Start absurdly simple, then gradually increase complexity. Every step gets a non-negotiable deadline.</p>
+
+                        <FastTrackInsight>
+                            Start absurdly simple. If your first step feels hard, it's not the first step. Break it down further.
+                        </FastTrackInsight>
+
+                        <WarningBox>
+                            Don't start with the hardest step. <strong>Bad:</strong> "Redesign entire product." <strong>Good:</strong> "List 3 things customers complained about this week."
+                        </WarningBox>
+
+                        {formData.elephants.length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: 48, color: '#999' }}>
+                                <p>No priorities loaded. Go back to Step 2 to generate your priority list.</p>
+                            </div>
+                        ) : (
+                            formData.elephants.map((elephant, eIdx) => (
+                                <div key={eIdx} className="elephant-card">
+                                    <div className="elephant-card-header">
+                                        <div>
+                                            <span className="monument" style={{ fontSize: 10, color: '#FFF469', marginRight: 12 }}>PRIORITY {eIdx + 1}</span>
+                                            <span style={{ fontSize: 15, fontWeight: 600 }}>{elephant.idea}</span>
+                                        </div>
+                                        <span className={`score-badge ${getScoreClass(elephant.score)}`}>{elephant.score}</span>
+                                    </div>
+                                    <div className="elephant-card-body">
+                                        {elephant.steps.map((s, sIdx) => (
+                                            <div key={sIdx} className="elephant-step-row">
+                                                <div className="elephant-step-num">{sIdx + 1}</div>
+                                                <div className="elephant-step-fields">
+                                                    <input
+                                                        className="ft-input"
+                                                        placeholder={stepLabels[sIdx]}
+                                                        value={s.action}
+                                                        onChange={(e) => updateElephantStep(eIdx, sIdx, 'action', e.target.value)}
+                                                    />
+                                                    <input
+                                                        type="date"
+                                                        value={s.deadline}
+                                                        onChange={(e) => updateElephantStep(eIdx, sIdx, 'deadline', e.target.value)}
+                                                        title="Deadline"
+                                                    />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))
+                        )}
+
+                        {!validateStep3() && formData.elephants.length > 0 && (
+                            <p className="ft-error-msg" style={{ marginTop: 16, textAlign: 'right' }}>
+                                At least 1 priority must have Step 1 action + deadline filled
+                            </p>
+                        )}
+                    </div>
+                );
+            };
+
+            /* ---- STEP 4: Accountability Checklist ---- */
+            const ACCOUNTABILITY_ITEMS = [
+                'Do team members consistently meet or exceed their targets?',
+                'Do individuals proactively communicate progress and challenges without prompting?',
+                'Do team members accept responsibility for outcomes -- both good and bad?',
+                'Are tasks and projects consistently delivered on time?',
+                'Is there a culture of ownership rather than blame-shifting?',
+                'Do team members willingly commit to tasks without trying to offload?',
+                'Are there clear consequences for missed commitments?',
+                'Does the team celebrate wins and learn from failures openly?'
+            ];
+
+            const renderStep4 = () => {
+                const yesCount = formData.accountabilityChecks.filter(c => c === true).length;
+
+                return (
+                    <div>
+                        <div className="step-indicator">
+                            <span>Step 4 of 5</span>
+                            <span className="step-time">~5 min</span>
+                        </div>
+                        <h2 className="step-heading">Accountability Check</h2>
+                        <p className="step-hint">Teams with high accountability show 50% higher performance. Be brutally honest.</p>
+
+                        <div className="signs-box signs-good">
+                            <strong style={{ display: 'block', marginBottom: 4 }}>3 Signs of Accountability:</strong>
+                            <div>1. Team members meet or exceed targets consistently</div>
+                            <div>2. People proactively communicate progress without being asked</div>
+                            <div>3. Individuals accept responsibility for outcomes -- good and bad</div>
+                        </div>
+
+                        <div className="signs-box signs-bad">
+                            <strong style={{ display: 'block', marginBottom: 4 }}>3 Signs of Lack of Accountability:</strong>
+                            <div>1. Deadlines are regularly missed with excuses instead of solutions</div>
+                            <div>2. Blame-shifting is common -- "it's not my job"</div>
+                            <div>3. No consequences for missed commitments</div>
+                        </div>
+
+                        {ACCOUNTABILITY_ITEMS.map((text, i) => (
+                            <div key={i} className="checklist-item">
+                                <div className="checklist-text">{text}</div>
+                                <ChecklistToggle
+                                    value={formData.accountabilityChecks[i]}
+                                    onChange={(val) => updateChecklistItem('accountability', i, val)}
+                                />
+                            </div>
+                        ))}
+
+                        <div className={`score-summary ${getChecklistScoreClass(yesCount)}`}>
+                            <div className="score-number">{yesCount}/8</div>
+                            <div className="score-label">{getChecklistLabel(yesCount)}</div>
+                        </div>
+
+                        <div className="ft-field-group">
+                            <label className="ft-label">
+                                What one change will you make to improve accountability?
+                                <span className="ft-required">*</span>
+                            </label>
+                            <textarea
+                                className="ft-textarea"
+                                placeholder="Be specific. What will you start doing differently this week?"
+                                value={formData.accountabilityAction}
+                                onChange={(e) => setFormData(prev => ({ ...prev, accountabilityAction: e.target.value }))}
+                            />
+                        </div>
+
+                        {!validateStep4() && (
+                            <p className="ft-error-msg" style={{ marginTop: 16, textAlign: 'right' }}>
+                                Answer at least 6 of 8 items and write your accountability action to continue
+                            </p>
+                        )}
+                    </div>
+                );
+            };
+
+            /* ---- STEP 5: Alignment Checklist ---- */
+            const ALIGNMENT_ITEMS = [
+                'Is there regular, clear communication of goals across all levels?',
+                'Do decisions across departments support the overall company strategy?',
+                'Do team members show high engagement and commitment to shared objectives?',
+                'Are priorities consistent across teams -- no conflicting goals?',
+                'Is planning collaborative rather than siloed?',
+                'Is morale high and turnover low?',
+                'Can every team member articulate how their work connects to company goals?',
+                'Are resources allocated in line with strategic priorities?'
+            ];
+
+            const renderStep5 = () => {
+                const yesCount = formData.alignmentChecks.filter(c => c === true).length;
+
+                return (
+                    <div>
+                        <div className="step-indicator">
+                            <span>Step 5 of 5</span>
+                            <span className="step-time">~5 min</span>
+                        </div>
+                        <h2 className="step-heading">Alignment Check</h2>
+                        <p className="step-hint">Organizations with aligned teams are 72% more likely to achieve project success.</p>
+
+                        <div className="signs-box signs-good">
+                            <strong style={{ display: 'block', marginBottom: 4 }}>3 Signs of Alignment:</strong>
+                            <div>1. Goals are clearly communicated and consistent across all levels</div>
+                            <div>2. Decisions across departments support the overall strategy</div>
+                            <div>3. Team members show high engagement and commitment to shared objectives</div>
+                        </div>
+
+                        <div className="signs-box signs-bad">
+                            <strong style={{ display: 'block', marginBottom: 4 }}>3 Signs of Misalignment:</strong>
+                            <div>1. Departments have conflicting priorities and compete for resources</div>
+                            <div>2. Planning is siloed -- teams don't know what others are working on</div>
+                            <div>3. Employees can't explain how their work connects to company goals</div>
+                        </div>
+
+                        {ALIGNMENT_ITEMS.map((text, i) => (
+                            <div key={i} className="checklist-item">
+                                <div className="checklist-text">{text}</div>
+                                <ChecklistToggle
+                                    value={formData.alignmentChecks[i]}
+                                    onChange={(val) => updateChecklistItem('alignment', i, val)}
+                                />
+                            </div>
+                        ))}
+
+                        <div className={`score-summary ${getChecklistScoreClass(yesCount)}`}>
+                            <div className="score-number">{yesCount}/8</div>
+                            <div className="score-label">{getChecklistLabel(yesCount)}</div>
+                        </div>
+
+                        <div className="ft-field-group">
+                            <label className="ft-label">
+                                What one change will you make to improve alignment?
+                                <span className="ft-required">*</span>
+                            </label>
+                            <textarea
+                                className="ft-textarea"
+                                placeholder="Be specific. What will you start doing differently this week?"
+                                value={formData.alignmentAction}
+                                onChange={(e) => setFormData(prev => ({ ...prev, alignmentAction: e.target.value }))}
+                            />
+                        </div>
+
+                        {!validateStep5() && (
+                            <p className="ft-error-msg" style={{ marginTop: 16, textAlign: 'right' }}>
+                                Answer at least 6 of 8 items and write your alignment action to continue
+                            </p>
+                        )}
+                    </div>
+                );
+            };
+
+            /* ---- STEP 6: Review & Submit ---- */
+            const renderStep6 = () => {
+                const sortedIdeas = getSortedIdeas();
+                const top5 = sortedIdeas.slice(0, 5);
+                const accScore = formData.accountabilityChecks.filter(c => c === true).length;
+                const alignScore = formData.alignmentChecks.filter(c => c === true).length;
+
+                return (
+                    <div>
+                        <div className="step-indicator">
+                            <span>Review & Submit</span>
+                            <span className="step-time">~5 min</span>
+                        </div>
+                        <h2 className="step-heading">Review Your Work</h2>
+                        <p className="step-hint">Review everything before submitting. Your AI coach will provide feedback.</p>
+
+                        {/* Section 1: Top Priorities */}
+                        <div className="review-section">
+                            <div className="review-section-header">Impact/Easy Matrix -- Top 5 Priorities</div>
+                            <div className="review-section-body">
+                                {top5.length === 0 ? (
+                                    <p style={{ color: '#999' }}>No priorities scored yet.</p>
+                                ) : (
+                                    top5.map((item, i) => (
+                                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderBottom: i < top5.length - 1 ? '1px solid #F3F4F6' : 'none' }}>
+                                            <span className="plaak" style={{ fontSize: 18, color: '#999', minWidth: 32 }}>#{i + 1}</span>
+                                            <span style={{ flex: 1 }}>{item.idea}</span>
+                                            <span className={`score-badge ${getScoreClass(item.score)}`}>{item.score}</span>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Section 2: Elephant Breakdowns */}
+                        <div className="review-section">
+                            <div className="review-section-header">Cut the Elephant -- Breakdowns</div>
+                            <div className="review-section-body">
+                                {formData.elephants.length === 0 ? (
+                                    <p style={{ color: '#999' }}>No elephant breakdowns yet.</p>
+                                ) : (
+                                    formData.elephants.map((el, eIdx) => {
+                                        const filledSteps = el.steps.filter(s => s.action.trim().length > 0);
+                                        if (filledSteps.length === 0) return null;
+                                        return (
+                                            <div key={eIdx} style={{ marginBottom: 16, paddingBottom: 16, borderBottom: eIdx < formData.elephants.length - 1 ? '1px solid #E5E7EB' : 'none' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                                                    <span className="monument" style={{ fontSize: 10, color: '#666' }}>PRIORITY {eIdx + 1}</span>
+                                                    <span style={{ fontWeight: 600 }}>{el.idea}</span>
+                                                    <span className={`score-badge ${getScoreClass(el.score)}`} style={{ fontSize: 12, padding: '2px 8px' }}>{el.score}</span>
+                                                </div>
+                                                {el.steps.map((s, sIdx) => {
+                                                    if (!s.action.trim()) return null;
+                                                    return (
+                                                        <div key={sIdx} style={{ display: 'flex', gap: 8, fontSize: 14, paddingLeft: 16, marginBottom: 4, color: '#444' }}>
+                                                            <span style={{ fontWeight: 600, minWidth: 20 }}>{sIdx + 1}.</span>
+                                                            <span style={{ flex: 1 }}>{s.action}</span>
+                                                            {s.deadline && <span style={{ color: '#999', fontSize: 13 }}>{s.deadline}</span>}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        );
+                                    })
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Section 3: Accountability & Alignment */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
+                            <div className="review-section" style={{ marginBottom: 0 }}>
+                                <div className="review-section-header" style={{ fontSize: 16 }}>Accountability</div>
+                                <div className="review-section-body" style={{ textAlign: 'center' }}>
+                                    <div className={`score-summary ${getChecklistScoreClass(accScore)}`} style={{ border: 'none', padding: '12px 0', margin: 0 }}>
+                                        <div className="score-number" style={{ fontSize: 36 }}>{accScore}/8</div>
+                                        <div className="score-label">{getChecklistLabel(accScore)}</div>
+                                    </div>
+                                    {formData.accountabilityAction && (
+                                        <p style={{ fontSize: 13, color: '#666', marginTop: 8, textAlign: 'left', fontStyle: 'italic' }}>
+                                            "{formData.accountabilityAction}"
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="review-section" style={{ marginBottom: 0 }}>
+                                <div className="review-section-header" style={{ fontSize: 16 }}>Alignment</div>
+                                <div className="review-section-body" style={{ textAlign: 'center' }}>
+                                    <div className={`score-summary ${getChecklistScoreClass(alignScore)}`} style={{ border: 'none', padding: '12px 0', margin: 0 }}>
+                                        <div className="score-number" style={{ fontSize: 36 }}>{alignScore}/8</div>
+                                        <div className="score-label">{getChecklistLabel(alignScore)}</div>
+                                    </div>
+                                    {formData.alignmentAction && (
+                                        <p style={{ fontSize: 13, color: '#666', marginTop: 8, textAlign: 'left', fontStyle: 'italic' }}>
+                                            "{formData.alignmentAction}"
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Submit & Export */}
+                        <div style={{ textAlign: 'center', marginBottom: 32 }}>
+                            <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
+                                <button onClick={() => window.print()} className="btn-back no-print">
+                                    Export PDF
+                                </button>
+                                <button onClick={handleSubmit} className="btn-next no-print" style={{ padding: '12px 32px' }} disabled={submitStatus === 'saving'}>
+                                    {submitStatus === 'saving' ? 'AI Coach Reviewing...' : 'Submit to Fast Track'}
+                                </button>
+                            </div>
+                            {submitStatus && submitMessage && (
+                                <div style={{ marginTop: 16, padding: '12px 16px', textAlign: 'center', background: submitStatus === 'success' ? '#f0fdf4' : submitStatus === 'error' ? '#fef2f2' : '#f5f5f5', border: `1px solid ${submitStatus === 'success' ? '#bbf7d0' : submitStatus === 'error' ? '#fecaca' : '#e0e0e0'}`, fontSize: 14 }}>
+                                    <span style={{ color: submitStatus === 'success' ? '#166534' : submitStatus === 'error' ? '#991b1b' : '#333' }}>{submitMessage}</span>
+                                </div>
+                            )}
+                        </div>
+
+                        <CaseStudy
+                            before={"A mid-size tech company had 47 scattered goals across departments with no alignment to a central strategy. Teams duplicated effort, pulled in conflicting directions, and only 20% of goals were completed each quarter."}
+                            after={"Using the Impact/Easy Matrix, leadership narrowed focus to 3 company-level OKRs broken into quarterly priorities. Goal completion rate jumped from 20% to 75%, and cross-team alignment improved dramatically within one cycle."}
+                            quote={"When we stopped trying to do everything, we finally started achieving the things that mattered. Fewer goals meant better goals."}
+                        />
+                    </div>
+                );
+            };
+
+            /* ============================================================
+               WIZARD LAYOUT RENDER
+               ============================================================ */
+            const getFooterForStep = () => {
+                switch (intStep) {
+                    case 1:
+                        return (
+                            <ButtonFooter
+                                onBack={() => goToStep(0.5)}
+                                onNext={() => goToStep(1.5)}
+                                disabled={!validateStep1()}
+                                nextLabel="View Priorities"
+                                showBack={true}
+                            />
+                        );
+                    case 2:
+                        return (
+                            <ButtonFooter
+                                onBack={() => goToStep(1)}
+                                onNext={() => goToStep(2.5)}
+                                nextLabel="Cut the Elephant"
+                                showBack={true}
+                            />
+                        );
+                    case 3:
+                        return (
+                            <ButtonFooter
+                                onBack={() => goToStep(2)}
+                                onNext={() => goToStep(3.5)}
+                                disabled={!validateStep3()}
+                                nextLabel="Accountability Check"
+                                showBack={true}
+                            />
+                        );
+                    case 4:
+                        return (
+                            <ButtonFooter
+                                onBack={() => goToStep(3)}
+                                onNext={() => goToStep(4.5)}
+                                disabled={!validateStep4()}
+                                nextLabel="Alignment Check"
+                                showBack={true}
+                            />
+                        );
+                    case 5:
+                        return (
+                            <ButtonFooter
+                                onBack={() => goToStep(4)}
+                                onNext={() => goToStep(6)}
+                                disabled={!validateStep5()}
+                                nextLabel="Review & Submit"
+                                showBack={true}
+                            />
+                        );
+                    case 6:
+                        return (
+                            <ButtonFooter
+                                onBack={() => goToStep(5)}
+                                onNext={() => {}}
+                                nextLabel="Submitted"
+                                showBack={true}
+                                disabled={true}
+                            />
+                        );
+                    default:
+                        return null;
+                }
+            };
+
+            return (
+                <div className="tool-frame">
+                    <div className="tool-inner">
+                        <div className="wizard-layout">
+                            <div className="wizard-main">
+                                <MobileStepBar currentStep={intStep} totalSteps={6} />
+
+                                <div className="wizard-content animate-in" key={intStep}>
+                                    {intStep === 1 && renderStep1()}
+                                    {intStep === 2 && renderStep2()}
+                                    {intStep === 3 && renderStep3()}
+                                    {intStep === 4 && renderStep4()}
+                                    {intStep === 5 && renderStep5()}
+                                    {intStep === 6 && renderStep6()}
+                                </div>
+
+                                {getFooterForStep()}
+                            </div>
+                            <WizardSidebar currentStep={step} formData={formData} onNavigate={goToStep} getSortedIdeas={getSortedIdeas} />
+                        </div>
+                    </div>
+                </div>
+            );
         };
 
         // Render
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<ImpactEasyMatrix />);
+        root.render(<GoalsPrioritiesPlanning />);
     </script>
 </body>
 </html>

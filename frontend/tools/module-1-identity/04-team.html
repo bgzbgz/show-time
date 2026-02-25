@@ -37,204 +37,329 @@
     <script src="../../shared/js/cognitive-load.js"></script>
     <script src="../../js/tool-access-control.js"></script>
 
+    <!-- Font preloading to prevent FOUT -->
+    <link rel="preload" href="Plaak3Trial-43-Bold.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="RiformaLL-Regular.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="MonumentGrotesk-Mono.woff2" as="font" type="font/woff2" crossorigin>
+
     <style>
-        /* Font Face Declarations */
-        @font-face {
-            font-family: 'Plaak';
-            src: url('Plaak3Trial-43-Bold.woff2') format('woff2');
-            font-weight: bold;
-        }
+        /* === FONT FACES === */
+        @font-face { font-family: 'Plaak'; src: url('Plaak3Trial-43-Bold.woff2') format('woff2'); font-weight: bold; font-display: swap; }
+        @font-face { font-family: 'Riforma'; src: url('RiformaLL-Regular.woff2') format('woff2'); font-weight: normal; font-display: swap; }
+        @font-face { font-family: 'Riforma'; src: url('RiformaLL-Regular.woff2') format('woff2'); font-weight: 600; font-display: swap; }
+        @font-face { font-family: 'Monument'; src: url('MonumentGrotesk-Mono.woff2') format('woff2'); font-display: swap; }
 
-        @font-face {
-            font-family: 'Riforma';
-            src: url('RiformaLL-Regular.woff2') format('woff2');
-            font-weight: normal;
-        }
-
-        @font-face {
-            font-family: 'RiformaMedium';
-            src: url('RangleRiformaWeb-Medium.woff2') format('woff2');
-            font-weight: 500;
-        }
-
-        @font-face {
-            font-family: 'Monument';
-            src: url('MonumentGrotesk-Mono.woff2') format('woff2');
-            font-weight: normal;
-        }
-
-        /* CSS Custom Properties */
-        :root {
-            --ft-yellow: #FFF469;
-            --ft-black: #000000;
-            --ft-white: #FFFFFF;
-            --ft-grey-light: #F3F4F6;
-            --ft-grey-dark: #9CA3AF;
-            --ft-green: #10B981;
-            --ft-red: #EF4444;
-        }
-
-        /* Global Styles */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        /* === BASE RESET === */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Riforma', -apple-system, sans-serif;
             font-size: 16px;
-            color: var(--ft-black);
-            background: var(--ft-white);
+            color: #000;
+            background: #000;
             -webkit-font-smoothing: antialiased;
-            line-height: 1.6;
         }
 
-        /* Typography Classes */
-        .plaak {
+        /* === CUSTOM SCROLLBAR === */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #000; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #333; }
+        * { scrollbar-width: thin; scrollbar-color: #000 transparent; }
+
+        /* === TYPOGRAPHY HELPERS === */
+        .plaak { font-family: 'Plaak', sans-serif; font-weight: bold; letter-spacing: -0.01em; line-height: 1.2; }
+        .monument { font-family: 'Monument', monospace; letter-spacing: 0.05em; }
+
+        /* === LAYOUT FRAME === */
+        .tool-frame { background: #fff; min-height: 100vh; }
+        .tool-inner { background: #fff; min-height: 100vh; }
+
+        /* === WIZARD LAYOUT === */
+        .wizard-layout { display: flex; min-height: 100vh; }
+        .wizard-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background: #fff;
+        }
+        .wizard-content {
+            max-width: 640px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 48px 32px;
+            flex: 1;
+        }
+
+        /* === SIDEBAR === */
+        .wizard-sidebar {
+            width: 280px;
+            background: #000;
+            border-left: 1px solid #000;
+            flex-shrink: 0;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .wizard-sidebar-inner {
+            padding: 32px 24px;
+            height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        .sidebar-step-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            border-left: 3px solid transparent;
+            transition: all 0.2s ease;
+        }
+        .sidebar-step-item.active { border-left-color: #FFF469; background: #222; }
+        .sidebar-step-item.completed { background: #fff; color: #000; border-left-color: #fff; cursor: pointer; }
+        .sidebar-step-item.completed:hover { background: #E0E0E0; }
+        .sidebar-step-item.locked { opacity: 0.5; }
+        .sidebar-step-item .step-num { font-family: 'Riforma', sans-serif; font-size: 14px; }
+        .sidebar-step-item .step-name { font-family: 'Riforma', sans-serif; font-size: 14px; }
+        .sidebar-snippet { font-size: 12px; margin-top: 4px; opacity: 0.7; line-height: 1.3; }
+
+        /* === STEP HEADER === */
+        .step-indicator {
+            font-family: 'Monument', monospace;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #6B7280;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .step-time {
+            font-family: 'Monument', monospace;
+            font-size: 11px;
+            color: #6B7280;
+        }
+        .step-heading {
             font-family: 'Plaak', sans-serif;
             font-weight: bold;
+            font-size: 32px;
+            text-transform: uppercase;
             letter-spacing: -0.01em;
             line-height: 1.2;
+            color: #000;
+            margin-bottom: 6px;
+        }
+        .step-hint {
+            font-size: 16px;
+            color: #6B7280;
+            line-height: 1.5;
+            margin: 0 0 32px 0;
         }
 
-        .riforma {
-            font-family: 'Riforma', sans-serif;
-        }
-
-        .monument {
+        /* === FORM ELEMENTS === */
+        .ft-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
             font-family: 'Monument', monospace;
-            letter-spacing: 0.02em;
-        }
-
-        /* Button Styles */
-        .btn-primary {
-            background: var(--ft-black);
-            color: var(--ft-white);
-            padding: 12px 24px;
-            border: 2px solid var(--ft-black);
-            font-family: 'Riforma', sans-serif;
-            font-size: 16px;
-            cursor: pointer;
-            transition: all 0.2s ease;
+            font-size: 14px;
             font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #000;
+            margin-bottom: 8px;
         }
+        .ft-required { color: #DC2626; font-weight: 700; }
 
-        .btn-primary:hover:not(:disabled) {
-            transform: scale(1.02);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .btn-primary:disabled {
-            background: #E0E0E0;
-            border-color: #E0E0E0;
-            color: var(--ft-grey-dark);
-            cursor: not-allowed;
-            opacity: 0.5;
-        }
-
-        .btn-secondary {
-            background: var(--ft-white);
-            color: var(--ft-black);
-            padding: 12px 24px;
-            border: 2px solid var(--ft-black);
+        .ft-input {
+            width: 100%;
+            height: 44px;
+            padding: 8px 16px;
             font-family: 'Riforma', sans-serif;
             font-size: 16px;
-            cursor: pointer;
-            transition: all 0.2s ease;
+            color: #000;
+            background: #fff;
+            border: 1px solid #E5E7EB;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .ft-input:focus {
+            outline: none;
+            border-color: #000;
+            box-shadow: 0 0 0 3px #FFF469;
+        }
+        .ft-input.has-error {
+            border: 2px solid #DC2626;
+            padding-right: 40px;
+        }
+        .ft-input.has-error:focus {
+            border-color: #DC2626;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2);
         }
 
-        .btn-secondary:hover:not(:disabled) {
-            background: var(--ft-black);
-            color: var(--ft-white);
-        }
-
-        .btn-secondary:disabled {
-            border-color: #E0E0E0;
-            color: var(--ft-grey-dark);
-            cursor: not-allowed;
-            opacity: 0.5;
-        }
-
-        /* Input Styles */
-        .worksheet-input {
-            border: 1px solid #E0E0E0;
+        .ft-textarea {
+            width: 100%;
+            min-height: 120px;
             padding: 12px 16px;
             font-family: 'Riforma', sans-serif;
             font-size: 16px;
-            transition: border-color 0.2s ease;
-            background: var(--ft-white);
-            width: 100%;
-            border-radius: 4px;
+            color: #000;
+            background: #fff;
+            border: 1px solid #E5E7EB;
+            resize: vertical;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
-
-        .worksheet-input:focus {
+        .ft-textarea:focus {
             outline: none;
-            border-color: var(--ft-black);
-            box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+            border-color: #000;
+            box-shadow: 0 0 0 3px #FFF469;
+        }
+        .ft-textarea.has-error {
+            border: 2px solid #DC2626;
+        }
+        .ft-textarea.has-error:focus {
+            border-color: #DC2626;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2);
         }
 
-        .worksheet-input.error {
-            border-color: var(--ft-red);
+        .ft-help {
+            font-size: 14px;
+            color: #6B7280;
+            margin-top: 4px;
+            line-height: 1.5;
+        }
+        .ft-error-msg {
+            font-size: 14px;
+            font-weight: 600;
+            color: #DC2626;
+            margin-top: 4px;
+            line-height: 1.4;
+        }
+        .ft-field-group {
+            margin-bottom: 24px;
+        }
+        .ft-field-group:last-child { margin-bottom: 0; }
+        .ft-section { margin-bottom: 32px; }
+
+        /* === YELLOW INSIGHT BOX === */
+        .ft-insight {
+            background: #FFF469;
+            border: 3px solid #000;
+            padding: 16px;
+            margin-bottom: 32px;
         }
 
-        /* Progress Dots */
-        .progress-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #E0E0E0;
-            transition: all 0.3s ease;
+        /* === EXAMPLE BOX === */
+        .ft-example {
+            background: #F3F4F6;
+            padding: 16px;
+            margin-bottom: 8px;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #1F2937;
         }
 
-        .progress-dot.filled {
-            background: var(--ft-black);
+        /* === ERROR SUMMARY === */
+        .ft-error-summary {
+            border: 2px solid #DC2626;
+            background: #fff;
+            padding: 16px;
+            margin-bottom: 24px;
         }
-
-        .progress-dot.current {
-            background: var(--ft-yellow);
-            border: 2px solid var(--ft-black);
-            width: 16px;
-            height: 16px;
-        }
-
-        .progress-dot.clickable {
+        .ft-error-summary a {
+            color: #DC2626;
+            text-decoration: underline;
             cursor: pointer;
         }
+        .ft-error-summary a:hover { text-decoration: none; }
 
-        .progress-dot.clickable:hover {
-            transform: scale(1.2);
-        }
-
-        /* Sticky Footer */
-        .sticky-footer {
-            position: fixed;
+        /* === BUTTON FOOTER === */
+        .btn-footer {
+            position: sticky;
             bottom: 0;
-            left: 0;
-            right: 0;
-            background: var(--ft-white);
-            border-top: 1px solid #E0E0E0;
-            padding: 16px;
-            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
-            z-index: 100;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 32px;
+            border-top: 1px solid #E5E7EB;
+            background: #fff;
+            width: 100%;
+        }
+        .btn-back {
+            background: #fff;
+            color: #000;
+            border: 2px solid #000;
+            padding: 12px 24px;
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-height: 44px;
+        }
+        .btn-back:hover { background: #F3F4F6; }
+        .btn-next {
+            background: #000;
+            color: #fff;
+            border: 2px solid #000;
+            padding: 12px 24px;
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-height: 44px;
+        }
+        .btn-next:hover:not(:disabled) { transform: scale(1.02); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .btn-next:disabled { background: #E5E7EB; color: #9CA3AF; border-color: #E5E7EB; cursor: not-allowed; }
+
+        /* === CLOSING MESSAGE === */
+        .closing-box {
+            border-top: 1px solid #E5E7EB;
+            padding: 20px 0 0 0;
+            margin-top: 8px;
+            text-align: center;
+        }
+        .closing-box p { font-size: 14px; color: #6B7280; }
+        .closing-box .closing-title {
+            font-family: 'Monument', monospace;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #000;
+            margin-bottom: 6px;
         }
 
-        /* Loading Spinner */
-        .spinner {
-            border: 4px solid #E0E0E0;
-            border-top: 4px solid var(--ft-black);
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
+        /* === MOBILE STEP BAR === */
+        .mobile-step-bar { display: none; padding: 12px 16px; border-bottom: 1px solid #E5E7EB; background: #F3F4F6; }
+        .mobile-step-bar .bar-text { font-family: 'Monument', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #6B7280; margin-bottom: 6px; }
+        .mobile-progress { height: 3px; background: #E5E7EB; width: 100%; }
+        .mobile-progress-fill { height: 100%; background: #000; transition: width 0.3s ease; }
+
+        /* === ANIMATIONS === */
+        @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .animate-in { animation: fadeSlideIn 0.3s ease-out; }
+
+        /* === PRINT === */
+        @media print { .no-print { display: none !important; } }
+
+        /* === RESPONSIVE === */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .wizard-sidebar { width: 220px; }
+            .wizard-sidebar-inner { padding: 24px 16px; }
+        }
+        @media (max-width: 768px) {
+            .wizard-sidebar { display: none; }
+            .mobile-step-bar { display: block; }
+            .wizard-content { padding: 24px 16px; }
+            .step-heading { font-size: 24px; }
+            .btn-footer { padding: 12px 16px; }
+        }
+        @media (max-width: 480px) {
+            .step-heading { font-size: 20px; }
+            .wizard-content { padding: 20px 12px; }
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Badge Styles */
+        /* === TOOL-SPECIFIC: Badge Styles === */
         .badge {
             display: inline-flex;
             align-items: center;
@@ -243,25 +368,63 @@
             font-size: 14px;
             font-weight: 500;
         }
+        .badge-green { background: #D1FAE5; color: #065F46; }
+        .badge-yellow { background: #FFF469; color: #000; }
+        .badge-red { background: #FEE2E2; color: #991B1B; }
 
-        .badge-green {
-            background: #D1FAE5;
-            color: #065F46;
+        /* === TOOL-SPECIFIC: Committed Row === */
+        .committed-row { background: #F0FDF4; }
+
+        /* === TOOL-SPECIFIC: Spinner === */
+        .spinner {
+            border: 4px solid #E0E0E0;
+            border-top: 4px solid #000;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
         }
 
-        .badge-yellow {
-            background: var(--ft-yellow);
-            color: var(--ft-black);
+        /* === Statement card === */
+        .statement-card {
+            border: 1px solid #E5E7EB;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: all 0.2s ease;
+        }
+        .statement-card:hover {
+            border-color: #000;
         }
 
-        .badge-red {
-            background: #FEE2E2;
-            color: #991B1B;
+        /* === Radio option row === */
+        .rating-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.15s ease;
+        }
+        .rating-option:hover {
+            background: #F9FAFB;
+        }
+        .rating-option.selected {
+            background: #FFFCE0;
+            border-color: #FFF469;
+            border-left: 3px solid #000;
         }
 
-        /* Committed Row */
-        .committed-row {
-            background: #F0FDF4;
+        /* === Phase header in sidebar === */
+        .sidebar-phase-header {
+            font-family: 'Monument', monospace;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #FFF469;
+            padding: 8px 12px;
+            margin-top: 16px;
+            margin-bottom: 4px;
         }
     </style>
 </head>
@@ -269,7 +432,7 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+        const { useState, useEffect, useRef, useCallback } = React;
 
         // Configuration
         const CONFIG = {
@@ -292,935 +455,247 @@
         ToolAccessControl.init(CONFIG.TOOL_SLUG);
 
         // Initialize cognitive load components
-        CognitiveLoad.init('team', {"insights":["A team is only as strong as its weakest dysfunction. Identify and address the top 3.","Accountability without trust is tyranny. Trust without accountability is negligence."],"caseStudy":{"before":"A mid-size tech team scored 8.2 on Absence of Trust and 7.5 on Fear of Conflict. Meetings were polite but shallow -- no one challenged ideas, decisions were made by the loudest voice, and real issues were discussed only in hallway conversations afterward.","after":"After 90 days of structured trust-building exercises and 'disagree and commit' decision norms, Absence of Trust dropped from 8.2 to 3.4 and Fear of Conflict dropped from 7.5 to 2.8. The team began surfacing real disagreements in meetings, leading to faster and better-aligned decisions.","quote":"The initial assessment was brutal -- nobody wanted to see a trust score of 8 out of 10. But naming the dysfunction gave us permission to fix it. Within three months, we went from avoiding conflict to having the most productive strategy meetings in the company. -- Operations Director, Fast Track client"}});
+        CognitiveLoad.init('team', {"insights":["A team is only as strong as its weakest dysfunction. Identify and address the foundation first.","Accountability without trust is tyranny. Trust without accountability is negligence."],"caseStudy":{"before":"A mid-size tech team scored 3 (Rarely) on Absence of Trust and 4 on Fear of Conflict. Meetings were polite but shallow -- no one challenged ideas, decisions were made by the loudest voice, and real issues were discussed only in hallway conversations afterward.","after":"After 90 days of structured trust-building exercises and 'disagree and commit' decision norms, Absence of Trust improved to 8 and Fear of Conflict to 7. The team began surfacing real disagreements in meetings, leading to faster and better-aligned decisions.","quote":"The initial assessment was brutal -- nobody wanted to see those scores. But naming the dysfunction gave us permission to fix it. Within three months, we went from avoiding conflict to having the most productive strategy meetings in the company. -- Operations Director, Fast Track client"}});
         const { FastTrackInsight, ScienceBox, WarningBox, CaseStudy, ScienceBookmarkIcon, ToolGuideDrawer } = CognitiveLoad.components;
 
-        // Alias ScienceBox as TheScience for backward compatibility with existing JSX
         const TheScience = ({ children }) => (
             <ScienceBox collapsible={true}>{children}</ScienceBox>
         );
 
-        // Progress Dots Component
-        const ProgressDots = ({ currentStep, onDotClick }) => {
-            const steps = [0, 1, 2, 3, 4, 5, 6];
+        /* ============================================================
+           CORE DATA: 15 Statements + Dysfunction Map
+           ============================================================ */
 
-            return (
-                <div className="flex items-center justify-center gap-3 mb-8">
-                    {steps.map(stepIndex => {
-                        const isCurrent = stepIndex === currentStep;
-                        const isFilled = stepIndex < currentStep;
-                        const isClickable = stepIndex < currentStep;
+        const STATEMENTS = [
+            { id: 1, text: "Team members are passionate and unguarded in their discussion of issues." },
+            { id: 2, text: "Team members call out one another's deficiencies or unproductive behaviours." },
+            { id: 3, text: "Team members know what their peers are working on and how they contribute to the collective good of the team." },
+            { id: 4, text: "Team members quickly and genuinely apologise to one another when they say or do something inappropriate or possibly damaging to the team." },
+            { id: 5, text: "Team members willingly make sacrifices in their departments or areas of expertise for the good of the team." },
+            { id: 6, text: "Team members openly admit their weaknesses and mistakes." },
+            { id: 7, text: "Team meetings are compelling, and not boring." },
+            { id: 8, text: "Team members leave meetings confident that their peers are completely committed to the decisions that were agreed upon, even if there was initial disagreement." },
+            { id: 9, text: "Morale is significantly affected when team goals are not met." },
+            { id: 10, text: "During team meetings, the most important and difficult issues are put on the table to be resolved." },
+            { id: 11, text: "Team members are deeply concerned about the prospect of letting down their peers." },
+            { id: 12, text: "Team members know about one another's personal lives and are comfortable discussing them." },
+            { id: 13, text: "Team members end discussions with clear and specific resolutions and calls to action." },
+            { id: 14, text: "Team members challenge one another about their plans and approaches." },
+            { id: 15, text: "Team members are slow to seek credit for their own contributions, but quick to point out those of others." }
+        ];
 
-                        return (
-                            <div
-                                key={stepIndex}
-                                className={`progress-dot ${isFilled ? 'filled' : ''} ${isCurrent ? 'current' : ''} ${isClickable ? 'clickable' : ''}`}
-                                onClick={() => isClickable && onDotClick(stepIndex)}
-                                title={`Step ${stepIndex}`}
-                            />
-                        );
-                    })}
-                </div>
-            );
+        const DYSFUNCTION_MAP = {
+            trust: { name: 'Absence of Trust', statements: [4, 6, 12] },
+            conflict: { name: 'Fear of Conflict', statements: [1, 7, 10] },
+            commitment: { name: 'Lack of Commitment', statements: [3, 8, 13] },
+            accountability: { name: 'Avoidance of Accountability', statements: [2, 11, 14] },
+            results: { name: 'Inattention to Results', statements: [5, 9, 15] }
         };
 
-        // Utility Functions
-        const trimText = (text) => text?.trim() || '';
+        const DYSFUNCTION_ORDER = ['trust', 'conflict', 'commitment', 'accountability', 'results'];
 
-        const calculateDysfunctionScores = (teamMembers) => {
-            if (!teamMembers || teamMembers.length === 0) return null;
+        /* ============================================================
+           SCORING FUNCTIONS
+           ============================================================ */
 
-            const membersWithAssessments = teamMembers.filter(m => m.assessment);
-            if (membersWithAssessments.length === 0) return null;
-
-            const dysfunctions = ['trust', 'conflict', 'commitment', 'accountability', 'results'];
+        const calculateMyScores = (ratings) => {
             const scores = {};
-
-            dysfunctions.forEach(d => {
-                const total = membersWithAssessments.reduce((sum, member) => {
-                    return sum + (member.assessment[d] || 0);
-                }, 0);
-                scores[d] = Math.round((total / membersWithAssessments.length) * 100) / 100;
+            DYSFUNCTION_ORDER.forEach(key => {
+                const stmtIds = DYSFUNCTION_MAP[key].statements;
+                const sum = stmtIds.reduce((acc, id) => acc + (parseInt(ratings[id]) || 0), 0);
+                scores[key] = sum;
             });
-
             return scores;
         };
 
-        const getSeverityBadge = (score) => {
-            if (score >= 1 && score < 4) {
-                return { color: 'green', label: 'Strength' };
-            } else if (score >= 4 && score < 7) {
-                return { color: 'yellow', label: 'Opportunity' };
-            } else if (score >= 7 && score <= 10) {
-                return { color: 'red', label: 'Priority' };
+        const allRated = (ratings) => {
+            return STATEMENTS.every(s => ratings[s.id] !== undefined && ratings[s.id] !== null);
+        };
+
+        const getScoreBadge = (score) => {
+            if (score >= 8) return { color: 'green', label: 'Not a problem' };
+            if (score >= 6) return { color: 'yellow', label: 'Possible problem' };
+            return { color: 'red', label: 'Needs to be addressed' };
+        };
+
+        const getTeamScoreBadge = (avg) => {
+            if (avg >= 8) return { color: 'green', label: 'Not a problem for your team' };
+            if (avg >= 6) return { color: 'yellow', label: 'Could be a problem' };
+            return { color: 'red', label: 'Needs to be addressed' };
+        };
+
+        /* ============================================================
+           TRANSITION CONTENT
+           ============================================================ */
+
+        const TRANSITION_CONTENT = {
+            1: {
+                title: 'ASSESSED.',
+                text: "You've rated all 15 statements honestly. Now see how your answers map to Lencioni's 5 Dysfunctions.",
+                brutalTruth: "Most people rate their team more favourably than reality warrants. The statements you just answered are designed to cut through bias. Your scores reflect patterns, not opinions -- and patterns don't lie.",
+                peerProof: "Research across 10,000+ teams shows that individuals who rate honestly in the initial assessment see 40% better improvement outcomes than those who soften their scores to avoid discomfort."
+            },
+            3: {
+                title: 'SCORES COMPILED.',
+                text: "The team's individual scores are assembled. Now see the full picture across all five dysfunctions.",
+                brutalTruth: "Individual perspectives are data points. Combined scores reveal patterns that no single person can see. The biggest breakthroughs come when teams discover that everyone is experiencing the same dysfunction but nobody has named it.",
+                peerProof: "Lencioni's field data shows that teams using compiled individual assessments identify their real dysfunctions 2.5x faster than teams that try to discuss issues without structured data."
+            },
+            4: {
+                title: 'DATA ANALYSED.',
+                text: "You've seen the team's dysfunction profile. Now turn insight into specific, accountable action.",
+                brutalTruth: "Analysis without action is intellectual entertainment. Every dysfunction that scored below 8 needs a specific plan with a name, a task, and a deadline. Vague commitments like 'we'll work on trust' fail 100% of the time.",
+                peerProof: "Locke & Latham's goal-setting research demonstrates that specific, written action plans are 42% more likely to be completed than verbal agreements made in team meetings."
             }
-            return { color: 'grey', label: 'Unknown' };
         };
 
-        const sortDysfunctionsByScore = (scores) => {
-            if (!scores) return [];
+        /* ============================================================
+           SHARED COMPONENTS
+           ============================================================ */
 
-            const dysfunctionNames = {
-                trust: 'Absence of Trust',
-                conflict: 'Fear of Conflict',
-                commitment: 'Lack of Commitment',
-                accountability: 'Avoidance of Accountability',
-                results: 'Inattention to Results'
-            };
+        function CheckIcon({ color = "#fff", size = 16 }) {
+            return <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>;
+        }
 
-            return Object.entries(scores)
-                .map(([key, score]) => ({ key, name: dysfunctionNames[key], score }))
-                .sort((a, b) => b.score - a.score);
-        };
-
-        // Step 0: Cover Page
-        const Step0 = ({ onNext }) => (
-            <div className="max-w-2xl mx-auto px-4 py-12 text-center space-y-8 min-h-screen flex flex-col justify-center">
-                <h1 className="plaak text-5xl md:text-6xl mb-4">5 Dysfunctions of a Team</h1>
-                <p className="riforma text-2xl text-gray-700 mb-6">Workshop Tool</p>
-                <p className="riforma text-lg text-gray-600 max-w-xl mx-auto mb-8">
-                    Transform your team dynamics with this interactive tool based on Patrick Lencioni's groundbreaking model.
-                    Auto-calculate scores, visualize results, and create concrete action plans with digital commitment tracking.
-                </p>
-                <div className="space-y-4">
-                    <button onClick={onNext} className="btn-primary text-lg px-8 py-4">
-                        Start Workshop
-                    </button>
-                    <p className="text-sm text-gray-500">Fast Track Leadership Development</p>
+        function ButtonFooter({ onBack, onNext, nextLabel = 'Next', showBack = true, disabled = false }) {
+            return (
+                <div className="btn-footer no-print">
+                    {showBack ? <button className="btn-back" onClick={onBack}>&larr; Back</button> : <div />}
+                    <button className="btn-next" disabled={disabled} onClick={onNext}>{nextLabel} &rarr;</button>
                 </div>
-            </div>
-        );
+            );
+        }
 
-        // Step 1: Team Setup
-        const Step1 = ({ teamData, setTeamData, userEmail, setUserEmail }) => {
-            const [memberName, setMemberName] = useState('');
+        function MobileStepBar({ currentStep, totalSteps }) {
+            const total = totalSteps || 6;
+            const progress = currentStep >= 999 ? 100 : Math.round((currentStep / total) * 100);
+            return (
+                <div className="mobile-step-bar no-print">
+                    <div className="bar-text">Step {Math.min(currentStep, total)} of {total}</div>
+                    <div className="mobile-progress"><div className="mobile-progress-fill" style={{ width: `${progress}%` }} /></div>
+                </div>
+            );
+        }
 
-            const addTeamMember = () => {
-                if (!memberName.trim()) return;
+        function CoachFeedbackPanel() {
+            const [expanded, setExpanded] = useState(false);
+            const [feedback, setFeedback] = useState(null);
 
-                const newMember = {
-                    id: Date.now().toString(),
-                    name: memberName.trim(),
-                    assessment: null
+            useEffect(() => {
+                const check = () => {
+                    if (window.AIChallenge && window.AIChallenge.getLastFeedback) {
+                        setFeedback(window.AIChallenge.getLastFeedback());
+                    }
                 };
+                check();
+                const interval = setInterval(check, 2000);
+                return () => clearInterval(interval);
+            }, []);
 
-                setTeamData(prev => ({
-                    ...prev,
-                    teamMembers: [...prev.teamMembers, newMember]
-                }));
-                setMemberName('');
-            };
-
-            const removeMember = (id) => {
-                setTeamData(prev => ({
-                    ...prev,
-                    teamMembers: prev.teamMembers.filter(m => m.id !== id)
-                }));
-            };
-
-            const updateAssessment = (memberId, dysfunction, value) => {
-                setTeamData(prev => ({
-                    ...prev,
-                    teamMembers: prev.teamMembers.map(m => {
-                        if (m.id === memberId) {
-                            return {
-                                ...m,
-                                assessment: {
-                                    ...m.assessment,
-                                    [dysfunction]: parseInt(value) || 0
-                                }
-                            };
-                        }
-                        return m;
-                    })
-                }));
-            };
+            if (!feedback) return null;
 
             return (
-                <div className="max-w-2xl mx-auto px-4 py-8 space-y-8 pb-32">
-                    <h2 className="plaak text-3xl mb-6">Team Setup</h2>
-
-                    <FastTrackInsight>
-                        Start by naming your team and adding all members. Then enter individual dysfunction scores (1-10 scale)
-                        for each member. The tool will automatically calculate team averages.
-                    </FastTrackInsight>
-
-                    {/* Team Name */}
-                    <div>
-                        <label className="block text-sm font-medium mb-2">Team Name *</label>
-                        <input
-                            type="text"
-                            value={teamData.teamName}
-                            onChange={(e) => setTeamData(prev => ({ ...prev, teamName: e.target.value }))}
-                            placeholder="Product Team, Engineering, Marketing..."
-                            className="worksheet-input"
-                        />
-                    </div>
-
-                    {/* Add Team Members */}
-                    <div>
-                        <label className="block text-sm font-medium mb-2">Add Team Members *</label>
-                        <div className="flex gap-2">
-                            <input
-                                type="text"
-                                value={memberName}
-                                onChange={(e) => setMemberName(e.target.value)}
-                                onKeyPress={(e) => e.key === 'Enter' && addTeamMember()}
-                                placeholder="Member name"
-                                className="worksheet-input"
-                            />
-                            <button onClick={addTeamMember} className="btn-primary whitespace-nowrap">
-                                Add Member
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Team Members List */}
-                    {teamData.teamMembers.length > 0 && (
-                        <div className="space-y-4">
-                            <h3 className="font-medium text-lg">Team Members ({teamData.teamMembers.length})</h3>
-                            {teamData.teamMembers.map(member => (
-                                <div key={member.id} className="border border-gray-200 p-4 rounded space-y-3">
-                                    <div className="flex justify-between items-center">
-                                        <span className="font-medium">{member.name}</span>
-                                        <button
-                                            onClick={() => removeMember(member.id)}
-                                            className="text-red-600 hover:text-red-800 text-sm"
-                                        >
-                                            Remove
-                                        </button>
-                                    </div>
-
-                                    <div className="text-sm text-gray-600 mb-2">
-                                        Individual Assessment Scores (1=Low dysfunction, 10=High dysfunction)
-                                    </div>
-
-                                    <div className="grid grid-cols-1 gap-2">
-                                        {[
-                                            { key: 'trust', label: 'Absence of Trust' },
-                                            { key: 'conflict', label: 'Fear of Conflict' },
-                                            { key: 'commitment', label: 'Lack of Commitment' },
-                                            { key: 'accountability', label: 'Avoidance of Accountability' },
-                                            { key: 'results', label: 'Inattention to Results' }
-                                        ].map(({ key, label }) => (
-                                            <div key={key} className="flex items-center gap-2">
-                                                <label className="text-sm flex-1">{label}:</label>
-                                                <input
-                                                    type="number"
-                                                    min="1"
-                                                    max="10"
-                                                    value={member.assessment?.[key] || ''}
-                                                    onChange={(e) => updateAssessment(member.id, key, e.target.value)}
-                                                    className="worksheet-input w-20"
-                                                    placeholder="1-10"
-                                                />
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            ))}
+                <div style={{ marginTop: 24, borderTop: '1px solid #333', paddingTop: 16 }}>
+                    <button
+                        onClick={() => setExpanded(!expanded)}
+                        style={{ background: 'none', border: 'none', color: '#FFF469', cursor: 'pointer', fontFamily: "'Monument', monospace", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 6, padding: 0, width: '100%' }}
+                    >
+                        <span style={{ transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s', display: 'inline-block' }}>&#9654;</span>
+                        COACH FEEDBACK
+                    </button>
+                    {expanded && (
+                        <div style={{ marginTop: 10, fontSize: 12, color: '#ccc', lineHeight: 1.5 }}>
+                            {feedback.type === 'approved' && (
+                                <p style={{ color: '#FFF469' }}>{feedback.message}</p>
+                            )}
+                            {feedback.type === 'challenges' && (
+                                <>
+                                    {feedback.encouragement && <p style={{ color: '#FFF469', marginBottom: 8 }}>{feedback.encouragement}</p>}
+                                    {feedback.challenges && feedback.challenges.map((ch, i) => (
+                                        <div key={i} style={{ marginBottom: 8, paddingLeft: 8, borderLeft: '2px solid #555' }}>
+                                            <div style={{ fontSize: 10, color: '#999', marginBottom: 2 }}>{ch.question_text || ch.question_key}</div>
+                                            <div>{ch.feedback}</div>
+                                        </div>
+                                    ))}
+                                </>
+                            )}
                         </div>
                     )}
                 </div>
             );
-        };
+        }
 
-        // Step 2: Team Summary & Radar Chart
-        const Step2 = ({ teamData }) => {
-            const chartRef = useRef(null);
-            const chartInstanceRef = useRef(null);
+        function WizardSidebar({ currentStep, ratings, teamData, onNavigate, mode }) {
+            const individualSteps = [
+                { num: 1, label: 'Assessment', time: '~8 min' },
+                { num: 2, label: 'Your Scores', time: '~2 min' }
+            ];
+            const teamSteps = [
+                { num: 3, label: 'Score Compilation', time: '~5 min' },
+                { num: 4, label: 'Dysfunction Analysis', time: '~3 min' },
+                { num: 5, label: 'Improvement Plan', time: '~5 min' },
+                { num: 6, label: 'Final Review', time: '~2 min' }
+            ];
 
-            const scores = calculateDysfunctionScores(teamData.teamMembers);
-
-            useEffect(() => {
-                if (scores && chartRef.current) {
-                    // Destroy existing chart
-                    if (chartInstanceRef.current) {
-                        chartInstanceRef.current.destroy();
-                    }
-
-                    const ctx = chartRef.current.getContext('2d');
-                    chartInstanceRef.current = new Chart(ctx, {
-                        type: 'radar',
-                        data: {
-                            labels: [
-                                'Absence of Trust',
-                                'Fear of Conflict',
-                                'Lack of Commitment',
-                                'Avoidance of Accountability',
-                                'Inattention to Results'
-                            ],
-                            datasets: [{
-                                label: 'Team Scores',
-                                data: [
-                                    scores.trust,
-                                    scores.conflict,
-                                    scores.commitment,
-                                    scores.accountability,
-                                    scores.results
-                                ],
-                                backgroundColor: 'rgba(255, 244, 105, 0.2)',
-                                borderColor: '#000000',
-                                borderWidth: 2,
-                                pointBackgroundColor: '#000000',
-                                pointBorderColor: '#000000',
-                                pointRadius: 4
-                            }]
-                        },
-                        options: {
-                            scales: {
-                                r: {
-                                    beginAtZero: true,
-                                    min: 0,
-                                    max: 10,
-                                    ticks: {
-                                        stepSize: 2
-                                    }
-                                }
-                            },
-                            plugins: {
-                                legend: {
-                                    display: false
-                                }
-                            }
-                        }
-                    });
-                }
-
-                return () => {
-                    if (chartInstanceRef.current) {
-                        chartInstanceRef.current.destroy();
-                    }
-                };
-            }, [scores]);
-
-            if (!scores) {
-                return (
-                    <div className="max-w-2xl mx-auto px-4 py-8 space-y-8 pb-32">
-                        <h2 className="plaak text-3xl mb-6">Team Summary</h2>
-                        <div className="bg-yellow-50 border border-yellow-200 p-4 rounded">
-                            <p className="text-yellow-800">
-                                Add team members and enter their assessment scores in Step 1 to see the team summary and radar chart.
-                            </p>
-                        </div>
-                    </div>
-                );
-            }
-
-            const sorted = sortDysfunctionsByScore(scores);
-
-            return (
-                <div className="max-w-2xl mx-auto px-4 py-8 space-y-8 pb-32">
-                    <h2 className="plaak text-3xl mb-6">Team Summary</h2>
-
-                    <TheScience>
-                        Patrick Lencioni's model shows how team dysfunctions build on each other like a pyramid.
-                        Without trust, teams can't have productive conflict. Without conflict, there's no real commitment.
-                        And so on. Focus on your highest-scoring dysfunctions first.
-                    </TheScience>
-
-                    {/* Scores Table */}
-                    <div>
-                        <h3 className="font-medium text-lg mb-4">Dysfunction Scores</h3>
-                        <div className="border border-gray-200 rounded overflow-hidden">
-                            <table className="w-full">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="px-4 py-2 text-left text-sm font-medium">Dysfunction</th>
-                                        <th className="px-4 py-2 text-center text-sm font-medium">Score</th>
-                                        <th className="px-4 py-2 text-center text-sm font-medium">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {sorted.map(({ key, name, score }) => {
-                                        const badge = getSeverityBadge(score);
-                                        return (
-                                            <tr key={key} className="border-t border-gray-200">
-                                                <td className="px-4 py-3 text-sm">{name}</td>
-                                                <td className="px-4 py-3 text-center font-medium">{score.toFixed(1)}</td>
-                                                <td className="px-4 py-3 text-center">
-                                                    <span className={`badge badge-${badge.color}`}>
-                                                        {badge.label}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    {/* Radar Chart */}
-                    <div>
-                        <h3 className="font-medium text-lg mb-4">Team Dysfunction Profile</h3>
-                        <div className="bg-white p-6 border border-gray-200 rounded">
-                            <canvas ref={chartRef} id="radarChart" />
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-        // Step 3: Improvement Plan
-        const Step3 = ({ teamData, setTeamData }) => {
-            const scores = calculateDysfunctionScores(teamData.teamMembers);
-            const topDysfunctions = scores ? sortDysfunctionsByScore(scores).slice(0, 3) : [];
-
-            const updateImprovementNote = (dysfunctionKey, note) => {
-                setTeamData(prev => {
-                    const existing = prev.improvementPlan.find(p => p.dysfunction === dysfunctionKey);
-                    if (existing) {
-                        return {
-                            ...prev,
-                            improvementPlan: prev.improvementPlan.map(p =>
-                                p.dysfunction === dysfunctionKey ? { ...p, note } : p
-                            )
-                        };
-                    } else {
-                        return {
-                            ...prev,
-                            improvementPlan: [...prev.improvementPlan, { dysfunction: dysfunctionKey, note }]
-                        };
-                    }
-                });
-            };
-
-            return (
-                <div className="max-w-2xl mx-auto px-4 py-8 space-y-8 pb-32">
-                    <h2 className="plaak text-3xl mb-6">Improvement Plan</h2>
-
-                    <FastTrackInsight>
-                        Focus on your top 3 dysfunctions. Trying to fix everything at once leads to overwhelm and inaction.
-                        Write specific improvement strategies for each priority area.
-                    </FastTrackInsight>
-
-                    <div className="space-y-6">
-                        {topDysfunctions.map(({ key, name, score }, index) => {
-                            const badge = getSeverityBadge(score);
-                            const existingNote = teamData.improvementPlan.find(p => p.dysfunction === key)?.note || '';
-
-                            return (
-                                <div key={key} className="border border-gray-200 p-6 rounded space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <h3 className="font-medium text-lg">#{index + 1} Priority: {name}</h3>
-                                            <div className="flex items-center gap-2 mt-1">
-                                                <span className="text-sm text-gray-600">Score: {score.toFixed(1)}</span>
-                                                <span className={`badge badge-${badge.color} text-xs`}>
-                                                    {badge.label}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium mb-2">
-                                            How will your team improve in this area?
-                                        </label>
-                                        <textarea
-                                            value={existingNote}
-                                            onChange={(e) => updateImprovementNote(key, e.target.value)}
-                                            placeholder="Describe specific strategies, behaviors to change, or practices to implement..."
-                                            className="worksheet-input min-h-[100px]"
-                                        />
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            );
-        };
-
-        // Step 4: Action Plan with Validation
-        const Step4 = ({ teamData, setTeamData }) => {
-            const updateAction = (index, field, value) => {
-                setTeamData(prev => {
-                    const actions = [...prev.actionPlan];
-                    if (!actions[index]) {
-                        actions[index] = { what: '', who: '', when: '' };
-                    }
-                    actions[index] = { ...actions[index], [field]: value };
-                    return { ...prev, actionPlan: actions };
-                });
-            };
-
-            const validateAction = (action) => {
-                if (!action) return false;
-                return (
-                    trimText(action.what).length >= 30 &&
-                    action.who &&
-                    action.who !== '' &&
-                    action.when &&
-                    action.when !== ''
-                );
-            };
-
-            const actions = [0, 1, 2].map(i => teamData.actionPlan[i] || { what: '', who: '', when: '' });
-            const validActions = actions.filter(validateAction).length;
-
-            const today = new Date().toISOString().split('T')[0];
-
-            // Check for duplicate assignments
-            const getDuplicateWarning = (index) => {
-                const action = actions[index];
-                if (!action.who || !action.when) return null;
-
-                const duplicates = actions.filter((a, i) =>
-                    i !== index && a.who === action.who && a.when === action.when
-                );
-
-                if (duplicates.length > 0) {
-                    return `⚠️ ${action.who} has multiple actions due ${action.when}`;
-                }
+            const getSnippet = (n) => {
+                if (n === 1 && allRated(ratings)) return '15 of 15 rated';
+                if (n === 1 && Object.keys(ratings).length > 0) return Object.keys(ratings).length + ' of 15 rated';
+                if (n === 2 && allRated(ratings)) return 'Scores calculated';
+                if (n === 3 && teamData.teamMembers.length > 0) return teamData.teamMembers.length + ' member' + (teamData.teamMembers.length !== 1 ? 's' : '');
+                if (n === 4 && teamData.teamMembers.length > 0) return 'Analysis ready';
+                if (n === 5 && teamData.improvementPlan.length > 0) return teamData.improvementPlan.filter(p => p.what).length + ' actions planned';
                 return null;
             };
 
-            return (
-                <div className="max-w-2xl mx-auto px-4 py-8 space-y-8 pb-32">
-                    <h2 className="plaak text-3xl mb-6">Action Plan</h2>
+            const effectiveStep = Math.ceil(currentStep);
 
-                    <FastTrackInsight>
-                        Create 3 concrete actions. Each must have: (1) a specific description (30+ characters),
-                        (2) a single owner (no "All" or "Everyone"), and (3) a specific deadline (no "Ongoing").
-                        Vague commitments fail.
-                    </FastTrackInsight>
+            const renderStepItem = (s) => {
+                const isCompleted = effectiveStep > s.num;
+                const isActive = effectiveStep === s.num;
+                const isLocked = effectiveStep < s.num;
+                const snippet = isCompleted ? getSnippet(s.num) : null;
 
-                    <div className="bg-gray-50 p-4 rounded mb-6">
-                        <p className="text-sm font-medium">
-                            Progress: {validActions} of 3 actions complete
-                        </p>
-                    </div>
-
-                    <div className="space-y-8">
-                        {[0, 1, 2].map(index => {
-                            const action = actions[index];
-                            const isValid = validateAction(action);
-                            const whatLength = trimText(action.what).length;
-                            const duplicateWarning = getDuplicateWarning(index);
-
-                            return (
-                                <div key={index} className={`border-2 rounded p-6 space-y-4 ${isValid ? 'border-green-500' : 'border-gray-200'}`}>
-                                    <div className="flex items-center justify-between">
-                                        <h3 className="font-medium text-lg">Action #{index + 1}</h3>
-                                        {isValid && <span className="text-green-600 font-medium">✓ Complete</span>}
-                                    </div>
-
-                                    {/* What */}
-                                    <div>
-                                        <label className="block text-sm font-medium mb-2">
-                                            What specific action will be taken? *
-                                        </label>
-                                        <textarea
-                                            value={action.what}
-                                            onChange={(e) => updateAction(index, 'what', e.target.value)}
-                                            placeholder="Be specific: What exactly will happen? What's the desired outcome?"
-                                            className={`worksheet-input min-h-[80px] ${whatLength > 0 && whatLength < 30 ? 'error' : ''}`}
-                                        />
-                                        <div className="flex justify-between mt-1">
-                                            <span className={`text-sm ${whatLength >= 30 ? 'text-green-600' : 'text-gray-500'}`}>
-                                                {whatLength} / 30 minimum characters
-                                            </span>
-                                            {whatLength > 0 && whatLength < 30 && (
-                                                <span className="text-sm text-red-600">Add {30 - whatLength} more characters</span>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Who */}
-                                    <div>
-                                        <label className="block text-sm font-medium mb-2">
-                                            Who is responsible? *
-                                        </label>
-                                        <select
-                                            value={action.who}
-                                            onChange={(e) => updateAction(index, 'who', e.target.value)}
-                                            className="worksheet-input"
-                                        >
-                                            <option value="">Select person...</option>
-                                            {teamData.teamMembers.map(member => (
-                                                <option key={member.id} value={member.name}>
-                                                    {member.name}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <p className="text-xs text-gray-500 mt-1">
-                                            Single-person ownership only (no "All" option)
-                                        </p>
-                                    </div>
-
-                                    {/* When */}
-                                    <div>
-                                        <label className="block text-sm font-medium mb-2">
-                                            When will it be done? *
-                                        </label>
-                                        <input
-                                            type="date"
-                                            value={action.when}
-                                            onChange={(e) => updateAction(index, 'when', e.target.value)}
-                                            min={today}
-                                            className="worksheet-input"
-                                        />
-                                        <p className="text-xs text-gray-500 mt-1">
-                                            Specific date required (no "Ongoing" allowed)
-                                        </p>
-                                    </div>
-
-                                    {duplicateWarning && (
-                                        <div className="bg-yellow-50 border border-yellow-200 p-3 rounded text-sm text-yellow-800">
-                                            {duplicateWarning} - ensure workload is realistic
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            );
-        };
-
-        // Step 5: Commitment Lock
-        const Step5 = ({ teamData, setTeamData }) => {
-            const [commitments, setCommitments] = useState({});
-
-            useEffect(() => {
-                // Load existing commitments from teamData
-                if (teamData.commitments && teamData.commitments.length > 0) {
-                    const commitmentsMap = {};
-                    teamData.commitments.forEach(c => {
-                        commitmentsMap[c.memberId] = c.timestamp;
-                    });
-                    setCommitments(commitmentsMap);
-                }
-            }, []);
-
-            const handleCommit = (memberId, memberName) => {
-                const timestamp = new Date().toISOString();
-                setCommitments(prev => ({ ...prev, [memberId]: timestamp }));
-
-                // Update teamData
-                setTeamData(prev => ({
-                    ...prev,
-                    commitments: [
-                        ...prev.commitments.filter(c => c.memberId !== memberId),
-                        { memberId, memberName, timestamp }
-                    ]
-                }));
-            };
-
-            const committedCount = Object.keys(commitments).length;
-            const totalCount = teamData.teamMembers.length;
-            const allCommitted = committedCount === totalCount && totalCount > 0;
-
-            if (teamData.teamMembers.length === 0) {
                 return (
-                    <div className="max-w-2xl mx-auto px-4 py-8 space-y-8 pb-32">
-                        <h2 className="plaak text-3xl mb-6">Commitment Lock</h2>
-                        <div className="bg-red-50 border border-red-200 p-4 rounded">
-                            <p className="text-red-800">
-                                Cannot proceed: No team members added. Return to Step 1 to add team members.
-                            </p>
+                    <div key={s.num} className={`sidebar-step-item ${isCompleted ? 'completed' : ''} ${isActive ? 'active' : ''} ${isLocked ? 'locked' : ''}`}
+                        onClick={() => isCompleted && onNavigate && onNavigate(s.num)}
+                        title={isCompleted ? 'Click to review this step' : ''}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            {isCompleted ? <CheckIcon color="#000" size={14} /> : <span className="step-num" style={{ color: isActive ? '#fff' : '#ccc' }}>{String(s.num).padStart(2, '0')}</span>}
+                            <span className="step-name" style={{ color: isLocked ? '#666' : isCompleted ? '#000' : '#fff' }}>{s.label}</span>
                         </div>
+                        {snippet && <div className="sidebar-snippet">{snippet}</div>}
                     </div>
                 );
-            }
-
-            return (
-                <div className="max-w-2xl mx-auto px-4 py-8 space-y-8 pb-32">
-                    <h2 className="plaak text-3xl mb-6">Commitment Check</h2>
-
-                    <FastTrackInsight>
-                        Each team member must digitally sign off on these actions. The session cannot be marked complete
-                        until 100% commit. This creates accountability and ensures everyone is aligned on next steps.
-                    </FastTrackInsight>
-
-                    <div className="bg-gray-50 p-4 rounded mb-6">
-                        <p className="text-lg font-medium text-center">
-                            {committedCount} of {totalCount} committed
-                        </p>
-                        <div className="w-full bg-gray-200 h-2 rounded mt-2">
-                            <div
-                                className="bg-green-500 h-2 rounded transition-all duration-300"
-                                style={{ width: `${(committedCount / totalCount) * 100}%` }}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="space-y-3">
-                        {teamData.teamMembers.map(member => {
-                            const isCommitted = !!commitments[member.id];
-
-                            return (
-                                <div
-                                    key={member.id}
-                                    className={`flex items-center justify-between p-4 border rounded ${
-                                        isCommitted ? 'committed-row border-green-500' : 'border-gray-200'
-                                    }`}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        {isCommitted && <span className="text-green-600 text-xl">✓</span>}
-                                        <span className="font-medium">{member.name}</span>
-                                    </div>
-                                    <button
-                                        onClick={() => handleCommit(member.id, member.name)}
-                                        disabled={isCommitted}
-                                        className={isCommitted ? 'btn-primary' : 'btn-secondary'}
-                                    >
-                                        {isCommitted ? '✓ Committed' : 'I Commit'}
-                                    </button>
-                                </div>
-                            );
-                        })}
-                    </div>
-
-                    {allCommitted && (
-                        <div className="bg-green-50 border border-green-200 p-4 rounded text-center">
-                            <p className="text-green-800 font-medium">
-                                🎉 100% Team Commitment Achieved! Proceed to final review and export.
-                            </p>
-                        </div>
-                    )}
-                </div>
-            );
-        };
-
-        // Step 6: Final Review & PDF Export
-        const Step6 = ({ teamData }) => {
-            const [isExporting, setIsExporting] = useState(false);
-            const [exportStatus, setExportStatus] = useState('');
-
-            const scores = calculateDysfunctionScores(teamData.teamMembers);
-            const sorted = scores ? sortDysfunctionsByScore(scores) : [];
-
-            const generatePDF = async () => {
-                try {
-                    setIsExporting(true);
-                    setExportStatus('Generating PDF... this may take 30 seconds');
-
-                    const { jsPDF } = window.jspdf;
-                    const pdf = new jsPDF();
-
-                    // Page 1: Cover
-                    pdf.setFontSize(24);
-                    pdf.text('5 Dysfunctions of a Team', 20, 40);
-                    pdf.setFontSize(16);
-                    pdf.text('Workshop Results', 20, 55);
-                    pdf.setFontSize(12);
-                    pdf.text(`Team: ${teamData.teamName}`, 20, 75);
-                    pdf.text(`Date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`, 20, 85);
-                    pdf.text('Fast Track Leadership Development', 20, 100);
-
-                    // Page 2: Team Summary
-                    pdf.addPage();
-                    pdf.setFontSize(18);
-                    pdf.text('Team Summary', 20, 20);
-
-                    pdf.setFontSize(12);
-                    let yPos = 35;
-                    pdf.text('Team Members:', 20, yPos);
-                    yPos += 10;
-                    teamData.teamMembers.forEach(member => {
-                        pdf.text(`• ${member.name}`, 25, yPos);
-                        yPos += 7;
-                    });
-
-                    yPos += 10;
-                    pdf.text('Dysfunction Scores:', 20, yPos);
-                    yPos += 10;
-                    sorted.forEach(({ name, score }) => {
-                        const badge = getSeverityBadge(score);
-                        pdf.text(`${name}: ${score.toFixed(1)} (${badge.label})`, 25, yPos);
-                        yPos += 7;
-                    });
-
-                    // Page 3: Radar Chart
-                    const chartCanvas = document.getElementById('radarChart');
-                    if (chartCanvas) {
-                        try {
-                            const chartImage = await html2canvas(chartCanvas, { scale: 2 });
-                            const chartDataUrl = chartImage.toDataURL('image/png');
-
-                            pdf.addPage();
-                            pdf.setFontSize(18);
-                            pdf.text('Team Dysfunction Profile', 20, 20);
-                            pdf.addImage(chartDataUrl, 'PNG', 20, 35, 170, 170);
-                        } catch (err) {
-                            console.error('Chart capture failed:', err);
-                            setExportStatus('Chart could not be included in PDF');
-                        }
-                    }
-
-                    // Page 4: Improvement Plan
-                    pdf.addPage();
-                    pdf.setFontSize(18);
-                    pdf.text('Improvement Plan', 20, 20);
-
-                    yPos = 35;
-                    teamData.improvementPlan.slice(0, 3).forEach((plan, index) => {
-                        const dysfunction = sorted.find(d => d.key === plan.dysfunction);
-                        pdf.setFontSize(14);
-                        pdf.text(`#${index + 1}: ${dysfunction?.name || plan.dysfunction}`, 20, yPos);
-                        yPos += 8;
-                        pdf.setFontSize(11);
-                        const lines = pdf.splitTextToSize(plan.note || 'No notes provided', 170);
-                        pdf.text(lines, 25, yPos);
-                        yPos += lines.length * 6 + 10;
-                    });
-
-                    // Page 5: Action Plan
-                    pdf.addPage();
-                    pdf.setFontSize(18);
-                    pdf.text('Action Plan', 20, 20);
-
-                    yPos = 35;
-                    teamData.actionPlan.forEach((action, index) => {
-                        if (action.what && action.who && action.when) {
-                            pdf.setFontSize(14);
-                            pdf.text(`Action #${index + 1}`, 20, yPos);
-                            yPos += 8;
-
-                            pdf.setFontSize(11);
-                            pdf.text('What:', 25, yPos);
-                            const whatLines = pdf.splitTextToSize(action.what, 160);
-                            pdf.text(whatLines, 45, yPos);
-                            yPos += whatLines.length * 6;
-
-                            pdf.text(`Who: ${action.who}`, 25, yPos);
-                            yPos += 7;
-
-                            const formattedDate = new Date(action.when).toLocaleDateString('en-US', {
-                                year: 'numeric', month: 'short', day: 'numeric'
-                            });
-                            pdf.text(`When: ${formattedDate}`, 25, yPos);
-                            yPos += 15;
-                        }
-                    });
-
-                    // Page 6: Commitments
-                    pdf.addPage();
-                    pdf.setFontSize(18);
-                    pdf.text('Team Commitment', 20, 20);
-
-                    yPos = 35;
-                    teamData.commitments.forEach(commitment => {
-                        const date = new Date(commitment.timestamp);
-                        const formatted = date.toLocaleDateString('en-US', {
-                            year: 'numeric', month: 'short', day: 'numeric',
-                            hour: 'numeric', minute: '2-digit'
-                        });
-                        pdf.text(`✓ ${commitment.memberName} - Committed on ${formatted}`, 20, yPos);
-                        yPos += 8;
-                    });
-
-                    yPos += 10;
-                    pdf.setFontSize(12);
-                    pdf.text('100% Team Commitment Achieved', 20, yPos);
-
-                    // Save PDF
-                    const filename = `FastTrack_Team_${teamData.teamName.replace(/\s+/g, '')}_${new Date().toISOString().split('T')[0]}.pdf`;
-                    pdf.save(filename);
-
-                    setExportStatus('PDF downloaded successfully');
-                    setTimeout(() => setExportStatus(''), 3000);
-                } catch (error) {
-                    console.error('PDF generation error:', error);
-                    setExportStatus('Error generating PDF. Please try again.');
-                } finally {
-                    setIsExporting(false);
-                }
             };
 
             return (
-                <div className="max-w-2xl mx-auto px-4 py-8 space-y-8 pb-32">
-                    <h2 className="plaak text-3xl mb-6">Final Review</h2>
-
-                    <div className="space-y-6">
-                        {/* Team Overview */}
-                        <div className="border border-gray-200 p-6 rounded">
-                            <h3 className="font-medium text-lg mb-4">Team: {teamData.teamName}</h3>
-                            <p className="text-sm text-gray-600">
-                                {teamData.teamMembers.length} members • {teamData.actionPlan.filter(a => a.what).length} actions •
-                                {teamData.commitments.length} commitments
-                            </p>
+                <div className="wizard-sidebar no-print">
+                    <div className="wizard-sidebar-inner">
+                        <div style={{ marginBottom: 24 }}>
+                            <div className="monument" style={{ fontSize: 12, textTransform: 'uppercase', color: '#fff', marginBottom: 4 }}>5 DYSFUNCTIONS</div>
+                            <div style={{ fontSize: 13, color: '#999' }}>{mode === 'individual' ? '~10 min' : '~15 min'}</div>
                         </div>
 
-                        {/* Top Dysfunctions */}
-                        {scores && (
-                            <div className="border border-gray-200 p-6 rounded">
-                                <h3 className="font-medium text-lg mb-4">Top 3 Dysfunctions</h3>
-                                <ol className="space-y-2">
-                                    {sorted.slice(0, 3).map(({ name, score }) => {
-                                        const badge = getSeverityBadge(score);
-                                        return (
-                                            <li key={name} className="flex items-center justify-between">
-                                                <span>{name}</span>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-medium">{score.toFixed(1)}</span>
-                                                    <span className={`badge badge-${badge.color} text-xs`}>
-                                                        {badge.label}
-                                                    </span>
-                                                </div>
-                                            </li>
-                                        );
-                                    })}
-                                </ol>
-                            </div>
+                        {mode === 'individual' && (
+                            <>
+                                <div className="sidebar-phase-header">Individual Phase</div>
+                                {individualSteps.map(renderStepItem)}
+                            </>
                         )}
 
-                        {/* Actions Summary */}
-                        <div className="border border-gray-200 p-6 rounded">
-                            <h3 className="font-medium text-lg mb-4">Action Plan Summary</h3>
-                            <div className="space-y-3">
-                                {teamData.actionPlan.filter(a => a.what).map((action, index) => (
-                                    <div key={index} className="text-sm border-l-4 border-black pl-3">
-                                        <p className="font-medium">{action.what.substring(0, 80)}...</p>
-                                        <p className="text-gray-600">
-                                            {action.who} • {new Date(action.when).toLocaleDateString()}
-                                        </p>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
+                        {mode === 'team' && (
+                            <>
+                                <div className="sidebar-phase-header">Team Phase (Guru)</div>
+                                {teamSteps.map(renderStepItem)}
+                            </>
+                        )}
 
-                        {/* Export PDF */}
-                        <div className="border-2 border-black p-8 rounded text-center space-y-4">
-                            <h3 className="font-medium text-xl">Ready to Export</h3>
-                            <p className="text-gray-600">
-                                Download a comprehensive PDF with all results, charts, and commitments.
-                            </p>
-
-                            {isExporting ? (
-                                <div className="flex flex-col items-center gap-4">
-                                    <div className="spinner" />
-                                    <p className="text-sm text-gray-600">{exportStatus}</p>
-                                </div>
-                            ) : (
-                                <button
-                                    onClick={generatePDF}
-                                    disabled={!teamData.teamName || teamData.commitments.length === 0}
-                                    className="btn-primary text-lg px-8 py-4"
-                                >
-                                    Export PDF
-                                </button>
-                            )}
-
-                            {exportStatus && !isExporting && (
-                                <p className={`text-sm ${exportStatus.includes('success') ? 'text-green-600' : 'text-red-600'}`}>
-                                    {exportStatus}
-                                </p>
-                            )}
-                            {/* Case Study */}
-                            <CaseStudy
-                                before={"A mid-size tech team scored 8.2 on Absence of Trust and 7.5 on Fear of Conflict. Meetings were polite but shallow -- no one challenged ideas, decisions were made by the loudest voice, and real issues were discussed only in hallway conversations afterward."}
-                                after={"After 90 days of structured trust-building exercises and 'disagree and commit' decision norms, Absence of Trust dropped from 8.2 to 3.4 and Fear of Conflict dropped from 7.5 to 2.8. The team began surfacing real disagreements in meetings, leading to faster and better-aligned decisions."}
-                                quote={"The initial assessment was brutal -- nobody wanted to see a trust score of 8 out of 10. But naming the dysfunction gave us permission to fix it. Within three months, we went from avoiding conflict to having the most productive strategy meetings in the company. -- Operations Director, Fast Track client"}
-                            />
-                        </div>
+                        <CoachFeedbackPanel />
                     </div>
                 </div>
             );
-        };
+        }
 
         function DependencyContext({ deps }) {
             if (!deps || deps.length === 0) return null;
@@ -1239,278 +714,1380 @@
             );
         }
 
-        // Main TeamTool Component
-        const TeamTool = () => {
-            const [deps, setDeps] = useState([]);
-            const [step, setStep] = useState(0);
-            const [userEmail, setUserEmail] = useState('');
-            const [aiReviewing, setAiReviewing] = useState(false);
-            const [teamData, setTeamData] = useState({
-                teamName: '',
-                teamMembers: [],
-                dysfunctionScores: {},
-                improvementPlan: [],
-                actionPlan: [{}, {}, {}],
-                commitments: []
-            });
+        /* ============================================================
+           STEP 1: Individual Assessment (15 Statements)
+           ============================================================ */
 
-            useEffect(() => {
-                async function loadDeps() {
-                    const userId = localStorage.getItem('ft_user_id');
-                    if (!userId || !window.ToolDB || !window.DependencyInjection) return;
-                    try {
-                        await ToolDB.whenReady();
-                        const config = DependencyInjection.getDependenciesConfig();
-                        const toolConfig = config[CONFIG.TOOL_SLUG];
-                        if (!toolConfig || !toolConfig.fields) return;
-                        const loaded = [];
-                        for (const field of toolConfig.fields) {
-                            const val = await ToolDB.getDependency(userId, field.source_field);
-                            if (val) {
-                                loaded.push({ label: field.display_label || field.source_field, value: typeof val === 'object' ? JSON.stringify(val, null, 2) : String(val) });
-                            }
-                        }
-                        setDeps(loaded);
-                    } catch (err) {
-                        console.warn('[' + CONFIG.TOOL_SLUG + '] Failed to load dependencies:', err);
-                    }
-                }
-                loadDeps();
-            }, []);
-
-            // Load from localStorage on mount
-            useEffect(() => {
-                try {
-                    const saved = localStorage.getItem(STORAGE_KEY);
-                    if (saved) {
-                        const parsed = JSON.parse(saved);
-                        setTeamData(parsed.teamData || teamData);
-                        setUserEmail(parsed.userEmail || '');
-                        setStep(parsed.step || 0);
-                    }
-                } catch (error) {
-                    console.error('Error loading from localStorage:', error);
-                }
-
-                // Check for email in URL params
-                const urlParams = new URLSearchParams(window.location.search);
-                const emailParam = urlParams.get('email');
-                if (emailParam) {
-                    setUserEmail(emailParam);
-                    loadFromSupabase(emailParam);
-                }
-            }, []);
-
-            // Save to localStorage
-            useEffect(() => {
-                const timer = setTimeout(() => {
-                    try {
-                        localStorage.setItem(STORAGE_KEY, JSON.stringify({
-                            teamData,
-                            userEmail,
-                            step
-                        }));
-                    } catch (error) {
-                        console.error('Error saving to localStorage:', error);
-                    }
-                }, 300);
-
-                return () => clearTimeout(timer);
-            }, [teamData, userEmail, step]);
-
-            // Sync to Supabase via ToolDB (auto-save only, no markComplete)
-            useEffect(() => {
-                const timer = setTimeout(async () => {
-                    if (userEmail && teamData.teamName) {
-                        try {
-                            const userId = localStorage.getItem('ft_user_id');
-                            if (!userId) return;
-
-                            const questionMappings = {
-                                dysfunction_scorecard: teamData.dysfunctionScores,
-                                trust_action_plan: teamData.actionPlan,
-                                conflict_norms: teamData.improvementPlan,
-                                conflict_resolution_strategies: teamData.commitments,
-                                accountability_tracker: { teamName: teamData.teamName, teamMembers: teamData.teamMembers }
-                            };
-                            await ToolDB.save(userId, questionMappings);
-                        } catch (error) {
-                            console.error('ToolDB sync error:', error);
-                        }
-                    }
-                }, 2000);
-
-                return () => clearTimeout(timer);
-            }, [teamData, userEmail]);
-
-            // Build question mappings helper
-            const getQuestionMappings = () => ({
-                dysfunction_scorecard: teamData.dysfunctionScores,
-                trust_action_plan: teamData.actionPlan,
-                conflict_norms: teamData.improvementPlan,
-                conflict_resolution_strategies: teamData.commitments,
-                accountability_tracker: { teamName: teamData.teamName, teamMembers: teamData.teamMembers }
-            });
-
-            const loadFromSupabase = async (email) => {
-                try {
-                    const { data, error } = await supabase
-                        .from('sprint_04_team')
-                        .select('data')
-                        .eq('user_email', email)
-                        .eq('tool_slug', TOOL_SLUG)
-                        .single();
-
-                    if (data && !error) {
-                        setTeamData(data.data);
-                    }
-                } catch (error) {
-                    console.error('Error loading from Supabase:', error);
-                }
+        function Step1Assessment({ ratings, setRatings }) {
+            const handleRate = (statementId, value) => {
+                setRatings(prev => ({ ...prev, [statementId]: value }));
             };
 
-            // Validation functions
-            const validateStep1 = () => {
-                return teamData.teamName.trim() !== '' && teamData.teamMembers.length > 0;
-            };
+            const answered = Object.keys(ratings).length;
 
-            const validateStep4 = () => {
-                return teamData.actionPlan.filter(action =>
-                    action.what && trimText(action.what).length >= 30 &&
-                    action.who && action.who !== '' &&
-                    action.when && action.when !== ''
-                ).length === 3;
-            };
+            return (
+                <div>
+                    <div className="step-indicator">
+                        <span>Individual Phase — Step 1 of 2</span>
+                        <span className="step-time">~8 min</span>
+                    </div>
+                    <h2 className="step-heading">Team Assessment</h2>
+                    <p className="step-hint">Rate each statement about your team honestly. 1 = Usually true, 2 = Sometimes true, 3 = Rarely true.</p>
 
-            const validateStep5 = () => {
-                return teamData.commitments.length === teamData.teamMembers.length &&
-                       teamData.teamMembers.length > 0;
-            };
+                    <FastTrackInsight>
+                        Answer based on how your team actually operates, not how you wish it operated. Honest assessment is the foundation for real improvement.
+                    </FastTrackInsight>
 
-            const canProceed = () => {
-                if (step === 1) return validateStep1();
-                if (step === 4) return validateStep4();
-                if (step === 5) return validateStep5();
-                return true;
-            };
+                    <div style={{ marginBottom: 16, fontFamily: "'Monument', monospace", fontSize: 12, color: '#6B7280' }}>
+                        {answered} of 15 statements rated
+                    </div>
 
-            const handleNext = async () => {
-                if (!canProceed() || step >= 6) return;
+                    {STATEMENTS.map(stmt => {
+                        const currentVal = ratings[stmt.id];
+                        return (
+                            <div key={stmt.id} className="statement-card">
+                                <div style={{ marginBottom: 12 }}>
+                                    <span style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: '#6B7280', marginRight: 8 }}>{String(stmt.id).padStart(2, '0')}</span>
+                                    <span style={{ fontSize: 15, lineHeight: 1.5 }}>{stmt.text}</span>
+                                </div>
+                                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                                    {[
+                                        { val: 1, label: '1 — Usually' },
+                                        { val: 2, label: '2 — Sometimes' },
+                                        { val: 3, label: '3 — Rarely' }
+                                    ].map(opt => (
+                                        <label key={opt.val} className={`rating-option ${currentVal === opt.val ? 'selected' : ''}`} style={{ flex: 1, minWidth: 120 }}>
+                                            <input
+                                                type="radio"
+                                                name={`stmt-${stmt.id}`}
+                                                value={opt.val}
+                                                checked={currentVal === opt.val}
+                                                onChange={() => handleRate(stmt.id, opt.val)}
+                                                style={{ accentColor: '#000' }}
+                                            />
+                                            <span style={{ fontSize: 14 }}>{opt.label}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            );
+        }
 
-                // Determine step-specific answers for AI review
-                const stepDataMap = {
-                    1: { accountability_tracker: { teamName: teamData.teamName, teamMembers: teamData.teamMembers } },
-                    3: { conflict_norms: teamData.improvementPlan },
-                    4: { trust_action_plan: teamData.actionPlan },
-                    5: { conflict_resolution_strategies: teamData.commitments }
+        /* ============================================================
+           STEP 2: Your Individual Scores
+           ============================================================ */
+
+        function Step2Scores({ ratings }) {
+            const scores = calculateMyScores(ratings);
+
+            return (
+                <div>
+                    <div className="step-indicator">
+                        <span>Individual Phase — Step 2 of 2</span>
+                        <span className="step-time">~2 min</span>
+                    </div>
+                    <h2 className="step-heading">Your Scores</h2>
+                    <p className="step-hint">These are your individual dysfunction scores based on your assessment.</p>
+
+                    <TheScience>
+                        Patrick Lencioni's model shows how team dysfunctions build on each other like a pyramid.
+                        Trust is the foundation -- without it, teams cannot have productive conflict.
+                        Without conflict, there is no genuine commitment. Without commitment, peers do not hold
+                        each other accountable. And without accountability, the team does not focus on collective results.
+                    </TheScience>
+
+                    <div className="ft-section">
+                        <div className="border border-gray-200 overflow-hidden">
+                            <table className="w-full">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="px-4 py-2 text-left text-sm font-medium">Dysfunction</th>
+                                        <th className="px-4 py-2 text-center text-sm font-medium">Score</th>
+                                        <th className="px-4 py-2 text-center text-sm font-medium">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {DYSFUNCTION_ORDER.map(key => {
+                                        const badge = getScoreBadge(scores[key]);
+                                        return (
+                                            <tr key={key} className="border-t border-gray-200">
+                                                <td className="px-4 py-3 text-sm">{DYSFUNCTION_MAP[key].name}</td>
+                                                <td className="px-4 py-3 text-center font-medium">{scores[key]}</td>
+                                                <td className="px-4 py-3 text-center">
+                                                    <span className={`badge badge-${badge.color}`}>{badge.label}</span>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div style={{ marginBottom: 16, fontSize: 13, color: '#6B7280', lineHeight: 1.6 }}>
+                        <strong>Scoring guide:</strong> Each dysfunction is the sum of 3 statement ratings (range 3-9).
+                        <br />8-9 = Not a problem | 6-7 = Possible problem | 3-5 = Needs to be addressed
+                    </div>
+
+                    <div className="closing-box">
+                        <div className="closing-title">What Happens Next</div>
+                        <p>These scores will be shared with your guru for the team meeting. Your individual statement ratings remain private.</p>
+                    </div>
+                </div>
+            );
+        }
+
+        /* ============================================================
+           STEP 3: Team Score Compilation (Guru Phase)
+           ============================================================ */
+
+        function Step3Compilation({ teamData, setTeamData, myScores }) {
+            const [newMemberName, setNewMemberName] = useState('');
+
+            const addMember = () => {
+                const name = newMemberName.trim();
+                if (!name) return;
+                const newMember = {
+                    id: Date.now().toString(),
+                    name: name,
+                    scores: { trust: '', conflict: '', commitment: '', accountability: '', results: '' }
                 };
-
-                const stepNameMap = {
-                    1: 'Team Setup',
-                    3: 'Improvement Plan',
-                    4: 'Action Plan',
-                    5: 'Commitments'
-                };
-
-                const stepAnswers = stepDataMap[step];
-                if (stepAnswers) {
-                    const userId = localStorage.getItem('ft_user_id');
-                    if (userId) {
-                        setAiReviewing(true);
-                        try {
-                            const canGo = await window.AIChallenge.reviewStep(userId, 'team', stepAnswers, stepNameMap[step]);
-                            if (!canGo) {
-                                setAiReviewing(false);
-                                return;
-                            }
-                        } catch (err) {
-                            console.warn('AI review error, allowing passage:', err);
-                        } finally {
-                            setAiReviewing(false);
-                        }
-                    }
-                }
-
-                // If moving to final step (6), do the AI challenge final submit
-                if (step === 5) {
-                    const userId = localStorage.getItem('ft_user_id');
-                    if (userId) {
-                        setAiReviewing(true);
-                        try {
-                            await window.AIChallenge.submitWithChallenge(userId, 'team', getQuestionMappings(), {
-                                onReviewStart: () => {},
-                                onRevise: () => { setAiReviewing(false); },
-                                onSubmitAnyway: () => { setStep(6); window.scrollTo(0, 0); setAiReviewing(false); },
-                                onError: (err) => { console.error('Submit error:', err); setAiReviewing(false); }
-                            });
-                        } catch (err) {
-                            console.warn('AI challenge error:', err);
-                            setStep(6);
-                            window.scrollTo(0, 0);
-                            setAiReviewing(false);
-                        }
-                        return;
-                    }
-                }
-
-                setStep(step + 1);
-                window.scrollTo(0, 0);
+                setTeamData(prev => ({
+                    ...prev,
+                    teamMembers: [...prev.teamMembers, newMember]
+                }));
+                setNewMemberName('');
             };
 
-            const handleBack = () => {
-                if (step > 0) {
-                    setStep(step - 1);
-                    window.scrollTo(0, 0);
-                }
+            const removeMember = (id) => {
+                setTeamData(prev => ({
+                    ...prev,
+                    teamMembers: prev.teamMembers.filter(m => m.id !== id)
+                }));
             };
 
-            const handleDotClick = (stepIndex) => {
-                setStep(stepIndex);
-                window.scrollTo(0, 0);
+            const updateMemberScore = (memberId, dysfunction, value) => {
+                const num = parseInt(value);
+                const val = (num >= 3 && num <= 9) ? num : value === '' ? '' : parseInt(value) || '';
+                setTeamData(prev => ({
+                    ...prev,
+                    teamMembers: prev.teamMembers.map(m => {
+                        if (m.id === memberId) {
+                            return { ...m, scores: { ...m.scores, [dysfunction]: val } };
+                        }
+                        return m;
+                    })
+                }));
             };
 
             return (
-                <div className="min-h-screen pb-24">
-                    {step > 0 && (
-                        <div className="py-6">
-                            <ProgressDots currentStep={step} onDotClick={handleDotClick} />
+                <div>
+                    <div className="step-indicator">
+                        <span>Team Phase — Step 1 of 3</span>
+                        <span className="step-time">~5 min</span>
+                    </div>
+                    <h2 className="step-heading">Team Score Compilation</h2>
+                    <p className="step-hint">Enter each team member's dysfunction scores from their individual assessments.</p>
+
+                    <FastTrackInsight>
+                        Collect each member's 5 dysfunction scores (from their Step 2 results) and enter them here. The tool will calculate team averages and identify patterns across the group.
+                    </FastTrackInsight>
+
+                    {/* Show my own scores if available */}
+                    {myScores && (
+                        <div style={{ background: '#F0FDF4', border: '1px solid #D1FAE5', padding: 16, marginBottom: 24 }}>
+                            <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#065F46', marginBottom: 12 }}>
+                                Your Scores (auto-populated)
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                                {DYSFUNCTION_ORDER.map(key => (
+                                    <div key={key} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
+                                        <span>{DYSFUNCTION_MAP[key].name}:</span>
+                                        <strong>{myScores[key]}</strong>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     )}
 
-                    {step === 0 && <Step0 onNext={handleNext} />}
-                    {step === 1 && <><DependencyContext deps={deps} /><Step1 teamData={teamData} setTeamData={setTeamData} userEmail={userEmail} setUserEmail={setUserEmail} /></>}
-                    {step === 2 && <Step2 teamData={teamData} />}
-                    {step === 3 && <Step3 teamData={teamData} setTeamData={setTeamData} />}
-                    {step === 4 && <Step4 teamData={teamData} setTeamData={setTeamData} />}
-                    {step === 5 && <Step5 teamData={teamData} setTeamData={setTeamData} />}
-                    {step === 6 && <Step6 teamData={teamData} />}
+                    {/* Add member */}
+                    <div className="ft-field-group">
+                        <label className="ft-label">Add Team Member</label>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                            <input
+                                type="text"
+                                value={newMemberName}
+                                onChange={(e) => setNewMemberName(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && addMember()}
+                                placeholder="Member name"
+                                className="ft-input"
+                            />
+                            <button onClick={addMember} className="btn-next" style={{ whiteSpace: 'nowrap', minWidth: 120 }}>
+                                Add
+                            </button>
+                        </div>
+                    </div>
 
-                    {step > 0 && (
-                        <div className="sticky-footer">
-                            <div className="max-w-2xl mx-auto flex justify-between items-center">
-                                {step > 0 && (
-                                    <button onClick={handleBack} className="btn-secondary">
-                                        ← Back
-                                    </button>
-                                )}
-                                {step < 6 && (
-                                    <button
-                                        onClick={handleNext}
-                                        disabled={!canProceed() || aiReviewing}
-                                        className="btn-primary ml-auto"
-                                    >
-                                        {aiReviewing ? 'AI Coach Reviewing...' : 'Next →'}
-                                    </button>
-                                )}
+                    {/* Members list */}
+                    {teamData.teamMembers.length > 0 && (
+                        <div>
+                            <div className="ft-label" style={{ marginBottom: 16 }}>
+                                Team Members ({teamData.teamMembers.length})
                             </div>
+                            {teamData.teamMembers.map(member => (
+                                <div key={member.id} style={{ border: '1px solid #E5E7EB', padding: 16, marginBottom: 12 }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                                        <span style={{ fontWeight: 600, fontSize: 15 }}>{member.name}</span>
+                                        <button
+                                            onClick={() => removeMember(member.id)}
+                                            style={{ background: 'none', border: 'none', color: '#DC2626', cursor: 'pointer', fontSize: 13 }}
+                                        >Remove</button>
+                                    </div>
+                                    <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 8 }}>
+                                        Enter scores from their individual assessment (3-9 per dysfunction)
+                                    </div>
+                                    <div className="grid grid-cols-1 gap-2">
+                                        {DYSFUNCTION_ORDER.map(key => (
+                                            <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                <label style={{ flex: 1, fontSize: 14 }}>{DYSFUNCTION_MAP[key].name}:</label>
+                                                <input
+                                                    type="number"
+                                                    min="3"
+                                                    max="9"
+                                                    value={member.scores[key]}
+                                                    onChange={(e) => updateMemberScore(member.id, key, e.target.value)}
+                                                    className="ft-input"
+                                                    style={{ width: 80 }}
+                                                    placeholder="3-9"
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     )}
                 </div>
             );
-        };
+        }
 
-        // Mount React app
-        ReactDOM.render(<TeamTool />, document.getElementById('root'));
+        /* ============================================================
+           STEP 4: Dysfunction Analysis
+           ============================================================ */
+
+        function Step4Analysis({ teamData, myScores }) {
+            const chartRef = useRef(null);
+            const chartInstanceRef = useRef(null);
+
+            // Calculate team averages including own scores
+            const calculateTeamAverages = () => {
+                const allScoreSets = [];
+
+                // Add own scores if available
+                if (myScores) {
+                    allScoreSets.push(myScores);
+                }
+
+                // Add team member scores
+                teamData.teamMembers.forEach(m => {
+                    const hasAllScores = DYSFUNCTION_ORDER.every(key => m.scores[key] !== '' && m.scores[key] !== undefined);
+                    if (hasAllScores) {
+                        allScoreSets.push(m.scores);
+                    }
+                });
+
+                if (allScoreSets.length === 0) return null;
+
+                const averages = {};
+                DYSFUNCTION_ORDER.forEach(key => {
+                    const sum = allScoreSets.reduce((acc, s) => acc + (parseInt(s[key]) || 0), 0);
+                    averages[key] = Math.round((sum / allScoreSets.length) * 10) / 10;
+                });
+                return averages;
+            };
+
+            const averages = calculateTeamAverages();
+
+            useEffect(() => {
+                if (averages && chartRef.current) {
+                    if (chartInstanceRef.current) {
+                        chartInstanceRef.current.destroy();
+                    }
+
+                    const ctx = chartRef.current.getContext('2d');
+                    chartInstanceRef.current = new Chart(ctx, {
+                        type: 'radar',
+                        data: {
+                            labels: DYSFUNCTION_ORDER.map(k => DYSFUNCTION_MAP[k].name),
+                            datasets: [{
+                                label: 'Team Average',
+                                data: DYSFUNCTION_ORDER.map(k => averages[k]),
+                                backgroundColor: 'rgba(255, 244, 105, 0.2)',
+                                borderColor: '#000000',
+                                borderWidth: 2,
+                                pointBackgroundColor: '#000000',
+                                pointBorderColor: '#000000',
+                                pointRadius: 4
+                            }]
+                        },
+                        options: {
+                            scales: {
+                                r: {
+                                    beginAtZero: true,
+                                    min: 3,
+                                    max: 9,
+                                    ticks: { stepSize: 1 }
+                                }
+                            },
+                            plugins: {
+                                legend: { display: false }
+                            }
+                        }
+                    });
+                }
+
+                return () => {
+                    if (chartInstanceRef.current) {
+                        chartInstanceRef.current.destroy();
+                    }
+                };
+            }, [averages]);
+
+            if (!averages) {
+                return (
+                    <div>
+                        <div className="step-indicator">
+                            <span>Team Phase — Step 2 of 3</span>
+                            <span className="step-time">~3 min</span>
+                        </div>
+                        <h2 className="step-heading">Dysfunction Analysis</h2>
+                        <div style={{ background: '#FFF9E0', border: '1px solid #F0E68C', padding: 16, marginTop: 16 }}>
+                            <p>Add team members and enter their scores in Step 3 to see the team analysis.</p>
+                        </div>
+                    </div>
+                );
+            }
+
+            // Sort by worst (lowest) first for priority
+            const sorted = DYSFUNCTION_ORDER
+                .map(key => ({ key, name: DYSFUNCTION_MAP[key].name, score: averages[key] }))
+                .sort((a, b) => a.score - b.score);
+
+            return (
+                <div>
+                    <div className="step-indicator">
+                        <span>Team Phase — Step 2 of 3</span>
+                        <span className="step-time">~3 min</span>
+                    </div>
+                    <h2 className="step-heading">Dysfunction Analysis</h2>
+                    <p className="step-hint">Review the team's combined scores and identify priority areas.</p>
+
+                    <TheScience>
+                        Lencioni's pyramid shows dysfunctions are interconnected. Trust sits at the base --
+                        without it, the team cannot engage in productive conflict. Without conflict, there is
+                        no real buy-in (commitment). Without commitment, no one holds peers accountable.
+                        And without accountability, people prioritise individual goals over team results.
+                    </TheScience>
+
+                    {/* Scores Table sorted by severity */}
+                    <div className="ft-section">
+                        <div className="ft-label" style={{ marginBottom: 16 }}>Team Dysfunction Scores (sorted by priority)</div>
+                        <div className="border border-gray-200 overflow-hidden">
+                            <table className="w-full">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="px-4 py-2 text-left text-sm font-medium">Dysfunction</th>
+                                        <th className="px-4 py-2 text-center text-sm font-medium">Combined Score</th>
+                                        <th className="px-4 py-2 text-center text-sm font-medium">Indication</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {sorted.map(({ key, name, score }) => {
+                                        const badge = getTeamScoreBadge(score);
+                                        return (
+                                            <tr key={key} className="border-t border-gray-200">
+                                                <td className="px-4 py-3 text-sm">{name}</td>
+                                                <td className="px-4 py-3 text-center font-medium">{score.toFixed(1)}</td>
+                                                <td className="px-4 py-3 text-center">
+                                                    <span className={`badge badge-${badge.color}`}>{badge.label}</span>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {/* Radar Chart */}
+                    <div className="ft-section">
+                        <div className="ft-label" style={{ marginBottom: 16 }}>Team Dysfunction Profile</div>
+                        <div style={{ background: '#fff', padding: 24, border: '1px solid #E5E7EB' }}>
+                            <canvas ref={chartRef} id="radarChart" />
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        /* ============================================================
+           STEP 5: Improvement Plan
+           ============================================================ */
+
+        function Step5ImprovementPlan({ teamData, setTeamData, myScores }) {
+            // Calculate team averages to know which need work
+            const calculateTeamAverages = () => {
+                const allScoreSets = [];
+                if (myScores) allScoreSets.push(myScores);
+                teamData.teamMembers.forEach(m => {
+                    const hasAll = DYSFUNCTION_ORDER.every(k => m.scores[k] !== '' && m.scores[k] !== undefined);
+                    if (hasAll) allScoreSets.push(m.scores);
+                });
+                if (allScoreSets.length === 0) return null;
+                const avgs = {};
+                DYSFUNCTION_ORDER.forEach(key => {
+                    const sum = allScoreSets.reduce((acc, s) => acc + (parseInt(s[key]) || 0), 0);
+                    avgs[key] = Math.round((sum / allScoreSets.length) * 10) / 10;
+                });
+                return avgs;
+            };
+
+            const averages = calculateTeamAverages();
+
+            // Only dysfunctions scoring 3-7 need work
+            const needsWork = averages
+                ? DYSFUNCTION_ORDER
+                    .map(key => ({ key, name: DYSFUNCTION_MAP[key].name, score: averages[key] }))
+                    .filter(d => d.score < 8)
+                    .sort((a, b) => a.score - b.score)
+                : [];
+
+            const updatePlanField = (dysfunctionKey, field, value) => {
+                setTeamData(prev => {
+                    const existing = prev.improvementPlan.find(p => p.dysfunction === dysfunctionKey);
+                    if (existing) {
+                        return {
+                            ...prev,
+                            improvementPlan: prev.improvementPlan.map(p =>
+                                p.dysfunction === dysfunctionKey ? { ...p, [field]: value } : p
+                            )
+                        };
+                    } else {
+                        const newPlan = { dysfunction: dysfunctionKey, who: '', what: '', when: '' };
+                        newPlan[field] = value;
+                        return {
+                            ...prev,
+                            improvementPlan: [...prev.improvementPlan, newPlan]
+                        };
+                    }
+                });
+            };
+
+            const getPlan = (key) => teamData.improvementPlan.find(p => p.dysfunction === key) || { who: '', what: '', when: '' };
+
+            return (
+                <div>
+                    <div className="step-indicator">
+                        <span>Team Phase — Step 3 of 3</span>
+                        <span className="step-time">~5 min</span>
+                    </div>
+                    <h2 className="step-heading">Improvement Plan</h2>
+                    <p className="step-hint">Create actionable improvement steps for each dysfunction that needs attention.</p>
+
+                    <FastTrackInsight>
+                        Example actions from Lencioni's framework: For Trust -- share personal histories and MBTI results in a team offsite.
+                        For Conflict -- introduce 'mining for conflict' in the first 10 minutes of each meeting. For Commitment -- end every meeting
+                        with a clear 'disagree and commit' vote. For Accountability -- publish a one-page team scorecard reviewed weekly.
+                        For Results -- tie individual bonuses to team-level metrics, not individual ones.
+                    </FastTrackInsight>
+
+                    {needsWork.length === 0 && (
+                        <div style={{ background: '#D1FAE5', border: '1px solid #6EE7B7', padding: 16 }}>
+                            <p style={{ color: '#065F46', fontSize: 15 }}>All dysfunctions scored 8-9. Your team is performing well across all areas. Consider reviewing periodically to maintain these scores.</p>
+                        </div>
+                    )}
+
+                    {needsWork.map(({ key, name, score }) => {
+                        const badge = getTeamScoreBadge(score);
+                        const plan = getPlan(key);
+
+                        return (
+                            <div key={key} style={{ border: '1px solid #E5E7EB', padding: 20, marginBottom: 16 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                                    <div>
+                                        <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 4 }}>{name}</div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            <span style={{ fontSize: 13, color: '#6B7280' }}>Score: {score.toFixed(1)}</span>
+                                            <span className={`badge badge-${badge.color}`} style={{ fontSize: 12 }}>{badge.label}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="ft-field-group">
+                                    <label className="ft-label">Who <span className="ft-required">*</span></label>
+                                    <input
+                                        type="text"
+                                        value={plan.who}
+                                        onChange={(e) => updatePlanField(key, 'who', e.target.value)}
+                                        placeholder="e.g., Team Leader, All Team Members"
+                                        className="ft-input"
+                                    />
+                                </div>
+
+                                <div className="ft-field-group">
+                                    <label className="ft-label">What <span className="ft-required">*</span></label>
+                                    <textarea
+                                        value={plan.what}
+                                        onChange={(e) => updatePlanField(key, 'what', e.target.value)}
+                                        placeholder="Describe the specific action to improve this dysfunction..."
+                                        className="ft-textarea"
+                                        style={{ minHeight: 80 }}
+                                    />
+                                </div>
+
+                                <div className="ft-field-group">
+                                    <label className="ft-label">When <span className="ft-required">*</span></label>
+                                    <input
+                                        type="text"
+                                        value={plan.when}
+                                        onChange={(e) => updatePlanField(key, 'when', e.target.value)}
+                                        placeholder="e.g., First 10 minutes of each meeting, Next quarterly review"
+                                        className="ft-input"
+                                    />
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            );
+        }
+
+        /* ============================================================
+           STEP 6: Final Review & Export
+           ============================================================ */
+
+        function Step6Review({ ratings, teamData, myScores, onExportPDF }) {
+            // Calculate team averages
+            const calculateTeamAverages = () => {
+                const allScoreSets = [];
+                if (myScores) allScoreSets.push(myScores);
+                teamData.teamMembers.forEach(m => {
+                    const hasAll = DYSFUNCTION_ORDER.every(k => m.scores[k] !== '' && m.scores[k] !== undefined);
+                    if (hasAll) allScoreSets.push(m.scores);
+                });
+                if (allScoreSets.length === 0) return null;
+                const avgs = {};
+                DYSFUNCTION_ORDER.forEach(key => {
+                    const sum = allScoreSets.reduce((acc, s) => acc + (parseInt(s[key]) || 0), 0);
+                    avgs[key] = Math.round((sum / allScoreSets.length) * 10) / 10;
+                });
+                return avgs;
+            };
+
+            const averages = calculateTeamAverages();
+
+            return (
+                <div>
+                    <div className="step-indicator">
+                        <span>Review</span>
+                        <span className="step-time">~2 min</span>
+                    </div>
+                    <h2 className="step-heading">Final Review</h2>
+                    <p className="step-hint">Review your complete team analysis and export the results.</p>
+
+                    {/* Team Overview */}
+                    <div className="ft-section">
+                        <div className="ft-label" style={{ marginBottom: 12 }}>Team Overview</div>
+                        <div style={{ border: '1px solid #E5E7EB', padding: 16 }}>
+                            <div style={{ fontSize: 14, color: '#6B7280', marginBottom: 8 }}>
+                                Team Members: {teamData.teamMembers.length}{myScores ? ' + You' : ''}
+                            </div>
+                            {teamData.teamMembers.map(m => (
+                                <div key={m.id} style={{ fontSize: 14, marginBottom: 4 }}>
+                                    {m.name}: {DYSFUNCTION_ORDER.map(k => `${DYSFUNCTION_MAP[k].name.split(' ')[0]}=${m.scores[k] || '?'}`).join(', ')}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Dysfunction Analysis Summary */}
+                    {averages && (
+                        <div className="ft-section">
+                            <div className="ft-label" style={{ marginBottom: 12 }}>Dysfunction Analysis Summary</div>
+                            <div className="border border-gray-200 overflow-hidden">
+                                <table className="w-full">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="px-4 py-2 text-left text-sm font-medium">Dysfunction</th>
+                                            <th className="px-4 py-2 text-center text-sm font-medium">Score</th>
+                                            <th className="px-4 py-2 text-center text-sm font-medium">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {DYSFUNCTION_ORDER.map(key => {
+                                            const badge = getTeamScoreBadge(averages[key]);
+                                            return (
+                                                <tr key={key} className="border-t border-gray-200">
+                                                    <td className="px-4 py-3 text-sm">{DYSFUNCTION_MAP[key].name}</td>
+                                                    <td className="px-4 py-3 text-center font-medium">{averages[key].toFixed(1)}</td>
+                                                    <td className="px-4 py-3 text-center">
+                                                        <span className={`badge badge-${badge.color}`}>{badge.label}</span>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Improvement Plan Summary */}
+                    {teamData.improvementPlan.length > 0 && (
+                        <div className="ft-section">
+                            <div className="ft-label" style={{ marginBottom: 12 }}>Improvement Plan Summary</div>
+                            {teamData.improvementPlan.filter(p => p.what).map((plan, i) => (
+                                <div key={i} style={{ border: '1px solid #E5E7EB', padding: 16, marginBottom: 8 }}>
+                                    <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 8 }}>
+                                        {DYSFUNCTION_MAP[plan.dysfunction]?.name || plan.dysfunction}
+                                    </div>
+                                    <div style={{ fontSize: 14, marginBottom: 4 }}><strong>Who:</strong> {plan.who || '—'}</div>
+                                    <div style={{ fontSize: 14, marginBottom: 4 }}><strong>What:</strong> {plan.what || '—'}</div>
+                                    <div style={{ fontSize: 14 }}><strong>When:</strong> {plan.when || '—'}</div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* PDF Export */}
+                    <div style={{ textAlign: 'center', marginBottom: 32 }}>
+                        <button
+                            onClick={onExportPDF}
+                            className="btn-back"
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+                        >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                            Export PDF
+                        </button>
+                    </div>
+
+                    {/* Case Study */}
+                    <CaseStudy />
+                </div>
+            );
+        }
+
+        /* ============================================================
+           MAIN APP
+           ============================================================ */
+
+        function App() {
+            const [step, setStep] = useState(0);
+            const [mode, setMode] = useState(null); // 'individual' or 'team'
+            const [ratings, setRatings] = useState({});
+            const [teamData, setTeamData] = useState({
+                teamMembers: [],
+                analysis: {},
+                improvementPlan: []
+            });
+            const [userEmail, setUserEmail] = useState('');
+            const [deps, setDeps] = useState([]);
+            const [submittingIndividual, setSubmittingIndividual] = useState(false);
+            const [individualSubmitted, setIndividualSubmitted] = useState(false);
+            const [submitting, setSubmitting] = useState(false);
+            const [submitted, setSubmitted] = useState(false);
+            const [teamToolUnlocked, setTeamToolUnlocked] = useState(false);
+            const [checkingTeamUnlock, setCheckingTeamUnlock] = useState(false);
+
+            const myScores = allRated(ratings) ? calculateMyScores(ratings) : null;
+
+            // Load saved data from localStorage
+            useEffect(() => {
+                try {
+                    const saved = localStorage.getItem(STORAGE_KEY);
+                    if (saved) {
+                        const data = JSON.parse(saved);
+
+                        // Migration: clear old format data (pre-two-phase or missing mode)
+                        if (data.teamData && (data.teamData.dysfunctionScores || data.teamData.actionPlan || data.teamData.commitments || data.teamData.teamName)) {
+                            console.warn('[Team] Clearing old format data from localStorage');
+                            localStorage.removeItem(STORAGE_KEY);
+                            return;
+                        }
+                        // Migration: data from first rewrite without mode — reset to start
+                        if (data.step && data.step >= 1 && !data.mode) {
+                            console.warn('[Team] Clearing data without mode from localStorage');
+                            localStorage.removeItem(STORAGE_KEY);
+                            return;
+                        }
+
+                        if (data.ratings) setRatings(data.ratings);
+                        if (data.teamData) setTeamData(data.teamData);
+                        if (data.step !== undefined) setStep(data.step);
+                        if (data.mode) setMode(data.mode);
+                        if (data.userEmail) setUserEmail(data.userEmail);
+                    }
+                } catch (e) {
+                    console.warn('[Team] Failed to load saved data:', e);
+                }
+            }, []);
+
+            // Autosave to localStorage
+            useEffect(() => {
+                const timer = setTimeout(() => {
+                    try {
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                            ratings,
+                            teamData,
+                            step,
+                            mode,
+                            userEmail
+                        }));
+                    } catch (e) {
+                        console.warn('[Team] Failed to save:', e);
+                    }
+                }, CONFIG.AUTOSAVE_DELAY);
+                return () => clearTimeout(timer);
+            }, [ratings, teamData, step, userEmail]);
+
+            // Load user email
+            useEffect(() => {
+                const email = localStorage.getItem('ft_user_email') || '';
+                if (email) setUserEmail(email);
+            }, []);
+
+            // Load dependencies from previous tools
+            useEffect(() => {
+                const loadDeps = async () => {
+                    try {
+                        if (window.DependencyInjection) {
+                            const userId = localStorage.getItem('ft_user_id');
+                            if (!userId) return;
+                            const dreamDep = await ToolDB.getDependency(userId, 'dream', 'company_dream');
+                            const depList = [];
+                            if (dreamDep) depList.push({ label: 'Company Dream', value: dreamDep });
+                            setDeps(depList);
+                        }
+                    } catch (e) {
+                        console.warn('[Team] Failed to load dependencies:', e);
+                    }
+                };
+                loadDeps();
+            }, []);
+
+            // Check if team tool should be unlocked (all org members submitted individual)
+            const checkTeamUnlock = async () => {
+                setCheckingTeamUnlock(true);
+                try {
+                    const userId = localStorage.getItem('ft_user_id');
+                    if (!userId) { setCheckingTeamUnlock(false); return; }
+
+                    // Get user's organization_id
+                    const { data: userData } = await supabase
+                        .from('users')
+                        .select('organization_id')
+                        .eq('id', userId)
+                        .single();
+
+                    if (!userData?.organization_id) {
+                        console.warn('[Team] No organization found — team tool stays locked');
+                        setCheckingTeamUnlock(false);
+                        return;
+                    }
+
+                    // Get all org members
+                    const { data: orgMembers } = await supabase
+                        .from('users')
+                        .select('id')
+                        .eq('organization_id', userData.organization_id);
+
+                    if (!orgMembers || orgMembers.length === 0) {
+                        setCheckingTeamUnlock(false);
+                        return;
+                    }
+
+                    // Check which org members have submitted team-individual
+                    const { data: submissions } = await supabase
+                        .from('user_responses')
+                        .select('user_id')
+                        .eq('tool_slug', 'team-individual')
+                        .in('user_id', orgMembers.map(m => m.id));
+
+                    const submittedUserIds = new Set((submissions || []).map(s => s.user_id));
+                    const allCompleted = orgMembers.every(m => submittedUserIds.has(m.id));
+
+                    setTeamToolUnlocked(allCompleted);
+                    if (allCompleted) {
+                        console.log('[Team] All org members completed individual assessment — team tool unlocked');
+                    } else {
+                        console.log(`[Team] ${submittedUserIds.size}/${orgMembers.length} members completed individual assessment`);
+                    }
+                } catch (e) {
+                    console.warn('[Team] Team unlock check failed:', e);
+                } finally {
+                    setCheckingTeamUnlock(false);
+                }
+            };
+
+            // Run unlock check on mount and when returning to intro
+            useEffect(() => {
+                if (step === 0 || step === 0.5) {
+                    checkTeamUnlock();
+                }
+            }, [step]);
+
+            // Submit individual phase
+            const submitIndividualPhase = async () => {
+                const userId = localStorage.getItem('ft_user_id');
+                if (!userId) {
+                    console.warn('[Team] No user ID found, skipping individual submit');
+                    return;
+                }
+
+                setSubmittingIndividual(true);
+                try {
+                    const scores = calculateMyScores(ratings);
+                    const questionMappings = {
+                        assessment_ratings: ratings,
+                        dysfunction_scores: scores
+                    };
+                    await ToolDB.save(userId, questionMappings, 'team-individual');
+                    setIndividualSubmitted(true);
+                } catch (e) {
+                    console.error('[Team] Individual submit failed:', e);
+                } finally {
+                    setSubmittingIndividual(false);
+                }
+            };
+
+            // Submit team phase (final)
+            const submitTeamPhase = async () => {
+                const userId = localStorage.getItem('ft_user_id');
+                if (!userId) {
+                    console.warn('[Team] No user ID found');
+                    return;
+                }
+
+                setSubmitting(true);
+                try {
+                    const questionMappings = {
+                        team_score_compilation: teamData.teamMembers,
+                        dysfunction_analysis: teamData.analysis,
+                        improvement_plan: teamData.improvementPlan
+                    };
+
+                    if (window.AIChallenge && window.AIChallenge.submitWithChallenge) {
+                        await window.AIChallenge.submitWithChallenge(
+                            userId,
+                            questionMappings,
+                            'team',
+                            Object.entries(questionMappings).map(([key, val]) => ({
+                                question_key: key,
+                                question_text: key.replace(/_/g, ' '),
+                                answer: typeof val === 'string' ? val : JSON.stringify(val)
+                            }))
+                        );
+                    } else {
+                        await ToolDB.save(userId, questionMappings, 'team');
+                    }
+
+                    setSubmitted(true);
+                } catch (e) {
+                    console.error('[Team] Final submit failed:', e);
+                    alert('Submission failed. Please try again.');
+                } finally {
+                    setSubmitting(false);
+                }
+            };
+
+            // AI review on step transitions
+            const reviewStep = async (stepNum) => {
+                if (!window.AIChallenge || !window.AIChallenge.reviewStep) return;
+                const userId = localStorage.getItem('ft_user_id');
+                if (!userId) return;
+
+                let answers = [];
+                if (stepNum === 1) {
+                    answers = STATEMENTS.map(s => ({
+                        question_key: `statement_${s.id}`,
+                        question_text: s.text,
+                        answer: ratings[s.id] ? String(ratings[s.id]) : ''
+                    }));
+                } else if (stepNum === 3) {
+                    answers = teamData.teamMembers.map(m => ({
+                        question_key: `member_${m.name}`,
+                        question_text: `Scores for ${m.name}`,
+                        answer: JSON.stringify(m.scores)
+                    }));
+                } else if (stepNum === 5) {
+                    answers = teamData.improvementPlan.map(p => ({
+                        question_key: `plan_${p.dysfunction}`,
+                        question_text: `Improvement plan for ${DYSFUNCTION_MAP[p.dysfunction]?.name || p.dysfunction}`,
+                        answer: `Who: ${p.who}, What: ${p.what}, When: ${p.when}`
+                    }));
+                }
+
+                try {
+                    await window.AIChallenge.reviewStep(userId, 'team', answers);
+                } catch (e) {
+                    console.warn('[Team] AI review failed:', e);
+                }
+            };
+
+            // Handle next step with transitions
+            const handleNext = async (fromStep) => {
+                await reviewStep(fromStep);
+
+                if (fromStep === 1) setStep(1.5);
+                else if (fromStep === 2) setStep(2.5);
+                else if (fromStep === 3) setStep(3.5);
+                else if (fromStep === 4) setStep(4.5);
+                else if (fromStep === 5) setStep(5.5);
+                else if (fromStep === 6) submitTeamPhase();
+                else setStep(fromStep + 1);
+            };
+
+            const handleBack = (fromStep) => {
+                if (fromStep === 1) setStep(0.5);
+                else if (fromStep === 3) setStep(0.5); // team mode: back to overview
+                else setStep(fromStep - 1);
+            };
+
+            // PDF export
+            const exportPDF = async () => {
+                try {
+                    const content = document.querySelector('.wizard-content');
+                    if (!content) return;
+                    const canvas = await html2canvas(content, { scale: 2, useCORS: true });
+                    const imgData = canvas.toDataURL('image/png');
+                    const pdf = new window.jspdf.jsPDF('p', 'mm', 'a4');
+                    const pdfW = pdf.internal.pageSize.getWidth();
+                    const pdfH = (canvas.height * pdfW) / canvas.width;
+                    pdf.addImage(imgData, 'PNG', 0, 0, pdfW, pdfH);
+                    pdf.save('team-dysfunction-analysis.pdf');
+                } catch (e) {
+                    console.error('[Team] PDF export failed:', e);
+                    alert('PDF export failed. Please try again.');
+                }
+            };
+
+            // Clear saved data
+            const clearCache = () => {
+                localStorage.removeItem(STORAGE_KEY);
+                window.location.reload();
+            };
+
+            // Navigation from sidebar
+            const navigateToStep = (stepNum) => {
+                setStep(stepNum);
+            };
+
+            /* ============================================================
+               RENDER: COVER PAGE (step 0)
+               ============================================================ */
+            if (step === 0) {
+                return (
+                    <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+                        <div style={{ position: 'relative', textAlign: 'center', color: '#fff', padding: '0 32px' }} className="animate-in">
+                            <div className="monument" style={{ fontSize: 13, color: '#FFF469', letterSpacing: '0.15em', marginBottom: 16 }}>TOOL 04</div>
+                            <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 24 }}>
+                                <div style={{ display: 'inline-block', border: '2px solid #DAA520', padding: '6px 16px', background: 'transparent' }}>
+                                    <span className="monument" style={{ fontSize: 11, color: '#DAA520', letterSpacing: '0.15em', textTransform: 'uppercase' }}>INDIVIDUAL + TEAM TOOL</span>
+                                </div>
+                            </div>
+                            <h1 className="plaak" style={{ fontSize: 64, marginBottom: 16, textTransform: 'uppercase', lineHeight: 1.1 }}>5 DYSFUNCTIONS<br/>OF A TEAM</h1>
+                            <p style={{ fontSize: 18, color: '#ccc', marginBottom: 48 }}>Assess team dynamics using Lencioni's 5 Dysfunctions model</p>
+                            <button onClick={() => setStep(0.5)}
+                                style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 48px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s ease', minHeight: 44 }}
+                                onMouseOver={e => { e.target.style.background = '#FFF469'; }}
+                                onMouseOut={e => { e.target.style.background = '#fff'; }}
+                            >START</button>
+                            <div style={{ marginTop: 24 }}>
+                                <button onClick={clearCache}
+                                    style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', fontSize: 13, textDecoration: 'underline' }}
+                                >Clear Saved Data</button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            /* ============================================================
+               RENDER: INTRO PAGE (step 0.5)
+               ============================================================ */
+            if (step === 0.5) {
+                return (
+                    <div style={{ minHeight: '100vh', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ maxWidth: 640, padding: '48px 32px', textAlign: 'center' }} className="animate-in">
+                            <div style={{ display: 'inline-block', border: '2px solid #DAA520', padding: '6px 16px', background: 'transparent', marginBottom: 32 }}>
+                                <span className="monument" style={{ fontSize: 11, color: '#DAA520', letterSpacing: '0.15em', textTransform: 'uppercase' }}>INDIVIDUAL + TEAM TOOL</span>
+                            </div>
+
+                            <h1 className="plaak" style={{ fontSize: 36, marginBottom: 32, textTransform: 'uppercase', color: '#000' }}>HOW THIS TOOL WORKS</h1>
+
+                            {/* Phase 1 box — with START button */}
+                            <div style={{ border: '2px solid #000', padding: 24, marginBottom: 16, textAlign: 'left' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                                    <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#000', fontWeight: 600 }}>
+                                        INDIVIDUAL PHASE
+                                    </div>
+                                    <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#6B7280' }}>~10 MIN</div>
+                                </div>
+                                <p style={{ fontSize: 15, color: '#4B5563', lineHeight: 1.7, marginBottom: 20 }}>
+                                    Rate 15 team statements honestly. Your answers are private — the guru will only see your dysfunction scores, not individual statement ratings.
+                                </p>
+                                <button
+                                    onClick={() => { setMode('individual'); setStep(1); }}
+                                    style={{ background: '#000', color: '#fff', border: 'none', padding: '14px 36px', fontSize: 15, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s ease', width: '100%' }}
+                                    onMouseOver={e => { e.target.style.background = '#333'; }}
+                                    onMouseOut={e => { e.target.style.background = '#000'; }}
+                                >START INDIVIDUAL ASSESSMENT</button>
+                            </div>
+
+                            {/* Phase 2 box — LOCKED until all team members submit */}
+                            <div style={{ border: '2px solid ' + (teamToolUnlocked ? '#000' : '#E5E7EB'), padding: 24, marginBottom: 32, textAlign: 'left', opacity: teamToolUnlocked ? 1 : 0.6, position: 'relative' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                                    <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', color: teamToolUnlocked ? '#000' : '#9CA3AF', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        {!teamToolUnlocked && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>}
+                                        TEAM PHASE (GURU ONLY)
+                                    </div>
+                                    <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#6B7280' }}>~15 MIN</div>
+                                </div>
+                                <p style={{ fontSize: 15, color: teamToolUnlocked ? '#4B5563' : '#9CA3AF', lineHeight: 1.7, marginBottom: 20 }}>
+                                    {teamToolUnlocked
+                                        ? "All team members have completed their individual assessments. The guru can now compile scores, analyse patterns, and create an improvement plan."
+                                        : "Locked until all team members complete their individual assessment. The guru will compile scores and lead the analysis in the team meeting."
+                                    }
+                                </p>
+                                {teamToolUnlocked ? (
+                                    <button
+                                        onClick={() => { setMode('team'); setStep(3); }}
+                                        style={{ background: '#000', color: '#fff', border: 'none', padding: '14px 36px', fontSize: 15, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s ease', width: '100%' }}
+                                        onMouseOver={e => { e.target.style.background = '#333'; }}
+                                        onMouseOut={e => { e.target.style.background = '#000'; }}
+                                    >START TEAM TOOL</button>
+                                ) : (
+                                    <div
+                                        onClick={(e) => {
+                                            if (e.shiftKey) {
+                                                console.log('[DEV] Force-unlocking team tool');
+                                                setTeamToolUnlocked(true);
+                                            }
+                                        }}
+                                        style={{ background: '#F3F4F6', padding: '14px 36px', textAlign: 'center', fontFamily: "'Monument', monospace", fontSize: 13, letterSpacing: '0.05em', color: '#9CA3AF', textTransform: 'uppercase', cursor: 'default' }}
+                                        title="Shift+Click to force unlock (dev only)"
+                                    >
+                                        {checkingTeamUnlock ? 'CHECKING...' : 'LOCKED — WAITING FOR TEAM'}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Journey overview */}
+                            <div style={{ marginBottom: 24, textAlign: 'left' }}>
+                                <div className="monument" style={{ fontSize: 10, color: '#6B7280', letterSpacing: '0.1em', marginBottom: 16 }}>JOURNEY OVERVIEW</div>
+
+                                <div className="monument" style={{ fontSize: 10, color: '#000', letterSpacing: '0.1em', marginBottom: 8, fontWeight: 600 }}>PHASE 1: INDIVIDUAL</div>
+                                <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+                                    <div style={{ flex: 1, background: '#F9FAFB', border: '1px solid #E5E7EB', padding: 12, textAlign: 'center' }}>
+                                        <div className="monument" style={{ fontSize: 10, color: '#000', marginBottom: 4 }}>01</div>
+                                        <div style={{ fontSize: 12, color: '#4B5563' }}>Assessment</div>
+                                    </div>
+                                    <div style={{ flex: 1, background: '#F9FAFB', border: '1px solid #E5E7EB', padding: 12, textAlign: 'center' }}>
+                                        <div className="monument" style={{ fontSize: 10, color: '#000', marginBottom: 4 }}>02</div>
+                                        <div style={{ fontSize: 12, color: '#4B5563' }}>Your Scores</div>
+                                    </div>
+                                </div>
+
+                                <div className="monument" style={{ fontSize: 10, color: '#9CA3AF', letterSpacing: '0.1em', marginBottom: 8, fontWeight: 600 }}>PHASE 2: TEAM (GURU ONLY)</div>
+                                <div style={{ display: 'flex', gap: 8 }}>
+                                    <div style={{ flex: 1, background: '#F9FAFB', border: '1px solid #E5E7EB', padding: 12, textAlign: 'center' }}>
+                                        <div className="monument" style={{ fontSize: 10, color: '#9CA3AF', marginBottom: 4 }}>03</div>
+                                        <div style={{ fontSize: 12, color: '#9CA3AF' }}>Compilation</div>
+                                    </div>
+                                    <div style={{ flex: 1, background: '#F9FAFB', border: '1px solid #E5E7EB', padding: 12, textAlign: 'center' }}>
+                                        <div className="monument" style={{ fontSize: 10, color: '#9CA3AF', marginBottom: 4 }}>04</div>
+                                        <div style={{ fontSize: 12, color: '#9CA3AF' }}>Analysis</div>
+                                    </div>
+                                    <div style={{ flex: 1, background: '#F9FAFB', border: '1px solid #E5E7EB', padding: 12, textAlign: 'center' }}>
+                                        <div className="monument" style={{ fontSize: 10, color: '#9CA3AF', marginBottom: 4 }}>05</div>
+                                        <div style={{ fontSize: 12, color: '#9CA3AF' }}>Plan</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            /* ============================================================
+               RENDER: PHASE GATE (step 2.5) — Individual Phase Complete
+               ============================================================ */
+            if (step === 2.5) {
+                return (
+                    <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ maxWidth: 640, padding: '0 32px', textAlign: 'center', color: '#fff' }} className="animate-in">
+                            <div style={{ width: 64, height: 64, borderRadius: '50%', border: '2px solid #FFF469', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="#FFF469"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                            </div>
+                            <h1 className="plaak" style={{ fontSize: 44, marginBottom: 16, color: '#FFF469' }}>INDIVIDUAL PHASE COMPLETE</h1>
+
+                            {individualSubmitted ? (
+                                <>
+                                    <div style={{ background: '#1a2e1a', border: '1px solid #4ade80', padding: '16px 24px', marginBottom: 24, borderRadius: 4 }}>
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="#4ade80" style={{ marginBottom: 4 }}><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                                        <div style={{ color: '#4ade80', fontSize: 16, fontWeight: 600 }}>Your assessment has been submitted.</div>
+                                    </div>
+                                    <p style={{ fontSize: 14, color: '#999', marginBottom: 48, lineHeight: 1.7 }}>
+                                        Your guru will compile the team's scores and lead the analysis in your next team meeting. You can close this page.
+                                    </p>
+                                    <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
+                                        <button
+                                            onClick={() => setStep(2)}
+                                            style={{ background: 'transparent', color: '#fff', border: '2px solid #fff', padding: '16px 32px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                                            onMouseOver={e => { e.target.style.background = '#222'; }}
+                                            onMouseOut={e => { e.target.style.background = 'transparent'; }}
+                                        >&larr; Review My Scores</button>
+                                        <button
+                                            onClick={() => setStep(0.5)}
+                                            style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 32px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                                            onMouseOver={e => { e.target.style.background = '#FFF469'; }}
+                                            onMouseOut={e => { e.target.style.background = '#fff'; }}
+                                        >BACK TO OVERVIEW</button>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <p style={{ fontSize: 16, color: '#ccc', marginBottom: 16, lineHeight: 1.7 }}>
+                                        You've completed your individual assessment. Submit your scores to your guru.
+                                    </p>
+                                    <p style={{ fontSize: 14, color: '#999', marginBottom: 48, lineHeight: 1.7 }}>
+                                        Your dysfunction scores will be shared with your guru. Your individual statement ratings remain private.
+                                    </p>
+                                    <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
+                                        <button
+                                            onClick={() => setStep(2)}
+                                            style={{ background: 'transparent', color: '#fff', border: '2px solid #fff', padding: '16px 32px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                                            onMouseOver={e => { e.target.style.background = '#222'; }}
+                                            onMouseOut={e => { e.target.style.background = 'transparent'; }}
+                                        >&larr; Review My Answers</button>
+                                        <button
+                                            onClick={submitIndividualPhase}
+                                            disabled={submittingIndividual}
+                                            style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 32px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: submittingIndividual ? 'wait' : 'pointer', transition: 'all 0.2s ease', opacity: submittingIndividual ? 0.6 : 1 }}
+                                            onMouseOver={e => { if (!submittingIndividual) e.target.style.background = '#FFF469'; }}
+                                            onMouseOut={e => { e.target.style.background = '#fff'; }}
+                                        >{submittingIndividual ? 'SUBMITTING...' : 'SUBMIT MY SCORES'}</button>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                );
+            }
+
+            /* ============================================================
+               RENDER: TRANSITION SCREENS (1.5, 3.5, 4.5)
+               ============================================================ */
+            if ([1.5, 3.5, 4.5].includes(step)) {
+                const completedStep = Math.floor(step);
+                const nextStep = completedStep + 1;
+                const t = TRANSITION_CONTENT[completedStep];
+
+                return (
+                    <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ maxWidth: 640, padding: '0 32px', textAlign: 'center', color: '#fff' }} className="animate-in">
+                            <div className="monument" style={{ fontSize: 12, color: '#FFF469', letterSpacing: '0.1em', marginBottom: 16 }}>
+                                STEP {completedStep} COMPLETE
+                            </div>
+                            <h1 className="plaak" style={{ fontSize: 48, marginBottom: 12 }}>{t.title}</h1>
+                            <p style={{ fontSize: 16, color: '#ccc', marginBottom: 48 }}>{t.text}</p>
+
+                            <div style={{ background: '#111', border: '1px solid #333', borderLeft: '4px solid #FFF469', padding: '20px 24px', marginBottom: 24, textAlign: 'left' }}>
+                                <span className="monument" style={{ fontSize: 10, color: '#FFF469', display: 'block', marginBottom: 8 }}>BRUTAL TRUTH</span>
+                                <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7 }}>{t.brutalTruth}</p>
+                            </div>
+
+                            <div style={{ background: '#111', border: '1px solid #333', borderLeft: '4px solid #666', padding: '20px 24px', marginBottom: 48, textAlign: 'left' }}>
+                                <span className="monument" style={{ fontSize: 10, color: '#999', display: 'block', marginBottom: 8 }}>PEER PROOF</span>
+                                <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7, fontStyle: 'italic' }}>{t.peerProof}</p>
+                            </div>
+
+                            <button
+                                onClick={() => setStep(nextStep)}
+                                style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 48px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                                onMouseOver={e => { e.target.style.background = '#FFF469'; }}
+                                onMouseOut={e => { e.target.style.background = '#fff'; }}
+                            >CONTINUE TO STEP {nextStep}</button>
+                        </div>
+                    </div>
+                );
+            }
+
+            /* ============================================================
+               RENDER: STEP 5.5 — Plan Locked Transition
+               ============================================================ */
+            if (step === 5.5) {
+                return (
+                    <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ maxWidth: 640, padding: '0 32px', textAlign: 'center', color: '#fff' }} className="animate-in">
+                            <div className="monument" style={{ fontSize: 12, color: '#FFF469', letterSpacing: '0.1em', marginBottom: 16 }}>
+                                STEP 5 COMPLETE
+                            </div>
+                            <h1 className="plaak" style={{ fontSize: 48, marginBottom: 12 }}>PLAN LOCKED.</h1>
+                            <p style={{ fontSize: 16, color: '#ccc', marginBottom: 48 }}>
+                                Your improvement plan is defined. Review the complete analysis and export your results.
+                            </p>
+
+                            <div style={{ background: '#111', border: '1px solid #333', borderLeft: '4px solid #FFF469', padding: '20px 24px', marginBottom: 24, textAlign: 'left' }}>
+                                <span className="monument" style={{ fontSize: 10, color: '#FFF469', display: 'block', marginBottom: 8 }}>BRUTAL TRUTH</span>
+                                <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7 }}>This workshop is the beginning, not the end. Teams that revisit their dysfunction scores every 90 days show sustained improvement. Teams that do not regress to baseline within 6 months.</p>
+                            </div>
+
+                            <div style={{ background: '#111', border: '1px solid #333', borderLeft: '4px solid #666', padding: '20px 24px', marginBottom: 48, textAlign: 'left' }}>
+                                <span className="monument" style={{ fontSize: 10, color: '#999', display: 'block', marginBottom: 8 }}>PEER PROOF</span>
+                                <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7, fontStyle: 'italic' }}>Lencioni's longitudinal data shows that teams conducting quarterly dysfunction reviews maintain 70% of their gains, while those who treat it as a one-time exercise lose most improvements within two quarters.</p>
+                            </div>
+
+                            <button
+                                onClick={() => setStep(6)}
+                                style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 48px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                                onMouseOver={e => { e.target.style.background = '#FFF469'; }}
+                                onMouseOut={e => { e.target.style.background = '#fff'; }}
+                            >VIEW FINAL REVIEW</button>
+                        </div>
+                    </div>
+                );
+            }
+
+            /* ============================================================
+               RENDER: WIZARD STEPS — Individual (1-2) or Team (3-6)
+               ============================================================ */
+            if (mode === 'individual' && step >= 1 && step <= 2) {
+                const canNext = () => {
+                    if (step === 1) return allRated(ratings);
+                    if (step === 2) return allRated(ratings);
+                    return true;
+                };
+
+                const getNextLabel = () => {
+                    if (step === 2) return 'Complete Individual Phase';
+                    return 'Next';
+                };
+
+                const showBack = step !== 1;
+
+                return (
+                    <div className="wizard-layout">
+                        <div className="wizard-main">
+                            <MobileStepBar currentStep={step} totalSteps={2} />
+
+                            <div className="wizard-content animate-in">
+                                {deps.length > 0 && step === 1 && <DependencyContext deps={deps} />}
+
+                                {step === 1 && <Step1Assessment ratings={ratings} setRatings={setRatings} />}
+                                {step === 2 && <Step2Scores ratings={ratings} />}
+                            </div>
+
+                            <ButtonFooter
+                                showBack={showBack}
+                                onBack={() => handleBack(step)}
+                                onNext={() => handleNext(step)}
+                                nextLabel={getNextLabel()}
+                                disabled={!canNext()}
+                            />
+                        </div>
+
+                        <WizardSidebar
+                            currentStep={step}
+                            ratings={ratings}
+                            teamData={teamData}
+                            onNavigate={navigateToStep}
+                            mode={mode}
+                        />
+                    </div>
+                );
+            }
+
+            if (mode === 'team' && step >= 3 && step <= 6) {
+                const canNext = () => {
+                    if (step === 3) return teamData.teamMembers.length > 0;
+                    if (step === 6) return !submitted;
+                    return true;
+                };
+
+                const getNextLabel = () => {
+                    if (step === 6) return submitted ? 'Submitted' : (submitting ? 'Submitting...' : 'Submit');
+                    return 'Next';
+                };
+
+                const showBack = step !== 3;
+
+                return (
+                    <div className="wizard-layout">
+                        <div className="wizard-main">
+                            <MobileStepBar currentStep={step - 2} totalSteps={4} />
+
+                            <div className="wizard-content animate-in">
+                                {step === 3 && <Step3Compilation teamData={teamData} setTeamData={setTeamData} myScores={myScores} />}
+                                {step === 4 && <Step4Analysis teamData={teamData} myScores={myScores} />}
+                                {step === 5 && <Step5ImprovementPlan teamData={teamData} setTeamData={setTeamData} myScores={myScores} />}
+                                {step === 6 && <Step6Review ratings={ratings} teamData={teamData} myScores={myScores} onExportPDF={exportPDF} />}
+                            </div>
+
+                            <ButtonFooter
+                                showBack={showBack}
+                                onBack={() => handleBack(step)}
+                                onNext={() => handleNext(step)}
+                                nextLabel={getNextLabel()}
+                                disabled={!canNext() || submitting || submitted}
+                            />
+                        </div>
+
+                        <WizardSidebar
+                            currentStep={step}
+                            ratings={ratings}
+                            teamData={teamData}
+                            onNavigate={navigateToStep}
+                            mode={mode}
+                        />
+                    </div>
+                );
+            }
+
+            /* ============================================================
+               RENDER: SUBMITTED / COMPLETE
+               ============================================================ */
+            if (submitted || step > 6) {
+                return (
+                    <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ textAlign: 'center', color: '#fff', padding: '0 32px' }} className="animate-in">
+                            <div style={{ width: 64, height: 64, borderRadius: '50%', border: '2px solid #FFF469', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="#FFF469"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                            </div>
+                            <h1 className="plaak" style={{ fontSize: 44, marginBottom: 16, color: '#FFF469' }}>TOOL COMPLETE</h1>
+                            <p style={{ fontSize: 16, color: '#ccc', marginBottom: 48 }}>Your team analysis and improvement plan have been submitted.</p>
+                            <button
+                                onClick={() => { setStep(6); setSubmitted(false); }}
+                                style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 32px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}
+                                onMouseOver={e => { e.target.style.background = '#FFF469'; }}
+                                onMouseOut={e => { e.target.style.background = '#fff'; }}
+                            >Review Results</button>
+                        </div>
+                    </div>
+                );
+            }
+
+            // Safety fallback: if no render matched, reset to cover
+            console.warn('[Team] No render matched for step:', step, 'mode:', mode, '— resetting');
+            setStep(0);
+            setMode(null);
+            return null;
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
     </script>
 </body>
 </html>

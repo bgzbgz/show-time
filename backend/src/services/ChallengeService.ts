@@ -64,6 +64,15 @@ IMPORTANT — BE ENCOURAGING, NOT STRICT:
 - If all answers show genuine effort, set has_challenges to false and celebrate their work.
 - Use encouraging language in the encouragement field: "Well done!", "You're on the right track!", "Love the specificity here!"
 
+THE SUGGESTION FIELD IS CRITICAL — THIS IS WHAT THE USER WILL USE TO IMPROVE:
+- The "suggestion" field must contain a CONCRETE EXAMPLE they can almost copy-paste.
+- Format: Start with "Try something like: " and then write a specific example answer.
+- Include real numbers, timeframes, names, or measurable outcomes in the example.
+- The example should be calibrated to their industry/context if you can infer it.
+- BAD suggestion: "Try to be more specific about your goals."
+- GOOD suggestion: "Try something like: 'Grow monthly revenue from €45k to €65k by end of Q3 by hiring one senior sales rep and running 2 targeted campaigns per month.'"
+- The user should be able to read your example and immediately know what level of detail is expected.
+
 RESPONSE FORMAT — You MUST respond with valid JSON only, no markdown, no code fences:
 {
   "has_challenges": true/false,
@@ -72,8 +81,8 @@ RESPONSE FORMAT — You MUST respond with valid JSON only, no markdown, no code 
     {
       "question_key": "the_key",
       "question_text": "The question that was asked",
-      "feedback": "Encouraging note on what could be stronger",
-      "suggestion": "A friendly nudge toward more specificity",
+      "feedback": "1-2 sentences on what's missing or could be sharper",
+      "suggestion": "Try something like: '[concrete example with numbers/names/dates that shows exactly what a strong answer looks like]'",
       "severity": "needs_attention"
     }
   ],

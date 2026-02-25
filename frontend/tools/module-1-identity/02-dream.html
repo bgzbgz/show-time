@@ -19,355 +19,342 @@
     <script src="../../js/auth.js"></script>
     <!-- Tool Access Control -->
     <script src="../../js/tool-access-control.js"></script>
+
+    <!-- Font preloading to prevent FOUT -->
+    <link rel="preload" href="Plaak3Trial-43-Bold.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="RiformaLL-Regular.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="MonumentGrotesk-Mono.woff2" as="font" type="font/woff2" crossorigin>
+
     <style>
-        @font-face {
-            font-family: 'Plaak';
-            src: url('Plaak3Trial-43-Bold.woff2') format('woff2');
-            font-weight: bold;
-        }
+        /* === FONT FACES === */
+        @font-face { font-family: 'Plaak'; src: url('Plaak3Trial-43-Bold.woff2') format('woff2'); font-weight: bold; font-display: swap; }
+        @font-face { font-family: 'Riforma'; src: url('RiformaLL-Regular.woff2') format('woff2'); font-weight: normal; font-display: swap; }
+        @font-face { font-family: 'Riforma'; src: url('RiformaLL-Regular.woff2') format('woff2'); font-weight: 600; font-display: swap; }
+        @font-face { font-family: 'Monument'; src: url('MonumentGrotesk-Mono.woff2') format('woff2'); font-display: swap; }
 
-        @font-face {
-            font-family: 'Riforma';
-            src: url('RiformaLL-Regular.woff2') format('woff2');
-            font-weight: normal;
-        }
-
-        @font-face {
-            font-family: 'Monument';
-            src: url('MonumentGrotesk-Mono.woff2') format('woff2');
-            font-weight: normal;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        /* === BASE RESET === */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Riforma', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-family: 'Riforma', -apple-system, sans-serif;
             font-size: 16px;
-            color: #000000;
-            background: #FFFFFF;
+            color: #000;
+            background: #000;
             -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
         }
 
-        .plaak {
-            font-family: 'Plaak', sans-serif;
-            font-weight: bold;
-            letter-spacing: -0.01em;
-            line-height: 1.2;
+        /* === CUSTOM SCROLLBAR === */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #000; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #333; }
+        * { scrollbar-width: thin; scrollbar-color: #000 transparent; }
+
+        /* === TYPOGRAPHY HELPERS === */
+        .plaak { font-family: 'Plaak', sans-serif; font-weight: bold; letter-spacing: -0.01em; line-height: 1.2; }
+        .monument { font-family: 'Monument', monospace; letter-spacing: 0.05em; }
+
+        /* === LAYOUT FRAME === */
+        .tool-frame { background: #fff; min-height: 100vh; }
+        .tool-inner { background: #fff; min-height: 100vh; }
+
+        /* === WIZARD LAYOUT === */
+        .wizard-layout { display: flex; min-height: 100vh; }
+        .wizard-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background: #fff;
+        }
+        .wizard-content {
+            max-width: 640px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 48px 32px;
+            flex: 1;
         }
 
-        .smooth {
+        /* === SIDEBAR === */
+        .wizard-sidebar {
+            width: 280px;
+            background: #000;
+            border-left: 1px solid #000;
+            flex-shrink: 0;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .wizard-sidebar-inner {
+            padding: 32px 24px;
+            height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        .sidebar-step-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            border-left: 3px solid transparent;
             transition: all 0.2s ease;
         }
+        .sidebar-step-item.active { border-left-color: #FFF469; background: #222; }
+        .sidebar-step-item.completed { background: #fff; color: #000; border-left-color: #fff; cursor: pointer; }
+        .sidebar-step-item.completed:hover { background: #E0E0E0; }
+        .sidebar-step-item.locked { opacity: 0.5; }
+        .sidebar-step-item .step-num { font-family: 'Riforma', sans-serif; font-size: 14px; }
+        .sidebar-step-item .step-name { font-family: 'Riforma', sans-serif; font-size: 14px; }
+        .sidebar-snippet { font-size: 12px; margin-top: 4px; opacity: 0.7; line-height: 1.3; }
 
-        .worksheet-input {
-            border: 1px solid #E0E0E0;
+        /* === STEP HEADER === */
+        .step-indicator {
+            font-family: 'Monument', monospace;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #6B7280;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .step-time {
+            font-family: 'Monument', monospace;
+            font-size: 11px;
+            color: #6B7280;
+        }
+        .step-heading {
+            font-family: 'Plaak', sans-serif;
+            font-weight: bold;
+            font-size: 32px;
+            text-transform: uppercase;
+            letter-spacing: -0.01em;
+            line-height: 1.2;
+            color: #000;
+            margin-bottom: 6px;
+        }
+        .step-hint {
+            font-size: 16px;
+            color: #6B7280;
+            line-height: 1.5;
+            margin: 0 0 32px 0;
+        }
+
+        /* === FORM ELEMENTS === */
+        .ft-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: 'Monument', monospace;
+            font-size: 14px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #000;
+            margin-bottom: 8px;
+        }
+        .ft-required { color: #DC2626; font-weight: 700; }
+
+        .ft-input {
+            width: 100%;
+            height: 44px;
+            padding: 8px 16px;
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
+            color: #000;
+            background: #fff;
+            border: 1px solid #E5E7EB;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .ft-input:focus {
+            outline: none;
+            border-color: #000;
+            box-shadow: 0 0 0 3px #FFF469;
+        }
+        .ft-input.has-error {
+            border: 2px solid #DC2626;
+            padding-right: 40px;
+        }
+        .ft-input.has-error:focus {
+            border-color: #DC2626;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2);
+        }
+
+        .ft-textarea {
+            width: 100%;
+            min-height: 120px;
             padding: 12px 16px;
             font-family: 'Riforma', sans-serif;
             font-size: 16px;
-            transition: border-color 0.2s ease;
-            background: #FFFFFF;
+            color: #000;
+            background: #fff;
+            border: 1px solid #E5E7EB;
+            resize: vertical;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .ft-textarea:focus {
+            outline: none;
+            border-color: #000;
+            box-shadow: 0 0 0 3px #FFF469;
+        }
+        .ft-textarea.has-error {
+            border: 2px solid #DC2626;
+        }
+        .ft-textarea.has-error:focus {
+            border-color: #DC2626;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2);
+        }
+
+        .ft-help {
+            font-size: 14px;
+            color: #6B7280;
+            margin-top: 4px;
+            line-height: 1.5;
+        }
+        .ft-error-msg {
+            font-size: 14px;
+            font-weight: 600;
+            color: #DC2626;
+            margin-top: 4px;
+            line-height: 1.4;
+        }
+        .ft-field-group {
+            margin-bottom: 24px;
+        }
+        .ft-field-group:last-child { margin-bottom: 0; }
+        .ft-section { margin-bottom: 32px; }
+
+        /* === YELLOW INSIGHT BOX === */
+        .ft-insight {
+            background: #FFF469;
+            border: 3px solid #000;
+            padding: 16px;
+            margin-bottom: 32px;
+        }
+
+        /* === EXAMPLE BOX === */
+        .ft-example {
+            background: #F3F4F6;
+            padding: 16px;
+            margin-bottom: 8px;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #1F2937;
+        }
+
+        /* === ERROR SUMMARY === */
+        .ft-error-summary {
+            border: 2px solid #DC2626;
+            background: #fff;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+        .ft-error-summary a {
+            color: #DC2626;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+        .ft-error-summary a:hover { text-decoration: none; }
+
+        /* === BUTTON FOOTER === */
+        .btn-footer {
+            position: sticky;
+            bottom: 0;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 32px;
+            border-top: 1px solid #E5E7EB;
+            background: #fff;
             width: 100%;
         }
-
-        .worksheet-input:focus {
-            outline: none;
-            border-color: #000000;
-        }
-
-        .worksheet-input.strong {
-            border-color: #10B981;
-            border-width: 2px;
-        }
-
-        .worksheet-input.weak {
-            border-color: #EF4444;
-        }
-
-        .worksheet-input::placeholder {
-            color: #9CA3AF;
-        }
-
-        textarea.worksheet-input {
-            min-height: 120px;
-            resize: vertical;
-        }
-
-        .numbered-section {
-            background: #000000;
-            color: #FFFFFF;
-            padding: 10px 16px;
-            font-size: 18px;
-            font-weight: bold;
-            letter-spacing: 0.5px;
-            display: inline-block;
-        }
-
-        .btn-primary {
-            background: #000000;
-            color: #FFFFFF;
+        .btn-back {
+            background: #fff;
+            color: #000;
+            border: 2px solid #000;
             padding: 12px 24px;
-            border: 2px solid #000000;
             font-family: 'Riforma', sans-serif;
             font-size: 16px;
             cursor: pointer;
             transition: all 0.2s ease;
+            min-height: 44px;
         }
-
-        .btn-primary:hover:not(:disabled) {
-            transform: scale(1.02);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-
-        .btn-primary:disabled {
-            background: #E0E0E0;
-            border-color: #E0E0E0;
-            color: #9CA3AF;
-            cursor: not-allowed;
-            opacity: 0.5;
-        }
-
-        .btn-secondary {
-            background: #FFFFFF;
-            color: #000000;
+        .btn-back:hover { background: #F3F4F6; }
+        .btn-next {
+            background: #000;
+            color: #fff;
+            border: 2px solid #000;
             padding: 12px 24px;
-            border: 2px solid #000000;
             font-family: 'Riforma', sans-serif;
             font-size: 16px;
             cursor: pointer;
             transition: all 0.2s ease;
+            min-height: 44px;
+        }
+        .btn-next:hover:not(:disabled) { transform: scale(1.02); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .btn-next:disabled { background: #E5E7EB; color: #9CA3AF; border-color: #E5E7EB; cursor: not-allowed; }
+
+        /* === CLOSING MESSAGE === */
+        .closing-box {
+            border-top: 1px solid #E5E7EB;
+            padding: 20px 0 0 0;
+            margin-top: 8px;
+            text-align: center;
+        }
+        .closing-box p { font-size: 14px; color: #6B7280; }
+        .closing-box .closing-title {
+            font-family: 'Monument', monospace;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #000;
+            margin-bottom: 6px;
         }
 
-        .btn-secondary:hover {
-            background: #F8F8F8;
-        }
+        /* === MOBILE STEP BAR === */
+        .mobile-step-bar { display: none; padding: 12px 16px; border-bottom: 1px solid #E5E7EB; background: #F3F4F6; }
+        .mobile-step-bar .bar-text { font-family: 'Monument', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #6B7280; margin-bottom: 6px; }
+        .mobile-progress { height: 3px; background: #E5E7EB; width: 100%; }
+        .mobile-progress-fill { height: 100%; background: #000; transition: width 0.3s ease; }
 
-        .help-button {
-            position: fixed;
-            top: 24px;
-            right: 24px;
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            background: #000000;
-            color: #FFFFFF;
-            border: 2px solid #000000;
-            font-size: 28px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 40;
-            transition: all 0.2s ease;
-        }
+        /* === CANVAS STYLES === */
+        .numbered-section { background: #000; color: #fff; padding: 8px 14px; font-size: 14px; font-weight: bold; letter-spacing: 0.5px; display: inline-block; font-family: 'Monument', monospace; }
+        .canvas-section-box { border: 2px solid #000; background: #FAFAFA; padding: 16px; margin-bottom: 16px; }
 
-        .help-button:hover {
-            transform: scale(1.1);
-            background: #fff469;
-            color: #000000;
-        }
-
-        .progress-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #E0E0E0;
-            transition: all 0.2s ease;
-        }
-
-        .progress-dot.active {
-            background: #000000;
-            transform: scale(1.3);
-        }
-
-        .progress-dot.completed {
-            background: #000000;
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes slideInRight {
-            from {
-                opacity: 0;
-                transform: translateX(50px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-            to {
-                opacity: 1;
-            }
-        }
-
-        @keyframes pulse {
-            0%, 100% {
-                transform: scale(1);
-            }
-            50% {
-                transform: scale(1.05);
-            }
-        }
-
-        .animate-in {
-            animation: slideIn 0.3s ease-out;
-        }
-
-        .animate-in-right {
-            animation: slideInRight 0.4s ease-out;
-        }
-
-        .fade-in {
-            animation: fadeIn 0.5s ease-out;
-        }
-
-        .pulse {
-            animation: pulse 2s infinite;
-        }
-
-        @media print {
-            .no-print {
-                display: none;
-            }
-        }
-
-        .cover-overlay {
-            background: linear-gradient(to bottom, rgba(0,0,0,0.4), rgba(0,0,0,0.7));
-        }
-
+        /* === DREAM-SPECIFIC STYLES === */
         .word-tag {
-            display: inline-block;
-            padding: 8px 16px;
-            background: #000000;
-            color: #FFFFFF;
-            border-radius: 4px;
-            margin: 4px;
-            font-weight: bold;
-            font-size: 14px;
-        }
-
-        .dream-preview-sidebar {
-            position: fixed;
-            top: 120px;
-            right: 24px;
-            width: 280px;
-            background: #000000;
-            color: #FFFFFF;
-            border: 4px solid #000000;
-            padding: 16px;
-            z-index: 30;
-            max-height: calc(100vh - 150px);
-            overflow-y: auto;
-            transition: transform 0.3s ease;
-        }
-
-        .dream-preview-sidebar.collapsed {
-            transform: translateX(calc(100% + 24px));
-        }
-
-        .sidebar-toggle {
-            position: fixed;
-            top: 120px;
-            right: 24px;
-            width: 48px;
-            height: 48px;
-            background: #000000;
-            color: #FFF469;
-            border: 3px solid #000000;
-            font-size: 20px;
-            font-weight: bold;
-            cursor: pointer;
-            z-index: 35;
-            display: flex;
+            display: inline-flex;
             align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
+            gap: 6px;
+            padding: 6px 14px;
+            background: #000;
+            color: #fff;
+            font-weight: bold;
+            font-size: 13px;
+            margin: 3px;
         }
-
-        .sidebar-toggle:hover {
-            background: #FFF469;
-            color: #000000;
-        }
-
-        .sidebar-toggle.with-sidebar {
-            right: 328px;
-        }
-
-        @media (max-width: 1400px) {
-            .dream-preview-sidebar {
-                transform: translateX(calc(100% + 24px));
-            }
-            .sidebar-toggle {
-                right: 24px;
-            }
-        }
-
-        .strength-bar {
-            height: 8px;
-            background: #E0E0E0;
-            border-radius: 4px;
-            overflow: hidden;
-        }
-
-        .strength-fill {
-            height: 100%;
-            background: linear-gradient(to right, #EF4444, #F59E0B, #10B981);
-            transition: width 0.3s ease;
-        }
-
         .ai-option {
-            border: 2px solid #E0E0E0;
+            border: 2px solid #E5E7EB;
             padding: 16px;
             cursor: pointer;
             transition: all 0.2s ease;
         }
-
         .ai-option:hover {
-            border-color: #000000;
-            background: #F8F8F8;
+            border-color: #000;
+            background: #F3F4F6;
         }
-
         .ai-option.selected {
-            border-color: #000000;
+            border-color: #000;
             border-width: 3px;
             background: #FFF469;
         }
-
-        .checkmark {
-            display: inline-block;
-            color: #10B981;
-            font-size: 20px;
-            font-weight: bold;
-            animation: fadeIn 0.3s ease;
-        }
-
         .jargon-warning {
             background: #FEF2F2;
             border-left: 4px solid #EF4444;
             padding: 12px;
             margin-top: 8px;
-            animation: fadeIn 0.3s ease;
+            font-size: 14px;
         }
-
         .jargon-highlight {
             background: #FEE2E2;
             padding: 2px 4px;
@@ -375,8 +362,48 @@
             font-weight: bold;
             color: #DC2626;
         }
+        .strength-bar {
+            height: 8px;
+            background: #E5E7EB;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .strength-fill {
+            height: 100%;
+            background: linear-gradient(to right, #EF4444, #F59E0B, #10B981);
+            transition: width 0.3s ease;
+        }
+        .checkmark {
+            display: inline-block;
+            color: #10B981;
+            font-size: 20px;
+            font-weight: bold;
+        }
 
-        /* guru-login-btn removed — 4A EK feedback */
+        /* === ANIMATIONS === */
+        @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .animate-in { animation: fadeSlideIn 0.3s ease-out; }
+
+        /* === PRINT === */
+        @media print { .no-print { display: none !important; } }
+
+        /* === RESPONSIVE === */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .wizard-sidebar { width: 220px; }
+            .wizard-sidebar-inner { padding: 24px 16px; }
+        }
+        @media (max-width: 768px) {
+            .wizard-sidebar { display: none; }
+            .mobile-step-bar { display: block; }
+            .wizard-content { padding: 24px 16px; }
+            .step-heading { font-size: 24px; }
+            .btn-footer { padding: 12px 16px; }
+        }
+        @media (max-width: 480px) {
+            .step-heading { font-size: 20px; }
+            .wizard-content { padding: 20px 12px; }
+        }
     </style>
 </head>
 <body>
@@ -385,7 +412,9 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-        // Configuration
+        /* ============================================================
+           PRESERVED: Configuration & Initialization — do not modify
+           ============================================================ */
         const CONFIG = {
             SUPABASE_URL: 'https://lutzzfaedkbsmbobmrzx.supabase.co',
             SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1dHp6ZmFlZGtic21ib2Jtcnp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MDA0MDQsImV4cCI6MjA4NjM3NjQwNH0.o2gJba85vDl4NLS-C8Mq3OudWKxet-b0IqO9kazqb8U',
@@ -408,6 +437,32 @@
         CognitiveLoad.init('dream', {"insights":["A company without a dream is just a job. Dreams create energy and alignment across the entire organization.","Your dream must be specific enough to measure but inspiring enough to energize."],"caseStudy":{"before":"A retail operator in Mexico had a generic vision statement: 'To be a leading retail operator providing unparalleled customer service.' Each department interpreted it differently, pulling in conflicting directions with no shared energy.","after":"After crafting a vivid one-page Dream story describing their company in 10 years — the culture, the customer experience, the talent they attract — all teams aligned around one narrative. Employee engagement rose 45% and strategic execution accelerated within two quarters.","quote":"When everyone can see the same vivid picture of the future, they make aligned decisions without waiting for the CEO. The Dream becomes the decision-making filter."}});
         const { FastTrackInsight, ScienceBox, WarningBox, CaseStudy, ScienceBookmarkIcon, ToolGuideDrawer } = CognitiveLoad.components;
 
+        /* ============================================================
+           PRESERVED: Helper constants and functions — do not modify
+           ============================================================ */
+
+        /* VP-style transition content between steps */
+        const TRANSITION_CONTENT = {
+            1: {
+                title: 'PURPOSE DEFINED.',
+                text: "You've articulated your Golden Circle. WHY \u2192 HOW \u2192 WHAT. Now let's paint a vivid picture of the future.",
+                brutalTruth: "The Dream starts with WHY, not WHAT. Sinek's Golden Circle principle tells us: if you can't articulate what disappears when your company is gone, your Dream will lack emotional power and fail to align your team.",
+                peerProof: "Sinek's research in 'Start with Why' demonstrates that organizations where employees emotionally connect to the company's purpose show 3x higher engagement and 2.5x lower turnover."
+            },
+            2: {
+                title: 'FUTURE VISUALIZED.',
+                text: "You've painted a vivid picture of what success looks like in 5 years. Now capture it in words.",
+                brutalTruth: "Vague dreams produce vague results. Specific, measurable dream descriptions are 3x more likely to be achieved because they create neural pathways that your brain actively works toward.",
+                peerProof: "Collins & Porras in 'Built to Last' found that companies with vivid, specific visions outperform comparison companies by 6x over a 50-year period."
+            },
+            3: {
+                title: 'DREAM CAPTURED.',
+                text: "Your Dream is in words. Now make it visual with a Dream Board that you'll see every day.",
+                brutalTruth: "A Dream that only exists in words will fade. The human brain processes images 60,000x faster than text. When you surround yourself with visual reminders of your Dream, it becomes embedded in your daily decisions.",
+                peerProof: "The Dream Visualization tool is grounded in dual-coding theory: when information is encoded both verbally and visually, recall improves by up to 65%."
+            }
+        };
+
         const WORD_SUGGESTIONS = [
             'Innovation', 'Excellence', 'Global', 'Trusted',
             'Disruptive', 'Sustainable', 'Bold', 'Agile',
@@ -415,7 +470,6 @@
             'Transformative', 'Pioneering', 'Resilient', 'Visionary'
         ];
 
-        // Marketing jargon to detect and flag
         const JARGON_PHRASES = [
             'best in class', 'world class', 'world-class',
             'market leader', 'market leading', 'industry leader',
@@ -431,7 +485,6 @@
             'maximize', 'optimize', 'streamline'
         ];
 
-        // Helper to detect jargon in text
         const detectJargon = (text) => {
             if (!text) return { hasJargon: false, found: [] };
             const textLower = text.toLowerCase();
@@ -439,152 +492,128 @@
             return { hasJargon: found.length > 0, found };
         };
 
-        // Helper to detect bullet points
         const hasBulletPoints = (text) => {
             if (!text) return false;
             const bulletPatterns = [
-                /^[\s]*[-•*]\s/m,  // Dash, bullet, asterisk at line start
-                /^[\s]*\d+\.\s/m,   // Numbered lists
-                /^[\s]*[a-z]\.\s/m, // Lettered lists
+                /^[\s]*[-•*]\s/m,
+                /^[\s]*\d+\.\s/m,
+                /^[\s]*[a-z]\.\s/m,
             ];
             return bulletPatterns.some(pattern => pattern.test(text));
         };
 
-        // Helper functions
         const analyzeText = (text, minLength = 20) => {
             if (!text) return { strength: 0, label: 'Empty', color: '#9CA3AF' };
-            
             const length = text.length;
             const hasNumbers = /\d/.test(text);
             const hasSpecifics = /\$|€|%|#/.test(text);
             const genericWords = ['leading', 'best', 'top', 'premier', 'world-class'];
             const hasGeneric = genericWords.some(word => text.toLowerCase().includes(word));
-            
             let score = 0;
             if (length > minLength) score += 25;
             if (length > minLength * 2) score += 25;
             if (hasNumbers || hasSpecifics) score += 25;
             if (!hasGeneric) score += 25;
-            
             if (score >= 75) return { strength: score, label: 'BOLD', color: '#10B981' };
-            if (score >= 50) return { strength: score, label: '✓ Good', color: '#F59E0B' };
+            if (score >= 50) return { strength: score, label: 'Good', color: '#F59E0B' };
             if (score >= 25) return { strength: score, label: 'Weak', color: '#EF4444' };
             return { strength: score, label: 'Too Generic', color: '#EF4444' };
         };
 
         const calculateOverallProgress = (data) => {
             let completed = 0;
-            let total = 16;
-
-            // Basic Info (1 field)
-            if (data.companyName) completed++;
-
-            // Corporate Killer (3 fields)
-            if (data.corporateKiller.whatLost) completed++;
-            if (data.corporateKiller.whatsAtStake) completed++;
-            if (data.corporateKiller.whyImportant) completed++;
-
-            // Employee Promise (3 fields)
-            if (data.employeePromise?.money) completed++;
-            if (data.employeePromise?.pride) completed++;
-            if (data.employeePromise?.freedom) completed++;
-
-            // Dream Answers (6 fields)
+            let total = 16; // 3 golden circle + 10 dream answers + 1 oneSentence + 1 dreamNarrative + 1 words
+            if (data.goldenCircle?.why) completed++;
+            if (data.goldenCircle?.how) completed++;
+            if (data.goldenCircle?.what) completed++;
             if (data.dreamAnswers.achievement) completed++;
             if (data.dreamAnswers.customersSay) completed++;
             if (data.dreamAnswers.employeesSay) completed++;
             if (data.dreamAnswers.marketPosition) completed++;
             if (data.dreamAnswers.officeFeelsLike) completed++;
+            if (data.dreamAnswers.capabilities) completed++;
+            if (data.dreamAnswers.howItFeels) completed++;
+            if (data.dreamAnswers.teamFeeling) completed++;
             if (data.dreamAnswers.personalAchievement) completed++;
-
-            // One Sentence (1 field)
+            if (data.dreamAnswers.whoYouveBecome) completed++;
             if (data.oneSentence && data.oneSentence.length > 50) completed++;
-
-            // Dream Board (2 checks: words + people)
+            if (data.dreamNarrative && data.dreamNarrative.length > 100) completed++;
             if (data.moodBoard?.words?.filter(w => w).length >= 3) completed++;
-            if (data.moodBoard?.people?.filter(p => p).length >= 3) completed++;
-
             return Math.round((completed / total) * 100);
         };
 
-        // Dream Preview Sidebar Component
-        function DreamPreviewSidebar({ data, currentStep, isCollapsed, onToggle }) {
-            const progress = calculateOverallProgress(data);
-            
-            if (currentStep < 1 || currentStep >= 5) return null;
-            
+        const generate3Sentences = (data) => {
+            const { achievement, customersSay, employeesSay, marketPosition } = data.dreamAnswers;
+            const why = (data.goldenCircle?.why || '').toLowerCase();
+            return [
+                {
+                    type: 'Conservative',
+                    text: `In 5 years, we're ${marketPosition.toLowerCase() || 'a respected industry player'}, with ${achievement.toLowerCase() || 'steady growth'}, driven by our purpose: ${why || 'making a difference'}.`,
+                    desc: 'Safe, achievable, conventional'
+                },
+                {
+                    type: 'Bold',
+                    text: `In 5 years, because we believe ${why || 'in our mission'}, we're ${marketPosition.toLowerCase() || 'the category leader'}, where ${employeesSay.toLowerCase() || 'our team feels inspired'}, serving customers who say "${customersSay || 'they changed everything'}", and we've achieved ${achievement.toLowerCase() || 'what seemed impossible'}.`,
+                    desc: 'Ambitious, vivid, inspirational'
+                },
+                {
+                    type: 'Audacious',
+                    text: `In 5 years, we've redefined the industry as ${marketPosition.toLowerCase() || 'the undisputed category king'}, ${achievement.toLowerCase() || 'dominating every key metric'}, where ${employeesSay.toLowerCase() || 'people fight to work here'} and customers ${customersSay.toLowerCase() || "can't imagine life without us"}.`,
+                    desc: 'Aggressive, moonshot, game-changing'
+                }
+            ];
+        };
+
+        /* ============================================================
+           SHARED COMPONENTS
+           ============================================================ */
+
+        function CheckIcon({ color = "#fff", size = 16 }) {
+            return <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>;
+        }
+
+        function YellowInsight({ children }) {
             return (
-                <>
-                    <button 
-                        className={`sidebar-toggle no-print ${!isCollapsed ? 'with-sidebar' : ''}`}
-                        onClick={onToggle}
-                        title={isCollapsed ? 'Show Dream Preview' : 'Hide Dream Preview'}
-                    >
-                        {isCollapsed ? '◀' : '▶'}
-                    </button>
-                    <div className={`dream-preview-sidebar no-print ${isCollapsed ? 'collapsed' : 'animate-in-right'}`}>
-                        <h3 className="plaak text-xl mb-4" style={{color: '#FFF469'}}>YOUR DREAM</h3>
-                    
-                    <div className="mb-4">
-                        <div className="flex justify-between mb-2">
-                            <span className="text-sm">Progress</span>
-                            <span className="text-sm font-bold">{progress}%</span>
-                        </div>
-                        <div className="strength-bar">
-                            <div className="strength-fill" style={{width: `${progress}%`}}></div>
-                        </div>
+                <div className="ft-insight">
+                    <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAYAAABccqhmAAAI0ElEQVR42u3dQW8bZRrA8eeZsRuspkIV4sYNceLMHSQ+xJ72vN9hP8OeV4IvsjfEjVN72BtCCImVqmpXICFoSTzzvnuoxztxnTRJHTbJ+/tJVZvEHo9fz/vPZDLj5uPHj2sATeoMAQgAIACAAAACAAgAIACAAAACAAgAIACAAAACAAgAIACAAAACAAgAIACAAAACAAgAIACAAAACAAgAIACAAAACAAgAIACAAAACAAgAIACAAAIACAAgAIAAAAIACAAgAIAAAAIACAAgAIAAAAIACAAgAIAAAAIACAAgAIAAAAIACAAgAIAAAAIACAAgAIAAAAIACAAgAIAAAAIACAAgAIAAAAIAjVtERN38ux5geVdZRl7zfvyx8pY/9m3fdvIWrcNrY7Xo+/5vmy+U6U+tdfr4vAGvm9vEgQJSD3yfP3KjuA0v8E2td+77ODNz8/JnZu67bY1XG8mZ12J248zM3a/nZrnTY3SbZeY56zrdr1ywzvUGxyyvOYYxG7Pt12fz6arrUfcsPyOim71G5653fvXVV93p6Wl88MEHcXx8HA8fPox33323LhaLm5i0h3018q7Ovf+/q21vVw7HW1uv1/HixYv8/fffY71ev7a+fd/H0dFRLJfL6LpXP8mWUmIcx6i1RmbGYrGIruui1hrDMGw/3/f9dtsZxzFKKZfa1jIzxnGMYRji2bNn8eLFi+3jzsd1/vF0v/nHDx48yPntMzOGYajjOJ653fSc5/evtW4/Pz3v+djM7pfDMEQpJfq+365nKSVqrdF1XZZSaj59+jR+++23eO+992K5XMZ6vY7T09OotW7/njs5OYmTk5O3nrjr9Tp+/vnng2/Uq9UqPv3003jnnXduNDzPnz+Pb7755lIbz23WdV08fvw4+r6/VBRWq1Usl8u3ftzFYhHDMJz53NHRUWRmdF0Xy+VyO1kvMp/w84m9u13sPtZ1XvP58n/66adrzYPM3Dt+02Q91Gs6fQOfQjh//K7rtmEEAAAAAAAAAO6PdDIAd2qDdfYntOfBgwdRa41vv/3WYBzQ4vPPP/9TrXU6B3F7kc/8POTN+cfzizouXOibvn7eXsd596u11pvYU9k8Xu4+1l19MfMGvj3uG46u63LP7XJnXPeN45mr0qbtaudc9/lVRllrzVLKSdd1TzLzXz/++KNZe8gAPH369Mv5lVnzixAu2i4M3b2Wb3mfvdvH7kUtl9imMjOzlPJytVr9NSK+9NIcOACllGPDwG2WmUfDMDystcazZ88MyAF5RyDugpqZJTPv/NWXAgDXKcDmRwa/tRIAGubXgAJAo3N/8042RkIAAAEABAAQAEAAuK8ueZYqAsA9VCPCiUACAAgAIAA0ww//AgAIAK3x3V8AAAEABAAQAEAAuO/u8rs1CwAgAIAAwJV5L0ABoPEGGAIBAAQAEABaYfdfAAABAAQAEABAAGiAA4ECAAgAIACAAAACwH02/b+AXWeTFQCaDgECQINz3xAIAI3yloACAAgAIACAANAMBwEFABAAQAAAAQAEgPssN+cAuxZAAAABAAQAEABAAAABAAQAEABAALjbXA0oAIAA0Kp0KrAA0OjkNwQCgMmPAAACQEsyImIcRyMhALTql19+MQgCQIMcBxAAmp393hFIAGi7AYZAAGg8APYABIAGJ39mdvG/nwQQAFqLwKYERkIAaG72Zy4iImqtBkMAaEmttYuIZUTkcrk0IAe06Pv+PxFRz/mz9/W4xHLftJ9Wz3mhD/bEdnYVL7PfWKd12Nx338rk7Ovz5c7/znOe6+6YXmcc8y3G/Cbuk9dY13z9pcqcjd2ZMa21Zmau+75/ERFxenpq1h4yAB9//PGfa62l1jrWV0qttZRStiHYmZjTx/UtNqK9E+ASAajT5NvcNi87+Tefy4sm/vz5Zeb2ec+Xt9kg5xtuZGaXmdm9OkSd8yNVszGtEVE2H++OX919jM3R7t3AvFp4ZtRa86qhu+gI2s467x/8zWPO1m3+XHPP4nLPY+TO6zId4Ot2lpmZmaWUiIh1RPwzIsZHjx6ZtQd07gaxXC5jtVrFzne8dgbmnOe8b3K8fPky1uv1pZb76NGjvcuex6aUEr/++qutc88Yfffdd/HRRx8ZjENt52/6ruuo65s3ymsN/BUCg+0RAAAAAAAAAOBN8smTJ7FcLrcnoJRSzpyMkplXfhOGxWLxhz6JWuvB3i2267q9z3ccxyilbMen1hp930ff9zEMQwzDEH3fb28TEfHJJ584cYVbbfH9998vVqvVdsMvpdRpA54CsFgsds+HP3Pq6ubc9Om04ez7fhuT+X0uO5mnZV52wtZaYxiGyMw6//xVAlJrjVLK9lz3ad2n9RnHMTKzTqfqzuTJyUmM45hHR0dxfHxcP/vss8HE5y7I999//+8RMcbOVWu7ewEXLmQTgDh7Tcm+04yvdZXgmx47Xr9g6TrL2r1QZf7vM1dJ1ldXBE1fmy5k6SOiOzo6+veHH374xddff/1Dq9dRcHcshmH4i2E4jE2Envd9/4+I+MGIcNt5Q5ADTv7NnlBdr9eu6EEAWjIdG+i6rvZ9b78fAWgxAhERmzdTAQEABKA19gAQgGZnv3f1QQAEAASg0QYYAgSgXX4NiAA0O/ud/osAtMsxAASg4fkfjgEgAO0GYH5ZMghAawXwIwAC0O7krwqAAAAC0B7f/RGAljkPAAEABAAQAEAAmuFAIAIACAAgAE3xe0AEABCA5rgUAAFol91/BAAQgOZkZnRdZy8AAWg5AiAAjaq1KgACAAhAa3z3RwAAAQAEABAAQAAAAQAEABAAQAAAAbizaq3pWgAEABAAQAAAAQAE4B7zbkAIgAgYBAQAEABAAAABaGFQO8OKADTLqcAIACAAgAAAAgAIACAAgADcN34FiACIAAiAyQ8C0FgBXA+MADQdAIOAALQ6/10LgAC0XAB7AAhAu/M/HAhEAJoOAAiACIAAtDf7HQNAAJoOgAIgAA3Pf+OKALSq1moQuBP+C5RjFfeF2nvXAAAAAElFTkSuQmCC" alt="FT" style={{ width: 24, height: 24, flexShrink: 0, objectFit: 'contain' }} />
+                        <div style={{ fontSize: 16, color: '#000', lineHeight: 1.5, fontWeight: 500 }}>{children}</div>
                     </div>
-                    
-                    {data.oneSentence && (
-                        <div className="mb-4 pb-4 border-b border-gray-600">
-                            <div className="text-xs text-gray-400 mb-2">ONE SENTENCE</div>
-                            <div className="text-sm italic leading-relaxed" style={{maxHeight: '120px', overflowY: 'auto'}}>"{data.oneSentence}"</div>
-                        </div>
-                    )}
-                    
-                    <div className="space-y-3 text-sm">
-                        <div>
-                            <div className="text-xs text-gray-400">Achievement</div>
-                            <div className="font-bold">{data.dreamAnswers.achievement || '—'}</div>
-                        </div>
-                        <div>
-                            <div className="text-xs text-gray-400">Market Position</div>
-                            <div className="font-bold">{data.dreamAnswers.marketPosition || '—'}</div>
-                        </div>
-                        {data.moodBoard.words.length > 0 && (
-                            <div>
-                                <div className="text-xs text-gray-400 mb-1">Essence</div>
-                                <div className="flex flex-wrap gap-1">
-                                    {data.moodBoard.words.map((word, i) => (
-                                        <span key={i} className="text-xs bg-white text-black px-2 py-1 rounded">
-                                            {word}
-                                        </span>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                    </div>
-                </>
+                </div>
             );
         }
 
-        // Help Modal Component
-        function HelpModal({ isOpen, onClose, content }) {
-            if (!isOpen) return null;
-
+        function ExampleBox({ bad, good }) {
             return (
-                <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 fade-in">
-                    <div className="bg-white max-w-3xl p-12 border-8 border-black max-h-[80vh] overflow-y-auto">
-                        <div className="flex justify-between items-start mb-6">
-                            <h2 className="plaak text-5xl">INSTRUCTIONS</h2>
-                            <button onClick={onClose} className="text-4xl font-bold hover:text-gray-600">×</button>
-                        </div>
-                        {content}
-                        <button className="btn-primary w-full text-xl py-4 mt-8" onClick={onClose}>
-                            GOT IT
-                        </button>
+                <div className="ft-example">
+                    <div style={{ marginBottom: 6 }}>
+                        <span style={{ color: '#DC2626', fontWeight: 700, fontSize: 14 }}>Bad:</span>{' '}
+                        <span style={{ color: '#6B7280' }}>{bad}</span>
                     </div>
+                    <div>
+                        <span style={{ color: '#16A34A', fontWeight: 700, fontSize: 14 }}>Good:</span>{' '}
+                        {good}
+                    </div>
+                </div>
+            );
+        }
+
+        function ButtonFooter({ onBack, onNext, nextLabel = 'Next', showBack = true, disabled = false }) {
+            return (
+                <div className="btn-footer no-print">
+                    {showBack ? <button className="btn-back" onClick={onBack}>&larr; Back</button> : <div />}
+                    <button className="btn-next" disabled={disabled} onClick={onNext}>{nextLabel} &rarr;</button>
+                </div>
+            );
+        }
+
+        function MobileStepBar({ currentStep, totalSteps }) {
+            const total = totalSteps || 4;
+            const progress = currentStep >= 999 ? 100 : Math.round((currentStep / total) * 100);
+            return (
+                <div className="mobile-step-bar no-print">
+                    <div className="bar-text">Step {Math.min(currentStep, total)} of {total}</div>
+                    <div className="mobile-progress"><div className="mobile-progress-fill" style={{ width: `${progress}%` }} /></div>
                 </div>
             );
         }
@@ -606,27 +635,120 @@
             );
         }
 
-        // Main App Component
+        function CoachFeedbackPanel() {
+            const [expanded, setExpanded] = useState(false);
+            const [feedback, setFeedback] = useState(null);
+
+            useEffect(() => {
+                const check = () => {
+                    if (window.AIChallenge && window.AIChallenge.getLastFeedback) {
+                        setFeedback(window.AIChallenge.getLastFeedback());
+                    }
+                };
+                check();
+                const interval = setInterval(check, 2000);
+                return () => clearInterval(interval);
+            }, []);
+
+            if (!feedback) return null;
+
+            return (
+                <div style={{ marginTop: 24, borderTop: '1px solid #333', paddingTop: 16 }}>
+                    <button
+                        onClick={() => setExpanded(!expanded)}
+                        style={{ background: 'none', border: 'none', color: '#FFF469', cursor: 'pointer', fontFamily: "'Monument', monospace", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 6, padding: 0, width: '100%' }}
+                    >
+                        <span style={{ transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s', display: 'inline-block' }}>&#9654;</span>
+                        COACH FEEDBACK
+                    </button>
+                    {expanded && (
+                        <div style={{ marginTop: 10, fontSize: 12, color: '#ccc', lineHeight: 1.5 }}>
+                            {feedback.type === 'approved' && (
+                                <p style={{ color: '#FFF469' }}>{feedback.message}</p>
+                            )}
+                            {feedback.type === 'challenges' && (
+                                <>
+                                    {feedback.encouragement && <p style={{ color: '#FFF469', marginBottom: 8 }}>{feedback.encouragement}</p>}
+                                    {feedback.challenges && feedback.challenges.map((ch, i) => (
+                                        <div key={i} style={{ marginBottom: 8, paddingLeft: 8, borderLeft: '2px solid #555' }}>
+                                            <div style={{ fontSize: 10, color: '#999', marginBottom: 2 }}>{ch.question_text || ch.question_key}</div>
+                                            <div>{ch.feedback}</div>
+                                        </div>
+                                    ))}
+                                </>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        function WizardSidebar({ currentStep, data, onNavigate }) {
+            const steps = [
+                { num: 1, label: 'Golden Circle', time: '~5 min' },
+                { num: 2, label: 'Company Dream', time: '~5 min' },
+                { num: 3, label: 'Dream Story', time: '~3 min' },
+                { num: 4, label: 'Dream Board', time: '~3 min' }
+            ];
+
+            const getSnippet = (n) => {
+                if (n === 1 && data.goldenCircle?.why) return '"' + data.goldenCircle.why.substring(0, 50) + (data.goldenCircle.why.length > 50 ? '...' : '') + '"';
+                if (n === 2 && data.dreamAnswers.achievement) {
+                    const count = Object.values(data.dreamAnswers).filter(v => v && v.length > 0).length;
+                    return count + ' of 10 questions answered';
+                }
+                if (n === 3 && data.oneSentence) return '"' + data.oneSentence.substring(0, 50) + (data.oneSentence.length > 50 ? '...' : '') + '"';
+                if (n === 4 && data.moodBoard.words.length > 0) return data.moodBoard.words.length + ' words, ' + data.moodBoard.people.length + ' figures';
+                return null;
+            };
+
+            return (
+                <div className="wizard-sidebar no-print">
+                    <div className="wizard-sidebar-inner">
+                        <div style={{ marginBottom: 24 }}>
+                            <div className="monument" style={{ fontSize: 12, textTransform: 'uppercase', color: '#fff', marginBottom: 4 }}>COMPANY DREAM</div>
+                            <div style={{ fontSize: 13, color: '#999' }}>~16 min total</div>
+                        </div>
+                        <div style={{ marginBottom: 16, fontFamily: "'Monument', monospace", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#999' }}>Your journey</div>
+                        {steps.map(s => {
+                            const effectiveStep = Math.ceil(currentStep);
+                            const isCompleted = effectiveStep > s.num, isActive = effectiveStep === s.num, isLocked = effectiveStep < s.num;
+                            const snippet = isCompleted ? getSnippet(s.num) : null;
+                            return (
+                                <div key={s.num} className={`sidebar-step-item ${isCompleted ? 'completed' : ''} ${isActive ? 'active' : ''} ${isLocked ? 'locked' : ''}`}
+                                    onClick={() => isCompleted && onNavigate && onNavigate(s.num)}
+                                    title={isCompleted ? 'Click to review this step' : ''}
+                                >
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                        {isCompleted ? <CheckIcon color="#000" size={14} /> : <span className="step-num" style={{ color: isActive ? '#fff' : '#ccc' }}>{String(s.num).padStart(2, '0')}</span>}
+                                        <span className="step-name" style={{ color: isLocked ? '#666' : isCompleted ? '#000' : '#fff' }}>{s.label}</span>
+                                    </div>
+                                    {snippet && <div className="sidebar-snippet">{snippet}</div>}
+                                </div>
+                            );
+                        })}
+
+                        <CoachFeedbackPanel />
+                    </div>
+                </div>
+            );
+        }
+
+        /* ============================================================
+           MAIN APPLICATION
+           ============================================================ */
         function CompanyDreamTool() {
             const [deps, setDeps] = useState([]);
             const [step, setStep] = useState(0);
-            const [showHelp, setShowHelp] = useState(false);
-            const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-            const [submissionStatus, setSubmissionStatus] = useState(null); // null, 'loading', 'success', 'error'
+            const [submissionStatus, setSubmissionStatus] = useState(null);
             const [aiReviewing, setAiReviewing] = useState(false);
 
             const [data, setData] = useState({
-                companyName: '',
                 userEmail: '',
-                corporateKiller: {
-                    whatLost: '',
-                    whatsAtStake: '',
-                    whyImportant: ''
-                },
-                employeePromise: {
-                    money: '',
-                    pride: '',
-                    freedom: ''
+                goldenCircle: {
+                    why: '',
+                    how: '',
+                    what: ''
                 },
                 dreamAnswers: {
                     achievement: '',
@@ -634,15 +756,22 @@
                     employeesSay: '',
                     marketPosition: '',
                     officeFeelsLike: '',
-                    personalAchievement: ''
+                    capabilities: '',
+                    howItFeels: '',
+                    teamFeeling: '',
+                    personalAchievement: '',
+                    whoYouveBecome: ''
                 },
                 oneSentence: '',
                 moodBoard: {
                     words: [],
-                    people: []
-                }
+                    people: [],
+                    images: []
+                },
+                dreamNarrative: ''
             });
 
+            /* PRESERVED: Dependency loading */
             useEffect(() => {
                 async function loadDeps() {
                     const userId = localStorage.getItem('ft_user_id');
@@ -656,7 +785,7 @@
                         for (const field of toolConfig.fields) {
                             const val = await ToolDB.getDependency(userId, field.source_field);
                             if (val) {
-                                loaded.push({ label: field.display_label || field.source_field, value: typeof val === 'object' ? JSON.stringify(val, null, 2) : String(val) });
+                                loaded.push({ label: field.display_label || field.source_field, value: window.DependencyInjection ? DependencyInjection.formatValue(val) : (typeof val === 'object' ? JSON.stringify(val, null, 2) : String(val)) });
                             }
                         }
                         setDeps(loaded);
@@ -667,12 +796,26 @@
                 loadDeps();
             }, []);
 
-            // Auto-save to localStorage
+            /* PRESERVED: Auto-save to localStorage (with migration from old structure) */
             useEffect(() => {
                 const saved = localStorage.getItem('ftDreamTool');
                 if (saved) {
                     try {
-                        setData(JSON.parse(saved));
+                        const parsed = JSON.parse(saved);
+                        // Migration: if old data has corporateKiller but no goldenCircle, reset
+                        if (parsed.corporateKiller && !parsed.goldenCircle) {
+                            console.warn('[dream] Old data structure detected (corporateKiller). Clearing saved data for new structure.');
+                            localStorage.removeItem('ftDreamTool');
+                            return;
+                        }
+                        // Ensure new dreamAnswer fields exist
+                        if (parsed.dreamAnswers && !('capabilities' in parsed.dreamAnswers)) {
+                            parsed.dreamAnswers.capabilities = '';
+                            parsed.dreamAnswers.howItFeels = '';
+                            parsed.dreamAnswers.teamFeeling = '';
+                            parsed.dreamAnswers.whoYouveBecome = '';
+                        }
+                        setData(parsed);
                     } catch (e) {}
                 }
             }, []);
@@ -681,6 +824,7 @@
                 localStorage.setItem('ftDreamTool', JSON.stringify(data));
             }, [data]);
 
+            /* PRESERVED: Data update helper (supports dot paths) */
             const updateData = (path, value) => {
                 setData(prev => {
                     const newData = { ...prev };
@@ -694,7 +838,7 @@
                 });
             };
 
-            // Clear Cache/Reset Function
+            /* Clear Cache/Reset Function */
             const clearCache = () => {
                 if (confirm('This will delete all saved data and reset the form. Are you sure?')) {
                     localStorage.removeItem('ftDreamTool');
@@ -702,7 +846,7 @@
                 }
             };
 
-            // AI-gated step navigation
+            /* PRESERVED: AI-gated step navigation — do not modify */
             const handleStepNext = async (nextStepValue, stepAnswers, stepName) => {
                 const userId = localStorage.getItem('ft_user_id');
                 if (!userId) {
@@ -723,12 +867,11 @@
                 }
             };
 
-            // Webhook Submission Function
+            /* PRESERVED: Webhook Submission Function — do not modify */
             const submitToWebhook = async () => {
                 setSubmissionStatus('loading');
 
                 try {
-                    // Get user ID from localStorage
                     const userId = localStorage.getItem('ft_user_id');
                     if (!userId) {
                         alert('User not authenticated. Please return to the dashboard.');
@@ -737,10 +880,11 @@
                     }
 
                     const questionMappings = {
-                        dream_narrative: data.corporateKiller,
-                        dream_visualization: data.dreamAnswers,
-                        killer_conclusion: data.employeePromise,
-                        one_sentence: data.oneSentence
+                        golden_circle: data.goldenCircle,
+                        dream_answers: data.dreamAnswers,
+                        one_sentence: data.oneSentence,
+                        dream_narrative: data.dreamNarrative,
+                        mood_board: data.moodBoard
                     };
 
                     await window.AIChallenge.submitWithChallenge(userId, 'dream', questionMappings, {
@@ -757,862 +901,361 @@
                 }
             };
 
-            const generate3Sentences = () => {
-                const { achievement, customersSay, employeesSay, marketPosition } = data.dreamAnswers;
-                
-                return [
-                    {
-                        type: 'Conservative',
-                        text: `In 10 years, we're ${marketPosition.toLowerCase() || 'a respected industry player'}, with ${achievement.toLowerCase() || 'steady growth'}, earning recognition from customers and employees alike.`,
-                        desc: 'Safe, achievable, conventional'
-                    },
-                    {
-                        type: 'Bold',
-                        text: `In 10 years, we're ${marketPosition.toLowerCase() || 'the category leader'}, where ${employeesSay.toLowerCase() || 'our team feels inspired'}, serving customers who say "${customersSay || 'they changed everything'}", and we've achieved ${achievement.toLowerCase() || 'what seemed impossible'}.`,
-                        desc: 'Ambitious, vivid, inspirational'
-                    },
-                    {
-                        type: 'Audacious',
-                        text: `In 10 years, we've redefined the industry as ${marketPosition.toLowerCase() || 'the undisputed category king'}, ${achievement.toLowerCase() || 'dominating every key metric'}, where ${employeesSay.toLowerCase() || 'people fight to work here'} and customers ${customersSay.toLowerCase() || 'can\'t imagine life without us'}.`,
-                        desc: 'Aggressive, moonshot, game-changing'
-                    }
-                ];
-            };
-
-            // Help content based on current step
-            const getHelpContent = () => {
-                if (step === 1) {
-                    return (
-                        <div>
-                            <h3 className="plaak text-3xl mb-4">WHY</h3>
-                            <p className="mb-6 text-lg">The Dream is your North Star. It aligns your team, energizes your workforce, and drives long-term success. Without it, you're adrift.</p>
-                            
-                            <h3 className="plaak text-3xl mb-4">WHAT</h3>
-                            <p className="mb-6 text-lg">A vivid, bold, and inspiring vision of where your company will be in 10 years - written as if it's already happening.</p>
-                            
-                            <h3 className="plaak text-3xl mb-4">HOW</h3>
-                            <ol className="text-lg space-y-2">
-                                <li>1. Answer questions about your future state</li>
-                                <li>2. Synthesize into one powerful sentence</li>
-                                <li>3. Create a visual Dream Board</li>
-                                <li>4. Share with your team for accountability</li>
-                            </ol>
-                        </div>
-                    );
-                }
-                return null;
-            };
-
             return (
-                <div className="min-h-screen bg-white">
-                    {/* Dream Preview Sidebar */}
-                    <DreamPreviewSidebar 
-                        data={data} 
-                        currentStep={step} 
-                        isCollapsed={sidebarCollapsed}
-                        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-                    />
-
-                    {/* Help & Reset Buttons */}
-                    {step >= 1 && step <= 4 && (
-                        <>
-                            <button className="help-button no-print" onClick={() => setShowHelp(true)}>
-                                ?
-                            </button>
-                            <button 
-                                className="help-button no-print" 
-                                onClick={clearCache}
-                                style={{right: '90px'}}
-                                title="Clear all data and start over"
-                            >
-                                ⟲
-                            </button>
-                        </>
-                    )}
-
-                    {/* Help Modal */}
-                    <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} content={getHelpContent()} />
-
-                    {/* Cover Page */}
-                    {step === 0 && (
-                        <div className="relative min-h-screen flex items-center justify-center bg-black">
-                            {/* Guru Login removed — 4A EK feedback */}
-                            <div className="relative z-10 text-center text-white px-8">
-                                <h1 className="plaak text-9xl mb-6 animate-in">COMPANY DREAM TOOL</h1>
-                                <p className="text-3xl mb-12 animate-in" style={{animationDelay: '0.2s'}}>
-                                    Craft your bold, simple, energizing 10-year vision
-                                </p>
-                                <button 
-                                    className="bg-white text-black plaak text-3xl px-16 py-6 border-4 border-white hover:bg-black hover:text-white hover:border-white transition-all duration-200 animate-in"
-                                    style={{animationDelay: '0.4s'}}
-                                    onClick={() => setStep(0.5)}
-                                >
-                                    START
-                                </button>
-                                <div className="mt-8 animate-in" style={{animationDelay: '0.6s'}}>
-                                    <button 
-                                        onClick={clearCache}
-                                        className="text-gray-400 hover:text-white text-sm underline transition-colors"
-                                    >
-                                        Clear Saved Data
-                                    </button>
+                <div className="tool-frame">
+                    <div className="tool-inner">
+                        {/* Step 0: Cover */}
+                        {step === 0 && (
+                            <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+                                <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url(cover.jpg)', backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.5 }} />
+                                <div style={{ position: 'relative', textAlign: 'center', color: '#fff', padding: '0 32px' }} className="animate-in">
+                                    <div className="monument" style={{ fontSize: 13, color: '#FFF469', letterSpacing: '0.15em', marginBottom: 16 }}>TOOL 02</div>
+                                    <div style={{ display: 'inline-block', border: '2px solid #FFF469', padding: '6px 18px', marginBottom: 20 }}>
+                                        <span className="monument" style={{ fontSize: 12, color: '#FFF469', letterSpacing: '0.15em' }}>TEAM TOOL</span>
+                                    </div>
+                                    <h1 className="plaak" style={{ fontSize: 80, marginBottom: 16, textTransform: 'uppercase' }}>COMPANY DREAM</h1>
+                                    <p style={{ fontSize: 18, color: '#ccc', marginBottom: 48 }}>Craft your bold, simple, energizing 5-year vision</p>
+                                    <button onClick={() => setStep(0.5)}
+                                        style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 48px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s ease', minHeight: 44 }}
+                                        onMouseOver={e => { e.target.style.background = '#FFF469'; }}
+                                        onMouseOut={e => { e.target.style.background = '#fff'; }}
+                                    >START</button>
+                                    <div style={{ marginTop: 24 }}>
+                                        <button onClick={clearCache}
+                                            style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', fontSize: 13, textDecoration: 'underline' }}
+                                        >Clear Saved Data</button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
+                        )}
 
-                    {/* Intro Screen */}
-                    {step === 0.5 && (
-                        <div className="bg-black text-white min-h-screen p-16">
-                            <div className="max-w-5xl mx-auto">
-                                <h1 className="plaak text-9xl mb-16 animate-in">BEFORE WE START</h1>
-                                
-                                <div className="mb-12 animate-in" style={{animationDelay: '0.1s'}}>
-                                    <h2 className="plaak text-6xl mb-6">PURPOSE</h2>
-                                    <p className="text-3xl leading-relaxed">
-                                        The Dream is your North Star — bold, simple, energizing. Over the next session, you'll craft a vivid vision of where your company will be in 10 years.
+                        {/* Step 0.5: Intro / Team Tool */}
+                        {step === 0.5 && (
+                            <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <div style={{ maxWidth: 640, padding: '0 32px', textAlign: 'center', color: '#fff' }} className="animate-in">
+                                    <div style={{ display: 'inline-block', border: '2px solid #FFF469', padding: '8px 24px', marginBottom: 24 }}>
+                                        <span className="monument" style={{ fontSize: 13, color: '#FFF469', letterSpacing: '0.15em' }}>TEAM TOOL</span>
+                                    </div>
+                                    <p style={{ fontSize: 16, color: '#ccc', lineHeight: 1.7, marginBottom: 40 }}>
+                                        This tool is completed together as a leadership team. All answers will be shared with your team and visible to your guru.
                                     </p>
-                                    <p className="text-2xl text-gray-400 mt-4">
-                                        This isn't another mission statement. It's a story that makes Mondays as exciting as Fridays.
-                                    </p>
-                                    <div className="mt-6 p-6 border-2 border-white/30" style={{background: 'rgba(255,244,105,0.08)'}}>
-                                        <p className="text-xl text-gray-300">
-                                            <strong className="text-white">Individual or team?</strong> Complete the Dream on your own first. Your honest, unfiltered answers are what make this powerful. Later, your Guru will bring the team together to build a shared dream from everyone's input.
-                                        </p>
+                                    <div style={{ textAlign: 'left', marginBottom: 40 }}>
+                                        <div className="monument" style={{ fontSize: 11, color: '#FFF469', letterSpacing: '0.1em', marginBottom: 16, textAlign: 'center' }}>YOUR JOURNEY</div>
+                                        {[
+                                            { num: 1, label: 'Golden Circle', desc: 'Define WHY, HOW, and WHAT' },
+                                            { num: 2, label: 'Company Dream', desc: '10 vision questions about your future' },
+                                            { num: 3, label: 'Dream Story', desc: 'One sentence + full narrative' },
+                                            { num: 4, label: 'Dream Board', desc: 'Words, people, and images' }
+                                        ].map(s => (
+                                            <div key={s.num} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 0', borderBottom: '1px solid #333' }}>
+                                                <span className="monument" style={{ fontSize: 14, color: '#FFF469', width: 28 }}>{String(s.num).padStart(2, '0')}</span>
+                                                <div>
+                                                    <div style={{ fontWeight: 600, fontSize: 15 }}>{s.label}</div>
+                                                    <div style={{ fontSize: 13, color: '#999' }}>{s.desc}</div>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
-                                </div>
-
-                                <div className="mb-12 animate-in" style={{animationDelay: '0.2s'}}>
-                                    <h2 className="plaak text-6xl mb-6" style={{color: '#fff469'}}>MISTAKES TO AVOID</h2>
-                                    <ul className="text-2xl space-y-4">
-                                        <li className="flex items-start">
-                                            <span className="text-4xl mr-4">•</span>
-                                            <span>Being vague or generic ("leading company in our space")</span>
-                                        </li>
-                                        <li className="flex items-start">
-                                            <span className="text-4xl mr-4">•</span>
-                                            <span>Playing it safe (Dream should push boundaries)</span>
-                                        </li>
-                                        <li className="flex items-start">
-                                            <span className="text-4xl mr-4">•</span>
-                                            <span>Using corporate jargon instead of vivid language</span>
-                                        </li>
-                                        <li className="flex items-start">
-                                            <span className="text-4xl mr-4">•</span>
-                                            <span>Making it about numbers only (needs emotional resonance)</span>
-                                        </li>
-                                        <li className="flex items-start">
-                                            <span className="text-4xl mr-4">•</span>
-                                            <span>Letting it collect dust (must be lived daily)</span>
-                                        </li>
-                                    </ul>
-                                </div>
-
-                                <div className="mb-16 animate-in" style={{animationDelay: '0.3s'}}>
-                                    <h2 className="plaak text-6xl mb-8">THE JOURNEY</h2>
-                                    <div className="grid grid-cols-5 gap-6 text-center">
-                                        <div className="border-2 border-white p-6">
-                                            <div className="text-7xl plaak mb-3">01</div>
-                                            <p className="text-xl font-bold mb-2">Corporate Killer</p>
-                                            <p className="text-lg text-gray-400">3 min</p>
-                                        </div>
-                                        <div className="border-2 border-white p-6">
-                                            <div className="text-7xl plaak mb-3">02</div>
-                                            <p className="text-xl font-bold mb-2">Employee Promise</p>
-                                            <p className="text-lg text-gray-400">2 min</p>
-                                        </div>
-                                        <div className="border-2 border-white p-6">
-                                            <div className="text-7xl plaak mb-3">03</div>
-                                            <p className="text-xl font-bold mb-2">Dream Questions</p>
-                                            <p className="text-lg text-gray-400">5 min</p>
-                                        </div>
-                                        <div className="border-2 border-white p-6">
-                                            <div className="text-7xl plaak mb-3">04</div>
-                                            <p className="text-xl font-bold mb-2">One Sentence</p>
-                                            <p className="text-lg text-gray-400">3 min</p>
-                                        </div>
-                                        <div className="border-2 border-white p-6">
-                                            <div className="text-7xl plaak mb-3">05</div>
-                                            <p className="text-xl font-bold mb-2">Dream Board</p>
-                                            <p className="text-lg text-gray-400">3 min</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <button 
-                                    className="btn-primary w-full text-3xl py-8 plaak animate-in" 
-                                    style={{animationDelay: '0.4s'}}
-                                    onClick={() => setStep(0.7)}
-                                >
-                                    LET'S START →
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Golden Circle Interlude */}
-                    {step === 0.7 && (
-                        <div className="bg-white min-h-screen flex items-center justify-center p-16">
-                            <div className="max-w-6xl text-center">
-                                <h1 className="plaak text-8xl mb-12 animate-in">THE GOLDEN CIRCLE</h1>
-
-                                <div className="text-xl max-w-2xl mx-auto mb-12 space-y-4 animate-in" style={{animationDelay: '0.2s'}}>
-                                    <p className="text-2xl font-bold">Most companies start with WHAT they do.</p>
-                                    <p className="text-2xl">Elite companies start with WHY they exist.</p>
-                                    <p className="text-2xl font-bold">Your Dream lives in the WHY.</p>
-                                </div>
-
-                                <button 
-                                    className="btn-primary text-2xl py-6 px-16 animate-in" 
-                                    style={{animationDelay: '0.4s'}}
-                                    onClick={() => setStep(1)}
-                                >
-                                    Continue →
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Emotional Pause after Corporate Killer */}
-                    {step === 1.5 && (
-                        <div className="bg-black text-white min-h-screen flex items-center justify-center p-16">
-                            <div className="max-w-4xl text-center">
-                                <h1 className="plaak text-7xl mb-8 animate-in" style={{color: '#FFF469'}}>
-                                    THIS MATTERS.
-                                </h1>
-                                <p className="text-3xl mb-12 animate-in" style={{animationDelay: '0.2s'}}>
-                                    You've identified what's at stake. Now answer the most important question...
-                                </p>
-                                <button
-                                    className="btn-primary text-2xl py-6 px-16 animate-in"
-                                    style={{animationDelay: '0.4s'}}
-                                    onClick={() => setStep(1.7)}
-                                >
-                                    Continue →
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Header (shown for steps 1-4) */}
-                    {step >= 1 && step < 5 && step !== 1.5 && step !== 2.5 && step !== 4.5 && (
-                        <>
-                            <header className="border-b-2 border-black py-6 px-8 no-print">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <h1 className="plaak text-3xl">COMPANY DREAM TOOL</h1>
-                                        <p className="text-sm mt-2 text-gray-600">Craft your bold, simple, energizing 10-year vision</p>
-                                    </div>
-                                    <img src="fast track tool logo.png" alt="Fast Track" className="h-12" />
-                                </div>
-                            </header>
-
-                            {/* Progress Indicator */}
-                            <div className="border-b border-gray-200 py-6 px-8 no-print">
-                                <div className="flex items-center justify-between max-w-5xl">
-                                    <div className="flex items-center gap-1">
-                                        <div className={`progress-dot ${step >= 1 ? 'active' : ''} ${step > 1 && step !== 1.5 ? 'completed' : ''}`}></div>
-                                        <span className={`text-xs ${step === 1 ? 'font-bold' : ''}`}>Corporate Killer</span>
-                                    </div>
-                                    <div className="flex-1 h-0.5 bg-gray-200 mx-2">
-                                        <div className={`h-full bg-black transition-all ${step > 1 && step !== 1.5 ? 'w-full' : 'w-0'}`}></div>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                        <div className={`progress-dot ${step >= 1.7 ? 'active' : ''} ${step > 1.7 && step !== 1.8 ? 'completed' : ''}`}></div>
-                                        <span className={`text-xs ${step === 1.7 ? 'font-bold' : ''}`}>Employee Promise</span>
-                                    </div>
-                                    <div className="flex-1 h-0.5 bg-gray-200 mx-2">
-                                        <div className={`h-full bg-black transition-all ${step > 1.7 && step !== 1.8 ? 'w-full' : 'w-0'}`}></div>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                        <div className={`progress-dot ${step >= 2 ? 'active' : ''} ${step > 2 && step !== 2.5 ? 'completed' : ''}`}></div>
-                                        <span className={`text-xs ${step === 2 ? 'font-bold' : ''}`}>Dream Questions</span>
-                                    </div>
-                                    <div className="flex-1 h-0.5 bg-gray-200 mx-2">
-                                        <div className={`h-full bg-black transition-all ${step > 2 && step !== 2.5 ? 'w-full' : 'w-0'}`}></div>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                        <div className={`progress-dot ${step >= 3 ? 'active' : ''} ${step > 3 ? 'completed' : ''}`}></div>
-                                        <span className={`text-xs ${step === 3 ? 'font-bold' : ''}`}>One Sentence</span>
-                                    </div>
-                                    <div className="flex-1 h-0.5 bg-gray-200 mx-2">
-                                        <div className={`h-full bg-black transition-all ${step > 3 ? 'w-full' : 'w-0'}`}></div>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                        <div className={`progress-dot ${step >= 4 ? 'active' : ''}`}></div>
-                                        <span className={`text-xs ${step === 4 ? 'font-bold' : ''}`}>Dream Board</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </>
-                    )}
-
-                    {/* Main Content */}
-                    <div>
-                        {/* Step 1: Corporate Killer */}
-                        {step === 1 && <><DependencyContext deps={deps} /><Step1Corporate
-                            data={data}
-                            updateData={updateData}
-                            onNext={() => handleStepNext(1.5, { dream_narrative: data.corporateKiller }, 'Corporate Killer')}
-                            aiReviewing={aiReviewing}
-                        /></>}
-
-                        {/* Step 1.7: Employee Promise (WIFM Gate) */}
-                        {step === 1.7 && <Step1_7EmployeePromise
-                            data={data}
-                            updateData={updateData}
-                            onBack={() => setStep(1)}
-                            onNext={() => handleStepNext(1.8, { killer_conclusion: data.employeePromise }, 'Employee Promise')}
-                            aiReviewing={aiReviewing}
-                        />}
-
-                        {/* Transition after Employee Promise */}
-                        {step === 1.8 && (
-                            <div className="bg-black text-white min-h-screen flex items-center justify-center p-16">
-                                <div className="max-w-4xl text-center">
-                                    <h1 className="plaak text-7xl mb-8 animate-in" style={{color: '#FFF469'}}>
-                                        NOW BUILD THE DREAM.
-                                    </h1>
-                                    <p className="text-3xl mb-12 animate-in" style={{animationDelay: '0.2s'}}>
-                                        You know what's at stake. You know what employees get. Now imagine the vivid future.
-                                    </p>
                                     <button
-                                        className="btn-primary text-2xl py-6 px-16 animate-in"
-                                        style={{animationDelay: '0.4s'}}
-                                        onClick={() => setStep(2)}
-                                    >
-                                        Continue to Dream Questions →
-                                    </button>
+                                        onClick={() => setStep(1)}
+                                        style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 48px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s ease', minHeight: 44 }}
+                                        onMouseOver={e => { e.target.style.background = '#FFF469'; }}
+                                        onMouseOut={e => { e.target.style.background = '#fff'; }}
+                                    >BEGIN</button>
                                 </div>
                             </div>
                         )}
 
-                        {/* Step 2: Dream Questions (One-at-a-time) */}
-                        {step === 2 && <Step2DreamQuestions
-                            data={data}
-                            updateData={updateData}
-                            onBack={() => setStep(1)}
-                            onNext={() => handleStepNext(2.5, { dream_visualization: data.dreamAnswers }, 'Dream Questions')}
-                            aiReviewing={aiReviewing}
-                        />}
+                        {/* Steps 1-4: Wizard */}
+                        {[1,2,3,4].includes(step) && (
+                            <div className="wizard-layout">
+                                <div className="wizard-main">
+                                    <MobileStepBar currentStep={step} totalSteps={4} />
 
-                        {/* Emotional Pause after Dream Questions */}
-                        {step === 2.5 && (
-                            <div className="bg-black text-white min-h-screen flex items-center justify-center p-16">
-                                <div className="max-w-4xl text-center">
-                                    <h1 className="plaak text-7xl mb-8 animate-in" style={{color: '#FFF469'}}>
-                                        NOW WE SYNTHESIZE.
-                                    </h1>
-                                    <p className="text-3xl mb-12 animate-in" style={{animationDelay: '0.2s'}}>
-                                        Turn your vivid vision into one powerful sentence.
-                                    </p>
-                                    <button 
-                                        className="btn-primary text-2xl py-6 px-16 animate-in" 
-                                        style={{animationDelay: '0.4s'}}
-                                        onClick={() => setStep(3)}
-                                    >
-                                        Continue →
-                                    </button>
+                                    <div className="wizard-content animate-in">
+                                        {step === 1 && <><DependencyContext deps={deps} /><Step1GoldenCircle data={data} updateData={updateData} /></>}
+                                        {step === 2 && <Step2CompanyDream data={data} updateData={updateData} />}
+                                        {step === 3 && <Step3DreamStory data={data} updateData={updateData} />}
+                                        {step === 4 && <Step4DreamBoard data={data} updateData={updateData} />}
+                                    </div>
+
+                                    <ButtonFooter
+                                        onBack={() => setStep(step === 1 ? 0.5 : step - 1)}
+                                        onNext={() => {
+                                            if (step === 1) {
+                                                if (!data.goldenCircle.why || !data.goldenCircle.how || !data.goldenCircle.what) return;
+                                                handleStepNext(1.5, { golden_circle: data.goldenCircle }, 'Golden Circle');
+                                            } else if (step === 2) {
+                                                const allAnswered = Object.values(data.dreamAnswers).every(v => v && v.length >= 5);
+                                                if (!allAnswered) return;
+                                                handleStepNext(2.5, { dream_answers: data.dreamAnswers }, 'Company Dream');
+                                            } else if (step === 3) {
+                                                const canProceed = data.oneSentence && data.oneSentence.length > 50;
+                                                if (!canProceed) return;
+                                                handleStepNext(3.5, { one_sentence: data.oneSentence, dream_narrative: data.dreamNarrative }, 'Dream Story');
+                                            } else if (step === 4) {
+                                                const canProceed = data.moodBoard.words.length >= 3;
+                                                if (!canProceed) return;
+                                                setStep(999);
+                                            }
+                                        }}
+                                        disabled={aiReviewing}
+                                        nextLabel={aiReviewing ? 'AI Coach Reviewing...' : step === 4 ? 'View Canvas' : 'Next'}
+                                        showBack={true}
+                                    />
                                 </div>
+                                <WizardSidebar currentStep={step} data={data} onNavigate={setStep} />
                             </div>
                         )}
 
-                        {/* Step 3: One Sentence (with 3 AI versions) */}
-                        {step === 3 && <Step3OneSentence
-                            data={data}
-                            updateData={updateData}
-                            generate3Sentences={generate3Sentences}
-                            onBack={() => setStep(2)}
-                            onNext={() => handleStepNext(4, { one_sentence: data.oneSentence }, 'One Sentence Dream')}
-                            aiReviewing={aiReviewing}
-                        />}
+                        {/* VP-style transition screens between steps */}
+                        {[1.5, 2.5, 3.5].includes(step) && (() => {
+                            const completedStep = Math.floor(step);
+                            const nextStep = completedStep + 1;
+                            const t = TRANSITION_CONTENT[completedStep];
+                            return (
+                                <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <div style={{ maxWidth: 640, padding: '0 32px', textAlign: 'center', color: '#fff' }} className="animate-in">
+                                        <div className="monument" style={{ fontSize: 12, color: '#FFF469', letterSpacing: '0.1em', marginBottom: 16 }}>
+                                            STEP {completedStep} OF 4 COMPLETE
+                                        </div>
+                                        <h1 className="plaak" style={{ fontSize: 48, marginBottom: 12 }}>{t.title}</h1>
+                                        <p style={{ fontSize: 16, color: '#ccc', marginBottom: 48 }}>{t.text}</p>
 
-                        {/* Step 4: Dream Board */}
-                        {step === 4 && <Step4DreamBoard
-                            data={data}
-                            updateData={updateData}
-                            onBack={() => setStep(3)}
-                            onNext={() => setStep(4.5)}
-                        />}
+                                        <div style={{ background: '#111', border: '1px solid #333', borderLeft: '4px solid #FFF469', padding: '20px 24px', marginBottom: 24, textAlign: 'left' }}>
+                                            <span className="monument" style={{ fontSize: 10, color: '#FFF469', display: 'block', marginBottom: 8 }}>BRUTAL TRUTH</span>
+                                            <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7 }}>{t.brutalTruth}</p>
+                                        </div>
 
-                        {/* Step 4.5: Dream Strength Analyzer */}
-                        {step === 4.5 && <DreamStrengthAnalyzer
-                            data={data}
-                            onBack={() => setStep(4)}
-                            onNext={() => setStep(5)}
-                        />}
+                                        <div style={{ background: '#111', border: '1px solid #333', borderLeft: '4px solid #666', padding: '20px 24px', marginBottom: 48, textAlign: 'left' }}>
+                                            <span className="monument" style={{ fontSize: 10, color: '#999', display: 'block', marginBottom: 8 }}>PEER PROOF</span>
+                                            <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7, fontStyle: 'italic' }}>{t.peerProof}</p>
+                                        </div>
 
-                        {/* Step 5: Final Canvas */}
-                        {step === 5 && <Step5Canvas
-                            data={data}
-                            onBack={() => setStep(4.5)}
-                            onSubmit={submitToWebhook}
-                            submissionStatus={submissionStatus}
-                        />}
+                                        <button
+                                            onClick={() => setStep(nextStep)}
+                                            style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 48px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                                            onMouseOver={e => { e.target.style.background = '#FFF469'; }}
+                                            onMouseOut={e => { e.target.style.background = '#fff'; }}
+                                        >
+                                            CONTINUE TO STEP {nextStep}
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
+                        {/* Step 999: Canvas */}
+                        {step === 999 && <CanvasView data={data} onBack={() => setStep(4)} onSubmit={submitToWebhook} submissionStatus={submissionStatus} />}
                     </div>
                 </div>
             );
         }
 
-        // Step 1: Corporate Killer Component (with character feedback and jargon detection)
-        function Step1Corporate({ data, updateData, onNext, aiReviewing }) {
-            const canProceed = data.companyName &&
-                              data.corporateKiller.whatLost &&
-                              data.corporateKiller.whatsAtStake &&
-                              data.corporateKiller.whyImportant;
+        /* ============================================================
+           STEP 1: THE GOLDEN CIRCLE
+           ============================================================ */
+        function Step1GoldenCircle({ data, updateData }) {
+            const analysisWhy = analyzeText(data.goldenCircle.why, 30);
+            const analysisHow = analyzeText(data.goldenCircle.how, 30);
+            const analysisWhat = analyzeText(data.goldenCircle.what, 30);
 
-            const analysis1 = analyzeText(data.corporateKiller.whatLost, 30);
-            const analysis2 = analyzeText(data.corporateKiller.whatsAtStake, 30);
-            const analysis3 = analyzeText(data.corporateKiller.whyImportant, 30);
+            const jargonWhy = detectJargon(data.goldenCircle.why);
+            const jargonHow = detectJargon(data.goldenCircle.how);
+            const jargonWhat = detectJargon(data.goldenCircle.what);
 
-            const jargon1 = detectJargon(data.corporateKiller.whatLost);
-            const jargon2 = detectJargon(data.corporateKiller.whatsAtStake);
-            const jargon3 = detectJargon(data.corporateKiller.whyImportant);
-
-            const bullets1 = hasBulletPoints(data.corporateKiller.whatLost);
-            const bullets2 = hasBulletPoints(data.corporateKiller.whatsAtStake);
-            const bullets3 = hasBulletPoints(data.corporateKiller.whyImportant);
+            const bulletsWhy = hasBulletPoints(data.goldenCircle.why);
+            const bulletsHow = hasBulletPoints(data.goldenCircle.how);
+            const bulletsWhat = hasBulletPoints(data.goldenCircle.what);
 
             return (
-                <main className="p-12 max-w-6xl mx-auto">
-                    <div className="animate-in">
-                        <div className="numbered-section mb-8">
-                            [01] THE CORPORATE KILLER
-                        </div>
+                <>
+                    <p className="step-indicator">STEP 1 OF 4 <span className="step-time">~5 MIN</span></p>
+                    <h1 className="step-heading">The Golden Circle</h1>
+                    <p className="step-hint">Start from the inside out. Define WHY your company exists, HOW you do it differently, then WHAT you actually do.</p>
 
-                        {/* Fast Track Insight */}
-                        <FastTrackInsight>
-                            The Dream starts with understanding what the world would lose without you. Sinek's Golden Circle principle tells us: start with WHY, not WHAT. If you can't articulate what disappears when your company is gone, your Dream will lack emotional power and fail to align your team.
-                        </FastTrackInsight>
-
-                        {/* The Science */}
-                        <ScienceBox collapsible={true}>
-                            Collins &amp; Porras research in "Building Your Company's Vision" shows that companies with a vivid, well-articulated envisioned future outperform comparison companies by 6:1 over a 15-year period. Covey's "Begin with the End in Mind" principle confirms: mental creation must precede physical creation — writing your Dream down activates deeper cognitive processing than thinking alone.
-                        </ScienceBox>
-
-                        {/* Common Mistake */}
-                        <WarningBox>
-                            Don't confuse a Dream with a goal — a Dream is your North Star, not a quarterly target. <strong>Bad:</strong> "We want to be the leading company in our industry" (vague, could be anyone). <strong>Good:</strong> "In 10 years, young talented people fight to work here because we've redefined what retail means for an entire country." Be vivid and specific, not corporate and safe.
-                        </WarningBox>
-
-
-                        {/* Company Info */}
-                        <div className="mb-8">
-                            <div>
-                                <label className="block font-bold mb-2 text-lg">Company Name *</label>
-                                <ScienceBookmarkIcon>
-                                    Naming your company anchors the Dream — Covey's research shows that personalizing vision exercises increases commitment by making the outcome feel real and owned.
-                                </ScienceBookmarkIcon>
-                                <input
-                                    type="text"
-                                    className="worksheet-input text-lg"
-                                    placeholder="e.g., Acme Corp"
-                                    value={data.companyName}
-                                    onChange={(e) => updateData('companyName', e.target.value)}
-                                />
+                    {/* Visual hint of the Golden Circle */}
+                    <div style={{ textAlign: 'center', margin: '0 0 32px 0', padding: '20px', background: '#F9FAFB', border: '1px solid #E5E7EB' }}>
+                        <div style={{ display: 'inline-block', position: 'relative', width: 180, height: 180 }}>
+                            <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '2px solid #D1D5DB', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', paddingBottom: 8 }}>
+                                <span className="monument" style={{ fontSize: 10, color: '#9CA3AF' }}>WHAT</span>
+                            </div>
+                            <div style={{ position: 'absolute', top: 30, left: 30, right: 30, bottom: 30, borderRadius: '50%', border: '2px solid #6B7280', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', paddingBottom: 6 }}>
+                                <span className="monument" style={{ fontSize: 10, color: '#6B7280' }}>HOW</span>
+                            </div>
+                            <div style={{ position: 'absolute', top: 60, left: 60, right: 60, bottom: 60, borderRadius: '50%', background: '#FFF469', border: '2px solid #000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <span className="monument" style={{ fontSize: 11, fontWeight: 700, color: '#000' }}>WHY</span>
                             </div>
                         </div>
-
-                        <div className="bg-black text-white border-4 border-black p-6 mb-8">
-                            <h3 className="plaak text-3xl mb-2">IMAGINE YOUR COMPANY DISAPPEARS</h3>
-                            <p className="text-xl">
-                                Someone buys your company and KILLS it. All operations shut down. The brand is shelved forever. What would the world lose?
-                            </p>
-                        </div>
-
-                        <div className="space-y-8 mb-8">
-                            <div>
-                                <label className="block font-bold mb-2 text-lg">What will be lost if your brand ceased to exist?</label>
-                                <ScienceBookmarkIcon>
-                                    Collins &amp; Porras found that identifying your company's unique irreplaceable contribution is the single strongest predictor of a compelling long-term vision.
-                                </ScienceBookmarkIcon>
-                                <textarea
-                                    className={`worksheet-input text-lg ${analysis1.strength > 50 ? 'strong' : ''}`}
-                                    placeholder="e.g., A sixty-year legacy of innovation and entrepreneurship"
-                                    value={data.corporateKiller.whatLost}
-                                    onChange={(e) => updateData('corporateKiller.whatLost', e.target.value)}
-                                />
-                                <div className="flex justify-between items-center mt-2">
-                                    <p className="text-sm text-gray-500">Think about your unique contribution to the world</p>
-                                    {data.corporateKiller.whatLost && (
-                                        <span className="text-sm font-bold" style={{color: analysis1.color}}>
-                                            {analysis1.label}
-                                        </span>
-                                    )}
-                                </div>
-                                {bullets1 && (
-                                    <div className="jargon-warning">
-                                        <strong>BULLET POINTS DETECTED</strong>
-                                        <p className="text-sm mt-1">Tell a story, don't write a list. Remove bullet points and write in narrative form.</p>
-                                    </div>
-                                )}
-                                {jargon1.hasJargon && (
-                                    <div className="jargon-warning">
-                                        <strong>MARKETING JARGON DETECTED</strong>
-                                        <p className="text-sm mt-1">This sounds like a press release. Found: <span className="jargon-highlight">{jargon1.found.join(', ')}</span></p>
-                                        <p className="text-sm mt-1">Rewrite for your team, not investors.</p>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div>
-                                <label className="block font-bold mb-2 text-lg">What's at stake here?</label>
-                                <textarea
-                                    className={`worksheet-input text-lg ${analysis2.strength > 50 ? 'strong' : ''}`}
-                                    placeholder="e.g., Increased congestion, pollution and space taken up by vehicles"
-                                    value={data.corporateKiller.whatsAtStake}
-                                    onChange={(e) => updateData('corporateKiller.whatsAtStake', e.target.value)}
-                                />
-                                <div className="flex justify-between items-center mt-2">
-                                    <p className="text-sm text-gray-500">What negative impact would your absence create?</p>
-                                    {data.corporateKiller.whatsAtStake && (
-                                        <span className="text-sm font-bold" style={{color: analysis2.color}}>
-                                            {analysis2.label}
-                                        </span>
-                                    )}
-                                </div>
-                                {bullets2 && (
-                                    <div className="jargon-warning">
-                                        <strong>BULLET POINTS DETECTED</strong>
-                                        <p className="text-sm mt-1">Tell a story, don't write a list. Remove bullet points and write in narrative form.</p>
-                                    </div>
-                                )}
-                                {jargon2.hasJargon && (
-                                    <div className="jargon-warning">
-                                        <strong>MARKETING JARGON DETECTED</strong>
-                                        <p className="text-sm mt-1">Found: <span className="jargon-highlight">{jargon2.found.join(', ')}</span></p>
-                                        <p className="text-sm mt-1">Rewrite for your team, not investors.</p>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div>
-                                <label className="block font-bold mb-2 text-lg">Why is it important that your brand continues to exist?</label>
-                                <textarea
-                                    className={`worksheet-input text-lg ${analysis3.strength > 50 ? 'strong' : ''}`}
-                                    placeholder="e.g., Because our company will enhance people's quality of life"
-                                    value={data.corporateKiller.whyImportant}
-                                    onChange={(e) => updateData('corporateKiller.whyImportant', e.target.value)}
-                                />
-                                <div className="flex justify-between items-center mt-2">
-                                    <p className="text-sm text-gray-500">Your purpose beyond profit</p>
-                                    {data.corporateKiller.whyImportant && (
-                                        <span className="text-sm font-bold" style={{color: analysis3.color}}>
-                                            {analysis3.label}
-                                        </span>
-                                    )}
-                                </div>
-                                {bullets3 && (
-                                    <div className="jargon-warning">
-                                        <strong>BULLET POINTS DETECTED</strong>
-                                        <p className="text-sm mt-1">Tell a story, don't write a list. Remove bullet points and write in narrative form.</p>
-                                    </div>
-                                )}
-                                {jargon3.hasJargon && (
-                                    <div className="jargon-warning">
-                                        <strong>MARKETING JARGON DETECTED</strong>
-                                        <p className="text-sm mt-1">Found: <span className="jargon-highlight">{jargon3.found.join(', ')}</span></p>
-                                        <p className="text-sm mt-1">Rewrite for your team, not investors.</p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="flex justify-end">
-                            <button
-                                className="btn-primary text-xl py-4 px-8"
-                                disabled={!canProceed || aiReviewing}
-                                onClick={onNext}
-                            >
-                                {aiReviewing ? 'AI Coach Reviewing...' : 'Next: Employee Promise →'}
-                            </button>
-                        </div>
+                        <p style={{ fontSize: 13, color: '#6B7280', marginTop: 12 }}>People don't buy WHAT you do, they buy WHY you do it.</p>
                     </div>
-                </main>
-            );
-        }
 
-        // Step 1.7: Employee Promise (WIFM Gate) Component
-        function Step1_7EmployeePromise({ data, updateData, onBack, onNext, aiReviewing }) {
-            const canProceed = data.employeePromise.money &&
-                              data.employeePromise.pride &&
-                              data.employeePromise.freedom;
-
-            return (
-                <main className="p-12 max-w-6xl mx-auto">
-                    <div className="animate-in">
-                        <div className="numbered-section mb-8">
-                            [02] THE EMPLOYEE PROMISE — WHAT'S IN IT FOR THEM
+                    {/* WHY */}
+                    <div className="ft-field-group">
+                        <label className="ft-label">
+                            WHY does your company exist? <span className="ft-required">*</span>
+                        </label>
+                        <ExampleBox
+                            bad={'"To make money" or "To be the best" (generic, uninspiring)'}
+                            good={'"To empower every small business owner to compete with giants through accessible technology"'}
+                        />
+                        <textarea
+                            className="ft-textarea"
+                            placeholder="Why does your company exist? What motivates you beyond profit?"
+                            value={data.goldenCircle.why}
+                            onChange={(e) => updateData('goldenCircle.why', e.target.value)}
+                        />
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+                            <p className="ft-help">Your purpose, cause, or belief beyond profit</p>
+                            {data.goldenCircle.why && (
+                                <span style={{ fontSize: 13, fontWeight: 700, color: analysisWhy.color }}>{analysisWhy.label}</span>
+                            )}
                         </div>
-
-                        {/* Fast Track Insight */}
-                        <FastTrackInsight>
-                            Dreams fail when employees don't see themselves in the story. The best Dreams answer three questions for every team member: What do I earn? What am I proud of? What freedom do I gain? If your Dream only serves shareholders, it will never be lived daily.
-                        </FastTrackInsight>
-
-                        {/* The Science */}
-                        <ScienceBox collapsible={true}>
-                            Sinek's research in "Start with Why" demonstrates that organizations where employees emotionally connect to the company's purpose show 3x higher engagement and 2.5x lower turnover. When people understand WHY they sacrifice their time, they move from compliance to commitment — and that is where breakthrough performance lives.
-                        </ScienceBox>
-
-
-                        <div className="bg-black text-white border-4 border-black p-6 mb-8">
-                            <h3 className="plaak text-3xl mb-2">WHAT'S IN IT FOR ME?</h3>
-                            <p className="text-xl">
-                                Dreams fail when employees don't know what's in it for them. Answer honestly: If we achieve this Dream, what do your employees get?
-                            </p>
-                        </div>
-
-                        <div className="bg-yellow-50 border-l-4 border-black p-6 mb-8">
-                            <p className="text-lg font-bold mb-2">WHY THIS MATTERS</p>
-                            <p className="text-base">
-                                Employees sacrifice time with family to work. Your Dream must answer: "Why would I give up my evenings/weekends for this?"
-                                If the answer is only "shareholder returns," your Dream will fail.
-                            </p>
-                        </div>
-
-                        <div className="space-y-8 mb-8">
-                            <div>
-                                <label className="block font-bold mb-2 text-lg">MONEY: What financial benefit do employees get?</label>
-                                <input
-                                    type="text"
-                                    className="worksheet-input text-lg"
-                                    placeholder="e.g., Equity in a billion-dollar company | Industry-leading salaries | Life-changing bonuses"
-                                    value={data.employeePromise.money}
-                                    onChange={(e) => updateData('employeePromise.money', e.target.value)}
-                                />
-                                <p className="text-sm text-gray-500 mt-2">Be specific. Numbers matter.</p>
+                        {bulletsWhy && (
+                            <div className="jargon-warning">
+                                <strong>BULLET POINTS DETECTED</strong>
+                                <p style={{ marginTop: 4 }}>Tell a story, don't write a list. Remove bullet points and write in narrative form.</p>
                             </div>
-
-                            <div>
-                                <label className="block font-bold mb-2 text-lg">PRIDE: What will they be proud to tell their family/friends?</label>
-                                <input
-                                    type="text"
-                                    className="worksheet-input text-lg"
-                                    placeholder="e.g., We built the product everyone uses | We solved climate change | We're changing an industry"
-                                    value={data.employeePromise.pride}
-                                    onChange={(e) => updateData('employeePromise.pride', e.target.value)}
-                                />
-                                <p className="text-sm text-gray-500 mt-2">What makes them feel their work matters?</p>
-                            </div>
-
-                            <div>
-                                <label className="block font-bold mb-2 text-lg">FREEDOM: What personal freedom or growth do they gain?</label>
-                                <input
-                                    type="text"
-                                    className="worksheet-input text-lg"
-                                    placeholder="e.g., Learn skills that make them irreplaceable | Work from anywhere | Total creative autonomy"
-                                    value={data.employeePromise.freedom}
-                                    onChange={(e) => updateData('employeePromise.freedom', e.target.value)}
-                                />
-                                <p className="text-sm text-gray-500 mt-2">Time, skills, autonomy, or growth opportunities?</p>
-                            </div>
-                        </div>
-
-                        <div className="bg-gray-100 border-l-4 border-black p-6 mb-8">
-                            <p className="font-bold mb-2">BAD ANSWERS (Too Vague)</p>
-                            <ul className="text-sm space-y-1">
-                                <li>• "Competitive compensation" (every company says this)</li>
-                                <li>• "Great culture" (meaningless without specifics)</li>
-                                <li>• "Make a difference" (too generic)</li>
-                            </ul>
-                            <p className="font-bold mt-4 mb-2">GOOD ANSWERS (Specific)</p>
-                            <ul className="text-sm space-y-1">
-                                <li>• "Equity worth $500K+ when we IPO in 3 years"</li>
-                                <li>• "Build products used by 10 million people daily"</li>
-                                <li>• "Learn AI engineering skills that triple your market value"</li>
-                            </ul>
-                        </div>
-
-                        <div className="flex justify-between">
-                            <button className="btn-secondary text-lg py-3 px-6" onClick={onBack}>
-                                ← Back
-                            </button>
-                            <button
-                                className="btn-primary text-xl py-4 px-8"
-                                disabled={!canProceed || aiReviewing}
-                                onClick={onNext}
-                            >
-                                {aiReviewing ? 'AI Coach Reviewing...' : 'Continue to Dream Questions →'}
-                            </button>
-                        </div>
-                    </div>
-                </main>
-            );
-        }
-
-        // Step 2: Dream Questions Component (ONE-AT-A-TIME)
-        function Step2DreamQuestions({ data, updateData, onBack, onNext, aiReviewing }) {
-            const [currentQuestion, setCurrentQuestion] = useState(0);
-            
-            const questions = [
-                {
-                    id: 'achievement',
-                    label: 'What have you achieved?',
-                    placeholder: '€50M revenue | 500 employees | 40% market share',
-                    hint: 'One number that would make you proudest',
-                    minLength: 10
-                },
-                {
-                    id: 'customersSay',
-                    label: 'What do customers say about you?',
-                    placeholder: 'They solved a problem nobody else could solve',
-                    hint: 'The one quote from your best customer',
-                    minLength: 15
-                },
-                {
-                    id: 'employeesSay',
-                    label: 'What do your employees say?',
-                    placeholder: 'I\'m learning more here than I ever could elsewhere',
-                    hint: 'Why your best people work for you',
-                    minLength: 15
-                },
-                {
-                    id: 'marketPosition',
-                    label: 'What is your market position?',
-                    placeholder: 'The category-defining leader in sustainable retail',
-                    hint: 'How you\'re known in your industry',
-                    minLength: 15
-                },
-                {
-                    id: 'officeFeelsLike',
-                    label: 'How does your office feel?',
-                    placeholder: 'Inspired | Impressed | Energized',
-                    hint: 'One word that captures the atmosphere',
-                    minLength: 5
-                },
-                {
-                    id: 'personalAchievement',
-                    label: 'Who have YOU become?',
-                    placeholder: 'The leader I always wanted to be',
-                    hint: 'Your personal transformation',
-                    minLength: 10
-                }
-            ];
-
-            const currentQ = questions[currentQuestion];
-            const currentValue = data.dreamAnswers[currentQ.id];
-            const analysis = analyzeText(currentValue, currentQ.minLength);
-            const canProceed = currentValue && currentValue.length >= currentQ.minLength;
-
-            const handleNext = () => {
-                if (currentQuestion < questions.length - 1) {
-                    setCurrentQuestion(currentQuestion + 1);
-                } else {
-                    onNext();
-                }
-            };
-
-            const handleBack = () => {
-                if (currentQuestion > 0) {
-                    setCurrentQuestion(currentQuestion - 1);
-                } else {
-                    onBack();
-                }
-            };
-
-            return (
-                <main className="p-12 max-w-5xl mx-auto">
-                    <div className="animate-in">
-                        <div className="numbered-section mb-8">
-                            [02] THE VIVID FUTURE
-                        </div>
-
-                        {/* Fast Track Insight */}
-                        <FastTrackInsight>
-                            Your Dream is a vivid story, not a strategy document. Write in the present tense as if you are already living 10 years from now. Describe what customers say, how employees feel, what your office looks like. The more specific and sensory your answers, the more powerful the Dream becomes as a daily decision-making filter.
-                        </FastTrackInsight>
-
-                        {/* The Science */}
-                        <ScienceBox collapsible={true}>
-                            Collins &amp; Porras' concept of a BHAG (Big Hairy Audacious Goal) shows that organizations with a vivid, tangible description of their envisioned future achieve 35% higher strategic execution rates. Covey confirms that "mental creation precedes physical creation" — writing your future in present tense creates psychological accountability and activates the reticular activating system, making you notice opportunities aligned with your Dream.
-                        </ScienceBox>
-
-
-                        <div className="bg-black text-white border-4 border-black p-6 mb-8">
-                            <h3 className="plaak text-3xl mb-2">IT'S 10 YEARS FROM TODAY</h3>
-                            <p className="text-xl">
-                                Question {currentQuestion + 1} of {questions.length} — Answer as if you're already living in that future
-                            </p>
-                        </div>
-
-                        {/* Progress bar for questions */}
-                        <div className="mb-8">
-                            <div className="flex gap-2">
-                                {questions.map((_, i) => (
-                                    <div 
-                                        key={i} 
-                                        className={`flex-1 h-2 rounded ${i <= currentQuestion ? 'bg-black' : 'bg-gray-200'}`}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="mb-12">
-                            <label className="block font-bold mb-4 text-3xl plaak">{currentQ.label}</label>
-                            <input
-                                type="text"
-                                className={`worksheet-input text-2xl ${analysis.strength > 50 ? 'strong' : ''}`}
-                                placeholder={currentQ.placeholder}
-                                value={currentValue}
-                                onChange={(e) => updateData(`dreamAnswers.${currentQ.id}`, e.target.value)}
-                                autoFocus
-                            />
-                            <div className="flex justify-between items-center mt-3">
-                                <p className="text-gray-500">{currentQ.hint}</p>
-                                {currentValue && (
-                                    <span className="text-sm font-bold" style={{color: analysis.color}}>
-                                        {analysis.label}
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="flex justify-between">
-                            <button className="btn-secondary text-lg py-3 px-6" onClick={handleBack}>
-                                ← Back
-                            </button>
-                            <button
-                                className="btn-primary text-xl py-4 px-8"
-                                disabled={!canProceed || (currentQuestion >= questions.length - 1 && aiReviewing)}
-                                onClick={handleNext}
-                            >
-                                {currentQuestion < questions.length - 1 ? 'Next Question →' : (aiReviewing ? 'AI Coach Reviewing...' : 'Complete Section →')}
-                            </button>
-                        </div>
-
-                        {/* Show all answered questions at bottom */}
-                        {currentQuestion > 0 && (
-                            <div className="mt-12 pt-8 border-t border-gray-200">
-                                <h4 className="font-bold mb-4 text-gray-600">YOUR ANSWERS SO FAR</h4>
-                                <div className="space-y-2 text-sm">
-                                    {questions.slice(0, currentQuestion).map((q) => (
-                                        <div key={q.id} className="flex justify-between">
-                                            <span className="text-gray-600">{q.label}</span>
-                                            <span className="font-bold">{data.dreamAnswers[q.id] || '—'} ✓</span>
-                                        </div>
-                                    ))}
-                                </div>
+                        )}
+                        {jargonWhy.hasJargon && (
+                            <div className="jargon-warning">
+                                <strong>MARKETING JARGON DETECTED</strong>
+                                <p style={{ marginTop: 4 }}>Found: <span className="jargon-highlight">{jargonWhy.found.join(', ')}</span></p>
+                                <p style={{ marginTop: 4 }}>Rewrite for your team, not investors.</p>
                             </div>
                         )}
                     </div>
-                </main>
+
+                    {/* HOW */}
+                    <div className="ft-field-group">
+                        <label className="ft-label">
+                            HOW do you do it differently? <span className="ft-required">*</span>
+                        </label>
+                        <textarea
+                            className="ft-textarea"
+                            placeholder="What unique processes, values, or strategies set you apart?"
+                            value={data.goldenCircle.how}
+                            onChange={(e) => updateData('goldenCircle.how', e.target.value)}
+                        />
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+                            <p className="ft-help">Your unique approach, values, or differentiating process</p>
+                            {data.goldenCircle.how && (
+                                <span style={{ fontSize: 13, fontWeight: 700, color: analysisHow.color }}>{analysisHow.label}</span>
+                            )}
+                        </div>
+                        {bulletsHow && (
+                            <div className="jargon-warning">
+                                <strong>BULLET POINTS DETECTED</strong>
+                                <p style={{ marginTop: 4 }}>Tell a story, don't write a list.</p>
+                            </div>
+                        )}
+                        {jargonHow.hasJargon && (
+                            <div className="jargon-warning">
+                                <strong>MARKETING JARGON DETECTED</strong>
+                                <p style={{ marginTop: 4 }}>Found: <span className="jargon-highlight">{jargonHow.found.join(', ')}</span></p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* WHAT */}
+                    <div className="ft-field-group">
+                        <label className="ft-label">
+                            WHAT do you do? <span className="ft-required">*</span>
+                        </label>
+                        <textarea
+                            className="ft-textarea"
+                            placeholder="What exactly do you do? Your primary products or services?"
+                            value={data.goldenCircle.what}
+                            onChange={(e) => updateData('goldenCircle.what', e.target.value)}
+                        />
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+                            <p className="ft-help">Your primary products, services, or offerings</p>
+                            {data.goldenCircle.what && (
+                                <span style={{ fontSize: 13, fontWeight: 700, color: analysisWhat.color }}>{analysisWhat.label}</span>
+                            )}
+                        </div>
+                        {bulletsWhat && (
+                            <div className="jargon-warning">
+                                <strong>BULLET POINTS DETECTED</strong>
+                                <p style={{ marginTop: 4 }}>Tell a story, don't write a list.</p>
+                            </div>
+                        )}
+                        {jargonWhat.hasJargon && (
+                            <div className="jargon-warning">
+                                <strong>MARKETING JARGON DETECTED</strong>
+                                <p style={{ marginTop: 4 }}>Found: <span className="jargon-highlight">{jargonWhat.found.join(', ')}</span></p>
+                            </div>
+                        )}
+                    </div>
+                </>
             );
         }
 
-        // Step 3: One Sentence Component (with 3 AI versions + jargon detection)
-        function Step3OneSentence({ data, updateData, generate3Sentences, onBack, onNext, aiReviewing }) {
+        /* ============================================================
+           STEP 2: COMPANY DREAM (10 Vision Questions)
+           ============================================================ */
+        function Step2CompanyDream({ data, updateData }) {
+            const questions = [
+                { id: 'achievement', label: 'What have you achieved?', placeholder: '\u20AC50M revenue | 500 employees | 40% market share', hint: 'The accomplishment you are most proud of' },
+                { id: 'customersSay', label: 'What do customers say about you?', placeholder: 'They solved a problem nobody else could solve', hint: 'The one quote from your best customer' },
+                { id: 'employeesSay', label: 'What do your employees say?', placeholder: "I'm learning more here than I ever could elsewhere", hint: 'Why your best people choose to stay' },
+                { id: 'marketPosition', label: 'What is your market position?', placeholder: 'The category-defining leader in sustainable retail', hint: "How you're known in your industry" },
+                { id: 'officeFeelsLike', label: 'How do your offices look like?', placeholder: 'Open, creative, buzzing with energy', hint: 'Describe the physical space and atmosphere' },
+                { id: 'capabilities', label: 'What capabilities does the achievement provide you with?', placeholder: 'Global reach, top talent magnet, innovation engine', hint: 'What new powers do you have?' },
+                { id: 'howItFeels', label: 'How does it feel to achieve your dream?', placeholder: 'Fulfilled, unstoppable, deeply proud', hint: 'The emotion when you look back' },
+                { id: 'teamFeeling', label: 'How does the team feel about the achievement?', placeholder: 'Ownership, pride, we built something incredible together', hint: "Your team's collective emotion" },
+                { id: 'personalAchievement', label: 'What is your own personal achievement?', placeholder: 'I became the leader I always aspired to be', hint: 'Your personal transformation' },
+                { id: 'whoYouveBecome', label: 'Who is the person you have become along this journey?', placeholder: 'A confident, purpose-driven leader', hint: 'Your identity at the end of this journey' }
+            ];
+
+            return (
+                <>
+                    <p className="step-indicator">STEP 2 OF 4 <span className="step-time">~5 MIN</span></p>
+                    <h1 className="step-heading">Company Dream</h1>
+                    <p className="step-hint">Imagine it is 5 years from today and answer the following questions:</p>
+
+                    {questions.map((q, idx) => {
+                        const currentValue = data.dreamAnswers[q.id];
+                        const analysis = analyzeText(currentValue, 10);
+                        return (
+                            <div key={q.id} className="ft-field-group">
+                                <label className="ft-label">
+                                    {q.label} <span className="ft-required">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    className="ft-input"
+                                    placeholder={q.placeholder}
+                                    value={currentValue}
+                                    onChange={(e) => updateData(`dreamAnswers.${q.id}`, e.target.value)}
+                                />
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+                                    <p className="ft-help">{q.hint}</p>
+                                    {currentValue && (
+                                        <span style={{ fontSize: 13, fontWeight: 700, color: analysis.color }}>{analysis.label}</span>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </>
+            );
+        }
+
+        /* ============================================================
+           STEP 3: DREAM STORY
+           ============================================================ */
+        function Step3DreamStory({ data, updateData }) {
             const [selectedVersion, setSelectedVersion] = useState(null);
             const [showOptions, setShowOptions] = useState(false);
             const [aiSentences, setAiSentences] = useState([]);
 
-            const canProceed = data.oneSentence && data.oneSentence.length > 50;
             const analysis = analyzeText(data.oneSentence, 50);
             const jargonCheck = detectJargon(data.oneSentence);
             const bulletsCheck = hasBulletPoints(data.oneSentence);
 
             const handleGenerate = () => {
-                const sentences = generate3Sentences();
+                const sentences = generate3Sentences(data);
                 setAiSentences(sentences);
                 setShowOptions(true);
             };
@@ -1623,139 +1266,118 @@
             };
 
             return (
-                <main className="p-12 max-w-6xl mx-auto">
-                    <div className="animate-in">
-                        <div className="numbered-section mb-8">
-                            [03] ONE SENTENCE
-                        </div>
+                <>
+                    <p className="step-indicator">STEP 3 OF 4 <span className="step-time">~3 MIN</span></p>
+                    <h1 className="step-heading">Dream Story</h1>
+                    <p className="step-hint">Summarize your Dream in one bold, simple sentence. Then write a full narrative below it.</p>
 
-                        {/* Fast Track Insight */}
-                        <FastTrackInsight>
-                            Summarize the core of your Dream in one sentence. Make it bold, simple, and inspiring — something that can guide every decision and action within your company. This sentence will become the foundation for your Value Proposition, your Strategy, and every tool that follows in Fast Track.
-                        </FastTrackInsight>
+                    {!showOptions ? (
+                        <>
+                            <div className="ft-field-group">
+                                <label className="ft-label">
+                                    Your Dream in one sentence <span className="ft-required">*</span>
+                                </label>
+                                <textarea
+                                    className="ft-textarea"
+                                    style={{ minHeight: 100 }}
+                                    placeholder="In 10 years, we're..."
+                                    value={data.oneSentence}
+                                    onChange={(e) => updateData('oneSentence', e.target.value)}
+                                    maxLength={300}
+                                />
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+                                    <p className="ft-help">{data.oneSentence.length}/300 characters</p>
+                                    {data.oneSentence && (
+                                        <span style={{ fontSize: 13, fontWeight: 700, color: analysis.color }}>{analysis.label}</span>
+                                    )}
+                                </div>
+                                {bulletsCheck && (
+                                    <div className="jargon-warning">
+                                        <strong>BULLET POINTS DETECTED</strong>
+                                        <p style={{ marginTop: 4 }}>Your Dream should be a narrative story, not a list.</p>
+                                    </div>
+                                )}
+                                {jargonCheck.hasJargon && (
+                                    <div className="jargon-warning">
+                                        <strong>MARKETING JARGON DETECTED</strong>
+                                        <p style={{ marginTop: 4 }}>Found: <span className="jargon-highlight">{jargonCheck.found.join(', ')}</span></p>
+                                        <p style={{ marginTop: 4 }}>Rewrite for your team, not for investors.</p>
+                                    </div>
+                                )}
+                            </div>
 
-                        {/* The Science */}
-                        <ScienceBox collapsible={true}>
-                            Research on organizational storytelling shows that a Dream communicated as a simple, vivid narrative is 22x more memorable than a list of strategic objectives. Collins &amp; Porras found that companies regularly revisiting their envisioned future maintain 60% higher team alignment scores and resist strategic drift far better than those that file their vision away.
-                        </ScienceBox>
-
-
-                        <div className="bg-black text-white border-4 border-black p-6 mb-8">
-                            <h3 className="plaak text-3xl mb-2">DISTILL EVERYTHING INTO ONE SENTENCE</h3>
-                            <p className="text-xl">
-                                Your Dream should be bold, simple, and vivid. Make it a sentence you'd be proud to share.
-                            </p>
-                        </div>
-
-                        {!showOptions ? (
-                            <>
-                                <div className="mb-6">
-                                    <label className="block font-bold mb-2 text-lg">Your Dream in 10 years:</label>
-                                    <textarea
-                                        className={`worksheet-input text-xl ${analysis.strength > 50 ? 'strong' : ''}`}
-                                        style={{minHeight: '160px'}}
-                                        placeholder="In 10 years, we're..."
-                                        value={data.oneSentence}
-                                        onChange={(e) => updateData('oneSentence', e.target.value)}
-                                        maxLength={300}
-                                    />
-                                    <div className="flex justify-between items-center mt-2">
-                                        <div className="text-sm text-gray-600">
-                                            {data.oneSentence.length}/300 characters
+                            <button
+                                onClick={handleGenerate}
+                                style={{ width: '100%', padding: '12px 0', border: '2px solid #000', background: '#fff', fontSize: 14, cursor: 'pointer', marginBottom: 24, fontFamily: "'Riforma', sans-serif", minHeight: 44 }}
+                                onMouseOver={e => e.target.style.background = '#F3F4F6'}
+                                onMouseOut={e => e.target.style.background = '#fff'}
+                            >
+                                AI Assist: Generate 3 versions
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            <div style={{ marginBottom: 24 }}>
+                                <p className="ft-label" style={{ marginBottom: 16 }}>Choose your dream style</p>
+                                {aiSentences.map((option, i) => (
+                                    <div
+                                        key={i}
+                                        className={`ai-option ${selectedVersion === i ? 'selected' : ''}`}
+                                        onClick={() => handleSelectVersion(option.text, i)}
+                                        style={{ marginBottom: 8 }}
+                                    >
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
+                                            <span style={{ fontWeight: 700 }}>{option.type}</span>
+                                            <span style={{ fontSize: 12, color: '#6B7280' }}>{option.desc}</span>
                                         </div>
-                                        {data.oneSentence && (
-                                            <span className="text-sm font-bold" style={{color: analysis.color}}>
-                                                {analysis.label}
-                                            </span>
+                                        <p style={{ lineHeight: 1.5 }}>{option.text}</p>
+                                        {selectedVersion === i && (
+                                            <div style={{ marginTop: 6, fontSize: 13, fontWeight: 700, color: '#000' }}>Selected</div>
                                         )}
                                     </div>
-                                    {bulletsCheck && (
-                                        <div className="jargon-warning">
-                                            <strong>BULLET POINTS DETECTED</strong>
-                                            <p className="text-sm mt-1">Your Dream should be a narrative story, not a list. Remove bullet points.</p>
-                                        </div>
-                                    )}
-                                    {jargonCheck.hasJargon && (
-                                        <div className="jargon-warning">
-                                            <strong>MARKETING JARGON DETECTED</strong>
-                                            <p className="text-sm mt-1">This sounds like a press release. Found: <span className="jargon-highlight">{jargonCheck.found.join(', ')}</span></p>
-                                            <p className="text-sm mt-1">Rewrite for your team, not for investors or customers.</p>
-                                        </div>
-                                    )}
-                                </div>
+                                ))}
+                            </div>
 
-                                <button 
-                                    className="btn-secondary text-lg w-full py-4 mb-8"
-                                    onClick={handleGenerate}
-                                >
-                                    AI Assist (Generate 3 versions)
-                                </button>
-                            </>
-                        ) : (
-                            <>
-                                <h3 className="font-bold text-2xl mb-6">CHOOSE YOUR DREAM STYLE</h3>
-                                <div className="space-y-4 mb-8">
-                                    {aiSentences.map((option, i) => (
-                                        <div
-                                            key={i}
-                                            className={`ai-option ${selectedVersion === i ? 'selected' : ''}`}
-                                            onClick={() => handleSelectVersion(option.text, i)}
-                                        >
-                                            <div className="flex justify-between items-start mb-2">
-                                                <div className="font-bold text-lg">{option.type}</div>
-                                                <div className="text-sm text-gray-600">{option.desc}</div>
-                                            </div>
-                                            <p className="text-lg leading-relaxed">{option.text}</p>
-                                            {selectedVersion === i && (
-                                                <div className="mt-2 text-sm font-bold text-black">
-                                                    ✓ Selected
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <button 
-                                    className="btn-secondary text-lg w-full py-3 mb-8"
-                                    onClick={() => setShowOptions(false)}
-                                >
-                                    ← Write my own instead
-                                </button>
-                            </>
-                        )}
-
-                        <div className="bg-gray-100 p-6 border-l-4 border-black mb-8">
-                            <p className="font-bold mb-3">VALIDATION CHECKLIST</p>
-                            <ul className="space-y-2">
-                                <li>Too vague: "We will be a leading company..."</li>
-                                <li>Too corporate: "We will leverage synergies..."</li>
-                                <li>GOOD: Specific, emotional, vivid</li>
-                            </ul>
-                        </div>
-
-                        <div className="flex justify-between">
-                            <button className="btn-secondary text-lg py-3 px-6" onClick={onBack}>
-                                ← Back
-                            </button>
                             <button
-                                className="btn-primary text-xl py-4 px-8"
-                                disabled={!canProceed || aiReviewing}
-                                onClick={onNext}
+                                onClick={() => setShowOptions(false)}
+                                style={{ width: '100%', padding: '12px 0', border: '2px solid #000', background: '#fff', fontSize: 14, cursor: 'pointer', marginBottom: 24, fontFamily: "'Riforma', sans-serif", minHeight: 44 }}
                             >
-                                {aiReviewing ? 'AI Coach Reviewing...' : 'Next: Dream Board →'}
+                                Write my own instead
                             </button>
+                        </>
+                    )}
+
+                    {/* Dream Narrative */}
+                    <div className="ft-field-group">
+                        <label className="ft-label">
+                            One-page Dream Narrative
+                        </label>
+                        <p className="ft-help" style={{ marginBottom: 8, marginTop: 0 }}>Write your company Dream as a vivid, present-tense story. Describe what success looks like in 10 years.</p>
+                        <textarea
+                            className="ft-textarea"
+                            style={{ minHeight: 180 }}
+                            placeholder="It's 2035, and our company has become... Our customers say... Our team feels... We are known for..."
+                            value={data.dreamNarrative || ''}
+                            onChange={(e) => updateData('dreamNarrative', e.target.value)}
+                            maxLength={3000}
+                        />
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+                            <p className="ft-help">{(data.dreamNarrative || '').length}/3000 characters</p>
+                            {(data.dreamNarrative || '').length > 100 && (
+                                <span style={{ fontSize: 13, fontWeight: 700, color: '#10B981' }}>Good length</span>
+                            )}
                         </div>
                     </div>
-                </main>
+                </>
             );
         }
 
-        // Step 4: Dream Board Component
-        function Step4DreamBoard({ data, updateData, onBack, onNext }) {
-            const canProceed = data.moodBoard.words.length >= 3;
-
+        /* ============================================================
+           STEP 4: DREAM BOARD
+           ============================================================ */
+        function Step4DreamBoard({ data, updateData }) {
             const addWord = (word) => {
-                if (data.moodBoard.words.length < 7 && !data.moodBoard.words.includes(word)) {
+                if (data.moodBoard.words.length < 10 && !data.moodBoard.words.includes(word)) {
                     updateData('moodBoard.words', [...data.moodBoard.words, word]);
                 }
             };
@@ -1765,357 +1387,296 @@
             };
 
             return (
-                <main className="p-12 max-w-6xl mx-auto">
-                    <div className="animate-in">
-                        <div className="numbered-section mb-8">
-                            [04] DREAM BOARD
-                        </div>
-
-                        {/* Fast Track Insight */}
-                        <FastTrackInsight>
-                            Your Dream should be visual — create a vivid picture that everyone can see and feel. The Dream Board transforms abstract words into tangible inspiration. Choose words and figures that capture the energy, boldness, and culture of your 10-year vision. Display it prominently and use it as a daily decision-making compass.
-                        </FastTrackInsight>
-
-                        {/* The Science */}
-                        <ScienceBox collapsible={true}>
-                            The Dream Visualization tool is grounded in dual-coding theory: when information is encoded both verbally and visually, recall improves by up to 65%. Collins &amp; Porras emphasize that "vivid description" is one of two essential components of an envisioned future. Organizations that make their vision tangible through images, key words, and aspirational figures report significantly higher daily engagement with their strategic direction.
-                        </ScienceBox>
+                <>
+                    <p className="step-indicator">STEP 4 OF 4 <span className="step-time">~3 MIN</span></p>
+                    <h1 className="step-heading">Dream Board</h1>
+                    <p className="step-hint">Make your Dream visual. Choose words, inspirational figures, and images that capture the essence of your 10-year vision.</p>
 
 
-                        <div className="bg-black text-white border-4 border-black p-6 mb-8">
-                            <h3 className="plaak text-3xl mb-2">MAKE YOUR DREAM VISUAL</h3>
-                            <p className="text-xl">
-                                Choose 7 words and inspirational figures that capture the essence of your Dream.
-                            </p>
-                        </div>
-
-                        {/* Words Section */}
-                        <div className="mb-12">
-                            <h3 className="font-bold text-2xl mb-4">7 Words That Capture Your Dream</h3>
-                            
+                    {/* Words Section */}
+                    <div className="ft-section">
+                        <div className="ft-field-group">
+                            <label className="ft-label">
+                                7-10 Words that capture your Dream <span className="ft-required">*</span>
+                            </label>
                             <input
                                 type="text"
-                                className="worksheet-input text-lg mb-4"
+                                className="ft-input"
                                 placeholder="Type a word and press Enter"
                                 onKeyPress={(e) => {
-                                    if (e.key === 'Enter' && e.target.value && data.moodBoard.words.length < 7) {
+                                    if (e.key === 'Enter' && e.target.value && data.moodBoard.words.length < 10) {
                                         addWord(e.target.value);
                                         e.target.value = '';
                                     }
                                 }}
                             />
-
-                            <div className="flex flex-wrap gap-2 mb-6">
-                                {data.moodBoard.words.map((word, i) => (
-                                    <div key={i} className="word-tag">
-                                        {word}
-                                        <button 
-                                            onClick={() => removeWord(i)}
-                                            className="ml-2 font-bold"
-                                        >×</button>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <p className="text-sm font-bold mb-2">SUGGESTIONS (CLICK TO ADD)</p>
-                            <div className="flex flex-wrap gap-2">
-                                {WORD_SUGGESTIONS.map((word, i) => (
-                                    <button
-                                        key={i}
-                                        onClick={() => addWord(word)}
-                                        className="px-3 py-1 text-sm border border-gray-300 hover:bg-gray-100 smooth"
-                                        disabled={data.moodBoard.words.includes(word) || data.moodBoard.words.length >= 7}
-                                    >
-                                        #{word}
-                                    </button>
-                                ))}
-                            </div>
-
-                            <div className="text-sm text-gray-600 mt-3">
-                                {data.moodBoard.words.length}/7 words selected
-                            </div>
                         </div>
 
-                        {/* People Section */}
-                        <div className="mb-8">
-                            <h3 className="font-bold text-2xl mb-4">Inspirational Figures</h3>
-                            <p className="text-gray-600 mb-4">Who inspires the spirit of your Dream?</p>
-                            
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 16 }}>
+                            {data.moodBoard.words.map((word, i) => (
+                                <span key={i} className="word-tag">
+                                    {word}
+                                    <button
+                                        onClick={() => removeWord(i)}
+                                        style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontWeight: 700, padding: 0, fontSize: 14 }}
+                                    >x</button>
+                                </span>
+                            ))}
+                        </div>
+
+                        <p style={{ fontSize: 12, fontWeight: 700, marginBottom: 8, fontFamily: "'Monument', monospace", textTransform: 'uppercase', letterSpacing: '0.05em', color: '#6B7280' }}>SUGGESTIONS (CLICK TO ADD)</p>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                            {WORD_SUGGESTIONS.map((word, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => addWord(word)}
+                                    disabled={data.moodBoard.words.includes(word) || data.moodBoard.words.length >= 10}
+                                    style={{
+                                        padding: '4px 10px', fontSize: 13, border: '1px solid #E5E7EB', background: '#fff', cursor: 'pointer',
+                                        opacity: data.moodBoard.words.includes(word) || data.moodBoard.words.length >= 10 ? 0.4 : 1,
+                                        fontFamily: "'Riforma', sans-serif",
+                                        transition: 'background 0.15s'
+                                    }}
+                                    onMouseOver={e => e.target.style.background = '#F3F4F6'}
+                                    onMouseOut={e => e.target.style.background = '#fff'}
+                                >
+                                    #{word}
+                                </button>
+                            ))}
+                        </div>
+                        <p className="ft-help">{data.moodBoard.words.length}/10 words selected (min 3)</p>
+                    </div>
+
+                    {/* People Section */}
+                    <div className="ft-section">
+                        <div className="ft-field-group">
+                            <label className="ft-label">
+                                Inspirational Figures
+                            </label>
+                            <p className="ft-help" style={{ marginBottom: 8, marginTop: 0 }}>Who inspires the spirit of your Dream?</p>
                             <input
                                 type="text"
-                                className="worksheet-input text-lg mb-4"
-                                placeholder="e.g., Steve Jobs, Frida Kahlo, Elon Musk"
+                                className="ft-input"
+                                placeholder="e.g., Steve Jobs, Frida Kahlo — press Enter to add"
                                 onKeyPress={(e) => {
-                                    if (e.key === 'Enter' && e.target.value && data.moodBoard.people.length < 7) {
+                                    if (e.key === 'Enter' && e.target.value && data.moodBoard.people.length < 10) {
                                         updateData('moodBoard.people', [...data.moodBoard.people, e.target.value]);
                                         e.target.value = '';
                                     }
                                 }}
                             />
-
-                            <div className="flex flex-wrap gap-2">
-                                {data.moodBoard.people.map((person, i) => (
-                                    <div key={i} className="word-tag">
-                                        {person}
-                                        <button 
-                                            onClick={() => updateData('moodBoard.people', data.moodBoard.people.filter((_, idx) => idx !== i))}
-                                            className="ml-2 font-bold"
-                                        >×</button>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className="text-sm text-gray-600 mt-3">
-                                {data.moodBoard.people.length}/7 people selected
-                            </div>
                         </div>
 
-                        <div className="flex justify-between">
-                            <button className="btn-secondary text-lg py-3 px-6" onClick={onBack}>
-                                ← Back
-                            </button>
-                            <button 
-                                className="btn-primary text-xl py-4 px-8"
-                                disabled={!canProceed}
-                                onClick={onNext}
-                            >
-                                Analyze Dream Strength →
-                            </button>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
+                            {data.moodBoard.people.map((person, i) => (
+                                <span key={i} className="word-tag">
+                                    {person}
+                                    <button
+                                        onClick={() => updateData('moodBoard.people', data.moodBoard.people.filter((_, idx) => idx !== i))}
+                                        style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontWeight: 700, padding: 0, fontSize: 14 }}
+                                    >x</button>
+                                </span>
+                            ))}
                         </div>
+                        <p className="ft-help">{data.moodBoard.people.length}/10 people selected</p>
                     </div>
-                </main>
+
+                    {/* Images Section */}
+                    <div className="ft-field-group">
+                        <label className="ft-label">
+                            Inspirational Images
+                        </label>
+                        <p className="ft-help" style={{ marginBottom: 8, marginTop: 0 }}>Describe scenes, places, or moments that represent your Dream. Press Enter to add.</p>
+                        <input
+                            type="text"
+                            className="ft-input"
+                            placeholder="e.g., Team celebrating a product launch on stage"
+                            onKeyPress={(e) => {
+                                if (e.key === 'Enter' && e.target.value && (data.moodBoard.images || []).length < 10) {
+                                    updateData('moodBoard.images', [...(data.moodBoard.images || []), e.target.value]);
+                                    e.target.value = '';
+                                }
+                            }}
+                        />
+
+                        <div style={{ marginTop: 8 }}>
+                            {(data.moodBoard.images || []).map((img, i) => (
+                                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#F3F4F6', border: '1px solid #E5E7EB', padding: '8px 12px', marginBottom: 4 }}>
+                                    <span style={{ flex: 1, fontSize: 14 }}>{img}</span>
+                                    <button
+                                        onClick={() => updateData('moodBoard.images', (data.moodBoard.images || []).filter((_, idx) => idx !== i))}
+                                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#DC2626', fontWeight: 700, fontSize: 16 }}
+                                    >x</button>
+                                </div>
+                            ))}
+                        </div>
+                        <p className="ft-help">{(data.moodBoard.images || []).length}/10 images described</p>
+                    </div>
+                </>
             );
         }
 
-        // Dream Strength Analyzer Component
-        function DreamStrengthAnalyzer({ data, onBack, onNext }) {
+        /* ============================================================
+           CANVAS VIEW (Step 999)
+           ============================================================ */
+        function CanvasView({ data, onBack, onSubmit, submissionStatus }) {
+            /* Dream Strength Analyzer (merged into canvas) */
             const sentenceAnalysis = analyzeText(data.oneSentence, 50);
             const achievementAnalysis = analyzeText(data.dreamAnswers.achievement, 10);
             const marketAnalysis = analyzeText(data.dreamAnswers.marketPosition, 15);
             const customerAnalysis = analyzeText(data.dreamAnswers.customersSay, 15);
-            
+
             const avgStrength = Math.round((
-                sentenceAnalysis.strength + 
-                achievementAnalysis.strength + 
+                sentenceAnalysis.strength +
+                achievementAnalysis.strength +
                 marketAnalysis.strength +
                 customerAnalysis.strength
             ) / 4);
 
             let overallLabel = 'NEEDS WORK';
             let overallColor = '#EF4444';
-            if (avgStrength >= 75) {
-                overallLabel = 'CATEGORY-DEFINING';
-                overallColor = '#10B981';
-            } else if (avgStrength >= 60) {
-                overallLabel = '✓ BOLD';
-                overallColor = '#10B981';
-            } else if (avgStrength >= 40) {
-                overallLabel = 'GETTING THERE';
-                overallColor = '#F59E0B';
-            }
-
-            const suggestions = [];
-            if (sentenceAnalysis.strength < 60) suggestions.push('Make your Dream sentence more specific and vivid');
-            if (achievementAnalysis.strength < 50) suggestions.push('Add specific numbers to your achievement goal');
-            if (marketAnalysis.strength < 50) suggestions.push('Replace generic terms like "leading" with category-defining language');
-            if (data.moodBoard.words.length < 5) suggestions.push('Add more essence words to strengthen your vision');
+            if (avgStrength >= 75) { overallLabel = 'CATEGORY-DEFINING'; overallColor = '#10B981'; }
+            else if (avgStrength >= 60) { overallLabel = 'BOLD'; overallColor = '#10B981'; }
+            else if (avgStrength >= 40) { overallLabel = 'GETTING THERE'; overallColor = '#F59E0B'; }
 
             return (
-                <div className="bg-black text-white min-h-screen p-16">
-                    <div className="max-w-5xl mx-auto">
-                        <h1 className="plaak text-8xl mb-12 text-center animate-in" style={{color: '#FFF469'}}>
-                            DREAM STRENGTH ANALYSIS
-                        </h1>
+                <div className="tool-frame">
+                    <div className="tool-inner">
+                        {/* Hero Header */}
+                        <div style={{ background: '#000', color: '#fff', padding: '64px 32px', textAlign: 'center' }} className="no-print">
+                            <h1 className="plaak" style={{ fontSize: 48, marginBottom: 8 }}>YOUR DREAM CANVAS</h1>
+                            <p style={{ fontSize: 16, color: '#999' }}>This is your North Star for the next 10 years</p>
 
-                        <div className="bg-white text-black border-8 border-white p-12 mb-12 animate-in" style={{animationDelay: '0.2s'}}>
-                            <div className="grid grid-cols-4 gap-8 mb-12">
-                                <div className="text-center">
-                                    <div className="text-sm mb-2 text-gray-600">Clarity</div>
-                                    <div className="plaak text-5xl" style={{color: sentenceAnalysis.color}}>
-                                        {sentenceAnalysis.strength}%
-                                    </div>
+                            {/* Strength bar */}
+                            <div style={{ maxWidth: 400, margin: '24px auto 0' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                    <span className="monument" style={{ fontSize: 11, color: '#999' }}>DREAM STRENGTH</span>
+                                    <span className="plaak" style={{ fontSize: 16, color: overallColor }}>{overallLabel}</span>
                                 </div>
-                                <div className="text-center">
-                                    <div className="text-sm mb-2 text-gray-600">Boldness</div>
-                                    <div className="plaak text-5xl" style={{color: marketAnalysis.color}}>
-                                        {marketAnalysis.strength}%
-                                    </div>
-                                </div>
-                                <div className="text-center">
-                                    <div className="text-sm mb-2 text-gray-600">Specificity</div>
-                                    <div className="plaak text-5xl" style={{color: achievementAnalysis.color}}>
-                                        {achievementAnalysis.strength}%
-                                    </div>
-                                </div>
-                                <div className="text-center">
-                                    <div className="text-sm mb-2 text-gray-600">Emotion</div>
-                                    <div className="plaak text-5xl" style={{color: customerAnalysis.color}}>
-                                        {customerAnalysis.strength}%
-                                    </div>
+                                <div className="strength-bar">
+                                    <div className="strength-fill" style={{ width: `${avgStrength}%` }}></div>
                                 </div>
                             </div>
 
-                            <div className="border-t-4 border-black pt-8 mb-8">
-                                <div className="text-center">
-                                    <div className="text-sm mb-2 text-gray-600">OVERALL DREAM STRENGTH</div>
-                                    <div className="plaak text-7xl mb-4" style={{color: overallColor}}>
-                                        {overallLabel}
-                                    </div>
-                                    <div className="strength-bar max-w-md mx-auto">
-                                        <div className="strength-fill" style={{width: `${avgStrength}%`}}></div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {suggestions.length > 0 && (
-                                <div className="bg-gray-100 border-l-4 border-black p-6">
-                                    <p className="font-bold mb-3">SUGGESTIONS TO STRENGTHEN YOUR DREAM</p>
-                                    <ul className="space-y-2">
-                                        {suggestions.map((s, i) => (
-                                            <li key={i}>• {s}</li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="flex justify-between animate-in" style={{animationDelay: '0.4s'}}>
-                            <button 
-                                className="btn-secondary text-lg py-3 px-6"
-                                onClick={onBack}
-                            >
-                                ← Improve Dream
-                            </button>
-                            <button 
-                                className="btn-primary text-xl py-4 px-8"
-                                onClick={onNext}
-                            >
-                                Continue to Dream Canvas →
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            );
-        }
-
-        // Step 5: Final Canvas Component
-        function Step5Canvas({ data, onBack, onSubmit, submissionStatus }) {
-            return (
-                <div className="bg-white min-h-screen p-16">
-                    <div className="max-w-6xl mx-auto">
-                        <div className="text-center mb-12 no-print">
-                            <h1 className="plaak text-8xl mb-4">YOUR DREAM CANVAS</h1>
-                            <p className="text-2xl text-gray-600">This is your North Star for the next 10 years</p>
-                            
-                            {/* Submission Status Messages */}
+                            {/* Submission Status */}
                             {submissionStatus === 'success' && (
-                                <div className="mt-4 p-4 bg-gray-50 border-2 border-black text-black text-lg font-bold animate-in-up">
+                                <div style={{ marginTop: 16, padding: 12, background: '#fff', color: '#000', fontWeight: 700, display: 'inline-block' }} className="animate-in">
                                     Submission saved successfully!
                                 </div>
                             )}
                             {submissionStatus === 'error' && (
-                                <div className="mt-4 p-4 bg-red-50 border-2 border-red-500 text-red-700 text-lg font-bold animate-in-up">
+                                <div style={{ marginTop: 16, padding: 12, border: '2px solid #DC2626', color: '#DC2626', fontWeight: 700, display: 'inline-block' }} className="animate-in">
                                     Submission failed. Please try again.
                                 </div>
                             )}
                         </div>
 
-                        {/* Dream Canvas */}
-                        <div className="border-8 border-black bg-white p-16 mb-8">
-                            <div className="text-center mb-12">
-                                <div className="plaak text-6xl mb-2">{data.companyName || 'YOUR COMPANY'}</div>
-                                <div className="text-lg text-gray-600">COMPANY DREAM 2035</div>
+                        {/* Canvas Grid */}
+                        <div style={{ maxWidth: 960, margin: '0 auto', padding: '48px 32px' }}>
+                            {/* Company Name + Dream Sentence */}
+                            <div style={{ textAlign: 'center', marginBottom: 48, paddingBottom: 32, borderBottom: '4px solid #000' }}>
+                                <div className="plaak" style={{ fontSize: 36, marginBottom: 8 }}>YOUR DREAM</div>
+                                <div className="monument" style={{ fontSize: 11, color: '#6B7280', marginBottom: 16 }}>10-YEAR VISION</div>
+                                <div style={{ fontSize: 24, fontWeight: 700, lineHeight: 1.4 }}>{data.oneSentence}</div>
                             </div>
 
-                            <div className="border-t-4 border-b-4 border-black py-8 mb-12">
-                                <div className="text-sm font-bold mb-3 uppercase">The Dream (10 Years)</div>
-                                <div className="text-3xl leading-relaxed font-bold">
-                                    {data.oneSentence}
+                            {/* Dream Narrative */}
+                            {data.dreamNarrative && (
+                                <div style={{ marginBottom: 32 }}>
+                                    <div className="numbered-section" style={{ marginBottom: 12 }}>FULL DREAM NARRATIVE</div>
+                                    <div className="canvas-section-box" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{data.dreamNarrative}</div>
                                 </div>
-                            </div>
+                            )}
 
-                            <div className="grid md:grid-cols-2 gap-12 mb-12">
+                            {/* Two-column grid */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 32 }}>
+                                {/* The Golden Circle */}
                                 <div>
-                                    <div className="text-sm font-bold mb-4 uppercase">What Success Looks Like</div>
-                                    <div className="space-y-3 text-lg">
-                                        <div><strong>Customers:</strong> "{data.dreamAnswers.customersSay}"</div>
-                                        <div><strong>Team:</strong> "{data.dreamAnswers.employeesSay}"</div>
-                                        <div><strong>Achievement:</strong> {data.dreamAnswers.achievement}</div>
-                                        <div><strong>Market:</strong> {data.dreamAnswers.marketPosition}</div>
+                                    <div className="numbered-section" style={{ marginBottom: 12 }}>THE GOLDEN CIRCLE</div>
+                                    <div className="canvas-section-box">
+                                        <div style={{ marginBottom: 12 }}>
+                                            <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#6B7280', marginBottom: 4 }}>WHY</div>
+                                            <div>{data.goldenCircle?.why}</div>
+                                        </div>
+                                        <div style={{ marginBottom: 12 }}>
+                                            <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#6B7280', marginBottom: 4 }}>HOW</div>
+                                            <div>{data.goldenCircle?.how}</div>
+                                        </div>
+                                        <div>
+                                            <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#6B7280', marginBottom: 4 }}>WHAT</div>
+                                            <div>{data.goldenCircle?.what}</div>
+                                        </div>
                                     </div>
                                 </div>
 
+                                {/* What Success Looks Like */}
                                 <div>
-                                    <div className="text-sm font-bold mb-4 uppercase">Why It Matters</div>
-                                    <div className="space-y-3 text-lg">
-                                        <div><strong>What would be lost:</strong> {data.corporateKiller.whatLost}</div>
-                                        <div><strong>What's at stake:</strong> {data.corporateKiller.whatsAtStake}</div>
+                                    <div className="numbered-section" style={{ marginBottom: 12 }}>WHAT SUCCESS LOOKS LIKE</div>
+                                    <div className="canvas-section-box">
+                                        <div style={{ marginBottom: 8 }}><strong>Achievement:</strong> {data.dreamAnswers.achievement}</div>
+                                        <div style={{ marginBottom: 8 }}><strong>Customers:</strong> "{data.dreamAnswers.customersSay}"</div>
+                                        <div style={{ marginBottom: 8 }}><strong>Team says:</strong> "{data.dreamAnswers.employeesSay}"</div>
+                                        <div style={{ marginBottom: 8 }}><strong>Market:</strong> {data.dreamAnswers.marketPosition}</div>
+                                        <div style={{ marginBottom: 8 }}><strong>Offices:</strong> {data.dreamAnswers.officeFeelsLike}</div>
+                                        <div style={{ marginBottom: 8 }}><strong>Capabilities:</strong> {data.dreamAnswers.capabilities}</div>
+                                        <div style={{ marginBottom: 8 }}><strong>How it feels:</strong> {data.dreamAnswers.howItFeels}</div>
+                                        <div style={{ marginBottom: 8 }}><strong>Team feeling:</strong> {data.dreamAnswers.teamFeeling}</div>
+                                        <div style={{ marginBottom: 8 }}><strong>Personal:</strong> {data.dreamAnswers.personalAchievement}</div>
+                                        <div><strong>Who you've become:</strong> {data.dreamAnswers.whoYouveBecome}</div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="border-t-2 border-gray-200 pt-8 mb-12">
-                                <div className="text-sm font-bold mb-4 uppercase">What Employees Get — WHAT'S IN IT FOR THEM</div>
-                                <div className="space-y-3 text-lg">
-                                    <div><strong>Money:</strong> {data.employeePromise.money}</div>
-                                    <div><strong>Pride:</strong> {data.employeePromise.pride}</div>
-                                    <div><strong>Freedom:</strong> {data.employeePromise.freedom}</div>
-                                </div>
-                            </div>
-
-                            <div className="mb-12">
-                                <div className="text-sm font-bold mb-4 uppercase">The Essence</div>
-                                <div className="flex flex-wrap gap-2">
+                            {/* Essence Words */}
+                            <div style={{ marginBottom: 32 }}>
+                                <div className="numbered-section" style={{ marginBottom: 12 }}>THE ESSENCE</div>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                                     {data.moodBoard.words.map((word, i) => (
-                                        <span key={i} className="word-tag text-lg">#{word}</span>
+                                        <span key={i} className="word-tag">#{word}</span>
                                     ))}
                                 </div>
                             </div>
 
+                            {/* Inspirational Figures */}
                             {data.moodBoard.people.length > 0 && (
-                                <div>
-                                    <div className="text-sm font-bold mb-4 uppercase">Inspired By</div>
-                                    <div className="flex flex-wrap gap-3 text-base">
+                                <div style={{ marginBottom: 32 }}>
+                                    <div className="numbered-section" style={{ marginBottom: 12 }}>INSPIRED BY</div>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                                         {data.moodBoard.people.map((person, i) => (
-                                            <span key={i} className="px-4 py-2 bg-gray-100 border border-gray-300">
-                                                {person}
-                                            </span>
+                                            <span key={i} style={{ padding: '6px 14px', background: '#F3F4F6', border: '1px solid #E5E7EB', fontSize: 14 }}>{person}</span>
                                         ))}
                                     </div>
                                 </div>
                             )}
-                        </div>
 
-                        {/* Actions */}
-                        <div className="flex gap-4 no-print">
-                            <button 
-                                className="btn-secondary text-lg py-3 px-6"
-                                onClick={onBack}
-                                disabled={submissionStatus === 'loading'}
-                            >
-                                ← Edit
-                            </button>
-                            <button 
-                                className="btn-secondary text-lg py-3 px-6 flex-1"
-                                onClick={() => window.print()}
-                                disabled={submissionStatus === 'loading'}
-                            >
-                                Download PDF
-                            </button>
-                            <button 
-                                className="btn-primary text-lg py-3 px-8 flex-1"
-                                onClick={onSubmit}
-                                disabled={submissionStatus === 'loading'}
-                                style={{
-                                    opacity: submissionStatus === 'loading' ? 0.6 : 1,
-                                    cursor: submissionStatus === 'loading' ? 'not-allowed' : 'pointer'
-                                }}
-                            >
-                                {submissionStatus === 'loading' ? 'Submitting...' : 'Share with Team'}
-                            </button>
-                        </div>
+                            {/* Vision Images */}
+                            {(data.moodBoard.images || []).length > 0 && (
+                                <div style={{ marginBottom: 32 }}>
+                                    <div className="numbered-section" style={{ marginBottom: 12 }}>DREAM VISION IMAGES</div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                                        {(data.moodBoard.images || []).map((img, i) => (
+                                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#F3F4F6', border: '1px solid #E5E7EB', padding: '8px 12px' }}>
+                                                <span style={{ fontWeight: 700, color: '#6B7280' }}>{i + 1}.</span>
+                                                <span style={{ fontSize: 14 }}>{img}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
 
-                        {/* Case study removed — placeholder content, 4G EK feedback */}
+                            {/* Actions */}
+                            <div className="btn-footer no-print" style={{ position: 'static', marginTop: 32, borderTop: '2px solid #000', paddingTop: 24 }}>
+                                <button className="btn-back" onClick={onBack}>&larr; Edit</button>
+                                <div style={{ display: 'flex', gap: 12 }}>
+                                    <button className="btn-back" onClick={() => window.print()} disabled={submissionStatus === 'loading'}>Download PDF</button>
+                                    <button className="btn-next" onClick={onSubmit} disabled={submissionStatus === 'loading'}
+                                        style={{ opacity: submissionStatus === 'loading' ? 0.6 : 1 }}
+                                    >
+                                        {submissionStatus === 'loading' ? 'Submitting...' : 'Share with Team'} &rarr;
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             );

@@ -3,20 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Value Proposition Engine | PREVIEW | Fast Track Program</title>
+    <title>Value Proposition Engine | LOCAL PREVIEW</title>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="../../shared/js/tool-db.js"></script>
-    <script src="../../shared/js/ai-challenge.js"></script>
-    <script src="../../shared/js/dependency-injection.js"></script>
-    <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
-    <script src="../../shared/js/cognitive-load.js"></script>
-    <!-- access control removed for preview -->
 
     <style>
         @font-face { font-family: 'Plaak'; src: url('Plaak3Trial-43-Bold.woff2') format('woff2'); font-weight: bold; }
@@ -411,12 +404,7 @@
             }
         };
 
-        const { createClient } = supabase;
-        const supabaseClient = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
-        window.supabaseClient = supabaseClient;
-        ToolDB.init(CONFIG.TOOL_SLUG);
-        // ToolAccessControl.init skipped for preview
-        CognitiveLoad.init(CONFIG.TOOL_SLUG);
+        /* LOCAL PREVIEW — no Supabase/ToolDB/AI deps */
 
         /* ============================================================
            REUSABLE COMPONENTS
@@ -511,38 +499,21 @@
             );
         }
 
-        function DependencyContext({ deps }) {
-            if (!deps || deps.length === 0) return null;
-            return (
-                <div style={{ marginBottom: '24px' }}>
-                    <div style={{ fontFamily: "'Monument', monospace", fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#666', marginBottom: '8px' }}>
-                        CONTEXT FROM PREVIOUS TOOLS
-                    </div>
-                    {deps.map((dep, i) => (
-                        <div key={i} style={{ background: '#FFF9E0', border: '1px solid #F0E68C', borderLeft: '3px solid #DAA520', padding: '12px 16px', marginBottom: '8px', fontSize: '14px' }}>
-                            <div style={{ fontWeight: 600, marginBottom: '4px', color: '#333' }}>{dep.label}</div>
-                            <div style={{ color: '#555', whiteSpace: 'pre-wrap' }}>{dep.value}</div>
-                        </div>
-                    ))}
-                </div>
-            );
-        }
-
         /* ============================================================
            MAIN TOOL
            ============================================================ */
 
         function ToolApp() {
-            const [deps, setDeps] = useState([]);
             const [step, setStep] = useState(0);
             const [questionHelp, setQuestionHelp] = useState(null);
-            const [authState, setAuthState] = useState({ loading: true, authenticated: false, user: null, progress: null, error: null });
+            const [authState, setAuthState] = useState({ loading: false, authenticated: true, user: null, progress: null, error: null });
             const [submitStatus, setSubmitStatus] = useState(null);
             const [submitMessage, setSubmitMessage] = useState('');
             const [aiReviewing, setAiReviewing] = useState(false);
 
             /* ── Data state ── */
             const [data, setData] = useState({
+                companyId: '', userId: '',
                 // Step 1: Customer Foundation
                 targetSegment: '',
                 biggestPain: '',
@@ -575,30 +546,6 @@
             const updateData = (key, value) => setData(prev => ({ ...prev, [key]: value }));
             const updateValidation = (key, value) => setData(prev => ({ ...prev, validation: { ...prev.validation, [key]: value } }));
 
-            useEffect(() => {
-                async function loadDeps() {
-                    const userId = localStorage.getItem('ft_user_id');
-                    if (!userId || !window.ToolDB || !window.DependencyInjection) return;
-                    try {
-                        await ToolDB.whenReady();
-                        const config = DependencyInjection.getDependenciesConfig();
-                        const toolConfig = config[CONFIG.TOOL_SLUG];
-                        if (!toolConfig || !toolConfig.fields) return;
-                        const loaded = [];
-                        for (const field of toolConfig.fields) {
-                            const val = await ToolDB.getDependency(userId, field.source_field);
-                            if (val) {
-                                loaded.push({ label: field.display_label || field.source_field, value: window.DependencyInjection ? DependencyInjection.formatValue(val) : (typeof val === 'object' ? JSON.stringify(val, null, 2) : String(val)) });
-                            }
-                        }
-                        setDeps(loaded);
-                    } catch (err) {
-                        console.warn('[' + CONFIG.TOOL_SLUG + '] Failed to load dependencies:', err);
-                    }
-                }
-                loadDeps();
-            }, []);
-
             /* ── Auto-generate VP from components ── */
             useEffect(() => {
                 if (data.vpTargetSegment && data.vpPainPoint && data.vpSolution && data.vpCoreBenefit) {
@@ -615,37 +562,9 @@
             const yesCount = Object.values(data.validation).filter(v => v === 'yes').length;
             const canProceedStep4 = yesCount >= 6;
 
-            /* ── AI-gated step navigation ── */
-            const handleNext = async () => {
-                const userId = localStorage.getItem('ft_user_id');
-                if (!userId) { alert('User not authenticated.'); return; }
-                setAiReviewing(true);
-                try {
-                    let stepAnswers = {};
-                    let stepName = '';
-                    if (step === 1) {
-                        stepName = 'Pain Map';
-                        stepAnswers = { pain_mapping: { targetSegment: data.targetSegment, biggestPain: data.biggestPain, painEvidence: data.painEvidence, currentSolutions: data.currentSolutions, ahaMoment: data.ahaMoment, desiredOutcome: data.desiredOutcome } };
-                    } else if (step === 2) {
-                        stepName = 'Your Edge';
-                        stepAnswers = { differentiators: { competitors: data.competitors, uniqueValue: data.uniqueValue, whySwitchToUs: data.whySwitchToUs } };
-                    } else if (step === 3) {
-                        stepName = 'The Statement';
-                        stepAnswers = { vp_statement: data.fullValueProp, anti_promise: data.antiValueProp };
-                    } else if (step === 4) {
-                        stepName = 'Stress Test';
-                        stepAnswers = { validation: data.validation, testing: { testingPlan: data.testingPlan, refinementNotes: data.refinementNotes } };
-                    }
-                    const canProceed = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, stepName);
-                    if (canProceed) {
-                        setStep(step === totalSteps ? 999 : step + 0.5);
-                    }
-                } catch (err) {
-                    console.warn('[AIChallenge] Error, allowing passage:', err);
-                    setStep(step === totalSteps ? 999 : step + 0.5);
-                } finally {
-                    setAiReviewing(false);
-                }
+            /* ── Step navigation (no AI gate in preview) ── */
+            const handleNext = () => {
+                setStep(step === totalSteps ? 999 : step + 0.5);
             };
 
             /* ── Competitor helpers ── */
@@ -670,10 +589,7 @@
                 return null;
             };
 
-            /* ── Auth (handled by ToolDB.init → identifyUser) ── */
-            useEffect(() => {
-                setAuthState({ loading: false, authenticated: true, user: null, progress: { completed_tools: [], unlocked_tools: [CONFIG.TOOL_SLUG] }, isUnlocked: true, isCompleted: false, error: null });
-            }, []);
+            /* ── Auth: always authenticated in preview ── */
 
             /* ── Auto-save ── */
             useEffect(() => {
@@ -699,29 +615,10 @@
                 } catch (e) { console.warn('Failed to restore auto-save:', e); }
             }, []);
 
-            /* ── Submit (with AI challenge) ── */
-            const handleSubmit = async () => {
-                try {
-                    setSubmitStatus('saving'); setSubmitMessage('');
-                    const userId = localStorage.getItem('ft_user_id');
-                    if (!userId) { setSubmitStatus('error'); setSubmitMessage('User not authenticated.'); return; }
-
-                    const questionMappings = {
-                        vp_statement: data.fullValueProp,
-                        anti_promise: data.antiValueProp,
-                        pain_mapping: { targetSegment: data.targetSegment, biggestPain: data.biggestPain, painEvidence: data.painEvidence, currentSolutions: data.currentSolutions, ahaMoment: data.ahaMoment, desiredOutcome: data.desiredOutcome },
-                        differentiators: { competitors: data.competitors, uniqueValue: data.uniqueValue, whySwitchToUs: data.whySwitchToUs }
-                    };
-
-                    await window.AIChallenge.submitWithChallenge(userId, CONFIG.TOOL_SLUG, questionMappings, {
-                        onReviewStart: () => { setSubmitMessage('AI coach is reviewing...'); },
-                        onRevise: () => { setSubmitStatus(null); setSubmitMessage(''); setStep(totalSteps); },
-                        onSubmitAnyway: () => { setSubmitStatus('success'); setSubmitMessage('Submission saved successfully!'); },
-                        onError: (err) => { setSubmitStatus('error'); setSubmitMessage('Failed to save: ' + err.message); }
-                    });
-                } catch (error) {
-                    setSubmitStatus('error'); setSubmitMessage('Failed to save: ' + error.message);
-                }
+            /* ── Submit (preview — no backend) ── */
+            const handleSubmit = () => {
+                setSubmitStatus('success');
+                setSubmitMessage('Preview mode — submission simulated successfully!');
             };
 
             /* ── PDF ── */
@@ -760,26 +657,8 @@
                 <div className="tool-frame">
                     <div className="tool-inner">
 
-                        {authState.loading && (
-                            <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000' }}>
-                                <div style={{ textAlign: 'center', color: '#fff' }}>
-                                    <div className="plaak" style={{ fontSize: 32, marginBottom: 12 }}>Loading...</div>
-                                </div>
-                            </div>
-                        )}
-
-                        {!authState.loading && !authState.authenticated && (
-                            <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000' }}>
-                                <div style={{ textAlign: 'center', color: '#fff', padding: '0 32px', maxWidth: 640 }}>
-                                    <h1 className="plaak" style={{ fontSize: 48, marginBottom: 24 }}>AUTHENTICATION REQUIRED</h1>
-                                    <p style={{ fontSize: 20, marginBottom: 32 }}>Please access this tool from your LearnWorlds course.</p>
-                                    <p style={{ fontSize: 16, color: '#999' }}>{authState.error || 'No active session found'}</p>
-                                </div>
-                            </div>
-                        )}
-
                         {/* ── STEP 0: Cover ── */}
-                        {step === 0 && authState.authenticated && (
+                        {step === 0 && (
                             <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
                                 <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${CONFIG.COVER_IMAGE})`, backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.5 }} />
                                 <div style={{ position: 'relative', textAlign: 'center', color: '#fff', padding: '0 32px' }} className="animate-in">
@@ -827,7 +706,6 @@
                                     {/* ── STEP 1: Customer Foundation ── */}
                                     {step === 1 && (
                                         <div className="step-content animate-in">
-                                            <DependencyContext deps={deps} />
                                             <p className="step-indicator">STEP 1 OF {totalSteps}</p>
                                             <div className="opening-box">
                                                 <h1 className="step-heading">Map the Pain</h1>
@@ -1173,8 +1051,8 @@
                                     <ButtonFooter
                                         onBack={() => setStep(step === 1 ? 0.5 : step - 1)}
                                         onNext={handleNext}
-                                        canProceed={!aiReviewing && (step === 1 ? canProceedStep1 : step === 2 ? canProceedStep2 : step === 3 ? canProceedStep3 : canProceedStep4)}
-                                        nextLabel={aiReviewing ? 'AI Coach Reviewing...' : step === totalSteps ? 'See Your Canvas' : 'Complete Step ' + step}
+                                        canProceed={step === 1 ? canProceedStep1 : step === 2 ? canProceedStep2 : step === 3 ? canProceedStep3 : canProceedStep4}
+                                        nextLabel={step === totalSteps ? 'See Your Canvas' : 'Complete Step ' + step}
                                         showBack={true}
                                     />
                                 </div>

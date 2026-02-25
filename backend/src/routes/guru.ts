@@ -6,21 +6,6 @@ import { sendSuccess, sendError } from '../utils/response.js';
 const router = Router();
 
 // =============================================================================
-// Helper Functions
-// =============================================================================
-
-function getSprintName(sprintId: number): string {
-  const names: Record<number, string> = {
-    0: 'WOOP',
-    1: 'Know Thyself',
-    2: 'Dream',
-    3: 'Values',
-    4: 'Team',
-  };
-  return names[sprintId] || `Sprint ${sprintId}`;
-}
-
-// =============================================================================
 // POST /api/guru/validate-code - Validate guru access code
 // =============================================================================
 
@@ -30,10 +15,9 @@ router.post(
     const { code } = req.body;
 
     if (!code) {
-      return sendError(res, 'Code is required', 400);
+      return sendError(res, 'Code is required', undefined, 400);
     }
 
-    // Query guru_access_codes with organization join
     const { data, error } = await supabase
       .from('guru_access_codes')
       .select(`
@@ -45,14 +29,14 @@ router.post(
       .single();
 
     if (error || !data) {
-      return sendError(res, 'Invalid code', 401);
+      return sendError(res, 'Invalid code', undefined, 401);
     }
 
     return sendSuccess(res, {
       valid: true,
       organization: (data.organizations as any).name,
       organization_slug: (data.organizations as any).slug,
-      sprint_id: data.sprint_id,
+      tool_slug: data.tool_slug,
       guru_name: data.guru_name,
     });
   })
@@ -79,11 +63,11 @@ router.get(
       .single();
 
     if (codeError || !codeData) {
-      return sendError(res, 'Invalid code', 401);
+      return sendError(res, 'Invalid code', undefined, 401);
     }
 
     const orgId = codeData.organization_id;
-    const sprintId = codeData.sprint_id;
+    const toolSlug = codeData.tool_slug;
 
     // Get all team members for this organization
     const { data: members, error: membersError } = await supabase
@@ -92,41 +76,38 @@ router.get(
       .eq('organization_id', orgId);
 
     if (membersError || !members) {
-      return sendError(res, 'Failed to fetch members', 500);
+      return sendError(res, 'Failed to fetch members', undefined, 500);
     }
 
     const memberIds = members.map((m) => m.id);
 
-    // Get progress records for this sprint
-    const { data: progress } = await supabase
-      .from('user_progress')
-      .select('user_id, status, completed_at')
-      .eq('sprint_id', sprintId)
+    // Get completions from tool_completions (individual tool completion)
+    const { data: completions } = await supabase
+      .from('tool_completions')
+      .select('user_id, completed_at')
+      .eq('tool_slug', toolSlug)
       .in('user_id', memberIds);
 
-    // Get tool submissions for this sprint
-    const { data: submissions } = await supabase
-      .from('tool_submissions')
-      .select('user_id, submitted_at')
-      .eq('sprint_id', sprintId)
-      .in('user_id', memberIds);
+    // Build set of completed user IDs
+    const completedMap = new Map(
+      (completions || []).map((c) => [c.user_id, c.completed_at])
+    );
 
-    // Combine data
+    // Combine member data with completion status
     const membersWithStatus = members.map((member) => {
-      const prog = progress?.find((p) => p.user_id === member.id);
-      const sub = submissions?.find((s) => s.user_id === member.id);
+      const completedAt = completedMap.get(member.id);
       return {
         ...member,
-        status: prog?.status || 'not_started',
-        submitted_at: sub?.submitted_at || null,
+        status: completedAt ? 'completed' : 'not_started',
+        submitted_at: completedAt || null,
       };
     });
 
-    // Get guru guide
+    // Get guru guide for this tool
     const { data: guruGuide } = await supabase
       .from('guru_guides')
       .select('*')
-      .eq('sprint_id', sprintId)
+      .eq('tool_slug', toolSlug)
       .single();
 
     // Get meeting notes
@@ -134,12 +115,11 @@ router.get(
       .from('guru_meeting_notes')
       .select('*')
       .eq('organization_id', orgId)
-      .eq('sprint_id', sprintId)
+      .eq('tool_slug', toolSlug)
       .single();
 
     // Calculate statistics
     const completed = membersWithStatus.filter((m) => m.status === 'completed').length;
-    const inProgress = membersWithStatus.filter((m) => m.status === 'in_progress').length;
     const notStarted = membersWithStatus.filter((m) => m.status === 'not_started').length;
 
     const org = codeData.organizations as any;
@@ -150,9 +130,8 @@ router.get(
         name: org.name,
         slug: org.slug,
       },
-      sprint: {
-        id: sprintId,
-        name: getSprintName(sprintId),
+      tool: {
+        slug: toolSlug,
       },
       guru: {
         name: codeData.guru_name,
@@ -161,7 +140,7 @@ router.get(
       team_progress: {
         total: members.length,
         completed,
-        in_progress: inProgress,
+        in_progress: 0,
         not_started: notStarted,
       },
       members: membersWithStatus,
@@ -172,7 +151,7 @@ router.get(
 );
 
 // =============================================================================
-// GET /api/guru/submission/:code/:userId - Get submission data
+// GET /api/guru/submission/:code/:userId - Get full submission for one member
 // =============================================================================
 
 router.get(
@@ -183,13 +162,13 @@ router.get(
     // Validate code
     const { data: codeData, error: codeError } = await supabase
       .from('guru_access_codes')
-      .select('sprint_id, organization_id')
+      .select('tool_slug, organization_id')
       .eq('code', code.toUpperCase())
       .eq('is_active', true)
       .single();
 
     if (codeError || !codeData) {
-      return sendError(res, 'Invalid code', 401);
+      return sendError(res, 'Invalid code', undefined, 401);
     }
 
     // Verify user belongs to org
@@ -200,20 +179,61 @@ router.get(
       .single();
 
     if (userError || !user || user.organization_id !== codeData.organization_id) {
-      return sendError(res, 'Access denied', 403);
+      return sendError(res, 'Access denied', undefined, 403);
     }
 
-    // Get submission
-    const { data: submission } = await supabase
-      .from('tool_submissions')
-      .select('*')
+    // Get all question IDs for this tool
+    const { data: questions, error: qError } = await supabase
+      .from('tool_questions')
+      .select('id, question_key, question_text, section_name, step_number, display_order')
+      .eq('tool_slug', codeData.tool_slug)
+      .order('step_number')
+      .order('display_order');
+
+    if (qError || !questions) {
+      return sendError(res, 'Failed to fetch questions', undefined, 500);
+    }
+
+    const questionIds = questions.map((q) => q.id);
+
+    // Get user's responses
+    const { data: responses } = await supabase
+      .from('user_responses')
+      .select('question_id, response_value, response_data, updated_at')
       .eq('user_id', userId)
-      .eq('sprint_id', codeData.sprint_id)
+      .in('question_id', questionIds);
+
+    // Build response map: question_id → response
+    const responseMap = new Map(
+      (responses || []).map((r) => [r.question_id, r])
+    );
+
+    // Build submission array with question text + answer
+    const submission = questions.map((q) => {
+      const resp = responseMap.get(q.id);
+      return {
+        question_key: q.question_key,
+        question_text: q.question_text,
+        section_name: q.section_name,
+        step_number: q.step_number,
+        answer: resp ? (resp.response_data ?? resp.response_value) : null,
+        answered: !!resp,
+      };
+    });
+
+    // Check if completed
+    const { data: completion } = await supabase
+      .from('tool_completions')
+      .select('completed_at')
+      .eq('user_id', userId)
+      .eq('tool_slug', codeData.tool_slug)
       .single();
 
     return sendSuccess(res, {
       user_name: user.full_name,
-      submission: submission || null,
+      tool_slug: codeData.tool_slug,
+      completed_at: completion?.completed_at || null,
+      submission,
     });
   })
 );
@@ -231,33 +251,33 @@ router.post(
     // Validate code
     const { data: codeData, error: codeError } = await supabase
       .from('guru_access_codes')
-      .select('id, sprint_id, organization_id')
+      .select('id, tool_slug, organization_id')
       .eq('code', code.toUpperCase())
       .single();
 
     if (codeError || !codeData) {
-      return sendError(res, 'Invalid code', 401);
+      return sendError(res, 'Invalid code', undefined, 401);
     }
 
-    // Upsert meeting notes
+    // Upsert meeting notes — onConflict uses organization_id + tool_slug
     const { data, error } = await supabase
       .from('guru_meeting_notes')
       .upsert({
         organization_id: codeData.organization_id,
-        sprint_id: codeData.sprint_id,
+        tool_slug: codeData.tool_slug,
         guru_code_id: codeData.id,
         notes_content,
         action_items,
         meeting_date,
         updated_at: new Date().toISOString(),
       }, {
-        onConflict: 'organization_id,sprint_id'
+        onConflict: 'organization_id,tool_slug'
       })
       .select()
       .single();
 
     if (error) {
-      return sendError(res, 'Failed to save notes', 500);
+      return sendError(res, 'Failed to save notes', undefined, 500);
     }
 
     return sendSuccess(res, {

@@ -20,211 +20,244 @@
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
     <script src="../../shared/js/cognitive-load.js"></script>
     <script src="../../js/tool-access-control.js"></script>
+
+    <!-- Font preloading to prevent FOUT -->
+    <link rel="preload" href="Plaak3Trial-43-Bold.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="RiformaLL-Regular.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="MonumentGrotesk-Mono.woff2" as="font" type="font/woff2" crossorigin>
+
     <style>
-        @font-face {
-            font-family: 'Plaak';
-            src: url('Plaak3Trial-43-Bold.woff2') format('woff2');
-            font-weight: bold;
-        }
-        @font-face {
-            font-family: 'Riforma';
-            src: url('RiformaLL-Regular.woff2') format('woff2');
-            font-weight: normal;
-        }
-        @font-face {
-            font-family: 'Monument';
-            src: url('MonumentGrotesk-Mono.woff2') format('woff2');
-            font-weight: normal;
-        }
+        /* === FONT FACES === */
+        @font-face { font-family: 'Plaak'; src: url('Plaak3Trial-43-Bold.woff2') format('woff2'); font-weight: bold; font-display: swap; }
+        @font-face { font-family: 'Riforma'; src: url('RiformaLL-Regular.woff2') format('woff2'); font-weight: normal; font-display: swap; }
+        @font-face { font-family: 'Riforma'; src: url('RiformaLL-Regular.woff2') format('woff2'); font-weight: 600; font-display: swap; }
+        @font-face { font-family: 'Monument'; src: url('MonumentGrotesk-Mono.woff2') format('woff2'); font-display: swap; }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        /* === BASE RESET === */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Riforma', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-family: 'Riforma', -apple-system, sans-serif;
             font-size: 16px;
-            color: #000000;
-            background: #FFFFFF;
+            color: #000;
+            background: #000;
             -webkit-font-smoothing: antialiased;
-            line-height: 1.6;
         }
 
-        .plaak {
-            font-family: 'Plaak', sans-serif;
-            font-weight: bold;
-            letter-spacing: -0.01em;
-            line-height: 1.2;
+        /* === CUSTOM SCROLLBAR === */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #000; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #333; }
+        * { scrollbar-width: thin; scrollbar-color: #000 transparent; }
+
+        /* === TYPOGRAPHY HELPERS === */
+        .plaak { font-family: 'Plaak', sans-serif; font-weight: bold; letter-spacing: -0.01em; line-height: 1.2; }
+        .monument { font-family: 'Monument', monospace; letter-spacing: 0.05em; }
+
+        /* === LAYOUT FRAME === */
+        .tool-frame { background: #fff; min-height: 100vh; }
+        .tool-inner { background: #fff; min-height: 100vh; }
+
+        /* === WIZARD LAYOUT === */
+        .wizard-layout { display: flex; min-height: 100vh; }
+        .wizard-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background: #fff;
+        }
+        .wizard-content {
+            max-width: 640px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 48px 32px;
+            flex: 1;
         }
 
-        .monument {
-            font-family: 'Monument', monospace;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+        /* === SIDEBAR === */
+        .wizard-sidebar {
+            width: 280px;
+            background: #000;
+            border-left: 1px solid #000;
+            flex-shrink: 0;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow: hidden;
         }
-
-        .smooth {
+        .wizard-sidebar-inner {
+            padding: 32px 24px;
+            height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        .sidebar-step-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            border-left: 3px solid transparent;
             transition: all 0.2s ease;
         }
+        .sidebar-step-item.active { border-left-color: #FFF469; background: #222; }
+        .sidebar-step-item.completed { background: #fff; color: #000; border-left-color: #fff; cursor: pointer; }
+        .sidebar-step-item.completed:hover { background: #E0E0E0; }
+        .sidebar-step-item.locked { opacity: 0.5; }
+        .sidebar-step-item .step-num { font-family: 'Riforma', sans-serif; font-size: 14px; }
+        .sidebar-step-item .step-name { font-family: 'Riforma', sans-serif; font-size: 14px; }
+        .sidebar-snippet { font-size: 12px; margin-top: 4px; opacity: 0.7; line-height: 1.3; }
 
-        .worksheet-input {
-            border: 1px solid #E0E0E0;
+        /* === STEP HEADER === */
+        .step-indicator {
+            font-family: 'Monument', monospace;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #6B7280;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .step-time { font-family: 'Monument', monospace; font-size: 11px; color: #6B7280; }
+        .step-heading {
+            font-family: 'Plaak', sans-serif;
+            font-weight: bold;
+            font-size: 32px;
+            text-transform: uppercase;
+            letter-spacing: -0.01em;
+            line-height: 1.2;
+            color: #000;
+            margin-bottom: 6px;
+        }
+        .step-hint {
+            font-size: 16px;
+            color: #6B7280;
+            line-height: 1.5;
+            margin: 0 0 32px 0;
+        }
+
+        /* === FORM ELEMENTS === */
+        .ft-label {
+            display: flex; align-items: center; gap: 6px;
+            font-family: 'Monument', monospace; font-size: 14px; font-weight: 500;
+            text-transform: uppercase; letter-spacing: 0.05em; color: #000; margin-bottom: 8px;
+        }
+        .ft-required { color: #DC2626; font-weight: 700; }
+
+        .ft-input {
+            width: 100%;
+            height: 44px;
+            padding: 8px 16px;
+            font-family: 'Riforma', sans-serif;
+            font-size: 16px;
+            color: #000;
+            background: #fff;
+            border: 1px solid #E5E7EB;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .ft-input:focus { outline: none; border-color: #000; box-shadow: 0 0 0 3px #FFF469; }
+        .ft-input.has-error, .ft-input.error { border: 2px solid #DC2626; }
+
+        .ft-textarea {
+            width: 100%;
+            min-height: 120px;
             padding: 12px 16px;
             font-family: 'Riforma', sans-serif;
             font-size: 16px;
-            transition: border-color 0.2s ease;
-            width: 100%;
-            background: #FFFFFF;
-        }
-
-        .worksheet-input:focus {
-            outline: none;
-            border-color: #000000;
-        }
-
-        .worksheet-input.error {
-            border-color: #FF0000;
-        }
-
-        .numbered-section {
-            background: #000000;
-            color: #FFFFFF;
-            padding: 10px 16px;
-            font-size: 18px;
-            font-weight: bold;
-            letter-spacing: 0.5px;
-            display: inline-block;
-            margin-bottom: 16px;
-        }
-
-        .btn-primary {
-            background: #000000;
-            color: #FFFFFF;
-            padding: 12px 24px;
-            border: 2px solid #000000;
-            font-family: 'Riforma', sans-serif;
-            font-size: 16px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .btn-primary:hover:not(:disabled) {
-            transform: scale(1.02);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-
-        .btn-primary:disabled {
-            background: #E0E0E0;
-            color: #9CA3AF;
-            cursor: not-allowed;
-            opacity: 0.5;
-            border-color: #E0E0E0;
-        }
-
-        .btn-secondary {
-            background: #FFFFFF;
-            color: #000000;
-            padding: 12px 24px;
-            border: 2px solid #000000;
-            font-family: 'Riforma', sans-serif;
-            font-size: 16px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .btn-secondary:hover {
-            background: #F8F8F8;
-        }
-
-        .help-button {
-            position: fixed;
-            top: 24px;
-            right: 24px;
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            background: #000000;
-            color: #FFFFFF;
-            border: 2px solid #000000;
-            font-size: 28px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 40;
-            transition: all 0.2s ease;
-        }
-
-        .help-button:hover {
-            transform: scale(1.1);
-            background: #fff469;
-            color: #000000;
-        }
-
-        .progress-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #E0E0E0;
-            transition: all 0.2s ease;
-        }
-
-        .progress-dot.active {
-            background: #000000;
-            transform: scale(1.3);
-        }
-
-        .progress-dot.completed {
-            background: #000000;
-        }
-
-        .cover-overlay {
-            background: linear-gradient(to bottom, rgba(0,0,0,0.4), rgba(0,0,0,0.7));
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-            to {
-                opacity: 1;
-            }
-        }
-
-        .animate-in {
-            animation: slideIn 0.3s ease-out;
-        }
-
-        .fade-in {
-            animation: fadeIn 0.5s ease-out;
-        }
-
-        @media print {
-            .no-print {
-                display: none !important;
-            }
-            body {
-                background: white;
-            }
-        }
-
-        textarea {
+            color: #000;
+            background: #fff;
+            border: 1px solid #E5E7EB;
             resize: vertical;
-            min-height: 100px;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
+        .ft-textarea:focus { outline: none; border-color: #000; box-shadow: 0 0 0 3px #FFF469; }
+
+        .ft-help { font-size: 14px; color: #6B7280; margin-top: 4px; line-height: 1.5; }
+        .ft-error-msg { font-size: 14px; font-weight: 600; color: #DC2626; margin-top: 4px; }
+        .ft-field-group { margin-bottom: 24px; }
+        .ft-field-group:last-child { margin-bottom: 0; }
+        .ft-section { margin-bottom: 32px; }
+
+        /* === YELLOW INSIGHT BOX === */
+        .ft-insight { background: #FFF469; border: 3px solid #000; padding: 16px; margin-bottom: 32px; }
+
+        /* === EXAMPLE BOX === */
+        .ft-example { background: #F3F4F6; padding: 16px; margin-bottom: 8px; font-size: 14px; line-height: 1.6; color: #1F2937; }
+
+        /* === ERROR SUMMARY === */
+        .ft-error-summary { border: 2px solid #DC2626; background: #fff; padding: 16px; margin-bottom: 24px; }
+        .ft-error-summary a { color: #DC2626; text-decoration: underline; cursor: pointer; }
+
+        /* === BUTTON FOOTER === */
+        .btn-footer {
+            position: sticky; bottom: 0; z-index: 10;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 16px 32px; border-top: 1px solid #E5E7EB; background: #fff; width: 100%;
+        }
+        .btn-back {
+            background: #fff; color: #000; border: 2px solid #000;
+            padding: 12px 24px; font-family: 'Riforma', sans-serif; font-size: 16px;
+            cursor: pointer; transition: all 0.2s ease; min-height: 44px;
+        }
+        .btn-back:hover { background: #F3F4F6; }
+        .btn-next {
+            background: #000; color: #fff; border: 2px solid #000;
+            padding: 12px 24px; font-family: 'Riforma', sans-serif; font-size: 16px;
+            cursor: pointer; transition: all 0.2s ease; min-height: 44px;
+        }
+        .btn-next:hover:not(:disabled) { transform: scale(1.02); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .btn-next:disabled { background: #E5E7EB; color: #9CA3AF; border-color: #E5E7EB; cursor: not-allowed; }
+
+        /* === MOBILE STEP BAR === */
+        .mobile-step-bar { display: none; padding: 12px 16px; border-bottom: 1px solid #E5E7EB; background: #F3F4F6; }
+        .mobile-step-bar .bar-text { font-family: 'Monument', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #6B7280; margin-bottom: 6px; }
+        .mobile-progress { height: 3px; background: #E5E7EB; width: 100%; }
+        .mobile-progress-fill { height: 100%; background: #000; transition: width 0.3s ease; }
+
+        /* === CANVAS STYLES === */
+        .numbered-section { background: #000; color: #fff; padding: 8px 14px; font-size: 14px; font-weight: bold; letter-spacing: 0.5px; display: inline-block; font-family: 'Monument', monospace; }
+
+        /* === ANIMATIONS === */
+        @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .animate-in { animation: fadeSlideIn 0.3s ease-out; }
+        .fade-in { animation: fadeIn 0.5s ease-out; }
+
+        /* === PRINT === */
+        @media print { .no-print { display: none !important; } body { background: white; } }
+
+        /* === RESPONSIVE === */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .wizard-sidebar { width: 220px; }
+            .wizard-sidebar-inner { padding: 24px 16px; }
+        }
+        @media (max-width: 768px) {
+            .wizard-sidebar { display: none; }
+            .mobile-step-bar { display: block; }
+            .wizard-content { padding: 24px 16px; }
+            .step-heading { font-size: 24px; }
+            .btn-footer { padding: 12px 16px; }
+        }
+        @media (max-width: 480px) {
+            .step-heading { font-size: 20px; }
+            .wizard-content { padding: 20px 12px; }
+        }
+
+        /* === TOOL-SPECIFIC: Legacy button styles === */
+        .btn-primary {
+            background: #000; color: #fff; padding: 12px 24px; border: 2px solid #000;
+            font-family: 'Riforma', sans-serif; font-size: 16px; cursor: pointer; transition: all 0.2s ease;
+        }
+        .btn-primary:hover:not(:disabled) { transform: scale(1.02); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .btn-primary:disabled { background: #E0E0E0; color: #9CA3AF; cursor: not-allowed; opacity: 0.5; border-color: #E0E0E0; }
+        .btn-secondary {
+            background: #fff; color: #000; padding: 12px 24px; border: 2px solid #000;
+            font-family: 'Riforma', sans-serif; font-size: 16px; cursor: pointer; transition: all 0.2s ease;
+        }
+        .btn-secondary:hover { background: #F8F8F8; }
+
+        textarea { resize: vertical; min-height: 100px; }
     </style>
 </head>
 <body>
@@ -257,6 +290,143 @@
         // Initialize cognitive load components
         CognitiveLoad.init('know-thyself', {"insights":["Self-awareness is the foundation of leadership. You cannot lead others until you understand yourself.","The 80/20 rule: 80% of your leadership effectiveness comes from understanding your personal values and strengths."],"caseStudy":{"before":"A mid-sized tech company CEO spent years chasing every market opportunity without a clear sense of personal values or purpose. Team turnover was 40%, strategic direction changed quarterly, and key talent left because they could not see a coherent vision.","after":"After completing the Know Thyself sprint, the CEO articulated a clear identity statement rooted in personal strengths and values. The leadership team aligned around a shared vision, decision-making speed doubled, and employee engagement scores rose by 35% within six months.","quote":"Once I understood my own strengths and values, every business decision became clearer. I stopped second-guessing and started leading with conviction."}});
         const { FastTrackInsight, ScienceBox, WarningBox, CaseStudy, ScienceBookmarkIcon, ToolGuideDrawer } = CognitiveLoad.components;
+
+        /* ============================================================
+           TRANSITION CONTENT — VP-style screens between steps
+           ============================================================ */
+        const TRANSITION_CONTENT = {
+            1: {
+                title: 'DREAM DEFINED.',
+                text: "You've found your reason to get up in the morning. Now let's discover what fuels you.",
+                brutalTruth: "Leaders who define a vivid, values-aligned dream make faster decisions and maintain motivation through setbacks. Your 80th birthday vision creates the emotional anchor that drives everything else in Fast Track.",
+                peerProof: "Harvard Business Review research shows leaders who write down a vivid personal vision are 42% more likely to achieve their goals. The act of writing activates deeper cognitive processing and creates a psychological contract with yourself."
+            },
+            2: {
+                title: 'STRENGTHS MAPPED.',
+                text: "You know what energizes you. Now align your values with your actions.",
+                brutalTruth: "Focus on strengths, not weaknesses. Buckingham and Clifton's research proves the key to excellence lies in identifying and cultivating your natural talents. People who focus on strengths are 3x more likely to report an excellent quality of life.",
+                peerProof: "Gallup StrengthsFinder research across 1.7M employees found strength-based development is 3x more effective than fixing weaknesses. People who use their strengths daily are 6x more likely to be engaged at work."
+            },
+            3: {
+                title: 'VALUES ALIGNED.',
+                text: "Your core values are clear. Now set goals to close the gap between where you are and where you want to be.",
+                brutalTruth: "Values-driven decisions eliminate internal conflict. When personal values and professional endeavors are aligned, work becomes deeply fulfilling — not just productive. The pattern in your dream and strengths answers reveals what truly matters.",
+                peerProof: "Barrett Values Centre research across 6,000+ organizations shows companies with strong values alignment outperform peers by 4x in revenue growth. When actions align with core values, decisions become faster and more confident."
+            },
+            4: {
+                title: 'PLAN SET.',
+                text: "Self-knowledge complete. Your dream, strengths, values, and growth plan are locked in.",
+                brutalTruth: "Goals without action plans are wishes. Turn vision into execution with specific actions and deadlines. No vague aspirations — only concrete next steps that connect to your dream.",
+                peerProof: "Research on structured goal-setting shows that specific, written action plans increase goal achievement by 42-78% compared to verbal intentions. Your growth blueprint creates the accountability that transforms insight into action."
+            }
+        };
+
+        /* ============================================================
+           SHARED COMPONENTS
+           ============================================================ */
+
+        function CheckIcon({ color = "#fff", size = 16 }) {
+            return <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>;
+        }
+
+        function ButtonFooter({ onBack, onNext, nextLabel = 'Next', showBack = true, disabled = false }) {
+            return (
+                <div className="btn-footer no-print">
+                    {showBack ? <button className="btn-back" onClick={onBack}>&larr; Back</button> : <div />}
+                    <button className="btn-next" disabled={disabled} onClick={onNext}>{nextLabel} &rarr;</button>
+                </div>
+            );
+        }
+
+        function MobileStepBar({ currentStep, totalSteps }) {
+            const total = totalSteps || 4;
+            const progress = currentStep >= 999 ? 100 : Math.round((currentStep / total) * 100);
+            return (
+                <div className="mobile-step-bar no-print">
+                    <div className="bar-text">Step {Math.min(currentStep, total)} of {total}</div>
+                    <div className="mobile-progress"><div className="mobile-progress-fill" style={{ width: `${progress}%` }} /></div>
+                </div>
+            );
+        }
+
+        function CoachFeedbackPanel() {
+            const [expanded, setExpanded] = useState(false);
+            const [feedback, setFeedback] = useState(null);
+            useEffect(() => {
+                const check = () => { if (window.AIChallenge && window.AIChallenge.getLastFeedback) setFeedback(window.AIChallenge.getLastFeedback()); };
+                check();
+                const interval = setInterval(check, 2000);
+                return () => clearInterval(interval);
+            }, []);
+            if (!feedback) return null;
+            return (
+                <div style={{ marginTop: 24, borderTop: '1px solid #333', paddingTop: 16 }}>
+                    <button onClick={() => setExpanded(!expanded)}
+                        style={{ background: 'none', border: 'none', color: '#FFF469', cursor: 'pointer', fontFamily: "'Monument', monospace", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 6, padding: 0, width: '100%' }}>
+                        <span style={{ transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s', display: 'inline-block' }}>&#9654;</span>
+                        COACH FEEDBACK
+                    </button>
+                    {expanded && (
+                        <div style={{ marginTop: 10, fontSize: 12, color: '#ccc', lineHeight: 1.5 }}>
+                            {feedback.type === 'approved' && <p style={{ color: '#FFF469' }}>{feedback.message}</p>}
+                            {feedback.type === 'challenges' && (<>
+                                {feedback.encouragement && <p style={{ color: '#FFF469', marginBottom: 8 }}>{feedback.encouragement}</p>}
+                                {feedback.challenges && feedback.challenges.map((ch, i) => (
+                                    <div key={i} style={{ marginBottom: 8, paddingLeft: 8, borderLeft: '2px solid #555' }}>
+                                        <div style={{ fontSize: 10, color: '#999', marginBottom: 2 }}>{ch.question_text || ch.question_key}</div>
+                                        <div>{ch.feedback}</div>
+                                    </div>
+                                ))}
+                            </>)}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        function WizardSidebar({ currentStep, formData, onNavigate }) {
+            const steps = [
+                { num: 1, label: 'Dream Launcher', time: '~8 min' },
+                { num: 2, label: 'Strengths', time: '~5 min' },
+                { num: 3, label: 'Values', time: '~5 min' },
+                { num: 4, label: 'Growth Plan', time: '~4 min' }
+            ];
+            const getSnippet = (n) => {
+                if (n === 1 && formData.dream) return '"' + formData.dream.substring(0, 50) + (formData.dream.length > 50 ? '...' : '') + '"';
+                if (n === 2 && formData.strengths[0]?.strength) { const f = formData.strengths.filter(s => s.strength?.trim()); return f.length + ' strength' + (f.length !== 1 ? 's' : '') + ' mapped'; }
+                if (n === 3 && formData.values[0]?.value) { const f = formData.values.filter(v => v.value?.trim()); return f.length + ' value' + (f.length !== 1 ? 's' : '') + ' defined'; }
+                if (n === 4 && formData.goals[0]?.goal) { const f = formData.goals.filter(g => g.goal?.trim()); return f.length + ' goal' + (f.length !== 1 ? 's' : '') + ' set'; }
+                return null;
+            };
+            return (
+                <div className="wizard-sidebar no-print">
+                    <div className="wizard-sidebar-inner">
+                        <div style={{ marginBottom: 24 }}>
+                            <div className="monument" style={{ fontSize: 12, textTransform: 'uppercase', color: '#fff', marginBottom: 4 }}>KNOW THYSELF</div>
+                            <div style={{ fontSize: 13, color: '#999' }}>~22 min total</div>
+                        </div>
+                        <div style={{ marginBottom: 16, fontFamily: "'Monument', monospace", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#999' }}>Your journey</div>
+                        {steps.map(s => {
+                            const effectiveStep = Math.ceil(currentStep);
+                            const isCompleted = effectiveStep > s.num, isActive = effectiveStep === s.num, isLocked = effectiveStep < s.num;
+                            const snippet = isCompleted ? getSnippet(s.num) : null;
+                            return (
+                                <div key={s.num} className={`sidebar-step-item ${isCompleted ? 'completed' : ''} ${isActive ? 'active' : ''} ${isLocked ? 'locked' : ''}`}
+                                    onClick={() => isCompleted && onNavigate && onNavigate(s.num)}
+                                    title={isCompleted ? 'Click to review this step' : ''}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                        {isCompleted ? <CheckIcon color="#000" size={14} /> : <span className="step-num" style={{ color: isActive ? '#fff' : '#ccc' }}>{String(s.num).padStart(2, '0')}</span>}
+                                        <span className="step-name" style={{ color: isLocked ? '#666' : isCompleted ? '#000' : '#fff' }}>{s.label}</span>
+                                    </div>
+                                    {snippet && <div className="sidebar-snippet">{snippet}</div>}
+                                </div>
+                            );
+                        })}
+                        <CoachFeedbackPanel />
+                    </div>
+                </div>
+            );
+        }
 
         // Help Modal Component
         function HelpModal({ isOpen, onClose, content }) {
@@ -429,7 +599,7 @@
                         for (const field of toolConfig.fields) {
                             const val = await ToolDB.getDependency(userId, field.source_field);
                             if (val) {
-                                loaded.push({ label: field.display_label || field.source_field, value: typeof val === 'object' ? JSON.stringify(val, null, 2) : String(val) });
+                                loaded.push({ label: field.display_label || field.source_field, value: window.DependencyInjection ? DependencyInjection.formatValue(val) : (typeof val === 'object' ? JSON.stringify(val, null, 2) : String(val)) });
                             }
                         }
                         setDeps(loaded);
@@ -743,244 +913,185 @@
                 return null;
             };
 
-            return (
-                <div className="min-h-screen bg-white">
-                    {/* Help Button */}
-                    {step >= 1 && step <= 4 && (
-                        <button className="help-button no-print" onClick={() => setShowHelp(true)}>
-                            ?
-                        </button>
-                    )}
+            const clearCache = () => {
+                localStorage.removeItem(CONFIG.STORAGE_KEY);
+                window.location.reload();
+            };
 
-                    {/* Help Modal */}
-                    <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} content={getHelpContent()} />
-
-                    {/* Cover Page */}
-                    {step === 0 && (
-                        <div className="relative min-h-screen flex items-center justify-center" style={{background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)'}}>
-                            <div className="absolute inset-0 cover-overlay"></div>
-                            <div className="relative z-10 text-center text-white px-8">
-                                <h1 className="plaak text-9xl mb-6 animate-in">KNOW THYSELF</h1>
-                                <p className="text-3xl mb-12 animate-in" style={{animationDelay: '0.2s'}}>
-                                    The foundation of exceptional leadership
-                                </p>
-                                <button 
-                                    className="bg-white text-black plaak text-3xl px-16 py-6 border-4 border-white hover:bg-black hover:text-white transition-all duration-200 animate-in"
-                                    style={{animationDelay: '0.4s'}}
-                                    onClick={() => setStep(0.5)}
-                                >
-                                    START
-                                </button>
+            // Cover Page (step 0)
+            if (step === 0) {
+                return (
+                    <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+                        <div style={{ position: 'relative', textAlign: 'center', color: '#fff', padding: '0 32px' }} className="animate-in">
+                            <div className="monument" style={{ fontSize: 13, color: '#FFF469', letterSpacing: '0.15em', marginBottom: 16 }}>TOOL 01</div>
+                            <h1 className="plaak" style={{ fontSize: 80, marginBottom: 16, textTransform: 'uppercase' }}>KNOW THYSELF</h1>
+                            <p style={{ fontSize: 18, color: '#ccc', marginBottom: 48 }}>The foundation of exceptional leadership</p>
+                            <button onClick={() => setStep(0.5)}
+                                style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 48px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s ease', minHeight: 44 }}
+                                onMouseOver={e => { e.target.style.background = '#FFF469'; }}
+                                onMouseOut={e => { e.target.style.background = '#fff'; }}
+                            >START</button>
+                            <div style={{ marginTop: 24 }}>
+                                <button onClick={clearCache}
+                                    style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', fontSize: 13, textDecoration: 'underline' }}
+                                >Clear Saved Data</button>
                             </div>
                         </div>
-                    )}
+                    </div>
+                );
+            }
 
-                    {/* Intro Screen */}
-                    {step === 0.5 && (
-                        <div className="bg-black text-white min-h-screen p-16">
-                            <div className="max-w-5xl mx-auto">
-                                <div className="border-l-4 border-white pl-8 mb-16 animate-in">
-                                    <p className="text-2xl italic text-gray-300">
-                                        "The journey to self-discovery is the greatest adventure of all. Only by knowing who you truly are can you chart the path to who you are meant to become."
-                                    </p>
-                                    <p className="monument text-sm mt-4 text-gray-500">[FAST TRACK PHILOSOPHY]</p>
-                                </div>
-                                
-                                <h1 className="plaak text-9xl mb-16 animate-in" style={{animationDelay: '0.1s'}}>BEFORE WE START</h1>
-                                
-                                <div className="mb-12 animate-in" style={{animationDelay: '0.1s'}}>
-                                    <h2 className="plaak text-6xl mb-6">PURPOSE</h2>
-                                    <p className="text-3xl leading-relaxed">
-                                        Know yourself or fail leading others. Four sections. Complete picture. Your dream, values, strengths, growth plan.
-                                    </p>
-                                    <p className="text-2xl text-gray-400 mt-4">
-                                        Complete alone. Share with team at Guru-led meeting.
-                                    </p>
-                                    <div className="mt-6 p-6 border-2 border-white/30" style={{background: 'rgba(255,244,105,0.08)'}}>
-                                        <p className="text-xl text-gray-300">
-                                            This is a personal reflection. Your answers remain private. The Guru receives only a team summary — never your individual responses.
+            // Intro Page (step 0.5)
+            if (step === 0.5) {
+                return (
+                    <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ maxWidth: 560, padding: '0 32px', color: '#fff' }} className="animate-in">
+                            {/* Individual Tool Badge */}
+                            <div style={{ display: 'inline-block', border: '1px solid #FFF469', padding: '6px 16px', marginBottom: 24 }}>
+                                <span className="monument" style={{ fontSize: 11, color: '#FFF469', letterSpacing: '0.15em', textTransform: 'uppercase' }}>INDIVIDUAL TOOL</span>
+                            </div>
+
+                            {/* Privacy Notice */}
+                            <div style={{ background: '#111', border: '1px solid #333', borderLeft: '4px solid #FFF469', padding: '20px 24px', marginBottom: 32 }}>
+                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                                    <span style={{ fontSize: 20, lineHeight: 1 }}>&#128274;</span>
+                                    <div>
+                                        <p style={{ fontSize: 16, fontWeight: 600, color: '#fff', marginBottom: 8 }}>Answer freely.</p>
+                                        <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.6 }}>
+                                            This is a personal reflection tool. Your guru will only see a <strong style={{ color: '#FFF469' }}>short summary</strong> of your answers — not the full details. Be honest with yourself. The more truthful you are, the more valuable this exercise becomes.
                                         </p>
                                     </div>
                                 </div>
+                            </div>
 
-                                <div className="mb-12 animate-in" style={{animationDelay: '0.2s'}}>
-                                    <h2 className="plaak text-6xl mb-6">MISTAKES TO AVOID</h2>
-                                    <ul className="text-2xl space-y-4">
-                                        <li className="flex items-start">
-                                            <span className="text-4xl mr-4">•</span>
-                                            <span>Being vague about your dream (specificity creates energy)</span>
-                                        </li>
-                                        <li className="flex items-start">
-                                            <span className="text-4xl mr-4">•</span>
-                                            <span>Choosing trendy values instead of genuine ones</span>
-                                        </li>
-                                        <li className="flex items-start">
-                                            <span className="text-4xl mr-4">•</span>
-                                            <span>Focusing on weaknesses instead of strengths</span>
-                                        </li>
-                                        <li className="flex items-start">
-                                            <span className="text-4xl mr-4">•</span>
-                                            <span>Setting vague goals without deadlines</span>
-                                        </li>
-                                        <li className="flex items-start">
-                                            <span className="text-4xl mr-4">•</span>
-                                            <span>Rushing through without honest reflection</span>
-                                        </li>
-                                    </ul>
-                                </div>
-
-                                <div className="mb-16 animate-in" style={{animationDelay: '0.3s'}}>
-                                    <h2 className="plaak text-6xl mb-8">THE JOURNEY</h2>
-                                    <div className="grid grid-cols-4 gap-8 text-center">
-                                        <div className="border-2 border-white p-8">
-                                            <div className="text-9xl plaak mb-4">01</div>
-                                            <p className="text-2xl font-bold mb-2">Dream Launcher</p>
-                                            <p className="text-xl text-gray-400">80th birthday vision</p>
-                                        </div>
-                                        <div className="border-2 border-white p-8">
-                                            <div className="text-9xl plaak mb-4">02</div>
-                                            <p className="text-2xl font-bold mb-2">Strengths Amplifier</p>
-                                            <p className="text-xl text-gray-400">Map your energy</p>
-                                        </div>
-                                        <div className="border-2 border-white p-8">
-                                            <div className="text-9xl plaak mb-4">03</div>
-                                            <p className="text-2xl font-bold mb-2">Values Compass</p>
-                                            <p className="text-xl text-gray-400">Align behavior</p>
-                                        </div>
-                                        <div className="border-2 border-white p-8">
-                                            <div className="text-9xl plaak mb-4">04</div>
-                                            <p className="text-2xl font-bold mb-2">Growth Blueprint</p>
-                                            <p className="text-xl text-gray-400">Execute plan</p>
+                            {/* Tool overview */}
+                            <h2 className="plaak" style={{ fontSize: 32, marginBottom: 12 }}>WHAT YOU'LL DO</h2>
+                            <div style={{ marginBottom: 32 }}>
+                                {[
+                                    { num: '01', label: 'Dream Launcher', desc: 'Envision your 80th birthday and find your reason to get up every morning' },
+                                    { num: '02', label: 'Strengths Amplifier', desc: 'Map your activities, strengths, and what to do more or less of' },
+                                    { num: '03', label: 'Values Compass', desc: 'Discover your 5 core values and how well you live by them' },
+                                    { num: '04', label: 'Growth Blueprint', desc: 'Set goals with actions and deadlines to become your best self' }
+                                ].map((s, i) => (
+                                    <div key={i} style={{ display: 'flex', gap: 16, padding: '12px 0', borderBottom: i < 3 ? '1px solid #222' : 'none' }}>
+                                        <span className="monument" style={{ fontSize: 12, color: '#FFF469', minWidth: 24 }}>{s.num}</span>
+                                        <div>
+                                            <div style={{ fontSize: 15, fontWeight: 600, color: '#fff', marginBottom: 2 }}>{s.label}</div>
+                                            <div style={{ fontSize: 13, color: '#888' }}>{s.desc}</div>
                                         </div>
                                     </div>
-                                </div>
-
-                                <button
-                                    className="btn-primary w-full text-3xl py-8 plaak animate-in"
-                                    style={{animationDelay: '0.4s'}}
-                                    onClick={() => setStep(1)}
-                                >
-                                    LET'S START →
-                                </button>
+                                ))}
                             </div>
+
+                            <p style={{ fontSize: 13, color: '#666', marginBottom: 32 }}>~22 minutes to complete</p>
+
+                            <button onClick={() => setStep(1)}
+                                style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 48px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s ease', width: '100%', minHeight: 44 }}
+                                onMouseOver={e => { e.target.style.background = '#FFF469'; }}
+                                onMouseOut={e => { e.target.style.background = '#fff'; }}
+                            >BEGIN</button>
                         </div>
-                    )}
+                    </div>
+                );
+            }
 
-                    {/* Header (for steps 1-4, not celebration screens) */}
-                    {step >= 1 && step < 5 && step !== 1.5 && step !== 2.5 && step !== 3.5 && step !== 4.5 && (
-                        <>
-                            <header className="border-b-2 border-black py-6 px-8 no-print">
-                                <h1 className="plaak text-3xl">KNOW THYSELF</h1>
-                                <p className="text-sm mt-2 text-gray-600">Individual and Company Identity Module</p>
-                            </header>
-
-                            {/* Progress Indicator */}
-                            <div className="border-b border-gray-200 py-6 px-8 no-print">
-                                <div className="flex items-center justify-between max-w-4xl">
-                                    <div className="flex items-center gap-2">
-                                        <div className={`progress-dot ${step >= 1 ? 'active' : ''} ${step > 1 ? 'completed' : ''}`}></div>
-                                        <span className={`text-sm ${step === 1 ? 'font-bold' : ''}`}>Dream</span>
-                                    </div>
-                                    <div className="flex-1 h-0.5 bg-gray-200 mx-4">
-                                        <div className={`h-full bg-black transition-all ${step > 1 ? 'w-full' : 'w-0'}`}></div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className={`progress-dot ${step >= 2 ? 'active' : ''} ${step > 2 ? 'completed' : ''}`}></div>
-                                        <span className={`text-sm ${step === 2 ? 'font-bold' : ''}`}>Strengths</span>
-                                    </div>
-                                    <div className="flex-1 h-0.5 bg-gray-200 mx-4">
-                                        <div className={`h-full bg-black transition-all ${step > 2 ? 'w-full' : 'w-0'}`}></div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className={`progress-dot ${step >= 3 ? 'active' : ''} ${step > 3 ? 'completed' : ''}`}></div>
-                                        <span className={`text-sm ${step === 3 ? 'font-bold' : ''}`}>Values</span>
-                                    </div>
-                                    <div className="flex-1 h-0.5 bg-gray-200 mx-4">
-                                        <div className={`h-full bg-black transition-all ${step > 3 ? 'w-full' : 'w-0'}`}></div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className={`progress-dot ${step >= 4 ? 'active' : ''}`}></div>
-                                        <span className={`text-sm ${step === 4 ? 'font-bold' : ''}`}>Growth</span>
-                                    </div>
-                                </div>
+            // Transition Screens (step X.5)
+            if ([1.5, 2.5, 3.5, 4.5].includes(step)) {
+                const completedStep = Math.floor(step);
+                const nextStep = completedStep + 1;
+                const t = TRANSITION_CONTENT[completedStep];
+                return (
+                    <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ maxWidth: 640, padding: '0 32px', textAlign: 'center', color: '#fff' }} className="animate-in">
+                            <div className="monument" style={{ fontSize: 12, color: '#FFF469', letterSpacing: '0.1em', marginBottom: 16 }}>
+                                STEP {completedStep} OF 4 COMPLETE
                             </div>
-                        </>
-                    )}
+                            <h1 className="plaak" style={{ fontSize: 48, marginBottom: 12 }}>{t.title}</h1>
+                            <p style={{ fontSize: 16, color: '#ccc', marginBottom: 48 }}>{t.text}</p>
 
-                    {/* Step 1: Dream Launcher */}
-                    {step === 1 && <><DependencyContext deps={deps} /><Step1
-                        formData={formData}
-                        updateFormData={updateFormData}
-                        validationErrors={validationErrors}
-                        subStep={subStep}
-                        nextSubStep={nextSubStep}
-                        prevSubStep={prevSubStep}
-                    /></>}
+                            <div style={{ background: '#111', border: '1px solid #333', borderLeft: '4px solid #FFF469', padding: '20px 24px', marginBottom: 24, textAlign: 'left' }}>
+                                <span className="monument" style={{ fontSize: 10, color: '#FFF469', display: 'block', marginBottom: 8 }}>BRUTAL TRUTH</span>
+                                <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7 }}>{t.brutalTruth}</p>
+                            </div>
 
-                    {/* Celebration 1 */}
-                    {step === 1.5 && <CelebrationScreen 
-                        title="DREAM DEFINED"
-                        progress="25"
-                        onContinue={() => setStep(2)}
-                    />}
+                            <div style={{ background: '#111', border: '1px solid #333', borderLeft: '4px solid #666', padding: '20px 24px', marginBottom: 48, textAlign: 'left' }}>
+                                <span className="monument" style={{ fontSize: 10, color: '#999', display: 'block', marginBottom: 8 }}>PEER PROOF</span>
+                                <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7, fontStyle: 'italic' }}>{t.peerProof}</p>
+                            </div>
 
-                    {/* Step 2: Strengths Amplifier */}
-                    {step === 2 && <Step2 
-                        formData={formData}
-                        updateFormData={updateFormData}
-                        updateObjectInArray={updateObjectInArray}
-                        subStep={subStep}
-                        nextSubStep={nextSubStep}
-                        prevSubStep={prevSubStep}
-                    />}
+                            <button
+                                onClick={() => completedStep === 4 ? setStep(999) : setStep(nextStep)}
+                                style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 48px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                                onMouseOver={e => { e.target.style.background = '#FFF469'; }}
+                                onMouseOut={e => { e.target.style.background = '#fff'; }}
+                            >
+                                {completedStep === 4 ? 'VIEW CANVAS' : `CONTINUE TO STEP ${nextStep}`}
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
 
-                    {/* Celebration 2 */}
-                    {step === 2.5 && <CelebrationScreen 
-                        title="STRENGTHS MAPPED"
-                        progress="50"
-                        onContinue={() => setStep(3)}
-                    />}
+            // Wizard Steps 1-4
+            if (step >= 1 && step <= 4) {
+                return (
+                    <div className="wizard-layout">
+                        <div className="wizard-main">
+                            <MobileStepBar currentStep={step} totalSteps={4} />
 
-                    {/* Step 3: Values Compass */}
-                    {step === 3 && <Step3 
-                        formData={formData}
-                        updateObjectInArray={updateObjectInArray}
-                        subStep={subStep}
-                        nextSubStep={nextSubStep}
-                        prevSubStep={prevSubStep}
-                    />}
+                            <div className="wizard-content animate-in">
+                                {/* Help Modal */}
+                                <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} content={getHelpContent()} />
 
-                    {/* Celebration 3 */}
-                    {step === 3.5 && <CelebrationScreen 
-                        title="VALUES ALIGNED"
-                        progress="75"
-                        onContinue={() => setStep(4)}
-                    />}
+                                {step === 1 && <><DependencyContext deps={deps} /><Step1
+                                    formData={formData}
+                                    updateFormData={updateFormData}
+                                    validationErrors={validationErrors}
+                                    subStep={subStep}
+                                    nextSubStep={nextSubStep}
+                                    prevSubStep={prevSubStep}
+                                /></>}
 
-                    {/* Step 4: Personal Growth Blueprint */}
-                    {step === 4 && <Step4 
-                        formData={formData}
-                        updateObjectInArray={updateObjectInArray}
-                        subStep={subStep}
-                        nextSubStep={nextSubStep}
-                        prevSubStep={prevSubStep}
-                    />}
+                                {step === 2 && <Step2
+                                    formData={formData}
+                                    updateFormData={updateFormData}
+                                    updateObjectInArray={updateObjectInArray}
+                                    subStep={subStep}
+                                    nextSubStep={nextSubStep}
+                                    prevSubStep={prevSubStep}
+                                />}
 
-                    {/* Celebration 4 */}
-                    {step === 4.5 && <CelebrationScreen 
-                        title="PLAN SET"
-                        progress="100"
-                        final={true}
-                        onContinue={() => setStep(999)}
-                    />}
+                                {step === 3 && <Step3
+                                    formData={formData}
+                                    updateObjectInArray={updateObjectInArray}
+                                    subStep={subStep}
+                                    nextSubStep={nextSubStep}
+                                    prevSubStep={prevSubStep}
+                                />}
 
-                    {/* Canvas View */}
-                    {step === 999 && <CanvasView 
-                        formData={formData}
-                        onBack={() => setStep(4)}
-                    />}
-                </div>
-            );
+                                {step === 4 && <Step4
+                                    formData={formData}
+                                    updateObjectInArray={updateObjectInArray}
+                                    subStep={subStep}
+                                    nextSubStep={nextSubStep}
+                                    prevSubStep={prevSubStep}
+                                />}
+                            </div>
+
+                            {/* Note: Steps use their own internal sub-step navigation, so ButtonFooter is not used here.
+                                The step functions handle their own Next/Back via nextSubStep/prevSubStep. */}
+                        </div>
+                        <WizardSidebar currentStep={step} formData={formData} onNavigate={(s) => { setSubStep(0); setStep(s); }} />
+                    </div>
+                );
+            }
+
+            // Canvas View
+            if (step === 999) {
+                return <CanvasView formData={formData} onBack={() => setStep(4)} />;
+            }
+
+            return null;
         }
 
         // SECTION 1: Dream Launcher - TYPEFORM STYLE
@@ -1107,7 +1218,7 @@
                             )}
                             
                             <textarea
-                                className="worksheet-input"
+                                className="ft-input"
                                 value={formData[currentQ.field] || ''}
                                 onChange={(e) => updateFormData(currentQ.field, e.target.value)}
                                 placeholder={currentQ.placeholder}
@@ -1196,7 +1307,7 @@
                             </ul>
                             
                             <textarea
-                                className={`worksheet-input ${validationErrors.birthdayStory ? 'error' : ''}`}
+                                className={`ft-input ${validationErrors.birthdayStory ? 'error' : ''}`}
                                 value={formData.birthdayStory}
                                 onChange={(e) => updateFormData('birthdayStory', e.target.value)}
                                 placeholder="Write your 80th birthday vision here... Be vivid. Be specific. Let yourself dream. This is the emotional anchor for everything that follows."
@@ -1241,7 +1352,7 @@
                                             Passion-driven work leads to 3x higher persistence through obstacles (Vallerand, 2012).
                                         </ScienceBookmarkIcon>
                                         <textarea
-                                            className="worksheet-input"
+                                            className="ft-input"
                                             value={formData.whatLove}
                                             onChange={(e) => updateFormData('whatLove', e.target.value)}
                                             rows="2"
@@ -1255,7 +1366,7 @@
                                             Gallup research shows people who use their strengths daily are 6x more likely to be engaged at work.
                                         </ScienceBookmarkIcon>
                                         <textarea
-                                            className="worksheet-input"
+                                            className="ft-input"
                                             value={formData.whatGoodAt}
                                             onChange={(e) => updateFormData('whatGoodAt', e.target.value)}
                                             rows="2"
@@ -1269,7 +1380,7 @@
                                             Purpose-driven professionals report 64% higher fulfillment and stay in roles 2x longer (McKinsey, 2021).
                                         </ScienceBookmarkIcon>
                                         <textarea
-                                            className="worksheet-input"
+                                            className="ft-input"
                                             value={formData.giveToWorld}
                                             onChange={(e) => updateFormData('giveToWorld', e.target.value)}
                                             rows="2"
@@ -1280,7 +1391,7 @@
                                     <div>
                                         <label className="block font-bold mb-2">What can you be paid for?</label>
                                         <textarea
-                                            className="worksheet-input"
+                                            className="ft-input"
                                             value={formData.paidFor}
                                             onChange={(e) => updateFormData('paidFor', e.target.value)}
                                             rows="2"
@@ -1291,7 +1402,7 @@
                                     <div>
                                         <label className="block font-bold mb-2">WHO/WHAT are you inspired by and WHY?</label>
                                         <textarea
-                                            className="worksheet-input"
+                                            className="ft-input"
                                             value={formData.inspired}
                                             onChange={(e) => updateFormData('inspired', e.target.value)}
                                             rows="2"
@@ -1302,7 +1413,7 @@
                                     <div>
                                         <label className="block font-bold mb-2">WHEN have you felt most passionate and alive?</label>
                                         <textarea
-                                            className="worksheet-input"
+                                            className="ft-input"
                                             value={formData.feltBest}
                                             onChange={(e) => updateFormData('feltBest', e.target.value)}
                                             rows="2"
@@ -1313,7 +1424,7 @@
                                     <div>
                                         <label className="block font-bold mb-2">WHAT do you like about yourself?</label>
                                         <textarea
-                                            className="worksheet-input"
+                                            className="ft-input"
                                             value={formData.likeAboutSelf}
                                             onChange={(e) => updateFormData('likeAboutSelf', e.target.value)}
                                             rows="2"
@@ -1324,7 +1435,7 @@
                                     <div>
                                         <label className="block font-bold mb-2">WHAT hardships have you overcome? WHAT mistakes have you learned from?</label>
                                         <textarea
-                                            className="worksheet-input"
+                                            className="ft-input"
                                             value={formData.hardships}
                                             onChange={(e) => updateFormData('hardships', e.target.value)}
                                             rows="2"
@@ -1339,7 +1450,7 @@
                                 <h3 className="plaak text-2xl mb-4">MY REASON TO GET UP IN THE MORNING</h3>
                                 <label className="block font-bold mb-3 text-lg">(My Dream)</label>
                                 <textarea
-                                    className={`worksheet-input ${validationErrors.dream ? 'error' : ''}`}
+                                    className={`ft-input ${validationErrors.dream ? 'error' : ''}`}
                                     value={formData.dream}
                                     onChange={(e) => updateFormData('dream', e.target.value)}
                                     placeholder="Synthesize your answers above into a clear, compelling dream that drives you every day. This is your North Star."
@@ -1437,14 +1548,14 @@
                                         <div key={i} className="flex gap-3">
                                             <input
                                                 type="text"
-                                                className="worksheet-input flex-1"
+                                                className="ft-input flex-1"
                                                 value={item.activity}
                                                 onChange={(e) => updateObjectInArray('activities', i, 'activity', e.target.value)}
                                                 placeholder={`Activity ${i + 1} (e.g., Strategic planning)`}
                                                 autoFocus={i === 0}
                                             />
                                             <select
-                                                className="worksheet-input w-24 text-center text-xl"
+                                                className="ft-input w-24 text-center text-xl"
                                                 value={item.energy}
                                                 onChange={(e) => updateObjectInArray('activities', i, 'energy', e.target.value)}
                                             >
@@ -1483,7 +1594,7 @@
                                         <div key={i} className="flex gap-3">
                                             <input
                                                 type="text"
-                                                className="worksheet-input flex-1"
+                                                className="ft-input flex-1"
                                                 value={item.strength}
                                                 onChange={(e) => updateObjectInArray('strengths', i, 'strength', e.target.value)}
                                                 placeholder={`Strength ${i + 1} (e.g., Strategic thinking)`}
@@ -1491,7 +1602,7 @@
                                             />
                                             <input
                                                 type="number"
-                                                className="worksheet-input w-24 text-center"
+                                                className="ft-input w-24 text-center"
                                                 value={item.fitPercent}
                                                 onChange={(e) => updateObjectInArray('strengths', i, 'fitPercent', e.target.value)}
                                                 placeholder="%"
@@ -1527,7 +1638,7 @@
                                     <div>
                                         <label className="block font-bold mb-2 text-xl">Do more of</label>
                                         <textarea
-                                            className="worksheet-input"
+                                            className="ft-input"
                                             value={formData.doMore}
                                             onChange={(e) => updateFormData('doMore', e.target.value)}
                                             rows="3"
@@ -1539,7 +1650,7 @@
                                     <div>
                                         <label className="block font-bold mb-2 text-xl">Do less of / Stop</label>
                                         <textarea
-                                            className="worksheet-input"
+                                            className="ft-input"
                                             value={formData.doLess}
                                             onChange={(e) => updateFormData('doLess', e.target.value)}
                                             rows="3"
@@ -1550,7 +1661,7 @@
                                     <div>
                                         <label className="block font-bold mb-2 text-xl">Start to</label>
                                         <textarea
-                                            className="worksheet-input"
+                                            className="ft-input"
                                             value={formData.startTo}
                                             onChange={(e) => updateFormData('startTo', e.target.value)}
                                             rows="3"
@@ -1647,13 +1758,13 @@
                                         <div key={i} className="flex gap-3">
                                             <input
                                                 type="text"
-                                                className="worksheet-input flex-1"
+                                                className="ft-input flex-1"
                                                 value={item.activity}
                                                 onChange={(e) => updateObjectInArray('activities', i, 'activity', e.target.value)}
                                                 placeholder={`Activity ${i + 1} (e.g., Strategic planning, Client meetings)`}
                                             />
                                             <select
-                                                className="worksheet-input w-24"
+                                                className="ft-input w-24"
                                                 value={item.energy}
                                                 onChange={(e) => updateObjectInArray('activities', i, 'energy', e.target.value)}
                                             >
@@ -1700,14 +1811,14 @@
                                         <div key={i} className="flex gap-3">
                                             <input
                                                 type="text"
-                                                className="worksheet-input flex-1"
+                                                className="ft-input flex-1"
                                                 value={item.strength}
                                                 onChange={(e) => updateObjectInArray('strengths', i, 'strength', e.target.value)}
                                                 placeholder={`Strength ${i + 1} (e.g., Strategic thinking, Problem solving)`}
                                             />
                                             <input
                                                 type="number"
-                                                className="worksheet-input w-24"
+                                                className="ft-input w-24"
                                                 value={item.fitPercent}
                                                 onChange={(e) => updateObjectInArray('strengths', i, 'fitPercent', e.target.value)}
                                                 placeholder="%"
@@ -1733,7 +1844,7 @@
                                 <div>
                                     <label className="block font-bold mb-2">Do more of</label>
                                     <textarea
-                                        className="worksheet-input"
+                                        className="ft-input"
                                         value={formData.doMore}
                                         onChange={(e) => updateFormData('doMore', e.target.value)}
                                         rows="2"
@@ -1744,7 +1855,7 @@
                                 <div>
                                     <label className="block font-bold mb-2">Do less of / Stop</label>
                                     <textarea
-                                        className="worksheet-input"
+                                        className="ft-input"
                                         value={formData.doLess}
                                         onChange={(e) => updateFormData('doLess', e.target.value)}
                                         rows="2"
@@ -1755,7 +1866,7 @@
                                 <div>
                                     <label className="block font-bold mb-2">Start to</label>
                                     <textarea
-                                        className="worksheet-input"
+                                        className="ft-input"
                                         value={formData.startTo}
                                         onChange={(e) => updateFormData('startTo', e.target.value)}
                                         rows="2"
@@ -1838,7 +1949,7 @@
                                     <label className="block font-bold mb-2 text-xl">Value</label>
                                     <input
                                         type="text"
-                                        className="worksheet-input text-xl"
+                                        className="ft-input text-xl"
                                         value={currentValue.value}
                                         onChange={(e) => updateObjectInArray('values', subStep, 'value', e.target.value)}
                                         placeholder="e.g., Integrity, Creativity, Growth"
@@ -1849,7 +1960,7 @@
                                 <div>
                                     <label className="block font-bold mb-2 text-xl">How do I live by this daily?</label>
                                     <textarea
-                                        className="worksheet-input"
+                                        className="ft-input"
                                         value={currentValue.howLive}
                                         onChange={(e) => updateObjectInArray('values', subStep, 'howLive', e.target.value)}
                                         rows="4"
@@ -1870,7 +1981,7 @@
                                         />
                                         <input
                                             type="number"
-                                            className="worksheet-input w-24 text-center text-xl"
+                                            className="ft-input w-24 text-center text-xl"
                                             value={currentValue.alignment}
                                             onChange={(e) => updateObjectInArray('values', subStep, 'alignment', e.target.value)}
                                             min="0"
@@ -1984,7 +2095,7 @@
                                                     <label className="block text-sm font-bold mb-2">Value {i + 1}</label>
                                                     <input
                                                         type="text"
-                                                        className="worksheet-input"
+                                                        className="ft-input"
                                                         value={item.value}
                                                         onChange={(e) => updateObjectInArray('values', i, 'value', e.target.value)}
                                                         placeholder="e.g., Integrity"
@@ -1993,7 +2104,7 @@
                                                 <div className="col-span-6">
                                                     <label className="block text-sm font-bold mb-2">How do I live by them daily</label>
                                                     <textarea
-                                                        className="worksheet-input"
+                                                        className="ft-input"
                                                         value={item.howLive}
                                                         onChange={(e) => updateObjectInArray('values', i, 'howLive', e.target.value)}
                                                         placeholder="Describe specific daily behaviors"
@@ -2004,7 +2115,7 @@
                                                     <label className="block text-sm font-bold mb-2">% Alignment</label>
                                                     <input
                                                         type="number"
-                                                        className="worksheet-input"
+                                                        className="ft-input"
                                                         value={item.alignment}
                                                         onChange={(e) => updateObjectInArray('values', i, 'alignment', e.target.value)}
                                                         placeholder="%"
@@ -2090,7 +2201,7 @@
                                 <div>
                                     <label className="block font-bold mb-2 text-xl">What is your goal?</label>
                                     <textarea
-                                        className="worksheet-input text-lg"
+                                        className="ft-input text-lg"
                                         value={currentGoal.goal}
                                         onChange={(e) => updateObjectInArray('goals', subStep, 'goal', e.target.value)}
                                         rows="3"
@@ -2102,7 +2213,7 @@
                                 <div>
                                     <label className="block font-bold mb-2 text-xl">How will you achieve it? (Action steps)</label>
                                     <textarea
-                                        className="worksheet-input"
+                                        className="ft-input"
                                         value={currentGoal.action}
                                         onChange={(e) => updateObjectInArray('goals', subStep, 'action', e.target.value)}
                                         rows="4"
@@ -2114,7 +2225,7 @@
                                     <label className="block font-bold mb-2 text-xl">By when? (Deadline)</label>
                                     <input
                                         type="date"
-                                        className="worksheet-input text-lg"
+                                        className="ft-input text-lg"
                                         value={currentGoal.byWhen}
                                         onChange={(e) => updateObjectInArray('goals', subStep, 'byWhen', e.target.value)}
                                         min={new Date().toISOString().split('T')[0]}
@@ -2228,7 +2339,7 @@
                                                 <tr key={i} className="border-t-2 border-black">
                                                     <td className="p-3 border-r-2 border-black align-top">
                                                         <textarea
-                                                            className="worksheet-input"
+                                                            className="ft-input"
                                                             value={goal.goal}
                                                             onChange={(e) => updateObjectInArray('goals', i, 'goal', e.target.value)}
                                                             placeholder="e.g., Improve leadership presence"
@@ -2237,7 +2348,7 @@
                                                     </td>
                                                     <td className="p-3 border-r-2 border-black align-top">
                                                         <textarea
-                                                            className="worksheet-input"
+                                                            className="ft-input"
                                                             value={goal.action}
                                                             onChange={(e) => updateObjectInArray('goals', i, 'action', e.target.value)}
                                                             placeholder="e.g., Join Toastmasters, practice weekly presentations"
@@ -2247,7 +2358,7 @@
                                                     <td className="p-3 align-top">
                                                         <input
                                                             type="date"
-                                                            className="worksheet-input"
+                                                            className="ft-input"
                                                             value={goal.byWhen}
                                                             onChange={(e) => updateObjectInArray('goals', i, 'byWhen', e.target.value)}
                                                             min={new Date().toISOString().split('T')[0]}
@@ -2326,7 +2437,23 @@
                         return;
                     }
 
+                    // Guru summary — only high-level insights, no personal reflections
+                    const guruSummary = {
+                        dream: formData.dream,
+                        top_strengths: formData.strengths.filter(s => s.strength?.trim()).map(s => s.strength).join(', '),
+                        core_values: formData.values.filter(v => v.value?.trim()).map(v => v.value).join(', '),
+                        avg_values_alignment: (() => {
+                            const filled = formData.values.filter(v => v.alignment);
+                            if (!filled.length) return null;
+                            return Math.round(filled.reduce((sum, v) => sum + Number(v.alignment), 0) / filled.length) + '%';
+                        })(),
+                        goals: formData.goals.filter(g => g.goal?.trim()).map(g => g.goal + (g.byWhen ? ' (by ' + g.byWhen + ')' : '')).join('; '),
+                        do_more_of: formData.doMore,
+                        do_less_of: formData.doLess
+                    };
+
                     const questionMappings = {
+                        // Full answers (private — only visible to user)
                         birthdayStory: formData.birthdayStory,
                         whatLove: formData.whatLove,
                         whatGoodAt: formData.whatGoodAt,
@@ -2349,7 +2476,9 @@
                         value_5: formData.values?.[4],
                         goal_1: formData.goals?.[0],
                         goal_2: formData.goals?.[1],
-                        goal_3: formData.goals?.[2]
+                        goal_3: formData.goals?.[2],
+                        // Guru-visible summary
+                        guru_summary: guruSummary
                     };
 
                     await window.AIChallenge.submitWithChallenge(userId, 'know-thyself', questionMappings, {
