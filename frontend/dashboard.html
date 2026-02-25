@@ -102,12 +102,16 @@
     }
 
     /* Scrollbar */
-    ::-webkit-scrollbar { width: 10px; background-color: var(--color-black); }
+    ::-webkit-scrollbar { width: 6px; background-color: var(--color-black); }
     ::-webkit-scrollbar-track { background: var(--color-black); }
-    ::-webkit-scrollbar-thumb { background: var(--color-grey); border-radius: 5px; }
+    ::-webkit-scrollbar-thumb { background: #333; border-radius: 0; }
     ::-webkit-scrollbar-thumb:hover { background: var(--color-yellow); }
 
     /* Animations */
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
@@ -469,7 +473,7 @@
 
     // ── Components ──
     const ProgressBar = memo(({ progress = 0, className = '' }) => (
-      <div className={`w-full bg-ft-dark h-2 rounded-full overflow-hidden ${className}`}>
+      <div className={`w-full bg-ft-dark h-1 overflow-hidden ${className}`} style={{ background: '#1a1a1a' }}>
         <div className="h-full bg-ft-yellow transition-all duration-300" style={{ width: `${Math.max(0, Math.min(100, progress))}%` }}></div>
       </div>
     ));
@@ -494,34 +498,64 @@
       const isLocked = tool.status === 'locked';
       const showProgress = tool.status === 'in_progress' && tool.progress != null;
       const isCompleted = tool.status === 'completed';
-      const borderClass = tool.status === 'in_progress' ? 'border-2 border-ft-yellow' : '';
+      const borderStyle = tool.status === 'in_progress'
+        ? { border: '2px solid #FFF469' }
+        : { border: '1px solid #1a1a1a' };
 
       return (
-        <div className={`bg-white text-black p-6 rounded-lg shadow-lg ${borderClass} ${isLocked ? 'opacity-60' : ''}`}>
-          <div className="mb-2">
-            <span className="text-xs uppercase text-gray-500" style={{fontFamily: 'var(--font-monument)'}}>Sprint {String(tool.sprint).padStart(2, '0')}</span>
+        <div style={{
+          background: '#0a0a0a',
+          color: '#fff',
+          padding: '24px',
+          opacity: isLocked ? 0.5 : 1,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 0,
+          ...borderStyle
+        }}>
+          <div style={{ marginBottom: 6 }}>
+            <span style={{ fontFamily: 'var(--font-monument)', fontSize: 10, color: '#555', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              Sprint {String(tool.sprint).padStart(2, '0')}
+            </span>
           </div>
-          <h3 className="text-xl mb-3" style={{fontFamily: 'var(--font-plaak)'}}>{tool.name}</h3>
-          <div className="mb-3">
+          <h3 style={{ fontFamily: 'var(--font-plaak)', fontSize: 20, textTransform: 'uppercase', marginBottom: 10, lineHeight: 1.2 }}>{tool.name}</h3>
+          <div style={{ marginBottom: 14 }}>
             <StatusBadge status={tool.status} />
           </div>
           {showProgress && (
-            <div className="mb-4">
+            <div style={{ marginBottom: 14 }}>
               <ProgressBar progress={tool.progress} />
-              <span className="text-xs text-gray-600 mt-1 block">{tool.progress}%</span>
+              <span style={{ fontFamily: 'var(--font-monument)', fontSize: 10, color: '#555', marginTop: 4, display: 'block' }}>{tool.progress}%</span>
             </div>
           )}
-          <div className="flex gap-2">
+          <div style={{ display: 'flex', gap: 8, marginTop: 'auto' }}>
             {isCompleted ? (
-              <button onClick={() => onViewSummary(tool)} className="px-6 py-2 rounded bg-ft-yellow text-black font-bold uppercase transition" style={{fontFamily: 'var(--font-monument)', fontSize: '0.75rem'}} onMouseEnter={(e) => e.target.style.backgroundColor = '#FFED7A'} onMouseLeave={(e) => e.target.style.backgroundColor = '#FFF469'}>
+              <button
+                onClick={() => onViewSummary(tool)}
+                style={{ padding: '9px 20px', background: '#FFF469', color: '#000', border: 'none', fontFamily: 'var(--font-monument)', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 'bold', cursor: 'pointer' }}
+                onMouseEnter={e => e.currentTarget.style.background = '#e8dd5c'}
+                onMouseLeave={e => e.currentTarget.style.background = '#FFF469'}
+              >
                 VIEW SUMMARY
               </button>
             ) : (
               <button
                 onClick={() => !isLocked && launchTool(tool)}
                 disabled={isLocked}
-                className={`px-6 py-2 rounded font-bold uppercase transition ${isLocked ? 'bg-gray-600 text-gray-400 cursor-not-allowed' : 'bg-black text-white hover:bg-gray-800 cursor-pointer'}`}
-                style={{fontFamily: 'var(--font-monument)', fontSize: '0.75rem'}}
+                style={{
+                  padding: '9px 20px',
+                  background: isLocked ? '#111' : '#fff',
+                  color: isLocked ? '#444' : '#000',
+                  border: isLocked ? '1px solid #222' : '1px solid #fff',
+                  fontFamily: 'var(--font-monument)',
+                  fontSize: 11,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  fontWeight: 'bold',
+                  cursor: isLocked ? 'not-allowed' : 'pointer',
+                }}
+                onMouseEnter={e => { if (!isLocked) { e.currentTarget.style.background = '#FFF469'; e.currentTarget.style.borderColor = '#FFF469'; }}}
+                onMouseLeave={e => { if (!isLocked) { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#fff'; }}}
               >
                 {tool.status === 'in_progress' ? 'CONTINUE' : 'LAUNCH'}
               </button>
@@ -529,8 +563,9 @@
             {isCompleted && (
               <button
                 onClick={() => launchTool(tool)}
-                className="px-6 py-2 rounded bg-gray-200 text-black font-bold uppercase transition hover:bg-gray-300"
-                style={{fontFamily: 'var(--font-monument)', fontSize: '0.75rem'}}
+                style={{ padding: '9px 20px', background: 'transparent', color: '#555', border: '1px solid #222', fontFamily: 'var(--font-monument)', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 'bold', cursor: 'pointer' }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = '#555'; e.currentTarget.style.color = '#888'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = '#222'; e.currentTarget.style.color = '#555'; }}
               >
                 REDO
               </button>
@@ -546,18 +581,25 @@
       const total = moduleTools.length;
 
       return (
-        <div className="mb-8">
-          <div onClick={onToggle} className="flex items-center justify-between cursor-pointer bg-gray-900 p-4 rounded-lg hover:bg-gray-800 transition">
+        <div style={{ marginBottom: 32 }}>
+          <div
+            onClick={onToggle}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', background: '#0a0a0a', padding: '18px 24px', border: '1px solid #1a1a1a', transition: 'border-color 0.15s' }}
+            onMouseEnter={e => e.currentTarget.style.borderColor = '#333'}
+            onMouseLeave={e => e.currentTarget.style.borderColor = '#1a1a1a'}
+          >
             <div>
-              <h2 className="text-2xl text-white mb-1" style={{fontFamily: 'var(--font-plaak)'}}>Module {module.id}: {module.name}</h2>
-              <span className="text-sm text-gray-400" style={{fontFamily: 'var(--font-monument)'}}>
-                {total === 1 ? `SPRINT ${module.sprints[0]}` : `SPRINTS ${module.sprints[0]}-${module.sprints[module.sprints.length-1]}`} &bull; {completed}/{total} COMPLETE
+              <h2 style={{ fontFamily: 'var(--font-plaak)', fontSize: 22, color: '#fff', textTransform: 'uppercase', marginBottom: 4 }}>
+                Module {module.id}: {module.name}
+              </h2>
+              <span style={{ fontFamily: 'var(--font-monument)', fontSize: 10, color: '#555', letterSpacing: '0.08em' }}>
+                {total === 1 ? `SPRINT ${module.sprints[0]}` : `SPRINTS ${module.sprints[0]}–${module.sprints[module.sprints.length-1]}`} &bull; {completed}/{total} COMPLETE
               </span>
             </div>
-            <span className="text-ft-yellow text-2xl select-none">{collapsed ? '+' : '\u2212'}</span>
+            <span style={{ fontFamily: 'var(--font-monument)', color: '#FFF469', fontSize: 22, userSelect: 'none', lineHeight: 1 }}>{collapsed ? '+' : '−'}</span>
           </div>
           {!collapsed && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3" style={{ gap: 1, marginTop: 1, background: '#1a1a1a' }}>
               {moduleTools.map(tool => <ToolCard key={tool.id} tool={tool} onViewSummary={onViewSummary} />)}
             </div>
           )}
@@ -576,68 +618,62 @@
 
     // Renders any value (string, array, object) in a human-readable way
     const ResponseValue = memo(({ value }) => {
+      const base = { fontFamily: 'var(--font-riforma)', fontSize: 14, lineHeight: '1.6', color: '#ccc' };
       if (value === null || value === undefined || value === '') {
-        return <p className="text-gray-400 italic">No response</p>;
+        return <p style={{ ...base, color: '#333', fontStyle: 'italic' }}>No response</p>;
       }
-      // Primitive string/number
       if (typeof value === 'string' || typeof value === 'number') {
-        return <p className="text-base">{String(value)}</p>;
+        return <p style={base}>{String(value)}</p>;
       }
-      // Boolean
       if (typeof value === 'boolean') {
-        return <p className="text-base">{value ? 'Yes' : 'No'}</p>;
+        return <p style={base}>{value ? 'Yes' : 'No'}</p>;
       }
-      // Array of strings
       if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'string') {
         return (
-          <ul className="list-disc list-inside space-y-1">
-            {value.map((item, i) => <li key={i} className="text-base">{item}</li>)}
+          <ul style={{ ...base, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {value.map((item, i) => <li key={i}>{item}</li>)}
           </ul>
         );
       }
-      // Array of objects
       if (Array.isArray(value)) {
         return (
-          <div className="space-y-3">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {value.map((item, i) => (
-              <div key={i} className="bg-gray-50 p-3 rounded border border-gray-100">
+              <div key={i} style={{ background: '#0a0a0a', padding: '10px 14px', border: '1px solid #1a1a1a' }}>
                 {typeof item === 'object' && item !== null ? (
                   Object.entries(item).filter(([,v]) => v !== '' && v !== null).map(([k, v]) => (
-                    <div key={k} className="mb-1 last:mb-0">
-                      <span className="text-xs text-gray-500 uppercase" style={{fontFamily: 'var(--font-monument)'}}>{formatKey(k)}: </span>
-                      <span className="text-sm">{typeof v === 'boolean' ? (v ? 'Yes' : 'No') : String(v)}</span>
+                    <div key={k} style={{ marginBottom: 3 }}>
+                      <span style={{ fontFamily: 'var(--font-monument)', fontSize: 10, color: '#444', textTransform: 'uppercase' }}>{formatKey(k)}: </span>
+                      <span style={{ ...base, fontSize: 13 }}>{typeof v === 'boolean' ? (v ? 'Yes' : 'No') : String(v)}</span>
                     </div>
                   ))
                 ) : (
-                  <p className="text-sm">{String(item)}</p>
+                  <span style={base}>{String(item)}</span>
                 )}
               </div>
             ))}
           </div>
         );
       }
-      // Plain object
       if (typeof value === 'object') {
         return (
-          <div className="bg-gray-50 p-3 rounded border border-gray-100">
+          <div style={{ background: '#0a0a0a', padding: '12px 16px', border: '1px solid #1a1a1a' }}>
             {Object.entries(value).filter(([,v]) => v !== '' && v !== null).map(([k, v]) => (
-              <div key={k} className="mb-2 last:mb-0">
-                <span className="text-xs text-gray-500 uppercase block" style={{fontFamily: 'var(--font-monument)'}}>{formatKey(k)}</span>
+              <div key={k} style={{ marginBottom: 8 }}>
+                <div style={{ fontFamily: 'var(--font-monument)', fontSize: 10, color: '#444', textTransform: 'uppercase', marginBottom: 2 }}>{formatKey(k)}</div>
                 {typeof v === 'boolean' ? (
-                  <span className="text-base">{v ? 'Yes' : 'No'}</span>
+                  <span style={base}>{v ? 'Yes' : 'No'}</span>
                 ) : Array.isArray(v) ? (
-                  <ul className="list-disc list-inside">
-                    {v.map((item, i) => <li key={i} className="text-sm">{String(item)}</li>)}
-                  </ul>
+                  <ul style={{ ...base, paddingLeft: 16 }}>{v.map((item, i) => <li key={i}>{String(item)}</li>)}</ul>
                 ) : (
-                  <span className="text-base">{String(v)}</span>
+                  <span style={base}>{String(v)}</span>
                 )}
               </div>
             ))}
           </div>
         );
       }
-      return <p className="text-base">{String(value)}</p>;
+      return <p style={base}>{String(value)}</p>;
     });
 
     const SummaryModal = memo(({ tool, userId, onClose }) => {
@@ -670,30 +706,49 @@
       });
 
       return (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4" onClick={onClose} role="dialog" aria-modal="true">
-          <div className="bg-white text-black rounded-lg max-w-4xl w-full max-h-[80vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center p-6 border-b">
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 24 }}
+          onClick={onClose}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            style={{ background: '#000', border: '1px solid #222', color: '#fff', maxWidth: 800, width: '100%', maxHeight: '85vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '24px 28px', borderBottom: '1px solid #1a1a1a', flexShrink: 0 }}>
               <div>
-                <h2 className="text-3xl" style={{fontFamily: 'var(--font-plaak)'}}>{tool.name}</h2>
-                <span className="text-sm text-gray-500" style={{fontFamily: 'var(--font-monument)'}}>SPRINT {String(tool.sprint).padStart(2, '0')}</span>
-                {tool.completedAt && (
-                  <span className="text-sm text-green-600 ml-4">Completed {new Date(tool.completedAt).toLocaleDateString()}</span>
-                )}
+                <h2 style={{ fontFamily: 'var(--font-plaak)', fontSize: 28, textTransform: 'uppercase', marginBottom: 6 }}>{tool.name}</h2>
+                <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                  <span style={{ fontFamily: 'var(--font-monument)', fontSize: 10, color: '#555', letterSpacing: '0.08em' }}>SPRINT {String(tool.sprint).padStart(2, '0')}</span>
+                  {tool.completedAt && (
+                    <span style={{ fontFamily: 'var(--font-monument)', fontSize: 10, color: '#FFF469', letterSpacing: '0.06em' }}>
+                      COMPLETED {new Date(tool.completedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).toUpperCase()}
+                    </span>
+                  )}
+                </div>
               </div>
-              <button onClick={onClose} className="text-3xl hover:text-gray-600">&times;</button>
+              <button
+                onClick={onClose}
+                style={{ background: 'none', border: '1px solid #222', color: '#fff', padding: '6px 14px', fontFamily: 'var(--font-monument)', fontSize: 11, letterSpacing: '0.08em', cursor: 'pointer', flexShrink: 0 }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = '#FFF469'}
+                onMouseLeave={e => e.currentTarget.style.borderColor = '#222'}
+              >✕</button>
             </div>
-            <div className="p-6">
-              {loading && <p className="text-gray-500">Loading submission...</p>}
-              {!loading && (!data || data.length === 0) && <p className="text-gray-500">No submission data found.</p>}
+            {/* Body */}
+            <div style={{ padding: '24px 28px', overflowY: 'auto', flex: 1 }}>
+              {loading && <p style={{ fontFamily: 'var(--font-riforma)', color: '#555', fontSize: 14 }}>Loading submission...</p>}
+              {!loading && (!data || data.length === 0) && <p style={{ fontFamily: 'var(--font-riforma)', color: '#555', fontSize: 14 }}>No submission data found.</p>}
               {!loading && data && data.length > 0 && (
-                <div className="space-y-6">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
                   {Object.entries(sections).map(([sectionName, items]) => (
                     <div key={sectionName}>
-                      <h3 className="text-lg font-bold mb-3 pb-2 border-b border-gray-200" style={{fontFamily: 'var(--font-plaak)'}}>{sectionName}</h3>
-                      <div className="space-y-3">
+                      <div style={{ fontFamily: 'var(--font-monument)', fontSize: 10, color: '#FFF469', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 16, paddingBottom: 10, borderBottom: '1px solid #1a1a1a' }}>{sectionName}</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                         {items.map((item, i) => (
                           <div key={i}>
-                            <p className="text-sm text-gray-500 mb-1">{item.question}</p>
+                            <p style={{ fontFamily: 'var(--font-monument)', fontSize: 10, color: '#444', marginBottom: 6, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{item.question}</p>
                             <ResponseValue value={item.data || item.answer} />
                           </div>
                         ))}
@@ -703,9 +758,20 @@
                 </div>
               )}
             </div>
-            <div className="p-6 border-t flex justify-end gap-3">
-              <button onClick={() => launchTool(tool)} className="px-6 py-2 bg-black text-white rounded hover:bg-gray-800 uppercase text-sm font-bold" style={{fontFamily: 'var(--font-monument)'}}>Relaunch Tool</button>
-              <button onClick={onClose} className="px-6 py-2 bg-gray-200 rounded hover:bg-gray-300 uppercase text-sm font-bold" style={{fontFamily: 'var(--font-monument)'}}>Close</button>
+            {/* Footer */}
+            <div style={{ padding: '18px 28px', borderTop: '1px solid #1a1a1a', display: 'flex', justifyContent: 'flex-end', gap: 10, flexShrink: 0 }}>
+              <button
+                onClick={() => launchTool(tool)}
+                style={{ padding: '10px 24px', background: '#fff', color: '#000', border: 'none', fontFamily: 'var(--font-monument)', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 'bold', cursor: 'pointer' }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#FFF469'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = '#fff'; }}
+              >Relaunch Tool</button>
+              <button
+                onClick={onClose}
+                style={{ padding: '10px 24px', background: 'transparent', color: '#555', border: '1px solid #222', fontFamily: 'var(--font-monument)', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 'bold', cursor: 'pointer' }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = '#555'; e.currentTarget.style.color = '#888'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = '#222'; e.currentTarget.style.color = '#555'; }}
+              >Close</button>
             </div>
           </div>
         </div>
@@ -1001,31 +1067,24 @@
     });
 
     const Header = memo(({ user, overallProgress, isGuru, onGuruClick }) => (
-      <header className="bg-black text-white p-6 border-b border-gray-800">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <img src="shared/images/FastTrack_F_White.png" alt="Fast Track" className="h-12" />
-          </div>
-          <div className="flex items-center gap-6">
+      <header style={{ background: '#000', color: '#fff', padding: '20px 24px', borderBottom: '1px solid #1a1a1a' }}>
+        <div className="max-w-7xl mx-auto" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <img src="shared/images/FastTrack_F_White.png" alt="Fast Track" style={{ height: 44 }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
             {isGuru && (
               <button
                 onClick={onGuruClick}
-                style={{
-                  background: '#FFF469', color: '#000', border: 'none',
-                  padding: '10px 24px', fontFamily: 'var(--font-monument)',
-                  fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase',
-                  cursor: 'pointer', fontWeight: 'bold', transition: 'background 0.15s',
-                }}
+                style={{ background: '#FFF469', color: '#000', border: 'none', padding: '10px 24px', fontFamily: 'var(--font-monument)', fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer', fontWeight: 'bold' }}
                 onMouseEnter={e => e.currentTarget.style.background = '#e8dd5c'}
                 onMouseLeave={e => e.currentTarget.style.background = '#FFF469'}
               >
                 GURU VIEW
               </button>
             )}
-            <div className="text-right">
-              <p className="text-sm" style={{fontFamily: 'var(--font-riforma)'}}>{user?.full_name || user?.email || 'User'}</p>
-              <div className="w-40">
-                <ProgressBar progress={overallProgress} className="mt-1" />
+            <div style={{ textAlign: 'right' }}>
+              <p style={{ fontFamily: 'var(--font-riforma)', fontSize: 14, color: '#B2B2B2', marginBottom: 6 }}>{user?.full_name || user?.email || 'User'}</p>
+              <div style={{ width: 140 }}>
+                <ProgressBar progress={overallProgress} />
               </div>
             </div>
           </div>
@@ -1034,11 +1093,11 @@
     ));
 
     const Hero = memo(({ completed, total, currentTool }) => (
-      <section className="bg-black text-white py-16 px-6">
+      <section style={{ background: '#000', color: '#fff', padding: '64px 24px', borderBottom: '1px solid #1a1a1a' }}>
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-5xl md:text-6xl mb-4" style={{fontFamily: 'var(--font-plaak)'}}>YOUR TRANSFORMATION JOURNEY</h1>
-          <p className="text-2xl text-gray-300 mb-2" style={{fontFamily: 'var(--font-riforma)'}}>{completed} of {total} tools complete</p>
-          {currentTool && <p className="text-lg text-ft-yellow" style={{fontFamily: 'var(--font-monument)'}}>CURRENT: SPRINT {String(currentTool.sprint).padStart(2, '0')} &mdash; {currentTool.name}</p>}
+          <h1 style={{ fontFamily: 'var(--font-plaak)', fontSize: 'clamp(2.5rem, 6vw, 4.5rem)', textTransform: 'uppercase', marginBottom: 16, lineHeight: 1.1 }}>YOUR TRANSFORMATION JOURNEY</h1>
+          <p style={{ fontFamily: 'var(--font-riforma)', fontSize: 20, color: '#B2B2B2', marginBottom: 10 }}>{completed} of {total} tools complete</p>
+          {currentTool && <p style={{ fontFamily: 'var(--font-monument)', fontSize: 12, color: '#FFF469', letterSpacing: '0.1em', textTransform: 'uppercase' }}>CURRENT: SPRINT {String(currentTool.sprint).padStart(2, '0')} — {currentTool.name}</p>}
         </div>
       </section>
     ));
@@ -1093,22 +1152,29 @@
         }
       };
 
+      const inputStyle = {
+        width: '100%', padding: '14px 16px', background: '#0a0a0a', border: '1px solid #222',
+        color: '#fff', fontSize: 16, fontFamily: 'var(--font-riforma)', outline: 'none', display: 'block',
+        boxSizing: 'border-box',
+      };
+
       return (
-        <div className="min-h-screen bg-black text-white flex items-center justify-center">
-          <div className="text-center max-w-md px-6 w-full">
-            <img src="shared/images/FastTrack_F_White.png" alt="Fast Track" className="h-16 mx-auto mb-8" />
-            <h1 className="text-4xl mb-4" style={{fontFamily: 'var(--font-plaak)'}}>YOUR JOURNEY STARTS HERE</h1>
-            <p className="text-lg text-gray-300 mb-8" style={{fontFamily: 'var(--font-riforma)'}}>
+        <div style={{ minHeight: '100vh', background: '#000', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 24px' }}>
+          <div style={{ textAlign: 'center', maxWidth: 420, width: '100%' }}>
+            <img src="shared/images/FastTrack_F_White.png" alt="Fast Track" style={{ height: 56, margin: '0 auto 40px' }} />
+            <h1 style={{ fontFamily: 'var(--font-plaak)', fontSize: 40, textTransform: 'uppercase', marginBottom: 16 }}>YOUR JOURNEY STARTS HERE</h1>
+            <p style={{ fontFamily: 'var(--font-riforma)', fontSize: 16, color: '#B2B2B2', marginBottom: 40, lineHeight: 1.6 }}>
               Enter your email to access your tools dashboard.
             </p>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Your name"
-                className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded text-white text-lg focus:border-yellow-300 focus:outline-none"
-                style={{fontFamily: 'var(--font-riforma)'}}
+                style={inputStyle}
+                onFocus={e => e.currentTarget.style.borderColor = '#FFF469'}
+                onBlur={e => e.currentTarget.style.borderColor = '#222'}
               />
               <input
                 type="email"
@@ -1116,15 +1182,22 @@
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Your email"
                 required
-                className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded text-white text-lg focus:border-yellow-300 focus:outline-none"
-                style={{fontFamily: 'var(--font-riforma)'}}
+                style={inputStyle}
+                onFocus={e => e.currentTarget.style.borderColor = '#FFF469'}
+                onBlur={e => e.currentTarget.style.borderColor = '#222'}
               />
-              {error && <p className="text-red-400 text-sm">{error}</p>}
+              {error && <p style={{ fontFamily: 'var(--font-monument)', fontSize: 11, color: '#ff5555', letterSpacing: '0.06em' }}>{error}</p>}
               <button
                 type="submit"
                 disabled={loading || !email.trim()}
-                className="w-full bg-ft-yellow text-black px-8 py-3 rounded font-bold uppercase hover:opacity-90 transition disabled:opacity-50"
-                style={{fontFamily: 'var(--font-monument)'}}
+                style={{
+                  width: '100%', padding: '14px', background: loading || !email.trim() ? '#333' : '#FFF469',
+                  color: '#000', border: 'none', fontFamily: 'var(--font-monument)', fontSize: 13,
+                  letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 'bold',
+                  cursor: loading || !email.trim() ? 'not-allowed' : 'pointer', marginTop: 8,
+                }}
+                onMouseEnter={e => { if (!loading && email.trim()) e.currentTarget.style.background = '#e8dd5c'; }}
+                onMouseLeave={e => { if (!loading && email.trim()) e.currentTarget.style.background = '#FFF469'; }}
               >
                 {loading ? 'Loading...' : 'Enter Dashboard'}
               </button>
@@ -1135,10 +1208,10 @@
     });
 
     const Footer = memo(() => (
-      <footer className="bg-black text-white py-8 px-6 border-t border-gray-800">
-        <div className="max-w-7xl mx-auto text-center">
-          <p className="text-3xl mb-2" style={{fontFamily: 'var(--font-plaak)'}}>NO GRIT. NO GROWTH.</p>
-          <p className="text-sm text-gray-400" style={{fontFamily: 'var(--font-riforma)'}}>&copy; {new Date().getFullYear()} Fast Track Ltd. All rights reserved.</p>
+      <footer style={{ background: '#000', color: '#fff', padding: '48px 24px', borderTop: '1px solid #1a1a1a' }}>
+        <div className="max-w-7xl mx-auto" style={{ textAlign: 'center' }}>
+          <p style={{ fontFamily: 'var(--font-plaak)', fontSize: 32, textTransform: 'uppercase', marginBottom: 12 }}>NO GRIT. NO GROWTH.</p>
+          <p style={{ fontFamily: 'var(--font-monument)', fontSize: 10, color: '#444', letterSpacing: '0.08em' }}>&copy; {new Date().getFullYear()} FAST TRACK LTD. ALL RIGHTS RESERVED.</p>
         </div>
       </footer>
     ));
@@ -1209,7 +1282,7 @@
         return (
           <div className="min-h-screen bg-black text-white flex items-center justify-center">
             <div className="text-center">
-              <div className="w-10 h-10 border-3 border-gray-700 border-t-yellow-300 rounded-full animate-spin mx-auto mb-4" style={{borderTopColor: '#FFF469'}}></div>
+              <div style={{ width: 32, height: 32, border: '2px solid #1a1a1a', borderTopColor: '#FFF469', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }}></div>
               <p className="text-xl" style={{fontFamily: 'var(--font-riforma)'}}>Loading your journey...</p>
             </div>
           </div>
@@ -1222,7 +1295,7 @@
         <div className="min-h-screen bg-black">
           <Header user={user} overallProgress={overallProgress} isGuru={isGuru} onGuruClick={() => setShowGuruPanel(true)} />
           <Hero completed={completedCount} total={TOOLS.length} currentTool={currentTool} />
-          <main className="max-w-7xl mx-auto px-6 py-12">
+          <main className="max-w-7xl mx-auto" style={{ padding: '48px 24px' }}>
             {MODULES.map(module => (
               <ModuleSection
                 key={module.id}
