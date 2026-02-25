@@ -1059,6 +1059,9 @@
             <ProgressIndicator currentStep={1} />
             <HelpButton onClick={() => setShowHelpModal(true)} />
 
+            <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
+              STEP 1 OF 4
+            </div>
             <div className="numbered-section mb-8 animate-in">01. TEAM MEMBERS</div>
 
             {/* Fast Track Insight */}
@@ -1181,6 +1184,7 @@
     // Step 2: FIT Analysis
     function Step2Page({ data, updateTeamMember, onNext, onBack, canProceed, setShowHelp, aiReviewing }) {
       const [showHelpModal, setShowHelpModal] = useState(false);
+      const [expandedMember, setExpandedMember] = useState(0);
 
       const RatingScale = ({ value, onChange, label }) => {
         return (
@@ -1213,6 +1217,9 @@
             <ProgressIndicator currentStep={2} />
             <HelpButton onClick={() => setShowHelpModal(true)} />
 
+            <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
+              STEP 2 OF 4
+            </div>
             <div className="numbered-section mb-8 animate-in">02. FIT ANALYSIS</div>
 
             {/* Fast Track Insight */}
@@ -1240,80 +1247,109 @@
               Rate each person on a 1-5 scale for Energy, Skill, Values, and Impact. Be honest, not kind. Add notes to explain your ratings with specific examples.
             </p>
 
-            <div className="space-y-8 mb-12">
+            <div className="mb-12">
               {(data.teamMembers || []).map((member, index) => (
-                <div key={member.id} className="border-4 border-gray-200 p-6 animate-in" style={{animationDelay: `${0.15 + index * 0.05}s`}}>
-                  <h4 className="riforma-bold text-3xl mb-6">
-                    {(member.name || 'Team Member').substring(0, 50)} - {(member.role || 'Role').substring(0, 50)}
-                  </h4>
+                <div key={member.id} className="mb-3 animate-in" style={{animationDelay: `${0.15 + index * 0.05}s`}}>
+                  {/* Accordion Header */}
+                  <button
+                    onClick={() => setExpandedMember(expandedMember === index ? null : index)}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      background: expandedMember === index ? '#000' : '#f9f9f9',
+                      color: expandedMember === index ? '#fff' : '#000',
+                      border: '1px solid #000',
+                      padding: '12px 16px',
+                      cursor: 'pointer',
+                      fontFamily: "'Monument', monospace",
+                      fontSize: 11,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.06em',
+                      fontWeight: 600
+                    }}
+                  >
+                    <span>{(member.name || `TEAM MEMBER ${index + 1}`).substring(0, 50)}</span>
+                    <span style={{ fontSize: 16 }}>{expandedMember === index ? '−' : '+'}</span>
+                  </button>
 
-                  {/* Energy */}
-                  <div className="bg-gray-50 border-2 border-gray-200 p-6 mb-6">
-                    <RatingScale
-                      label="ENERGY: Does this role energize them or drain them?"
-                      value={member.energyScore || 0}
-                      onChange={(score) => updateTeamMember(member.id, 'energyScore', score)}
-                    />
-                    <textarea
-                      value={member.energyNotes || ''}
-                      onChange={(e) => updateTeamMember(member.id, 'energyNotes', e.target.value)}
-                      placeholder="Notes: What evidence shows they're energized or drained? Do they light up or show fatigue?"
-                      className="w-full"
-                      rows={3}
-                    />
-                    <div className="char-counter">{(member.energyNotes || '').length}/500</div>
-                  </div>
+                  {/* Accordion Content */}
+                  {expandedMember === index && (
+                    <div className="border-4 border-gray-200 border-t-0 p-6">
+                      <h4 className="riforma-bold text-2xl mb-6">
+                        {(member.name || 'Team Member').substring(0, 50)} - {(member.role || 'Role').substring(0, 50)}
+                      </h4>
 
-                  {/* Skill */}
-                  <div className="bg-gray-50 border-2 border-gray-200 p-6 mb-6">
-                    <RatingScale
-                      label="SKILL: Do they have natural talents and learned skills for this role?"
-                      value={member.skillScore || 0}
-                      onChange={(score) => updateTeamMember(member.id, 'skillScore', score)}
-                    />
-                    <textarea
-                      value={member.skillNotes || ''}
-                      onChange={(e) => updateTeamMember(member.id, 'skillNotes', e.target.value)}
-                      placeholder="Notes: What skills do they excel at? Where do they struggle? Natural talent or learned competency?"
-                      className="w-full"
-                      rows={3}
-                    />
-                    <div className="char-counter">{(member.skillNotes || '').length}/500</div>
-                  </div>
+                      {/* Energy */}
+                      <div className="bg-gray-50 border-2 border-gray-200 p-6 mb-6">
+                        <RatingScale
+                          label="ENERGY: Does this role energize them or drain them?"
+                          value={member.energyScore || 0}
+                          onChange={(score) => updateTeamMember(member.id, 'energyScore', score)}
+                        />
+                        <textarea
+                          value={member.energyNotes || ''}
+                          onChange={(e) => updateTeamMember(member.id, 'energyNotes', e.target.value)}
+                          placeholder="Notes: What evidence shows they're energized or drained? Do they light up or show fatigue?"
+                          className="w-full"
+                          rows={3}
+                        />
+                        <div className="char-counter">{(member.energyNotes || '').length}/500</div>
+                      </div>
 
-                  {/* Values */}
-                  <div className="bg-purple-50 border-2 border-purple-200 p-6 mb-6">
-                    <RatingScale
-                      label="VALUES: Are their personal values aligned with company values?"
-                      value={member.valuesScore || 0}
-                      onChange={(score) => updateTeamMember(member.id, 'valuesScore', score)}
-                    />
-                    <textarea
-                      value={member.valuesNotes || ''}
-                      onChange={(e) => updateTeamMember(member.id, 'valuesNotes', e.target.value)}
-                      placeholder="Notes: How do they demonstrate company values? Any cultural misalignment?"
-                      className="w-full"
-                      rows={3}
-                    />
-                    <div className="char-counter">{(member.valuesNotes || '').length}/500</div>
-                  </div>
+                      {/* Skill */}
+                      <div className="bg-gray-50 border-2 border-gray-200 p-6 mb-6">
+                        <RatingScale
+                          label="SKILL: Do they have natural talents and learned skills for this role?"
+                          value={member.skillScore || 0}
+                          onChange={(score) => updateTeamMember(member.id, 'skillScore', score)}
+                        />
+                        <textarea
+                          value={member.skillNotes || ''}
+                          onChange={(e) => updateTeamMember(member.id, 'skillNotes', e.target.value)}
+                          placeholder="Notes: What skills do they excel at? Where do they struggle? Natural talent or learned competency?"
+                          className="w-full"
+                          rows={3}
+                        />
+                        <div className="char-counter">{(member.skillNotes || '').length}/500</div>
+                      </div>
 
-                  {/* Impact */}
-                  <div className="bg-orange-50 border-2 border-orange-200 p-6">
-                    <RatingScale
-                      label="IMPACT: Are they making significant, measurable contribution?"
-                      value={member.impactScore || 0}
-                      onChange={(score) => updateTeamMember(member.id, 'impactScore', score)}
-                    />
-                    <textarea
-                      value={member.impactNotes || ''}
-                      onChange={(e) => updateTeamMember(member.id, 'impactNotes', e.target.value)}
-                      placeholder="Notes: What measurable results have they delivered? How significant is their contribution?"
-                      className="w-full"
-                      rows={3}
-                    />
-                    <div className="char-counter">{(member.impactNotes || '').length}/500</div>
-                  </div>
+                      {/* Values */}
+                      <div className="bg-purple-50 border-2 border-purple-200 p-6 mb-6">
+                        <RatingScale
+                          label="VALUES: Are their personal values aligned with company values?"
+                          value={member.valuesScore || 0}
+                          onChange={(score) => updateTeamMember(member.id, 'valuesScore', score)}
+                        />
+                        <textarea
+                          value={member.valuesNotes || ''}
+                          onChange={(e) => updateTeamMember(member.id, 'valuesNotes', e.target.value)}
+                          placeholder="Notes: How do they demonstrate company values? Any cultural misalignment?"
+                          className="w-full"
+                          rows={3}
+                        />
+                        <div className="char-counter">{(member.valuesNotes || '').length}/500</div>
+                      </div>
+
+                      {/* Impact */}
+                      <div className="bg-orange-50 border-2 border-orange-200 p-6">
+                        <RatingScale
+                          label="IMPACT: Are they making significant, measurable contribution?"
+                          value={member.impactScore || 0}
+                          onChange={(score) => updateTeamMember(member.id, 'impactScore', score)}
+                        />
+                        <textarea
+                          value={member.impactNotes || ''}
+                          onChange={(e) => updateTeamMember(member.id, 'impactNotes', e.target.value)}
+                          placeholder="Notes: What measurable results have they delivered? How significant is their contribution?"
+                          className="w-full"
+                          rows={3}
+                        />
+                        <div className="char-counter">{(member.impactNotes || '').length}/500</div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -1347,6 +1383,9 @@
             <ProgressIndicator currentStep={3} />
             <HelpButton onClick={() => setShowHelpModal(true)} />
 
+            <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
+              STEP 3 OF 4
+            </div>
             <div className="numbered-section mb-8 animate-in">03. ABC CLASSIFICATION</div>
 
             {/* Fast Track Insight */}
@@ -1512,6 +1551,9 @@
             <ProgressIndicator currentStep={4} />
             <HelpButton onClick={() => setShowHelpModal(true)} />
 
+            <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
+              STEP 4 OF 4
+            </div>
             <div className="numbered-section mb-8 animate-in">04. ACTION PLANS</div>
 
             {/* Fast Track Insight */}
