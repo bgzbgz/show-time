@@ -839,76 +839,135 @@
         // STEP 1: YEAR 1 DATA
         // =========================================================================
         function FinancialDataStep({ yearLabel, pl, setPL, bs, setBS, wc, setWC, calc, bsCalc, wcCalc, labels, questionHelp, setQuestionHelp, prevWC }) {
+            const [openSection, setOpenSection] = useState('pl');
             const upPL = (k, v) => setPL(prev => ({ ...prev, [k]: v }));
             const upBS = (k, v) => setBS(prev => ({ ...prev, [k]: v }));
             const upWC = (k, v) => setWC(prev => ({ ...prev, [k]: v }));
 
+            const toggleSection = (section) => {
+                setOpenSection(openSection === section ? null : section);
+            };
+
+            const accordionHeaderStyle = {
+                width: '100%',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                background: '#f9f9f9',
+                border: '1px solid #e0e0e0',
+                borderLeft: '3px solid #000',
+                padding: '12px 16px',
+                cursor: 'pointer',
+                fontFamily: "'Monument', monospace",
+                fontSize: 11,
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                marginBottom: 0,
+                marginTop: 16
+            };
+
+            const accordionBodyStyle = {
+                border: '1px solid #e0e0e0',
+                borderTop: 'none',
+                padding: '16px',
+                marginBottom: 16
+            };
+
             return (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 0, marginBottom: 32 }}>
-                    {/* P&L */}
-                    <p className="section-label">PROFIT & LOSS — {yearLabel}</p>
-                    <div className="two-col">
-                        <NumField label="Revenue" value={pl.revenue} onChange={v => upPL('revenue', v)} placeholder="35000000" required />
-                        <NumField label={labels.cogs} value={pl.cogs} onChange={v => upPL('cogs', v)} placeholder="24500000" required />
-                        <NumField label={labels.directLabor} value={pl.directLabor} onChange={v => upPL('directLabor', v)} placeholder="3000000" />
-                        <NumField label="Management Labor" value={pl.managementLabor} onChange={v => upPL('managementLabor', v)} placeholder="2000000" />
-                        <NumField label="Overheads" value={pl.overheads} onChange={v => upPL('overheads', v)} placeholder="1750000" />
-                        <NumField label="Interest Expense" value={pl.interest} onChange={v => upPL('interest', v)} placeholder="1165000" />
-                        <NumField label="Tax Expense" value={pl.tax} onChange={v => upPL('tax', v)} placeholder="930000" />
-                    </div>
-                    <PLMetrics calc={calc} />
-
-                    {/* Balance Sheet */}
-                    <div className="section-divider">
-                        <p className="section-label">BALANCE SHEET — {yearLabel}</p>
-                    </div>
-                    <div className="two-col">
-                        <div>
-                            <p className="monument" style={{ fontSize: 10, color: '#999', marginBottom: 12 }}>ASSETS</p>
-                            <NumField label="Cash" value={bs.cash} onChange={v => upBS('cash', v)} placeholder="0" />
-                            <NumField label="Accounts Receivable" value={bs.ar} onChange={v => upBS('ar', v)} placeholder="6712000" required />
-                            <NumField label={labels.inventory} value={bs.inventory} onChange={v => upBS('inventory', v)} placeholder="10337000" />
-                            <NumField label="Other Current Assets" value={bs.otherCA} onChange={v => upBS('otherCA', v)} placeholder="0" />
-                            <NumField label="Fixed Assets (Net)" value={bs.fixedAssets} onChange={v => upBS('fixedAssets', v)} placeholder="8500000" />
-                            <NumField label="Other Assets" value={bs.otherAssets} onChange={v => upBS('otherAssets', v)} placeholder="0" />
+                    {/* P&L Accordion */}
+                    <button
+                        onClick={() => toggleSection('pl')}
+                        style={{
+                            ...accordionHeaderStyle,
+                            marginTop: 0
+                        }}
+                    >
+                        <span>PROFIT & LOSS — {yearLabel}</span>
+                        <span style={{ fontSize: 16 }}>{openSection === 'pl' ? '−' : '+'}</span>
+                    </button>
+                    {openSection === 'pl' && (
+                        <div style={accordionBodyStyle}>
+                            <div className="two-col">
+                                <NumField label="Revenue" value={pl.revenue} onChange={v => upPL('revenue', v)} placeholder="35000000" required />
+                                <NumField label={labels.cogs} value={pl.cogs} onChange={v => upPL('cogs', v)} placeholder="24500000" required />
+                                <NumField label={labels.directLabor} value={pl.directLabor} onChange={v => upPL('directLabor', v)} placeholder="3000000" />
+                                <NumField label="Management Labor" value={pl.managementLabor} onChange={v => upPL('managementLabor', v)} placeholder="2000000" />
+                                <NumField label="Overheads" value={pl.overheads} onChange={v => upPL('overheads', v)} placeholder="1750000" />
+                                <NumField label="Interest Expense" value={pl.interest} onChange={v => upPL('interest', v)} placeholder="1165000" />
+                                <NumField label="Tax Expense" value={pl.tax} onChange={v => upPL('tax', v)} placeholder="930000" />
+                            </div>
+                            <PLMetrics calc={calc} />
                         </div>
-                        <div>
-                            <p className="monument" style={{ fontSize: 10, color: '#999', marginBottom: 12 }}>LIABILITIES & EQUITY</p>
-                            <NumField label="Accounts Payable" value={bs.ap} onChange={v => upBS('ap', v)} placeholder="4029000" required />
-                            <NumField label="Short-term Debt" value={bs.stDebt} onChange={v => upBS('stDebt', v)} placeholder="5020000" />
-                            <NumField label="Other Current Liabilities" value={bs.otherCL} onChange={v => upBS('otherCL', v)} placeholder="0" />
-                            <NumField label="Long-term Debt" value={bs.ltDebt} onChange={v => upBS('ltDebt', v)} placeholder="9000000" />
-                            <NumField label="Other LT Liabilities" value={bs.otherLTL} onChange={v => upBS('otherLTL', v)} placeholder="0" />
-                            <NumField label="Capital" value={bs.capital} onChange={v => upBS('capital', v)} placeholder="2001000" />
-                            <NumField label="Retained Earnings" value={bs.retained} onChange={v => upBS('retained', v)} placeholder="5500000" />
-                        </div>
-                    </div>
-                    {bsCalc.totalAssets > 0 && (
-                        Math.abs(bsCalc.balanceCheck) < 1 ?
-                            <div className="balance-ok">Balance sheet balances. Assets: {fmt(bsCalc.totalAssets)} = Liabilities + Equity: {fmt(bsCalc.totalLE)}</div> :
-                            <div className="balance-err">Does not balance. Difference: {fmt(bsCalc.balanceCheck)} — Assets ({fmt(bsCalc.totalAssets)}) must equal L+E ({fmt(bsCalc.totalLE)})</div>
                     )}
 
-                    {/* Working Capital */}
-                    <div className="section-divider">
-                        <p className="section-label">WORKING CAPITAL — {yearLabel}</p>
-                    </div>
-                    <div className="two-col" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
-                        <NumField label="Days in A/R" value={wc.daysAR} onChange={v => upWC('daysAR', v)} placeholder="70" help="Days to collect from customers" />
-                        <NumField label="Days in A/P" value={wc.daysAP} onChange={v => upWC('daysAP', v)} placeholder="60" help="Days to pay suppliers" />
-                        <NumField label={labels.daysInv} value={wc.daysInv} onChange={v => upWC('daysInv', v)} placeholder="154" help="Days of stock on hand" />
-                    </div>
-                    {wcCalc.daysAR > 0 && (
-                        <div className="metrics-bar" style={{ gridTemplateColumns: '1fr' }}>
-                            <div className="metric-item">
-                                <div className="metric-label">Cash Conversion Cycle</div>
-                                <div className="metric-value" style={{ fontSize: 22 }}>{wcCalc.ccc.toFixed(0)} days <MetricBadge value={-wcCalc.ccc} good={-30} avg={-60} /></div>
-                                {prevWC && calculateWC(prevWC).daysAR > 0 && (
-                                    <div style={{ fontSize: 12, color: '#6B7280', marginTop: 4 }}>
-                                        Change from Year 1: {(wcCalc.ccc - calculateWC(prevWC).ccc > 0 ? '+' : '')}{(wcCalc.ccc - calculateWC(prevWC).ccc).toFixed(0)} days
-                                    </div>
-                                )}
+                    {/* Balance Sheet Accordion */}
+                    <button
+                        onClick={() => toggleSection('bs')}
+                        style={accordionHeaderStyle}
+                    >
+                        <span>BALANCE SHEET — {yearLabel}</span>
+                        <span style={{ fontSize: 16 }}>{openSection === 'bs' ? '−' : '+'}</span>
+                    </button>
+                    {openSection === 'bs' && (
+                        <div style={accordionBodyStyle}>
+                            <div className="two-col">
+                                <div>
+                                    <p className="monument" style={{ fontSize: 10, color: '#999', marginBottom: 12 }}>ASSETS</p>
+                                    <NumField label="Cash" value={bs.cash} onChange={v => upBS('cash', v)} placeholder="0" />
+                                    <NumField label="Accounts Receivable" value={bs.ar} onChange={v => upBS('ar', v)} placeholder="6712000" required />
+                                    <NumField label={labels.inventory} value={bs.inventory} onChange={v => upBS('inventory', v)} placeholder="10337000" />
+                                    <NumField label="Other Current Assets" value={bs.otherCA} onChange={v => upBS('otherCA', v)} placeholder="0" />
+                                    <NumField label="Fixed Assets (Net)" value={bs.fixedAssets} onChange={v => upBS('fixedAssets', v)} placeholder="8500000" />
+                                    <NumField label="Other Assets" value={bs.otherAssets} onChange={v => upBS('otherAssets', v)} placeholder="0" />
+                                </div>
+                                <div>
+                                    <p className="monument" style={{ fontSize: 10, color: '#999', marginBottom: 12 }}>LIABILITIES & EQUITY</p>
+                                    <NumField label="Accounts Payable" value={bs.ap} onChange={v => upBS('ap', v)} placeholder="4029000" required />
+                                    <NumField label="Short-term Debt" value={bs.stDebt} onChange={v => upBS('stDebt', v)} placeholder="5020000" />
+                                    <NumField label="Other Current Liabilities" value={bs.otherCL} onChange={v => upBS('otherCL', v)} placeholder="0" />
+                                    <NumField label="Long-term Debt" value={bs.ltDebt} onChange={v => upBS('ltDebt', v)} placeholder="9000000" />
+                                    <NumField label="Other LT Liabilities" value={bs.otherLTL} onChange={v => upBS('otherLTL', v)} placeholder="0" />
+                                    <NumField label="Capital" value={bs.capital} onChange={v => upBS('capital', v)} placeholder="2001000" />
+                                    <NumField label="Retained Earnings" value={bs.retained} onChange={v => upBS('retained', v)} placeholder="5500000" />
+                                </div>
                             </div>
+                            {bsCalc.totalAssets > 0 && (
+                                Math.abs(bsCalc.balanceCheck) < 1 ?
+                                    <div className="balance-ok">Balance sheet balances. Assets: {fmt(bsCalc.totalAssets)} = Liabilities + Equity: {fmt(bsCalc.totalLE)}</div> :
+                                    <div className="balance-err">Does not balance. Difference: {fmt(bsCalc.balanceCheck)} — Assets ({fmt(bsCalc.totalAssets)}) must equal L+E ({fmt(bsCalc.totalLE)})</div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Working Capital Accordion */}
+                    <button
+                        onClick={() => toggleSection('wc')}
+                        style={accordionHeaderStyle}
+                    >
+                        <span>WORKING CAPITAL — {yearLabel}</span>
+                        <span style={{ fontSize: 16 }}>{openSection === 'wc' ? '−' : '+'}</span>
+                    </button>
+                    {openSection === 'wc' && (
+                        <div style={accordionBodyStyle}>
+                            <div className="two-col" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
+                                <NumField label="Days in A/R" value={wc.daysAR} onChange={v => upWC('daysAR', v)} placeholder="70" help="Days to collect from customers" />
+                                <NumField label="Days in A/P" value={wc.daysAP} onChange={v => upWC('daysAP', v)} placeholder="60" help="Days to pay suppliers" />
+                                <NumField label={labels.daysInv} value={wc.daysInv} onChange={v => upWC('daysInv', v)} placeholder="154" help="Days of stock on hand" />
+                            </div>
+                            {wcCalc.daysAR > 0 && (
+                                <div className="metrics-bar" style={{ gridTemplateColumns: '1fr' }}>
+                                    <div className="metric-item">
+                                        <div className="metric-label">Cash Conversion Cycle</div>
+                                        <div className="metric-value" style={{ fontSize: 22 }}>{wcCalc.ccc.toFixed(0)} days <MetricBadge value={-wcCalc.ccc} good={-30} avg={-60} /></div>
+                                        {prevWC && calculateWC(prevWC).daysAR > 0 && (
+                                            <div style={{ fontSize: 12, color: '#6B7280', marginTop: 4 }}>
+                                                Change from Year 1: {(wcCalc.ccc - calculateWC(prevWC).ccc > 0 ? '+' : '')}{(wcCalc.ccc - calculateWC(prevWC).ccc).toFixed(0)} days
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
