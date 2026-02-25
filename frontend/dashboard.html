@@ -193,10 +193,12 @@
 
     // ── Auth: LearnWorlds URL params ──
     // LearnWorlds external link variables:
-    //   {{USER_ID}}, {{USER_NAME}}, {{USER_EMAIL}}, {{USER_TAGS}}, {{COURSE_ID}}, {{UNIT_ID}}
+    //   {{USER_ID}}, {{USER_NAME}}, {{USER_EMAIL}}, {{COURSE_ID}}, {{UNIT_ID}}
     // Dashboard URL in LearnWorlds (use exactly this format):
-    //   https://fasttracktools.up.railway.app/dashboard.html?user_id={{USER_ID}}&user_email={{USER_EMAIL}}&user_name={{USER_NAME}}&user_tags={{USER_TAGS}}
-    // Tag guru users in LearnWorlds with the tag "guru" — they will see the GURU VIEW button.
+    //   https://fasttracktools.up.railway.app/dashboard.html?user_id={{USER_ID}}&user_email={{USER_EMAIL}}&user_name={{USER_NAME}}
+    //
+    // Guru access: set role = 'guru' in the users table in Supabase.
+    // The GURU VIEW button appears automatically for any user with that role.
     async function identifyUser() {
       const params = new URLSearchParams(window.location.search);
 
@@ -205,24 +207,13 @@
         sessionStorage.setItem('ft_debug_params', window.location.search);
       }
 
-      // Support both LearnWorlds native param names (user_id, user_email, user_name)
-      // and legacy lw_ prefixed names for backwards compatibility
+      // Support both LearnWorlds native param names and legacy lw_ prefixed names
       const lwUserId = params.get('user_id') || params.get('lw_user_id');
       const lwEmail  = params.get('user_email') || params.get('lw_email');
       const lwName   = params.get('user_name') || params.get('lw_name');
-      const lwTags   = params.get('user_tags') || params.get('lw_tags') || '';
 
-      // Determine guru status — only trust it when coming directly from LearnWorlds URL
-      let isGuru = false;
       if (lwUserId || lwEmail) {
-        isGuru = lwTags.toLowerCase().split(',').map(t => t.trim()).includes('guru');
-        // Persist for this browser session (same tab refreshes still work)
-        if (isGuru) sessionStorage.setItem('ft_is_guru', '1');
-        else sessionStorage.removeItem('ft_is_guru');
         window.history.replaceState({}, document.title, window.location.pathname);
-      } else {
-        // No LW params — honour guru flag set earlier in this session
-        isGuru = sessionStorage.getItem('ft_is_guru') === '1';
       }
 
       // 1. Try LearnWorlds params from URL (auto-identify, no login needed)
@@ -231,7 +222,7 @@
         if (lwUserId) {
           const { data: existing } = await sb
             .from('users')
-            .select('id, full_name, email, learnworlds_user_id, organization_id, organization_name')
+            .select('id, full_name, email, learnworlds_user_id, organization_id, organization_name, role')
             .eq('learnworlds_user_id', lwUserId)
             .single();
 
@@ -243,7 +234,7 @@
             await sb.from('users').update(updates).eq('id', existing.id);
             if (updates.full_name) existing.full_name = updates.full_name;
             storeSession(existing);
-            return { user: existing, isGuru };
+            return { user: existing, isGuru: existing.role === 'guru' };
           }
         }
 
@@ -251,7 +242,7 @@
         if (lwEmail) {
           const { data: byEmail } = await sb
             .from('users')
-            .select('id, full_name, email, learnworlds_user_id, organization_id, organization_name')
+            .select('id, full_name, email, learnworlds_user_id, organization_id, organization_name, role')
             .eq('email', lwEmail.toLowerCase())
             .single();
 
@@ -263,7 +254,7 @@
             if (updates.learnworlds_user_id) byEmail.learnworlds_user_id = lwUserId;
             if (updates.full_name) byEmail.full_name = updates.full_name;
             storeSession(byEmail);
-            return { user: byEmail, isGuru };
+            return { user: byEmail, isGuru: byEmail.role === 'guru' };
           }
         }
 
@@ -278,30 +269,30 @@
             role: 'participant',
             last_login: new Date().toISOString()
           })
-          .select('id, full_name, email, learnworlds_user_id, organization_id, organization_name')
+          .select('id, full_name, email, learnworlds_user_id, organization_id, organization_name, role')
           .single();
 
         if (newUser) {
           storeSession(newUser);
-          return { user: newUser, isGuru };
+          return { user: newUser, isGuru: newUser.role === 'guru' };
         }
       }
 
       // 2. Try stored session (same browser tab)
       const stored = getStoredSession();
-      if (stored) return { user: stored, isGuru };
+      if (stored) return { user: stored, isGuru: stored.role === 'guru' };
 
       // 3. Try ft_user_id from localStorage (persists across tabs/sessions)
       const storedUserId = localStorage.getItem('ft_user_id');
       if (storedUserId) {
         const { data: storedUser } = await sb
           .from('users')
-          .select('id, full_name, email, learnworlds_user_id, organization_id, organization_name')
+          .select('id, full_name, email, learnworlds_user_id, organization_id, organization_name, role')
           .eq('id', storedUserId)
           .single();
         if (storedUser) {
           storeSession(storedUser);
-          return { user: storedUser, isGuru };
+          return { user: storedUser, isGuru: storedUser.role === 'guru' };
         }
       }
 
@@ -1102,8 +1093,6 @@
         }
       };
 
-      const debugParams = sessionStorage.getItem('ft_debug_params') || '(none — no URL params received from LearnWorlds)';
-
       return (
         <div className="min-h-screen bg-black text-white flex items-center justify-center">
           <div className="text-center max-w-md px-6 w-full">
@@ -1112,10 +1101,6 @@
             <p className="text-lg text-gray-300 mb-8" style={{fontFamily: 'var(--font-riforma)'}}>
               Enter your email to access your tools dashboard.
             </p>
-            <div style={{background:'#111', border:'1px solid #333', padding:'12px 16px', marginBottom:24, textAlign:'left'}}>
-              <div style={{fontFamily:'var(--font-monument)', fontSize:9, color:'#FFF469', letterSpacing:'0.1em', marginBottom:6}}>DEBUG — URL PARAMS RECEIVED</div>
-              <div style={{fontFamily:'monospace', fontSize:11, color:'#888', wordBreak:'break-all'}}>{debugParams}</div>
-            </div>
             <form onSubmit={handleSubmit} className="space-y-4">
               <input
                 type="text"
