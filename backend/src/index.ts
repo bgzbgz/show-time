@@ -53,10 +53,12 @@ import aiRoutes from './routes/ai.js';
 import guruRoutes from './routes/guru.js';
 import learnworldsRoutes from './routes/learnworlds.js';
 import webhookRoutes from './routes/webhooks.js';
+import toolSaveRoutes from './routes/toolsave.js';
 
 // Mount routes
 app.use('/api/auth', authRoutes);
 app.use('/api/tools', toolRoutes);
+app.use('/api/toolsave', toolSaveRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/data', dataRoutes);
 app.use('/api/ai', aiRoutes);

@@ -75,6 +75,7 @@ interface NormalizedPayload {
   userName: string;
   courseId: string;
   courseTitle: string;
+  userTags: string[];
 }
 
 function normalizePayload(body: unknown): NormalizedPayload | null {
@@ -82,24 +83,28 @@ function normalizePayload(body: unknown): NormalizedPayload | null {
   const std = StandardWebhookSchema.safeParse(body);
   if (std.success) {
     const { data } = std.data;
+    const rawUser = data.user as Record<string, unknown>;
     return {
       lwUserId: data.user.id,
       userEmail: data.user.email,
       userName: [data.user.first_name, data.user.last_name].filter(Boolean).join(' '),
       courseId: data.course.id,
       courseTitle: data.course.title || '',
+      userTags: Array.isArray(rawUser.tags) ? (rawUser.tags as string[]) : [],
     };
   }
 
   // Try automation webhook format
   const auto = AutomationWebhookSchema.safeParse(body);
   if (auto.success) {
+    const rawUser = auto.data.user as Record<string, unknown>;
     return {
       lwUserId: auto.data.user.id,
       userEmail: auto.data.user.email,
       userName: auto.data.user.username || '',
       courseId: auto.data.course.id,
       courseTitle: auto.data.course.title || '',
+      userTags: Array.isArray(rawUser.tags) ? (rawUser.tags as string[]) : [],
     };
   }
 
@@ -137,8 +142,8 @@ router.post(
         return res.status(200).json({ received: true, processed: false, reason: 'invalid_payload' });
       }
 
-      const { lwUserId, userEmail, userName, courseId, courseTitle } = payload;
-      console.log(`Processing: user=${userEmail}, course=${courseId}`);
+      const { lwUserId, userEmail, userName, courseId, courseTitle, userTags } = payload;
+      console.log(`Processing: user=${userEmail}, course=${courseId}, tags=${userTags.join(',')}`);
 
       // -----------------------------------------------------------------------
       // 3. Map course_id to tool_slug (from DB first, fallback to hardcoded)
@@ -173,6 +178,11 @@ router.post(
         await logWebhookEvent('courseCompleted', req.body, false, 'user_upsert_failed');
         return res.status(200).json({ received: true, processed: false, reason: 'user_error' });
       }
+
+      // -----------------------------------------------------------------------
+      // 4b. Auto-assign organization from email domain or LearnWorlds tags
+      // -----------------------------------------------------------------------
+      await assignOrganization(user.id, userEmail, userTags);
 
       // -----------------------------------------------------------------------
       // 5. Insert tool_completions row
@@ -275,6 +285,56 @@ async function upsertUserByEmail(
   }
 
   return newUser as UpsertedUser;
+}
+
+// =============================================================================
+// Helper: Assign Organization from Email Domain or LearnWorlds Tags
+// =============================================================================
+// Priority: 1) email domain match, 2) LearnWorlds tag match.
+// If a match is found, sets organization_id on the user record.
+
+async function assignOrganization(
+  userId: string,
+  email: string,
+  tags: string[]
+): Promise<void> {
+  const { data: orgs, error: orgError } = await supabase
+    .from('organizations')
+    .select('id, email_domain, learnworlds_tag');
+
+  if (orgError || !orgs || orgs.length === 0) {
+    return;
+  }
+
+  // 1) Try email domain match (most reliable)
+  const emailDomain = email.split('@')[1]?.toLowerCase();
+  let matchedOrg = emailDomain
+    ? orgs.find(org => org.email_domain && org.email_domain.toLowerCase() === emailDomain)
+    : undefined;
+
+  // 2) Fallback to LearnWorlds tag match
+  if (!matchedOrg && tags.length > 0) {
+    const lowerTags = tags.map(t => t.toLowerCase().trim());
+    matchedOrg = orgs.find(org =>
+      org.learnworlds_tag && lowerTags.includes(org.learnworlds_tag.toLowerCase())
+    );
+  }
+
+  if (!matchedOrg) {
+    return;
+  }
+
+  const { error: updateError } = await supabase
+    .from('users')
+    .update({ organization_id: matchedOrg.id })
+    .eq('id', userId);
+
+  if (updateError) {
+    console.error(`Failed to assign organization to user ${userId}:`, updateError);
+  } else {
+    const matchType = matchedOrg.email_domain?.toLowerCase() === emailDomain ? 'email' : 'tag';
+    console.log(`Assigned user ${userId} to org ${matchedOrg.id} (${matchType}: ${matchType === 'email' ? emailDomain : matchedOrg.learnworlds_tag})`);
+  }
 }
 
 // =============================================================================

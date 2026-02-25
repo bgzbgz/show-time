@@ -86,6 +86,16 @@ var AIChallenge = (function () {
             }
             modal.appendChild(body);
 
+            // Store feedback in localStorage
+            try {
+                localStorage.setItem('ai_last_feedback', JSON.stringify({
+                    type: 'challenges',
+                    encouragement: feedback.encouragement,
+                    challenges: feedback.challenges,
+                    timestamp: Date.now()
+                }));
+            } catch (e) { /* ignore */ }
+
             // Footer
             var footer = document.createElement('div');
             footer.style.cssText = 'padding:16px 28px 24px;border-top:1px solid #E0E0E0;display:flex;gap:12px;justify-content:flex-end';
@@ -128,15 +138,26 @@ var AIChallenge = (function () {
 
         var toast = document.createElement('div');
         toast.id = 'ai-approved-toast';
-        toast.style.cssText = 'position:fixed;top:24px;right:24px;z-index:10001;background:#000;color:#fff;padding:16px 24px;border:2px solid #FFF469;box-shadow:0 8px 24px rgba(0,0,0,0.3);animation:aicFadeIn 0.25s ease;max-width:380px';
+        toast.style.cssText = 'position:fixed;top:24px;right:24px;z-index:10001;background:#000;color:#fff;padding:16px 40px 16px 24px;border:2px solid #FFF469;box-shadow:0 8px 24px rgba(0,0,0,0.3);animation:aicFadeIn 0.25s ease;max-width:380px';
         toast.innerHTML = '<div style="display:flex;align-items:center;gap:10px">' +
             '<div style="width:24px;height:24px;background:#FFF469;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;color:#000;font-weight:bold;flex-shrink:0">\u2713</div>' +
             '<p style="font-family:Riforma,sans-serif;font-size:14px;margin:0;color:#fff">' + escapeHtml(message || 'Strong answers! Moving on.') + '</p>' +
-            '</div>';
+            '</div>' +
+            '<button onclick="this.parentNode.remove()" style="position:absolute;top:8px;right:8px;background:none;border:none;color:#fff;font-size:18px;cursor:pointer;padding:2px 6px;line-height:1;opacity:0.7">&times;</button>';
+        toast.style.position = 'fixed';
+
+        // Store approval in localStorage
+        try {
+            localStorage.setItem('ai_last_feedback', JSON.stringify({
+                type: 'approved',
+                message: message || 'Strong answers! Moving on.',
+                timestamp: Date.now()
+            }));
+        } catch (e) { /* ignore */ }
 
         injectStyle();
         document.body.appendChild(toast);
-        setTimeout(function () { if (toast.parentNode) toast.remove(); }, 3000);
+        setTimeout(function () { if (toast.parentNode) toast.remove(); }, 8000);
     }
 
     // Gate a step transition: review answers, block if challenges found.
@@ -221,12 +242,22 @@ var AIChallenge = (function () {
         return div.innerHTML;
     }
 
+    function getLastFeedback() {
+        try {
+            var raw = localStorage.getItem('ai_last_feedback');
+            return raw ? JSON.parse(raw) : null;
+        } catch (e) {
+            return null;
+        }
+    }
+
     return {
         review: review,
         showModal: showModal,
         showApproved: showApproved,
         reviewStep: reviewStep,
-        submitWithChallenge: submitWithChallenge
+        submitWithChallenge: submitWithChallenge,
+        getLastFeedback: getLastFeedback
     };
 })();
 

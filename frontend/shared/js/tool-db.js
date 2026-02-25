@@ -1,16 +1,12 @@
 /**
  * ToolDB — Shared database layer for all Fast Track tools.
- * Replaces the old per-sprint schema RPC calls with direct table queries
- * against the 3-table architecture: users, tool_questions, user_responses.
- *
- * Usage:
- *   <script src="../../shared/js/tool-db.js"></script>
- *   <script>
- *     ToolDB.init('woop');
- *   </script>
+ * Reads go direct to Supabase (anon key, SELECT only).
+ * Writes (identify, save, complete) go through the backend API (service_role).
  */
 const ToolDB = (function() {
     'use strict';
+
+    const API_BASE = 'https://backend-production-639c.up.railway.app';
 
     let toolSlug = null;
     let questionCache = {}; // { question_key: { id, question_type, reference_key } }
@@ -18,7 +14,6 @@ const ToolDB = (function() {
 
     /**
      * Initialize for a specific tool — fetches and caches question IDs.
-     * Can be called fire-and-forget; save/load will await readiness.
      */
     async function init(slug) {
         toolSlug = slug;
@@ -33,7 +28,6 @@ const ToolDB = (function() {
             return;
         }
 
-        // Auto-identify user from LearnWorlds URL params (sets localStorage ft_user_id)
         await identifyUser();
 
         const { data, error } = await client
@@ -58,21 +52,16 @@ const ToolDB = (function() {
         console.log(`[ToolDB] Initialized for "${slug}" — ${Object.keys(questionCache).length} questions cached`);
     }
 
-    /** Wait until init() completes. */
     async function whenReady() {
         if (initPromise) await initPromise;
     }
 
     /**
      * Save answers for multiple questions.
-     * @param {string} userId - UUID from ft_user_id in localStorage
-     * @param {Object} mappings - { question_key: value, ... }
-     *   String/number values → response_value. Objects/arrays → response_data (JSON).
+     * Routes through backend — service_role writes to user_responses.
      */
     async function save(userId, mappings) {
         await whenReady();
-        const client = window.supabaseClient;
-        if (!client) throw new Error('No supabaseClient');
         if (!userId) throw new Error('No userId');
 
         const rows = [];
@@ -85,7 +74,6 @@ const ToolDB = (function() {
             }
             const isComplex = (value !== null && typeof value === 'object');
             rows.push({
-                user_id: userId,
                 question_id: q.id,
                 response_value: isComplex ? null : String(value),
                 response_data: isComplex ? value : null
@@ -97,13 +85,16 @@ const ToolDB = (function() {
             return { saved: 0 };
         }
 
-        const { error } = await client
-            .from('user_responses')
-            .upsert(rows, { onConflict: 'user_id,question_id' });
+        const res = await fetch(`${API_BASE}/api/toolsave/save`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: userId, responses: rows })
+        });
 
-        if (error) {
-            console.error('[ToolDB] Save error:', error);
-            throw error;
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            console.error('[ToolDB] Save error:', err);
+            throw new Error(err.message || 'Save failed');
         }
 
         console.log(`[ToolDB] Saved ${rows.length} responses for tool "${toolSlug}"`);
@@ -112,7 +103,7 @@ const ToolDB = (function() {
 
     /**
      * Load all saved answers for a user on this tool.
-     * @returns {Object} { question_key: value, ... }
+     * Direct Supabase read (SELECT only — safe with anon key).
      */
     async function load(userId) {
         await whenReady();
@@ -133,7 +124,6 @@ const ToolDB = (function() {
             return {};
         }
 
-        // Build reverse map: question_id → question_key
         const idToKey = {};
         for (const [key, q] of Object.entries(questionCache)) {
             idToKey[q.id] = key;
@@ -153,135 +143,67 @@ const ToolDB = (function() {
 
     /**
      * Get a dependency value by reference_key (cross-tool).
-     * Used by DependencyInjection to pull values from other tools.
+     * Direct Supabase read (SELECT only — safe with anon key).
      */
     async function getDependency(userId, referenceKey) {
         const client = window.supabaseClient;
         if (!client || !userId || !referenceKey) return null;
 
-        // Find the question by reference_key
-        const { data: questions, error: qErr } = await client
+        const { data: questions } = await client
             .from('tool_questions')
             .select('id')
             .eq('reference_key', referenceKey)
             .limit(1);
 
-        if (qErr || !questions || questions.length === 0) {
-            return null;
-        }
+        if (!questions || questions.length === 0) return null;
 
-        const questionId = questions[0].id;
-
-        // Fetch the user's response
-        const { data: responses, error: rErr } = await client
+        const { data: responses } = await client
             .from('user_responses')
             .select('response_value, response_data')
             .eq('user_id', userId)
-            .eq('question_id', questionId)
+            .eq('question_id', questions[0].id)
             .limit(1);
 
-        if (rErr || !responses || responses.length === 0) {
-            return null;
-        }
+        if (!responses || responses.length === 0) return null;
 
         const row = responses[0];
         return row.response_data !== null ? row.response_data : row.response_value;
     }
 
     /**
-     * Ensure a user row exists in the users table.
-     */
-    async function ensureUser(userId, email) {
-        const client = window.supabaseClient;
-        if (!client || !userId) return;
-
-        const { data: existing } = await client
-            .from('users')
-            .select('id')
-            .eq('id', userId)
-            .limit(1);
-
-        if (existing && existing.length > 0) return;
-
-        const { error } = await client
-            .from('users')
-            .insert({ id: userId, email: email || 'unknown@fasttrack.local' });
-
-        if (error && !error.message?.includes('duplicate')) {
-            console.error('[ToolDB] ensureUser error:', error);
-        }
-    }
-
-    /**
      * Identify the current user from LearnWorlds URL params or localStorage.
-     * LearnWorlds passes ?lw_user_id={{USER_ID}}&lw_email={{USER_EMAIL}}&lw_name={{USER_NAME}}
-     * Returns the user UUID (for use as ft_user_id) or null.
+     * Uses backend for user creation/lookup (service_role).
      */
     async function identifyUser() {
-        const client = window.supabaseClient;
-        if (!client) return localStorage.getItem('ft_user_id') || null;
-
         const params = new URLSearchParams(window.location.search);
         const lwUserId = params.get('lw_user_id');
         const lwEmail = params.get('lw_email');
         const lwName = params.get('lw_name');
 
-        // Clean URL after extracting params (avoid leaking tokens in browser history)
+        // Clean URL after extracting params
         if (lwUserId || lwEmail) {
             window.history.replaceState({}, document.title, window.location.pathname);
         }
 
-        // 1. Try LearnWorlds params
+        // 1. LearnWorlds params — resolve via backend
         if (lwUserId || lwEmail) {
-            let user = null;
+            try {
+                const res = await fetch(`${API_BASE}/api/toolsave/identify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ lw_user_id: lwUserId, lw_email: lwEmail, lw_name: lwName })
+                });
 
-            // Look up by learnworlds_user_id
-            if (lwUserId) {
-                const { data } = await client
-                    .from('users')
-                    .select('id, full_name, email, learnworlds_user_id')
-                    .eq('learnworlds_user_id', lwUserId)
-                    .single();
-                user = data;
-            }
-
-            // Fall back to email lookup
-            if (!user && lwEmail) {
-                const { data } = await client
-                    .from('users')
-                    .select('id, full_name, email, learnworlds_user_id')
-                    .eq('email', lwEmail.toLowerCase())
-                    .single();
-                if (data) {
-                    // Backfill learnworlds_user_id if missing
-                    if (lwUserId && !data.learnworlds_user_id) {
-                        await client.from('users').update({ learnworlds_user_id: lwUserId }).eq('id', data.id);
+                if (res.ok) {
+                    const { data } = await res.json();
+                    if (data?.user_id) {
+                        localStorage.setItem('ft_user_id', data.user_id);
+                        console.log(`[ToolDB] Identified user via backend: ${data.user_id}`);
+                        return data.user_id;
                     }
-                    user = data;
                 }
-            }
-
-            // Create new user if not found
-            if (!user) {
-                const email = lwEmail ? lwEmail.toLowerCase() : `${lwUserId}@learnworlds.user`;
-                const { data: newUser } = await client
-                    .from('users')
-                    .insert({
-                        email,
-                        learnworlds_user_id: lwUserId || null,
-                        full_name: lwName || (lwEmail ? lwEmail.split('@')[0] : 'Fast Track User'),
-                        role: 'participant',
-                        last_login: new Date().toISOString()
-                    })
-                    .select('id')
-                    .single();
-                user = newUser;
-            }
-
-            if (user) {
-                localStorage.setItem('ft_user_id', user.id);
-                console.log(`[ToolDB] Identified user from LearnWorlds: ${user.id}`);
-                return user.id;
+            } catch (err) {
+                console.error('[ToolDB] identify error:', err);
             }
         }
 
@@ -289,7 +211,7 @@ const ToolDB = (function() {
         const storedId = localStorage.getItem('ft_user_id');
         if (storedId) return storedId;
 
-        // 3. Dev mode: use known dev user with real data
+        // 3. Dev mode
         if (new URLSearchParams(window.location.search).has('dev')) {
             const devUserId = '7ac90e0a-0a2f-4e63-82a9-5e0d7b939c88';
             localStorage.setItem('ft_user_id', devUserId);
@@ -301,30 +223,39 @@ const ToolDB = (function() {
     }
 
     /**
-     * Mark a tool as completed for a user.
-     * Upserts into tool_completions — safe to call multiple times.
+     * Ensure a user row exists. No-op — handled by identifyUser() via backend.
+     * Kept for API compatibility.
      */
-    async function markComplete(userId) {
-        const client = window.supabaseClient;
-        if (!client || !userId || !toolSlug) return;
-
-        const { error } = await client
-            .from('tool_completions')
-            .upsert(
-                { user_id: userId, tool_slug: toolSlug },
-                { onConflict: 'user_id,tool_slug' }
-            );
-
-        if (error) {
-            console.error('[ToolDB] markComplete error:', error);
-        } else {
-            console.log(`[ToolDB] Marked "${toolSlug}" complete for user ${userId}`);
-        }
+    async function ensureUser(userId, email) {
+        // User creation now happens via /api/toolsave/identify
+        console.log('[ToolDB] ensureUser: handled by identifyUser via backend');
     }
 
     /**
-     * Get the cached question metadata.
+     * Mark a tool as completed for a user.
+     * Routes through backend — service_role writes to tool_completions.
      */
+    async function markComplete(userId) {
+        if (!userId || !toolSlug) return;
+
+        try {
+            const res = await fetch(`${API_BASE}/api/toolsave/complete`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: userId, tool_slug: toolSlug })
+            });
+
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                console.error('[ToolDB] markComplete error:', err);
+            } else {
+                console.log(`[ToolDB] Marked "${toolSlug}" complete for user ${userId}`);
+            }
+        } catch (err) {
+            console.error('[ToolDB] markComplete network error:', err);
+        }
+    }
+
     function getQuestionCache() {
         return questionCache;
     }

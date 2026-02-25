@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FT Admin Panel</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    @font-face { font-family: 'Plaak'; src: url('../shared/fonts/Plaak3Trial-43-Bold.woff2') format('woff2'); font-weight: bold; font-display: swap; }
+    @font-face { font-family: 'Riforma'; src: url('../shared/fonts/RiformaLL-Regular.woff2') format('woff2'); font-weight: normal; font-display: swap; }
+    @font-face { font-family: 'Monument'; src: url('../shared/fonts/MonumentGrotesk-Mono.woff2') format('woff2'); font-display: swap; }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Riforma', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #000;
+      color: #fff;
+      -webkit-font-smoothing: antialiased;
+      overflow: hidden;
+      height: 100vh;
+    }
+
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+    ::-webkit-scrollbar-thumb:hover { background: #444; }
+
+    input, button { font-family: 'Riforma', -apple-system, sans-serif; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useCallback, useMemo } = React;
+
+    const SUPABASE_URL = 'https://lutzzfaedkbsmbobmrzx.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1dHp6ZmFlZGtic21ib2Jtcnp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MDA0MDQsImV4cCI6MjA4NjM3NjQwNH0.o2gJba85vDl4NLS-C8Mq3OudWKxet-b0IqO9kazqb8U';
+    const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // ─── Helpers ───────────────────────────────────────────────────────────────
+
+    function timeAgo(dateStr) {
+      if (!dateStr) return '—';
+      const diff = Date.now() - new Date(dateStr).getTime();
+      const mins = Math.floor(diff / 60000);
+      const hrs = Math.floor(mins / 60);
+      const days = Math.floor(hrs / 24);
+      if (mins < 1) return 'just now';
+      if (mins < 60) return `${mins}m ago`;
+      if (hrs < 24) return `${hrs}h ago`;
+      if (days < 7) return `${days}d ago`;
+      return new Date(dateStr).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
+    function fmtDate(dateStr) {
+      if (!dateStr) return '—';
+      return new Date(dateStr).toLocaleString('en-GB', {
+        day: '2-digit', month: 'short', year: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      });
+    }
+
+    function fmtDuration(ms) {
+      if (!ms || ms < 0) return null;
+      const mins = Math.floor(ms / 60000);
+      const hrs = Math.floor(mins / 60);
+      if (hrs > 0) return `${hrs}h ${mins % 60}m`;
+      if (mins > 0) return `${mins}m`;
+      return '<1m';
+    }
+
+    function actionColor(action) {
+      if (action === 'revised') return '#44ff88';
+      if (action === 'submitted_anyway') return '#ff8844';
+      if (action === 'no_challenges') return '#888';
+      return '#555';
+    }
+
+    // ─── Shared styles ─────────────────────────────────────────────────────────
+
+    const S = {
+      viewTitle: {
+        fontFamily: 'Plaak, sans-serif', fontSize: 22,
+        marginBottom: 24, color: '#fff', letterSpacing: '0.02em'
+      },
+      sectionLabel: {
+        fontSize: 10, letterSpacing: '0.12em', color: '#555',
+        textTransform: 'uppercase', marginBottom: 10
+      },
+      th: {
+        padding: '10px 14px', textAlign: 'left', fontSize: 10,
+        color: '#555', fontWeight: 'normal', letterSpacing: '0.08em',
+        textTransform: 'uppercase', whiteSpace: 'nowrap'
+      },
+      td: { padding: '10px 14px', fontSize: 13, color: '#ccc' },
+      card: { background: '#111', border: '1px solid #1f1f1f' },
+      input: {
+        background: '#111', border: '1px solid #2a2a2a', color: '#fff',
+        fontSize: 14, padding: '12px 14px', outline: 'none', width: '100%'
+      }
+    };
+
+    // ─── Loading ───────────────────────────────────────────────────────────────
+
+    function LoadingState() {
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 240, color: '#444' }}>
+          <span style={{ fontFamily: 'Monument, monospace', fontSize: 12, letterSpacing: '0.1em' }}>LOADING...</span>
+        </div>
+      );
+    }
+
+    // ─── Login Screen ──────────────────────────────────────────────────────────
+
+    function LoginScreen({ onLogin, error }) {
+      const [email, setEmail] = useState('');
+      const [password, setPassword] = useState('');
+      const [loading, setLoading] = useState(false);
+      const [localError, setLocalError] = useState('');
+
+      async function handleSubmit(e) {
+        e.preventDefault();
+        setLoading(true);
+        setLocalError('');
+        try {
+          await onLogin(email, password);
+        } catch (err) {
+          setLocalError(err.message || 'Login failed');
+          setLoading(false);
+        }
+      }
+
+      return (
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          height: '100vh', background: '#000'
+        }}>
+          <div style={{ width: 360 }}>
+            <div style={{ marginBottom: 44 }}>
+              <div style={{
+                fontFamily: 'Plaak, sans-serif', fontSize: 30,
+                color: '#FFF469', letterSpacing: '0.08em'
+              }}>
+                FT ADMIN
+              </div>
+              <div style={{ color: '#444', fontSize: 13, marginTop: 6, letterSpacing: '0.04em' }}>
+                Internal access only
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmit}>
+              <div style={{ marginBottom: 12 }}>
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  required
+                  style={S.input}
+                />
+              </div>
+              <div style={{ marginBottom: 20 }}>
+                <input
+                  type="password"
+                  placeholder="Password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  required
+                  style={S.input}
+                />
+              </div>
+
+              {(localError || error) && (
+                <div style={{ color: '#ff5555', fontSize: 13, marginBottom: 16 }}>
+                  {localError || error}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                style={{
+                  width: '100%', padding: '14px', background: loading ? '#aaa900' : '#FFF469',
+                  color: '#000', border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
+                  fontSize: 13, fontWeight: 700, letterSpacing: '0.1em',
+                  transition: 'background 0.15s'
+                }}
+              >
+                {loading ? 'SIGNING IN...' : 'SIGN IN'}
+              </button>
+            </form>
+          </div>
+        </div>
+      );
+    }
+
+    // ─── Stat Card ─────────────────────────────────────────────────────────────
+
+    function StatCard({ label, value, sub, accent }) {
+      return (
+        <div style={{
+          ...S.card, padding: '20px 22px', flex: '1 1 140px', minWidth: 130
+        }}>
+          <div style={{
+            fontFamily: 'Plaak, sans-serif', fontSize: 38,
+            color: accent ? '#FFF469' : '#fff', lineHeight: 1, marginBottom: 8
+          }}>
+            {value ?? '—'}
+          </div>
+          <div style={{ fontSize: 10, color: '#666', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+            {label}
+          </div>
+          {sub && <div style={{ fontSize: 11, color: '#444', marginTop: 4 }}>{sub}</div>}
+        </div>
+      );
+    }
+
+    // ─── Overview View ─────────────────────────────────────────────────────────
+
+    function OverviewView() {
+      const [stats, setStats] = useState(null);
+      const [feed, setFeed] = useState([]);
+      const [loading, setLoading] = useState(true);
+
+      useEffect(() => { loadData(); }, []);
+
+      async function loadData() {
+        setLoading(true);
+        try {
+          const since24h = new Date(Date.now() - 86400000).toISOString();
+
+          const [
+            { count: totalUsers },
+            { data: activeRows },
+            { count: totalCompletions },
+            { count: totalOrgs },
+            { count: aiToday },
+            { count: errorCount },
+            { data: feedRows }
+          ] = await Promise.all([
+            db.from('users').select('*', { count: 'exact', head: true }),
+            db.from('user_responses').select('user_id').gt('updated_at', since24h),
+            db.from('tool_completions').select('*', { count: 'exact', head: true }),
+            db.from('organizations').select('*', { count: 'exact', head: true }),
+            db.from('ai_challenge_log').select('*', { count: 'exact', head: true }).gt('created_at', since24h),
+            db.from('webhook_events').select('*', { count: 'exact', head: true }).not('error_message', 'is', null),
+            db.from('user_responses')
+              .select('updated_at, user_id, users(full_name, organization_name), tool_questions(tool_slug)')
+              .order('updated_at', { ascending: false })
+              .limit(20)
+          ]);
+
+          const activeUsers = activeRows ? new Set(activeRows.map(r => r.user_id)).size : 0;
+          setStats({ totalUsers, activeUsers, totalCompletions, totalOrgs, aiToday, errorCount });
+          setFeed(feedRows || []);
+        } catch (err) {
+          console.error('Overview load error:', err);
+        }
+        setLoading(false);
+      }
+
+      if (loading) return <LoadingState />;
+
+      return (
+        <div>
+          <h2 style={S.viewTitle}>Overview</h2>
+
+          <div style={{ display: 'flex', gap: 10, marginBottom: 36, flexWrap: 'wrap' }}>
+            <StatCard label="Total Users" value={stats?.totalUsers} />
+            <StatCard label="Active (24h)" value={stats?.activeUsers} accent />
+            <StatCard label="Completions" value={stats?.totalCompletions} />
+            <StatCard label="Companies" value={stats?.totalOrgs} />
+            <StatCard label="AI Challenges Today" value={stats?.aiToday} />
+            <StatCard
+              label="Webhook Errors"
+              value={stats?.errorCount}
+              sub={stats?.errorCount > 0 ? 'check Logs tab' : undefined}
+            />
+          </div>
+
+          <div style={{ ...S.sectionLabel }}>Recent Activity</div>
+          <div style={S.card}>
+            {feed.length === 0 && (
+              <div style={{ padding: 32, color: '#444', textAlign: 'center', fontSize: 13 }}>
+                No recent activity
+              </div>
+            )}
+            {feed.map((row, i) => {
+              const name = row.users?.full_name || 'Unknown';
+              const org = row.users?.organization_name;
+              const tool = row.tool_questions?.tool_slug || 'unknown tool';
+              return (
+                <div key={i} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '12px 16px',
+                  borderBottom: i < feed.length - 1 ? '1px solid #1a1a1a' : 'none'
+                }}>
+                  <div style={{ fontSize: 13 }}>
+                    <span style={{ color: '#FFF469' }}>{name}</span>
+                    {org && <span style={{ color: '#555' }}> ({org})</span>}
+                    <span style={{ color: '#666' }}> answered a question in </span>
+                    <span style={{ fontFamily: 'Monument, monospace', fontSize: 11, color: '#999' }}>{tool}</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#444', whiteSpace: 'nowrap', marginLeft: 20 }}>
+                    {timeAgo(row.updated_at)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    // ─── Companies View ────────────────────────────────────────────────────────
+
+    function CompaniesView({ onSelectUser }) {
+      const [orgs, setOrgs] = useState([]);
+      const [users, setUsers] = useState([]);
+      const [completions, setCompletions] = useState([]);
+      const [lastActivity, setLastActivity] = useState({});
+      const [expanded, setExpanded] = useState(null);
+      const [loading, setLoading] = useState(true);
+
+      useEffect(() => { loadData(); }, []);
+
+      async function loadData() {
+        setLoading(true);
+        try {
+          const [
+            { data: orgsData },
+            { data: usersData },
+            { data: compData },
+            { data: actData }
+          ] = await Promise.all([
+            db.from('organizations').select('*').order('name'),
+            db.from('users').select('id, full_name, email, organization_id, last_login, created_at').order('full_name'),
+            db.from('tool_completions').select('user_id, tool_slug, completed_at'),
+            db.from('user_responses').select('user_id, updated_at').order('updated_at', { ascending: false })
+          ]);
+
+          setOrgs(orgsData || []);
+          setUsers(usersData || []);
+          setCompletions(compData || []);
+
+          const la = {};
+          (actData || []).forEach(r => {
+            if (!la[r.user_id]) la[r.user_id] = r.updated_at;
+          });
+          setLastActivity(la);
+        } catch (err) {
+          console.error('Companies load error:', err);
+        }
+        setLoading(false);
+      }
+
+      if (loading) return <LoadingState />;
+
+      return (
+        <div>
+          <h2 style={S.viewTitle}>Companies</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {orgs.map(org => {
+              const members = users.filter(u => u.organization_id === org.id);
+              const memberIds = new Set(members.map(m => m.id));
+              const orgCompletions = completions.filter(c => memberIds.has(c.user_id));
+              const orgLastActivity = members
+                .map(m => lastActivity[m.id])
+                .filter(Boolean)
+                .sort()
+                .reverse()[0];
+              const isOpen = expanded === org.id;
+
+              return (
+                <div key={org.id} style={S.card}>
+                  <div
+                    onClick={() => setExpanded(isOpen ? null : org.id)}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '20px 24px', cursor: 'pointer',
+                      transition: 'background 0.1s'
+                    }}
+                  >
+                    <div>
+                      <div style={{
+                        fontFamily: 'Plaak, sans-serif', fontSize: 17,
+                        color: '#FFF469', letterSpacing: '0.03em'
+                      }}>
+                        {org.name}
+                      </div>
+                      <div style={{ fontSize: 12, color: '#555', marginTop: 5 }}>
+                        {members.length} member{members.length !== 1 ? 's' : ''}
+                        {' · '}
+                        {orgCompletions.length} completion{orgCompletions.length !== 1 ? 's' : ''}
+                        {orgLastActivity && ` · Last active ${timeAgo(orgLastActivity)}`}
+                      </div>
+                    </div>
+                    <div style={{ color: '#444', fontSize: 12 }}>{isOpen ? '▲' : '▼'}</div>
+                  </div>
+
+                  {isOpen && (
+                    <div style={{ borderTop: '1px solid #1a1a1a', overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <thead>
+                          <tr style={{ background: '#0d0d0d' }}>
+                            {['Name', 'Email', 'Tools Done', 'Last Active'].map(h => (
+                              <th key={h} style={S.th}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {members.length === 0 && (
+                            <tr>
+                              <td colSpan={4} style={{ ...S.td, color: '#444', textAlign: 'center', padding: 24 }}>
+                                No members
+                              </td>
+                            </tr>
+                          )}
+                          {members.map(member => {
+                            const done = completions.filter(c => c.user_id === member.id).length;
+                            return (
+                              <tr
+                                key={member.id}
+                                onClick={() => onSelectUser(member)}
+                                style={{ borderTop: '1px solid #1a1a1a', cursor: 'pointer' }}
+                                onMouseEnter={e => e.currentTarget.style.background = '#161600'}
+                                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                              >
+                                <td style={S.td}>
+                                  <span style={{ color: '#FFF469' }}>{member.full_name || '—'}</span>
+                                </td>
+                                <td style={{ ...S.td, color: '#777', fontSize: 12 }}>{member.email}</td>
+                                <td style={S.td}>{done}</td>
+                                <td style={{ ...S.td, color: '#555', fontSize: 12 }}>
+                                  {timeAgo(lastActivity[member.id])}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {orgs.length === 0 && (
+              <div style={{ color: '#444', textAlign: 'center', padding: 48, fontSize: 13 }}>
+                No companies found
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // ─── User Drawer ───────────────────────────────────────────────────────────
+
+    function UserDrawer({ user, completions, onClose }) {
+      const [responses, setResponses] = useState([]);
+      const [challenges, setChallenges] = useState([]);
+      const [loading, setLoading] = useState(true);
+
+      useEffect(() => { loadUserData(); }, [user.id]);
+
+      async function loadUserData() {
+        setLoading(true);
+        try {
+          const [{ data: respData }, { data: chalData }] = await Promise.all([
+            db.from('user_responses')
+              .select('id, response_value, response_data, created_at, updated_at, tool_questions(tool_slug, question_text, question_key)')
+              .eq('user_id', user.id)
+              .order('created_at', { ascending: true }),
+            db.from('ai_challenge_log')
+              .select('tool_slug, user_action, tokens_used, response_time_ms, created_at')
+              .eq('user_id', user.id)
+              .order('created_at', { ascending: false })
+              .limit(5)
+          ]);
+          setResponses(respData || []);
+          setChallenges(chalData || []);
+        } catch (err) {
+          console.error('User drawer error:', err);
+        }
+        setLoading(false);
+      }
+
+      const userCompletions = useMemo(() =>
+        completions
+          .filter(c => c.user_id === user.id)
+          .sort((a, b) => new Date(b.completed_at) - new Date(a.completed_at)),
+        [completions, user.id]
+      );
+
+      const toolTimeline = useMemo(() =>
+        userCompletions.map(c => {
+          const toolResps = responses.filter(r => r.tool_questions?.tool_slug === c.tool_slug);
+          const minStart = toolResps.reduce((min, r) => {
+            const t = new Date(r.created_at).getTime();
+            return t < min ? t : min;
+          }, Infinity);
+          const duration = minStart !== Infinity
+            ? new Date(c.completed_at).getTime() - minStart
+            : null;
+          return { ...c, duration };
+        }),
+        [userCompletions, responses]
+      );
+
+      const completedSlugs = useMemo(() =>
+        new Set(userCompletions.map(c => c.tool_slug)),
+        [userCompletions]
+      );
+
+      const inProgressSlugs = useMemo(() => {
+        const allSlugs = [...new Set(responses.map(r => r.tool_questions?.tool_slug).filter(Boolean))];
+        return allSlugs.filter(s => !completedSlugs.has(s));
+      }, [responses, completedSlugs]);
+
+      const latestToolAnswers = useMemo(() => {
+        if (!responses.length) return [];
+        const sorted = [...responses].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+        const latestSlug = sorted[0]?.tool_questions?.tool_slug;
+        if (!latestSlug) return [];
+        return responses.filter(r => r.tool_questions?.tool_slug === latestSlug);
+      }, [responses]);
+
+      const drawerSection = { ...S.sectionLabel, marginTop: 20, marginBottom: 8, paddingTop: 16, borderTop: '1px solid #1a1a1a' };
+
+      return (
+        <div style={{
+          width: 340, borderLeft: '1px solid #222', background: '#0a0a0a',
+          overflow: 'auto', maxHeight: 'calc(100vh - 52px)', flexShrink: 0,
+          display: 'flex', flexDirection: 'column'
+        }}>
+          {/* Header */}
+          <div style={{
+            padding: '18px 18px 14px', borderBottom: '1px solid #1a1a1a',
+            position: 'sticky', top: 0, background: '#0a0a0a', zIndex: 1
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontFamily: 'Plaak, sans-serif', fontSize: 16, color: '#FFF469', letterSpacing: '0.02em' }}>
+                  {user.full_name || 'Unknown'}
+                </div>
+                <div style={{ fontSize: 11, color: '#777', marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {user.email}
+                </div>
+                <div style={{ fontSize: 11, color: '#444', marginTop: 2 }}>
+                  {user.organization_name || 'No org'} · Joined {timeAgo(user.created_at)}
+                </div>
+              </div>
+              <button
+                onClick={onClose}
+                style={{ background: 'none', border: 'none', color: '#444', cursor: 'pointer', fontSize: 20, padding: '0 0 0 8px', lineHeight: 1, marginTop: -2 }}
+              >×</button>
+            </div>
+          </div>
+
+          {/* Body */}
+          <div style={{ padding: '8px 18px 24px', flex: 1 }}>
+            {loading ? (
+              <div style={{ color: '#444', textAlign: 'center', padding: 40, fontSize: 12 }}>Loading...</div>
+            ) : (
+              <>
+                {/* Completed Tools */}
+                <div style={{ ...drawerSection, borderTop: 'none', paddingTop: 12 }}>
+                  COMPLETED TOOLS ({toolTimeline.length})
+                </div>
+                {toolTimeline.length === 0 ? (
+                  <div style={{ fontSize: 12, color: '#444' }}>None yet</div>
+                ) : (
+                  toolTimeline.map((t, i) => (
+                    <div key={i} style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      padding: '7px 0', borderBottom: '1px solid #161616'
+                    }}>
+                      <div style={{ fontFamily: 'Monument, monospace', fontSize: 11, color: '#aaa' }}>
+                        {t.tool_slug}
+                      </div>
+                      <div style={{ textAlign: 'right', fontSize: 11, color: '#555' }}>
+                        <div>{fmtDate(t.completed_at)}</div>
+                        {fmtDuration(t.duration) && (
+                          <div style={{ color: '#3a3a3a' }}>{fmtDuration(t.duration)}</div>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+
+                {/* In Progress */}
+                {inProgressSlugs.length > 0 && (
+                  <>
+                    <div style={drawerSection}>IN PROGRESS</div>
+                    {inProgressSlugs.map(slug => {
+                      const answered = responses.filter(r => r.tool_questions?.tool_slug === slug).length;
+                      return (
+                        <div key={slug} style={{
+                          display: 'flex', justifyContent: 'space-between',
+                          padding: '7px 0', borderBottom: '1px solid #161616'
+                        }}>
+                          <div style={{ fontFamily: 'Monument, monospace', fontSize: 11, color: '#FFF469' }}>{slug}</div>
+                          <div style={{ fontSize: 12, color: '#666' }}>{answered} answered</div>
+                        </div>
+                      );
+                    })}
+                  </>
+                )}
+
+                {/* AI Challenges */}
+                {challenges.length > 0 && (
+                  <>
+                    <div style={drawerSection}>RECENT AI CHALLENGES</div>
+                    {challenges.map((c, i) => (
+                      <div key={i} style={{ padding: '7px 0', borderBottom: '1px solid #161616' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                          <span style={{ fontFamily: 'Monument, monospace', fontSize: 11, color: '#777' }}>
+                            {c.tool_slug}
+                          </span>
+                          <span style={{ fontSize: 11, color: '#444' }}>{timeAgo(c.created_at)}</span>
+                        </div>
+                        <div style={{ fontSize: 12, color: actionColor(c.user_action) }}>
+                          {c.user_action || '—'}
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )}
+
+                {/* Latest Tool Answers */}
+                {latestToolAnswers.length > 0 && (
+                  <>
+                    <div style={drawerSection}>
+                      LATEST ANSWERS —{' '}
+                      <span style={{ fontFamily: 'Monument, monospace', fontSize: 10 }}>
+                        {latestToolAnswers[0]?.tool_questions?.tool_slug}
+                      </span>
+                    </div>
+                    {latestToolAnswers.map((r, i) => (
+                      <div key={i} style={{ padding: '8px 0', borderBottom: '1px solid #161616' }}>
+                        <div style={{ fontSize: 11, color: '#555', marginBottom: 4 }}>
+                          {r.tool_questions?.question_text || r.tool_questions?.question_key || '—'}
+                        </div>
+                        <div style={{ fontSize: 12, color: '#bbb', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
+                          {r.response_value
+                            || (r.response_data
+                              ? JSON.stringify(r.response_data, null, 2)
+                              : <span style={{ color: '#444' }}>—</span>
+                            )
+                          }
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // ─── Users View ────────────────────────────────────────────────────────────
+
+    function UsersView({ selectedUser, onSelectUser }) {
+      const [users, setUsers] = useState([]);
+      const [completions, setCompletions] = useState([]);
+      const [currentTool, setCurrentTool] = useState({});
+      const [lastActivity, setLastActivity] = useState({});
+      const [search, setSearch] = useState('');
+      const [loading, setLoading] = useState(true);
+
+      useEffect(() => { loadData(); }, []);
+
+      async function loadData() {
+        setLoading(true);
+        try {
+          const [
+            { data: usersData },
+            { data: compData },
+            { data: actData }
+          ] = await Promise.all([
+            db.from('users').select('*').order('full_name'),
+            db.from('tool_completions').select('user_id, tool_slug, completed_at'),
+            db.from('user_responses')
+              .select('user_id, updated_at, tool_questions(tool_slug)')
+              .order('updated_at', { ascending: false })
+          ]);
+
+          setUsers(usersData || []);
+          setCompletions(compData || []);
+
+          const la = {}, ct = {};
+          (actData || []).forEach(r => {
+            if (!la[r.user_id]) la[r.user_id] = r.updated_at;
+            if (!ct[r.user_id]) ct[r.user_id] = r.tool_questions?.tool_slug || null;
+          });
+          setLastActivity(la);
+          setCurrentTool(ct);
+        } catch (err) {
+          console.error('Users load error:', err);
+        }
+        setLoading(false);
+      }
+
+      const filtered = useMemo(() => {
+        const q = search.toLowerCase().trim();
+        if (!q) return users;
+        return users.filter(u =>
+          (u.full_name || '').toLowerCase().includes(q) ||
+          (u.email || '').toLowerCase().includes(q) ||
+          (u.organization_name || '').toLowerCase().includes(q)
+        );
+      }, [users, search]);
+
+      if (loading) return <LoadingState />;
+
+      return (
+        <div style={{ display: 'flex', gap: 0, height: '100%', overflow: 'hidden' }}>
+          <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexShrink: 0 }}>
+              <h2 style={{ ...S.viewTitle, marginBottom: 0 }}>
+                Users <span style={{ fontSize: 14, color: '#444', fontFamily: 'Riforma, sans-serif', fontWeight: 'normal' }}>({filtered.length})</span>
+              </h2>
+              <input
+                type="text"
+                placeholder="Search name, email, company..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                style={{ ...S.input, width: 260, fontSize: 13, padding: '8px 12px' }}
+              />
+            </div>
+
+            <div style={{ ...S.card, overflow: 'auto', flex: 1 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead style={{ position: 'sticky', top: 0, background: '#111', zIndex: 1 }}>
+                  <tr style={{ background: '#0d0d0d', borderBottom: '1px solid #1f1f1f' }}>
+                    {['Name', 'Email', 'Company', 'Tools Done', 'Current Tool', 'Last Active'].map(h => (
+                      <th key={h} style={S.th}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.length === 0 && (
+                    <tr>
+                      <td colSpan={6} style={{ ...S.td, color: '#444', textAlign: 'center', padding: 40 }}>
+                        No users found
+                      </td>
+                    </tr>
+                  )}
+                  {filtered.map(user => {
+                    const done = completions.filter(c => c.user_id === user.id).length;
+                    const ct = currentTool[user.id];
+                    const la = lastActivity[user.id];
+                    const isSelected = selectedUser?.id === user.id;
+                    return (
+                      <tr
+                        key={user.id}
+                        onClick={() => onSelectUser(isSelected ? null : user)}
+                        style={{
+                          borderTop: '1px solid #1a1a1a', cursor: 'pointer',
+                          background: isSelected ? '#151500' : 'transparent',
+                          transition: 'background 0.1s'
+                        }}
+                        onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = '#0f0f00'; }}
+                        onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
+                      >
+                        <td style={S.td}>
+                          <span style={{ color: '#FFF469' }}>{user.full_name || '—'}</span>
+                        </td>
+                        <td style={{ ...S.td, color: '#777', fontSize: 12 }}>{user.email}</td>
+                        <td style={{ ...S.td, color: '#666', fontSize: 12 }}>{user.organization_name || '—'}</td>
+                        <td style={{ ...S.td, color: done > 0 ? '#ccc' : '#444' }}>{done}</td>
+                        <td style={{ ...S.td, fontFamily: ct ? 'Monument, monospace' : 'inherit', fontSize: ct ? 11 : 13, color: ct ? '#888' : '#333' }}>
+                          {ct || '—'}
+                        </td>
+                        <td style={{ ...S.td, color: '#555', fontSize: 12 }}>{timeAgo(la)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {selectedUser && (
+            <UserDrawer
+              user={selectedUser}
+              completions={completions}
+              onClose={() => onSelectUser(null)}
+            />
+          )}
+        </div>
+      );
+    }
+
+    // ─── Logs View ─────────────────────────────────────────────────────────────
+
+    function LogsView() {
+      const [tab, setTab] = useState('errors');
+      const [errors, setErrors] = useState([]);
+      const [challenges, setChallenges] = useState([]);
+      const [loading, setLoading] = useState(true);
+
+      useEffect(() => { loadData(); }, []);
+
+      async function loadData() {
+        setLoading(true);
+        try {
+          const [{ data: errData }, { data: chalData }] = await Promise.all([
+            db.from('webhook_events')
+              .select('source, event_type, error_message, payload, created_at')
+              .not('error_message', 'is', null)
+              .order('created_at', { ascending: false })
+              .limit(200),
+            db.from('ai_challenge_log')
+              .select('user_id, tool_slug, user_action, tokens_used, response_time_ms, created_at')
+              .order('created_at', { ascending: false })
+              .limit(200)
+          ]);
+          setErrors(errData || []);
+          setChallenges(chalData || []);
+        } catch (err) {
+          console.error('Logs load error:', err);
+        }
+        setLoading(false);
+      }
+
+      if (loading) return <LoadingState />;
+
+      const tabs = [
+        ['errors', `Errors (${errors.length})`],
+        ['challenges', `AI Challenges (${challenges.length})`]
+      ];
+
+      return (
+        <div>
+          <h2 style={S.viewTitle}>Logs</h2>
+
+          {/* Tab bar */}
+          <div style={{ display: 'flex', borderBottom: '1px solid #1f1f1f', marginBottom: 20 }}>
+            {tabs.map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setTab(key)}
+                style={{
+                  padding: '10px 20px', background: 'none', border: 'none',
+                  color: tab === key ? '#FFF469' : '#555',
+                  fontSize: 11, letterSpacing: '0.1em', cursor: 'pointer',
+                  borderBottom: tab === key ? '2px solid #FFF469' : '2px solid transparent',
+                  marginBottom: -1, textTransform: 'uppercase'
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {tab === 'errors' && (
+            <div style={{ ...S.card, overflow: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ background: '#0d0d0d' }}>
+                    {['Source', 'Event Type', 'Error', 'Time'].map(h => (
+                      <th key={h} style={S.th}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {errors.length === 0 && (
+                    <tr>
+                      <td colSpan={4} style={{ ...S.td, color: '#444', textAlign: 'center', padding: 40 }}>
+                        No errors — all good!
+                      </td>
+                    </tr>
+                  )}
+                  {errors.map((e, i) => (
+                    <tr key={i} style={{ borderTop: '1px solid #1a1a1a' }}>
+                      <td style={{ ...S.td, fontFamily: 'Monument, monospace', fontSize: 11, color: '#888' }}>
+                        {e.source}
+                      </td>
+                      <td style={{ ...S.td, fontSize: 12 }}>{e.event_type}</td>
+                      <td style={{ ...S.td, color: '#ff5555', fontSize: 12, maxWidth: 360, wordBreak: 'break-word' }}>
+                        {e.error_message}
+                      </td>
+                      <td style={{ ...S.td, color: '#555', fontSize: 12, whiteSpace: 'nowrap' }}>
+                        {fmtDate(e.created_at)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {tab === 'challenges' && (
+            <div style={{ ...S.card, overflow: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ background: '#0d0d0d' }}>
+                    {['User', 'Tool', 'Action', 'Tokens', 'Resp. ms', 'Time'].map(h => (
+                      <th key={h} style={S.th}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {challenges.length === 0 && (
+                    <tr>
+                      <td colSpan={6} style={{ ...S.td, color: '#444', textAlign: 'center', padding: 40 }}>
+                        No challenges logged
+                      </td>
+                    </tr>
+                  )}
+                  {challenges.map((c, i) => (
+                    <tr key={i} style={{ borderTop: '1px solid #1a1a1a' }}>
+                      <td style={{ ...S.td, fontSize: 11, color: '#666', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {c.user_id}
+                      </td>
+                      <td style={{ ...S.td, fontFamily: 'Monument, monospace', fontSize: 11, color: '#aaa' }}>
+                        {c.tool_slug}
+                      </td>
+                      <td style={{ ...S.td, fontSize: 12, color: actionColor(c.user_action) }}>
+                        {c.user_action || '—'}
+                      </td>
+                      <td style={{ ...S.td, fontSize: 12, color: '#666' }}>{c.tokens_used ?? '—'}</td>
+                      <td style={{ ...S.td, fontSize: 12, color: '#666' }}>{c.response_time_ms ?? '—'}</td>
+                      <td style={{ ...S.td, color: '#555', fontSize: 12, whiteSpace: 'nowrap' }}>
+                        {fmtDate(c.created_at)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // ─── Admin Panel Layout ────────────────────────────────────────────────────
+
+    function AdminPanel({ user, adminUser, onLogout }) {
+      const [view, setView] = useState('overview');
+      const [selectedUser, setSelectedUser] = useState(null);
+
+      const navItems = [
+        { id: 'overview', label: 'Overview' },
+        { id: 'companies', label: 'Companies' },
+        { id: 'users', label: 'Users' },
+        { id: 'logs', label: 'Logs' }
+      ];
+
+      function handleSelectUser(u) {
+        setSelectedUser(u);
+        if (u && view !== 'users') setView('users');
+      }
+
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#000', overflow: 'hidden' }}>
+          {/* Top bar */}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '0 24px', height: 52, background: '#000',
+            borderBottom: '1px solid #1a1a1a', flexShrink: 0
+          }}>
+            <div style={{
+              fontFamily: 'Plaak, sans-serif', fontSize: 15,
+              color: '#FFF469', letterSpacing: '0.12em'
+            }}>
+              FT ADMIN
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <span style={{ fontSize: 12, color: '#444' }}>
+                {adminUser?.name || user.email}
+              </span>
+              <button
+                onClick={onLogout}
+                style={{
+                  background: 'none', border: '1px solid #2a2a2a', color: '#666',
+                  padding: '5px 14px', cursor: 'pointer', fontSize: 11,
+                  letterSpacing: '0.05em', transition: 'border-color 0.15s, color 0.15s'
+                }}
+                onMouseEnter={e => { e.target.style.borderColor = '#555'; e.target.style.color = '#999'; }}
+                onMouseLeave={e => { e.target.style.borderColor = '#2a2a2a'; e.target.style.color = '#666'; }}
+              >
+                LOGOUT
+              </button>
+            </div>
+          </div>
+
+          {/* Body */}
+          <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+            {/* Sidebar */}
+            <div style={{
+              width: 170, background: '#000', borderRight: '1px solid #1a1a1a',
+              padding: '20px 0', flexShrink: 0
+            }}>
+              {navItems.map(item => (
+                <button
+                  key={item.id}
+                  onClick={() => setView(item.id)}
+                  style={{
+                    display: 'block', width: '100%', textAlign: 'left',
+                    padding: '11px 24px', background: 'none', border: 'none',
+                    color: view === item.id ? '#FFF469' : '#555',
+                    fontSize: 13, cursor: 'pointer', letterSpacing: '0.03em',
+                    borderLeft: view === item.id ? '2px solid #FFF469' : '2px solid transparent',
+                    transition: 'color 0.1s'
+                  }}
+                  onMouseEnter={e => { if (view !== item.id) e.currentTarget.style.color = '#999'; }}
+                  onMouseLeave={e => { if (view !== item.id) e.currentTarget.style.color = '#555'; }}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Main content */}
+            <div style={{ flex: 1, overflow: 'auto', padding: '28px 28px 28px 28px', display: 'flex', flexDirection: 'column' }}>
+              {view === 'overview' && <OverviewView />}
+              {view === 'companies' && <CompaniesView onSelectUser={handleSelectUser} />}
+              {view === 'users' && (
+                <UsersView selectedUser={selectedUser} onSelectUser={setSelectedUser} />
+              )}
+              {view === 'logs' && <LogsView />}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ─── App Root ──────────────────────────────────────────────────────────────
+
+    function App() {
+      const [authState, setAuthState] = useState('loading');
+      const [user, setUser] = useState(null);
+      const [adminUser, setAdminUser] = useState(null);
+      const [error, setError] = useState('');
+
+      useEffect(() => {
+        db.auth.getSession().then(({ data: { session } }) => {
+          if (session?.user) {
+            checkAdmin(session.user);
+          } else {
+            setAuthState('logged_out');
+          }
+        });
+
+        const { data: listener } = db.auth.onAuthStateChange((event, session) => {
+          if (event === 'SIGNED_OUT') {
+            setAuthState('logged_out');
+            setUser(null);
+            setAdminUser(null);
+            setError('');
+          }
+        });
+
+        return () => listener.subscription.unsubscribe();
+      }, []);
+
+      async function checkAdmin(authUser) {
+        try {
+          const { data, error: dbErr } = await db
+            .from('admin_users')
+            .select('id, name')
+            .eq('id', authUser.id)
+            .single();
+
+          if (data) {
+            setUser(authUser);
+            setAdminUser(data);
+            setAuthState('logged_in');
+          } else {
+            await db.auth.signOut();
+            setError('Access denied. This account is not authorised for admin access.');
+            setAuthState('logged_out');
+          }
+        } catch (err) {
+          await db.auth.signOut();
+          setError('Access denied. This account is not authorised for admin access.');
+          setAuthState('logged_out');
+        }
+      }
+
+      async function handleLogin(email, password) {
+        setError('');
+        const { data, error: authErr } = await db.auth.signInWithPassword({ email, password });
+        if (authErr) throw authErr;
+        await checkAdmin(data.user);
+      }
+
+      async function handleLogout() {
+        await db.auth.signOut();
+      }
+
+      if (authState === 'loading') {
+        return (
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            height: '100vh', background: '#000'
+          }}>
+            <div style={{ fontFamily: 'Monument, monospace', fontSize: 12, color: '#333', letterSpacing: '0.1em' }}>
+              LOADING...
+            </div>
+          </div>
+        );
+      }
+
+      if (authState === 'logged_in' && user) {
+        return <AdminPanel user={user} adminUser={adminUser} onLogout={handleLogout} />;
+      }
+
+      return <LoginScreen onLogin={handleLogin} error={error} />;
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
