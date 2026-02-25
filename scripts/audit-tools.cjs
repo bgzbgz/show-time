@@ -19,9 +19,9 @@ const TOOLS_DIR = path.join(__dirname, '..', 'frontend', 'tools');
 
 // ── DB question keys (pulled from Supabase 2026-02-25) ─────────────────────
 const DB_KEYS = {
-  'woop':                      ['commitment_level','elephant_first_slice','elephant_goal','elephant_slice_0','elephant_slice_1','elephant_slice_2','first_action','obstacle_external','obstacle_internal','outcome','plan_if_then','premortem_cause_0','premortem_cause_1','premortem_cause_2','premortem_prevention','premortem_scenario','reflection','wish'],
+  'woop':                      ['commitment_level','elephant_first_slice','elephant_goal','elephant_slice_0','elephant_slice_1','elephant_slice_2','first_action','obstacle_internal','outcome','plan_if_then','premortem_cause_0','premortem_cause_1','premortem_cause_2','premortem_prevention','premortem_scenario','wish'],
   'know-thyself':              ['activities','birthdayStory','doLess','doMore','dream','feltBest','giveToWorld','goal_1','goal_2','goal_3','hardships','inspired','likeAboutSelf','paidFor','startTo','strengths','value_1','value_2','value_3','value_4','value_5','whatGoodAt','whatLove'],
-  'dream':                     ['dream_narrative','dream_visualization','killer_conclusion','one_sentence'],
+  'dream':                     ['dream_answers','dream_narrative','golden_circle','mood_board','one_sentence'],
   'values':                    ['cool_not_cool','core_values_list','recruitment_questions','red_lines','rollout_plan'],
   'team':                      ['accountability_tracker','conflict_norms','conflict_resolution_strategies','dysfunction_scorecard','trust_action_plan'],
   'fit':                       ['abc_matrix','average_fit','boss_fit','job_fit','team_fit','values_fit'],
@@ -103,7 +103,7 @@ function checkCoverImage(c) {
     /coverImage\s*[:=]\s*['"]([^'"]+)['"]/gi,
     /COVER\s*[:=]\s*['"]([^'"]+)['"]/gi,
     /background.*url\(['"]([^'"]+)['"]\)/gi,
-    /src\s*=\s*['"]([^'"]+\.(jpg|jpeg|png|webp))['"]/gi,
+    /<img[^>]*\bsrc\s*=\s*['"]([^'"]+\.(jpg|jpeg|png|webp))['"]/gi,
   ];
   const allImages = [];
   for (const re of patterns) {
@@ -204,7 +204,8 @@ for (const { file, slug } of TOOLS) {
 
   const c = fs.readFileSync(filePath, 'utf8');
 
-  const transitions = checkTransitions(c);
+  // woop uses sidebar step-navigation by design — transition overlay is not applicable
+  const transitions = slug === 'woop' ? { icon: '✅', note: '' } : checkTransitions(c);
   const cover       = checkCoverImage(c);
   const ai          = checkAI(c);
   const dbkeys      = checkDbKeys(c, slug);

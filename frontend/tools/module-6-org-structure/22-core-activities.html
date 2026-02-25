@@ -117,7 +117,21 @@
             SUPABASE_URL: 'https://lutzzfaedkbsmbobmrzx.supabase.co',
             SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1dHp6ZmFlZGtic21ib2Jtcnp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MDA0MDQsImV4cCI6MjA4NjM3NjQwNH0.o2gJba85vDl4NLS-C8Mq3OudWKxet-b0IqO9kazqb8U',
             TOOL_SLUG: 'core-activities',
-            AUTOSAVE_DELAY: 2000
+            AUTOSAVE_DELAY: 2000,
+            TRANSITION_CONTENT: {
+                1: {
+                    brutalTruth: 'Most businesses confuse activity with core activity. They do 50 things competently and nothing brilliantly. The ruthless question is: which 3-5 activities, if stopped, would make your value proposition impossible to deliver?',
+                    peerProof: '"A logistics CEO listed 40 "core" activities. After forcing a top-5 ranking, the team agreed on 5. They outsourced everything else. Delivery reliability went from 78% to 96% in 6 months because focus finally matched capability."'
+                },
+                2: {
+                    brutalTruth: 'Brainstorming without brutal prioritisation produces lists, not strategy. If you cannot cut 80% of the ideas, you have not actually chosen. Core means core — the irreducible minimum that makes everything else possible.',
+                    peerProof: '"A SaaS founder generated 22 potential core activities. She forced herself to pick 5. The exercise revealed that customer onboarding — which had zero dedicated resource — was activity #2. Fixing it reduced churn by 40%."'
+                },
+                3: {
+                    brutalTruth: 'Selecting the top 5 is only half the work. The real discipline is designing the processes that make each activity repeatable, measurable, and trainable. Activities without process are heroics. Process without activity is bureaucracy.',
+                    peerProof: '"An operations team identified \'quality control\' as a core activity but had no standard process for it. Documenting just 3 key checkpoints reduced defect rate by 60% in 90 days — with the same team, same budget."'
+                }
+            }
         };
 
         const { createClient } = supabase;
@@ -156,6 +170,10 @@
             const [currentView, setCurrentView] = useState('cover'); // 'cover', 'intro', 'activities', 'processes'
             const [currentPage, setCurrentPage] = useState('activities'); // 'activities' or 'processes' (for tool navigation)
             const [currentStep, setCurrentStep] = useState(1); // For activities page: 1, 2, 3, or 4
+            const [showTransition, setShowTransition] = useState(false);
+            const [transitionMessage, setTransitionMessage] = useState('');
+            const [transitionProgress, setTransitionProgress] = useState(0);
+            const [transitionStep, setTransitionStep] = useState(null);
             
             // Page 1: Activities
             const [valueProposition, setValueProposition] = useState('');
@@ -282,6 +300,19 @@
 
             const closeModal = () => {
                 setShowPage2Modal(false);
+            };
+
+            const advanceToStep = (fromStep, targetStep) => {
+                const messages = ['25% COMPLETE', '50% COMPLETE', '75% COMPLETE', '100% COMPLETE'];
+                const progressValues = [25, 50, 75, 100];
+                setTransitionMessage(messages[Math.min(fromStep - 1, 3)]);
+                setTransitionProgress(progressValues[Math.min(fromStep - 1, 3)]);
+                setTransitionStep(fromStep);
+                setShowTransition(true);
+                setTimeout(() => {
+                    setShowTransition(false);
+                    setCurrentStep(targetStep);
+                }, 4000);
             };
 
             const sendToWebhook = async () => {
@@ -554,6 +585,7 @@
                                 setShowBrainstormSelection={setShowBrainstormSelection}
                                 currentStep={currentStep}
                                 setCurrentStep={setCurrentStep}
+                                advanceToStep={advanceToStep}
                                 onNext={() => setCurrentPage('processes')}
                                 aiReviewing={aiReviewing}
                                 setAiReviewing={setAiReviewing}
@@ -568,6 +600,36 @@
                             />
                         )}
                     </main>
+
+                    {/* Transition Overlay */}
+                    {showTransition && (() => {
+                        const t = transitionStep && CONFIG.TRANSITION_CONTENT && CONFIG.TRANSITION_CONTENT[transitionStep];
+                        return (
+                            <div style={{ position: 'fixed', inset: 0, background: '#000', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '48px 32px' }}>
+                                <div style={{ maxWidth: 640, width: '100%', textAlign: 'center' }}>
+                                    <h1 className="plaak" style={{ fontSize: 64, marginBottom: 24, textTransform: 'uppercase', lineHeight: 1.1 }}>STEP COMPLETE</h1>
+                                    <div style={{ marginBottom: 32 }}>
+                                        <div style={{ height: 4, background: '#333', marginBottom: 8 }}>
+                                            <div style={{ height: '100%', background: '#FFF469', width: transitionProgress + '%', transition: 'width 1s ease' }} />
+                                        </div>
+                                        <p style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: '#ccc', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{transitionMessage}</p>
+                                    </div>
+                                    {t && t.brutalTruth && (
+                                        <div style={{ background: '#111', border: '1px solid #333', borderLeft: '4px solid #FFF469', padding: '20px 24px', marginBottom: 20, textAlign: 'left' }}>
+                                            <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#FFF469', display: 'block', marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>BRUTAL TRUTH</span>
+                                            <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7, margin: 0 }}>{t.brutalTruth}</p>
+                                        </div>
+                                    )}
+                                    {t && t.peerProof && (
+                                        <div style={{ background: '#111', border: '1px solid #333', borderLeft: '4px solid #666', padding: '20px 24px', textAlign: 'left' }}>
+                                            <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#999', display: 'block', marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>PEER PROOF</span>
+                                            <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7, fontStyle: 'italic', margin: 0 }}>{t.peerProof}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })()}
                 </div>
             );
         }
@@ -667,6 +729,7 @@
             setShowBrainstormSelection,
             currentStep,
             setCurrentStep,
+            advanceToStep,
             onNext,
             aiReviewing,
             setAiReviewing
@@ -678,7 +741,7 @@
                 try {
                     const ok = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, stepName);
                     if (ok) {
-                        setCurrentStep(targetStep);
+                        advanceToStep(currentStep, targetStep);
                     }
                 } catch (err) {
                     console.error('AI review error:', err);
@@ -910,7 +973,7 @@
                                                             setAiReviewing(true);
                                                             try {
                                                                 const ok = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, { brainstorm_activities: brainstormActivities.filter(a => a.trim()) }, 'Brainstorm Activities');
-                                                                if (ok) { setShowBrainstormSelection(true); setCurrentStep(3); }
+                                                                if (ok) { setShowBrainstormSelection(true); advanceToStep(2, 3); }
                                                             } catch (err) { console.error('AI review error:', err); setShowBrainstormSelection(true); setCurrentStep(3); }
                                                             finally { setAiReviewing(false); }
                                                         }}
