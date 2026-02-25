@@ -390,7 +390,21 @@
         SUPABASE_URL: 'https://lutzzfaedkbsmbobmrzx.supabase.co',
         SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1dHp6ZmFlZGtic21ib2Jtcnp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MDA0MDQsImV4cCI6MjA4NjM3NjQwNH0.o2gJba85vDl4NLS-C8Mq3OudWKxet-b0IqO9kazqb8U',
         TOOL_SLUG: 'digitalization',
-        AUTOSAVE_DELAY: 2000
+        AUTOSAVE_DELAY: 2000,
+        TRANSITION_CONTENT: {
+            1: {
+                brutalTruth: 'Digital transformation does not fail for technical reasons — it fails because nobody changed how people work. Technology amplifies existing processes: broken processes become broken processes, faster.',
+                peerProof: '"A €25M logistics company spent €400k on a new ERP. Adoption was 30% after 6 months. They paused, ran process mapping, eliminated 40% of their workflow steps, then relaunched. Adoption hit 85% in 8 weeks."'
+            },
+            2: {
+                brutalTruth: 'Most companies digitalize isolated functions rather than end-to-end value chains. Digitizing your invoicing while your quoting is still manual is like adding a turbocharger to a car with a flat tire.',
+                peerProof: '"A €8M services firm mapped their full customer journey before selecting any tools. They found 12 handoff points — 9 manual, 3 digital. Automating just 4 of the manual handoffs cut their average project delivery time by 22%."'
+            },
+            3: {
+                brutalTruth: 'Data without decisions is just storage. Most companies have more data than they can act on. The question is not how much you are collecting — it is whether the right people have the right numbers to make faster decisions.',
+                peerProof: '"A retail chain had 6 dashboards that nobody read. They replaced them with one weekly \'5 number\' email — revenue, margin, conversion, returns, and NPS. Three managers described it as \'the first time I knew what was actually happening.\'"'
+            }
+        }
     };
 
     const { createClient } = supabase;
@@ -432,6 +446,7 @@
       const [showTransition, setShowTransition] = useState(false);
       const [transitionMessage, setTransitionMessage] = useState('');
       const [transitionProgress, setTransitionProgress] = useState(0);
+      const [transitionStep, setTransitionStep] = useState(null);
       const [aiReviewing, setAiReviewing] = useState(false);
 
       const [data, setData] = useState({
@@ -808,11 +823,12 @@
               const progressValues = [33, 67, 100];
               setTransitionMessage(messages[step - 1]);
               setTransitionProgress(progressValues[step - 1]);
+              setTransitionStep(step);
               setShowTransition(true);
               setTimeout(() => {
                 setShowTransition(false);
                 setStep(step + 1);
-              }, 2000);
+              }, 5000);
             } else if (step === 3) {
               setStep(4);
             }
@@ -851,11 +867,12 @@
               const progressValues = [25, 50, 75, 100];
               setTransitionMessage(messages[step - 1]);
               setTransitionProgress(progressValues[step - 1]);
+              setTransitionStep(step);
               setShowTransition(true);
               setTimeout(() => {
                 setShowTransition(false);
                 setStep(step + 1);
-              }, 2000);
+              }, 5000);
             } else if (step === 4) {
               setStep(5);
             }
@@ -1035,7 +1052,7 @@
 
       // Render different pages based on step
       if (showTransition) {
-        return <TransitionScreen message={transitionMessage} progress={transitionProgress} />;
+        return <TransitionScreen message={transitionMessage} progress={transitionProgress} stepNum={transitionStep} />;
       }
 
       if (step === 0) {
@@ -1299,15 +1316,30 @@
     }
 
     // Transition Screen Component
-    function TransitionScreen({ message, progress }) {
+    function TransitionScreen({ message, progress, stepNum }) {
+      const t = stepNum && CONFIG.TRANSITION_CONTENT && CONFIG.TRANSITION_CONTENT[stepNum];
       return (
-        <div className="fixed inset-0 bg-black text-white flex flex-col items-center justify-center z-50">
-          <h1 className="plaak text-8xl mb-8 animate-in">{message}</h1>
-          <div className="w-96 h-2 bg-gray-800 mb-4">
-            <div
-              className="h-full bg-yellow-400 transition-all duration-1000"
-              style={{ width: `${progress}%` }}
-            />
+        <div style={{ position: 'fixed', inset: 0, background: '#000', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '48px 32px' }}>
+          <div style={{ maxWidth: 640, width: '100%', textAlign: 'center' }} className="animate-in">
+            <h1 className="plaak" style={{ fontSize: 64, marginBottom: 24, textTransform: 'uppercase', lineHeight: 1.1 }}>STEP COMPLETE</h1>
+            <div style={{ marginBottom: 32 }}>
+              <div style={{ height: 4, background: '#333', marginBottom: 8 }}>
+                <div style={{ height: '100%', background: '#FFF469', width: progress + '%', transition: 'width 1s ease' }} />
+              </div>
+              <p style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: '#ccc', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{message}</p>
+            </div>
+            {t && t.brutalTruth && (
+              <div style={{ background: '#111', border: '1px solid #333', borderLeft: '4px solid #FFF469', padding: '20px 24px', marginBottom: 20, textAlign: 'left' }}>
+                <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#FFF469', display: 'block', marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>BRUTAL TRUTH</span>
+                <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7, margin: 0 }}>{t.brutalTruth}</p>
+              </div>
+            )}
+            {t && t.peerProof && (
+              <div style={{ background: '#111', border: '1px solid #333', borderLeft: '4px solid #666', padding: '20px 24px', textAlign: 'left' }}>
+                <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#999', display: 'block', marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>PEER PROOF</span>
+                <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7, fontStyle: 'italic', margin: 0 }}>{t.peerProof}</p>
+              </div>
+            )}
           </div>
         </div>
       );

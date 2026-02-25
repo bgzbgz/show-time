@@ -22,6 +22,7 @@
   <script src="../../shared/js/dependency-injection.js"></script>
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
     <script src="../../shared/js/cognitive-load.js"></script>
+    <script src="../../shared/js/transition-screen.js"></script>
     <script src="../../js/tool-access-control.js"></script>
 
   <!-- jsPDF + html2canvas for PDF export -->
@@ -287,7 +288,21 @@
       SUPABASE_URL: 'https://lutzzfaedkbsmbobmrzx.supabase.co',
       SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1dHp6ZmFlZGtic21ib2Jtcnp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MDA0MDQsImV4cCI6MjA4NjM3NjQwNH0.o2gJba85vDl4NLS-C8Mq3OudWKxet-b0IqO9kazqb8U',
       TOOL_SLUG: 'route-to-market',
-      AUTOSAVE_DELAY: 2000
+      AUTOSAVE_DELAY: 2000,
+      TRANSITION_CONTENT: {
+        1: {
+          brutalTruth: 'Most companies use the distribution channel that was easiest to start — not the most profitable. Channel strategy is rarely reviewed, even when it quietly bleeds margin year after year.',
+          peerProof: '"A manufacturing company discovered their distributor network consumed 22% margin. A direct-to-enterprise channel with just 6 accounts replaced €1.2M in distributor revenue — at twice the margin."'
+        },
+        2: {
+          brutalTruth: 'Your pricing model signals value before your customer reads a single word. A pricing structure that is too complex signals trust issues. One that is too cheap signals low confidence. Price is a brand decision.',
+          peerProof: '"A consultancy moved from hourly billing to project-based retainers. Average deal size tripled. Client relationships deepened. Their "expensive" perception actually attracted better clients who stayed longer."'
+        },
+        3: {
+          brutalTruth: 'Sales and marketing alignment is not a nice-to-have — it is the difference between a pipeline and a lottery. When both functions disagree on what the ideal customer looks like, every lead is a coin flip.',
+          peerProof: '"Two co-founders held a 2-hour session to align on ICP. Sales said "any SME.", Marketing said "tech-enabled service businesses 20-100 employees." Six months after aligning, close rate improved from 12% to 31%."'
+        }
+      }
     };
 
     const { createClient } = supabase;
@@ -329,6 +344,7 @@
       const [showTransition, setShowTransition] = useState(false);
       const [transitionMessage, setTransitionMessage] = useState('');
       const [transitionProgress, setTransitionProgress] = useState(0);
+      const [transitionStep, setTransitionStep] = useState(null);
       const [aiReviewing, setAiReviewing] = useState(false);
       const [submitStatus, setSubmitStatus] = useState(null);
       const [submitMessage, setSubmitMessage] = useState('');
@@ -460,12 +476,13 @@
 
           setTransitionMessage(messages[fromStep - 1]);
           setTransitionProgress(progressValues[fromStep - 1]);
+          setTransitionStep(fromStep);
           setShowTransition(true);
 
           setTimeout(() => {
             setShowTransition(false);
             setStep(fromStep + 1);
-          }, 2000);
+          }, 4000);
         } else if (fromStep === 5) {
           setStep(6);
         }
@@ -666,7 +683,7 @@
 
       // Render different pages based on step
       if (showTransition) {
-        return <TransitionScreen message={transitionMessage} progress={transitionProgress} />;
+        return <TransitionScreen message={transitionMessage} progress={transitionProgress} stepNum={transitionStep} />;
       }
 
       if (step === 0) {
@@ -777,7 +794,7 @@
           <div
             className="absolute inset-0 w-full h-full"
             style={{
-              backgroundImage: 'url("kevin-et-laurianne-langlais-yCg-sSDyxsE-unsplash.jpg")',
+              backgroundImage: 'url("https://images.unsplash.com/photo-1557804506-669a67965ba0?w=1920&q=80")',
               backgroundSize: 'cover',
               backgroundPosition: 'center'
             }}
@@ -990,23 +1007,30 @@
     }
 
     // Transition Screen Component
-    function TransitionScreen({ message, progress }) {
+    function TransitionScreen({ message, progress, stepNum }) {
+      const t = stepNum && CONFIG.TRANSITION_CONTENT && CONFIG.TRANSITION_CONTENT[stepNum];
       return (
-        <div className="fixed inset-0 bg-black text-white flex items-center justify-center z-50 fade-in">
-          <div className="text-center px-8">
-            <h1 className="plaak transition-animate-in" style={{fontSize: '120px', marginBottom: '32px'}}>
-              SECTION COMPLETE
-            </h1>
-
-            <div className="max-w-2xl mx-auto mb-8 transition-animate-in" style={{animationDelay: '0.2s'}}>
-              <div className="h-2 bg-gray-800 mb-4">
-                <div
-                  className="h-full bg-white transition-all duration-1000"
-                  style={{width: `${progress}%`}}
-                ></div>
+        <div style={{ position: 'fixed', inset: 0, background: '#000', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '48px 32px' }}>
+          <div style={{ maxWidth: 640, width: '100%', textAlign: 'center' }} className="animate-in">
+            <h1 className="plaak" style={{ fontSize: 64, marginBottom: 24, textTransform: 'uppercase', lineHeight: 1.1 }}>STEP COMPLETE</h1>
+            <div style={{ marginBottom: 32 }}>
+              <div style={{ height: 4, background: '#333', marginBottom: 8 }}>
+                <div style={{ height: '100%', background: '#FFF469', width: progress + '%', transition: 'width 1s ease' }} />
               </div>
-              <p className="monument text-xl tracking-wider">{message}</p>
+              <p style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: '#ccc', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{message}</p>
             </div>
+            {t && t.brutalTruth && (
+              <div style={{ background: '#111', border: '1px solid #333', borderLeft: '4px solid #FFF469', padding: '20px 24px', marginBottom: 20, textAlign: 'left' }}>
+                <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#FFF469', display: 'block', marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>BRUTAL TRUTH</span>
+                <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7, margin: 0 }}>{t.brutalTruth}</p>
+              </div>
+            )}
+            {t && t.peerProof && (
+              <div style={{ background: '#111', border: '1px solid #333', borderLeft: '4px solid #666', padding: '20px 24px', textAlign: 'left' }}>
+                <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#999', display: 'block', marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>PEER PROOF</span>
+                <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7, fontStyle: 'italic', margin: 0 }}>{t.peerProof}</p>
+              </div>
+            )}
           </div>
         </div>
       );

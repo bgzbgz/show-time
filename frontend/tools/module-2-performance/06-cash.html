@@ -17,6 +17,7 @@
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
     <script src="../../shared/js/cognitive-load.js"></script>
     <script src="../../js/tool-access-control.js"></script>
+    <script src="../../shared/js/transition-screen.js"></script>
 
     <style>
         /* === FONT FACES === */
@@ -356,8 +357,24 @@
             SUPABASE_URL: 'https://lutzzfaedkbsmbobmrzx.supabase.co',
             SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1dHp6ZmFlZGtic21ib2Jtcnp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MDA0MDQsImV4cCI6MjA4NjM3NjQwNH0.o2gJba85vDl4NLS-C8Mq3OudWKxet-b0IqO9kazqb8U',
             TOOL_SLUG: 'cash',
-            AUTOSAVE_DELAY: 2000
+            AUTOSAVE_DELAY: 2000,
+            TRANSITION_CONTENT: {
+                1: {
+                    brutalTruth: '70% of businesses that fail do so while profitable on paper. Cash timing kills — receivables due in 60 days and payables due in 30 is a death sentence regardless of your margins. Profit is opinion. Cash is fact.',
+                    peerProof: '"A €3M construction firm discovered a €180k cash gap six weeks out. They renegotiated three supplier payment terms and secured a €100k credit line — without it, they would have missed payroll. The forecast saved the company."'
+                },
+                2: {
+                    brutalTruth: 'Most founders treat cash forecasting as a formality. Real forecasting means stress-testing: What if your biggest customer pays 45 days late? What if your biggest order gets cancelled? The business that survives is the one that ran that scenario before it happened.',
+                    peerProof: '"A fast-growing SaaS company ran a downside scenario before their Series A. They found a 3-month cash gap at 50% of projected growth and pre-emptively cut €60k in costs. No crisis. Just preparation — and investors noticed."'
+                }
+            },
+            CLOSING_MESSAGES: {
+                1: { title: 'CASH PICTURE CLEAR', text: 'Your current cash reality is mapped. Next: build the forecast and stress-test the gaps.' },
+                2: { title: 'FORECAST BUILT', text: 'Your cash model is complete. Review it monthly. Cash surprises are only surprises once.' }
+            }
         };
+
+        const totalSteps = 2;
 
         const { createClient } = supabase;
         const supabaseClient = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
@@ -663,7 +680,8 @@
 
             const handleNext = async (fromStep) => {
                 const userId = localStorage.getItem('ft_user_id');
-                if (!userId) { setStep(fromStep === 4 ? 999 : fromStep + 1); return; }
+                const nextStepNum = fromStep === 2 ? fromStep + 0.5 : (fromStep === 4 ? 999 : fromStep + 1);
+                if (!userId) { setStep(nextStepNum); return; }
                 setAiReviewing(true);
                 try {
                     let stepAnswers = {};
@@ -695,11 +713,11 @@
                     }
                     const canProceed = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, stepName);
                     if (canProceed) {
-                        setStep(fromStep === 4 ? 999 : fromStep + 1);
+                        setStep(nextStepNum);
                     }
                 } catch (err) {
                     console.warn('[AIChallenge] Error, allowing passage:', err);
-                    setStep(fromStep === 4 ? 999 : fromStep + 1);
+                    setStep(nextStepNum);
                 } finally {
                     setAiReviewing(false);
                 }
@@ -797,6 +815,7 @@
                                         {step === 2 && <Step2Content pl={year2PL} setPL={setYear2PL} bs={year2BS} setBS={setYear2BS} wc={year2WC} setWC={setYear2WC} calc={y2PL} bsCalc={y2BS} wcCalc={y2WC} y1WC={y1WC} labels={labels} questionHelp={questionHelp} setQuestionHelp={setQuestionHelp} canProceed={canStep2} />}
                                         {step === 3 && <Step3Content powerOfOne={powerOfOne} improvements={improvements} setImprovements={setImprovements} totalCash={totalCash} totalEbit={totalEbit} y2PL={y2PL} labels={labels} />}
                                         {step === 4 && <Step4Content ideas={ideas} setIdeas={setIdeas} actions={actions} setActions={setActions} powerOfOne={powerOfOne} />}
+                                        {window.renderTransitionScreen && renderTransitionScreen(step, CONFIG, totalSteps, setStep)}
                                     </div>
                                     <ButtonFooter
                                         onBack={() => setStep(step === 1 ? 0.5 : step - 1)}

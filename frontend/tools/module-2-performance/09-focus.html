@@ -17,6 +17,7 @@
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
     <script src="../../shared/js/cognitive-load.js"></script>
     <script src="../../js/tool-access-control.js"></script>
+    <script src="../../shared/js/transition-screen.js"></script>
     <link rel="preload" href="Plaak3Trial-43-Bold.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="RiformaLL-Regular.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="MonumentGrotesk-Mono.woff2" as="font" type="font/woff2" crossorigin>
@@ -107,8 +108,29 @@
             SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1dHp6ZmFlZGtic21ib2Jtcnp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MDA0MDQsImV4cCI6MjA4NjM3NjQwNH0.o2gJba85vDl4NLS-C8Mq3OudWKxet-b0IqO9kazqb8U',
             TOOL_SLUG: 'focus',
             STORAGE_KEY: 'ft_focus_autosave',
-            AUTOSAVE_DELAY: 2000
+            AUTOSAVE_DELAY: 2000,
+            TRANSITION_CONTENT: {
+                1: {
+                    brutalTruth: 'The average executive wastes 21 hours per week on low-value activities they mistake for work. Energy spent on the wrong tasks does not just waste time — it crowds out the 2-3 things that actually move the needle.',
+                    peerProof: '"A founder who logged her week discovered 60% of her time went to reactive email and meetings that added no value. Cutting them freed 15 hours for sales — her close rate doubled in 6 weeks. She did the same work in 40% of the time."'
+                },
+                2: {
+                    brutalTruth: 'Saying yes to everything is the most polite way to say no to your real priorities. Every meeting you attend, every request you accept, is a withdrawal from the limited account of focused time. Protect it like cash.',
+                    peerProof: '"A CEO implemented a \'no meetings before noon\' rule for deep work. In 90 days, his team shipped a product feature backlog that had been stuck for 6 months. The rule cost nothing. The lack of it had cost €200k in delays."'
+                },
+                3: {
+                    brutalTruth: 'Habits do not fail because of willpower — they fail because of environment. If your default is reactive (phone in hand, inbox open), the effort required to be proactive multiplies every day until the habit collapses.',
+                    peerProof: '"A founder redesigned her office to have a standing desk for shallow work and a separate table with no screens for deep work. Deep work hours tripled without any extra time investment. The space created the habit."'
+                }
+            },
+            CLOSING_MESSAGES: {
+                1: { title: 'PRIORITIES RANKED', text: 'Your time priorities are clear. Next: build the daily structure to protect them.' },
+                2: { title: 'BOUNDARIES SET', text: 'Your defences are designed. Next: lock in the routines that make focus automatic.' },
+                3: { title: 'SYSTEM BUILT', text: 'Your focus system is complete. The real work now is protecting it. Review weekly.' }
+            }
         };
+
+        const totalSteps = 3;
 
         const { createClient } = supabase;
         const supabaseClient = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
@@ -847,12 +869,13 @@
                                         {step === 9 && <Step9 d={formData} onSubmit={handleIndividualSubmit} submitStatus={submitStatus} submitMessage={submitMessage}/>}
                                         {step === 10 && <TeamStep10/>}
                                         {step === 11 && <TeamStep11 td={teamData} ut={updateTeamField} onSubmit={handleTeamSubmit} submitStatus={submitStatus}/>}
+                                        {window.renderTransitionScreen && mode === 'individual' && renderTransitionScreen(step, CONFIG, totalSteps, setStep)}
                                     </div>
                                     {mode === 'individual' && step >= 1 && step <= 8 && (
                                         <ButtonFooter
                                             showBack={step > 1}
                                             onBack={() => goToStep(step === 1 ? 0.5 : step - 1)}
-                                            onNext={() => goToStep(step + 1)}
+                                            onNext={() => goToStep([1, 2, 3].includes(Math.floor(step)) ? step + 0.5 : step + 1)}
                                             nextLabel={step === 8 ? 'Review' : 'Next'}
                                         />
                                     )}

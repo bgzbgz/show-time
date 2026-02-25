@@ -28,6 +28,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
+  <!-- Transition Screen -->
+  <script src="../../shared/js/transition-screen.js"></script>
+
   <style>
     /* Font Face Declarations */
     @font-face {
@@ -266,7 +269,26 @@
       SUPABASE_URL: 'https://lutzzfaedkbsmbobmrzx.supabase.co',
       SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1dHp6ZmFlZGtic21ib2Jtcnp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MDA0MDQsImV4cCI6MjA4NjM3NjQwNH0.o2gJba85vDl4NLS-C8Mq3OudWKxet-b0IqO9kazqb8U',
       TOOL_SLUG: 'brand-marketing',
-      AUTOSAVE_DELAY: 2000
+      AUTOSAVE_DELAY: 2000,
+      TRANSITION_CONTENT: {
+        1: {
+          brutalTruth: 'Most marketing fails not because of poor execution — but because there is no clear brand identity worth communicating. If your team cannot describe what you stand for in 10 words, your customers cannot either.',
+          peerProof: '"A €8M B2B firm invested 3 months defining their brand positioning. Lead quality improved measurably. Sales cycle shortened 30%. Their best new clients said the messaging resonated immediately — before a single meeting."'
+        },
+        2: {
+          brutalTruth: 'Brand consistency is not a design preference — it is a trust signal. Inconsistent visual identity tells customers you are uncertain about who you are. Certainty in brand signals certainty in delivery.',
+          peerProof: '"A regional services brand standardized their visual identity across 6 channels in one month. Three months later, unaided brand recall among their ICP doubled. No new ad spend. Just consistency."'
+        },
+        3: {
+          brutalTruth: 'Content without distribution is a tree falling in an empty forest. The best brand strategy in the world is invisible if your customers are not in the channels where you are publishing.',
+          peerProof: '"A B2B SaaS company shifted from posting across 4 social channels to focusing entirely on LinkedIn for 6 months. Engagement per post increased 8x. Inbound demo requests from content doubled. Less volume. More focus. Better results."'
+        }
+      },
+      CLOSING_MESSAGES: {
+        1: { title: 'BRAND DEFINED', text: 'Your brand foundation is set. Next: translate it into a consistent visual and messaging system.' },
+        2: { title: 'IDENTITY LOCKED', text: 'Your brand identity is complete. Next: build the content and channel strategy to bring it to life.' },
+        3: { title: 'STRATEGY COMPLETE', text: 'Your brand and marketing strategy is built. Now execute it with ruthless consistency.' }
+      }
     };
 
     const { createClient } = supabase;
@@ -447,20 +469,12 @@
       };
 
       const advanceStep = (fromStep) => {
-        if (fromStep >= 1 && fromStep < 5) {
-          const messages = ['20% COMPLETE', '40% COMPLETE', '60% COMPLETE', '80% COMPLETE', '100% COMPLETE'];
-          const progressValues = [20, 40, 60, 80, 100];
-
-          setTransitionMessage(messages[fromStep - 1]);
-          setTransitionProgress(progressValues[fromStep - 1]);
-          setShowTransition(true);
-
-          setTimeout(() => {
-            setShowTransition(false);
-            setStep(fromStep + 1);
-          }, 2000);
-        } else if (fromStep === 5) {
-          setStep(6);
+        if (fromStep >= 1 && fromStep <= 3) {
+          // Use renderTransitionScreen for steps 1-3 with TRANSITION_CONTENT
+          setStep(fromStep + 0.5);
+        } else if (fromStep === 4 || fromStep === 5) {
+          // Steps 4-5 skip to next step directly
+          setStep(fromStep + 1);
         }
       };
 
@@ -651,6 +665,19 @@
       // Render different pages based on step
       if (showTransition) {
         return <TransitionScreen message={transitionMessage} progress={transitionProgress} />;
+      }
+
+      // Transition screens for steps 1-3
+      if (step === 1.5) {
+        return window.renderTransitionScreen(1, CONFIG, 4, setStep);
+      }
+
+      if (step === 2.5) {
+        return window.renderTransitionScreen(2, CONFIG, 4, setStep);
+      }
+
+      if (step === 3.5) {
+        return window.renderTransitionScreen(3, CONFIG, 4, setStep);
       }
 
       if (step === 0) {

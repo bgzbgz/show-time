@@ -14,6 +14,7 @@
     <script src="../../shared/js/dependency-injection.js"></script>
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
     <script src="../../shared/js/cognitive-load.js"></script>
+    <script src="../../shared/js/transition-screen.js"></script>
     <script src="../../js/tool-access-control.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -94,7 +95,31 @@
         SUPABASE_URL: 'https://lutzzfaedkbsmbobmrzx.supabase.co',
         SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1dHp6ZmFlZGtic21ib2Jtcnp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MDA0MDQsImV4cCI6MjA4NjM3NjQwNH0.o2gJba85vDl4NLS-C8Mq3OudWKxet-b0IqO9kazqb8U',
         TOOL_SLUG: 'performance',
-        AUTOSAVE_DELAY: 2000
+        AUTOSAVE_DELAY: 2000,
+        TRANSITION_CONTENT: {
+            1: {
+                brutalTruth: 'What gets measured gets managed — but most companies track vanity metrics that feel good and tell you nothing actionable. If you cannot link a KPI to a specific decision, you are measuring the wrong thing.',
+                peerProof: '"A €12M B2B firm had 23 KPIs on their dashboard. After this analysis, they kept 5. Revenue clarity improved. Leadership focus shifted. They grew 34% the following year with the same team and budget."'
+            },
+            2: {
+                brutalTruth: 'Task tracking without root cause analysis is just documenting failure. You can monitor every task and still not know why performance is off. The 5 Whys does not take long — avoiding it does.',
+                peerProof: '"A manufacturing CEO spent 6 months trying to improve delivery performance by adding more tracking. One 5-Whys session revealed the actual cause: a single scheduling conflict in the ERP system. Fixed in a day. Delivery improved 40%."'
+            },
+            3: {
+                brutalTruth: '80% of your results come from 20% of your actions. But most organizations protect all their activities equally. The companies that break away from the pack are the ones that explicitly defund the 80% to double down on the 20%.',
+                peerProof: '"A €8M professional services firm mapped their revenue by client type. The top 20% of clients generated 71% of revenue — and received the same service level as the bottom 80%. After rebalancing, revenue grew 45% in 18 months."'
+            },
+            4: {
+                brutalTruth: 'Accountability without consequences is a suggestion. Clear expectations, public tracking, and real follow-through are not management theatre — they are the system that separates high-performance teams from mediocre ones.',
+                peerProof: '"One leadership team replaced their monthly status update meetings with a weekly 15-minute accountability dashboard review. Ownership improved visibly within 30 days. The CEO described it as the single highest-leverage management change they had made in 5 years."'
+            }
+        },
+        CLOSING_MESSAGES: {
+            1: { title: 'GOALS TRACKED', text: 'Your performance dashboard is defined. Next: find the root causes of current gaps.' },
+            2: { title: 'ROOT CAUSES FOUND', text: 'You know what is actually driving your results. Next: apply the 80/20 lens.' },
+            3: { title: '80/20 MAPPED', text: 'Your vital few are identified. Next: build the accountability system to hold them.' },
+            4: { title: 'ACCOUNTABILITY SET', text: 'Your performance system is complete. Review it weekly. What gets reviewed gets done.' }
+        }
     };
 
     const { createClient } = supabase;
@@ -559,6 +584,8 @@
     }
 
     /* === MAIN APP === */
+    const totalSteps = 4;
+
     function PerformanceApp() {
         const [step, setStep] = useState(0);
         const [data, setData] = useState({});
@@ -624,7 +651,12 @@
         const handleIndividualSubmit = async () => {
             const userId = localStorage.getItem('ft_user_id');
             if (!userId) { alert('User not authenticated.'); return; }
-            await window.AIChallenge.submitWithChallenge(userId, 'performance-individual', { performance_data: data }, {
+            const questionMappings = {
+                five_why: data.fiveWhys,
+                execution_dashboard: { goals: data.goals, tasks: data.tasks, eighty20: data.eighty20, constraints: data.constraints, reviewCadence: data.reviewCadence },
+                consequences_table: data.accountability
+            };
+            await window.AIChallenge.submitWithChallenge(userId, 'performance-individual', questionMappings, {
                 onReviewStart: () => { setSubmitStatus('saving'); setSubmitMessage('AI coach is reviewing...'); },
                 onRevise: () => { setSubmitStatus(null); setSubmitMessage(''); goToStep(6); },
                 onSubmitAnyway: () => { setSubmitStatus('success'); setSubmitMessage('Individual assessment submitted!'); setIndividualSubmitted(true); },
@@ -636,7 +668,10 @@
         const handleTeamSubmit = async () => {
             const userId = localStorage.getItem('ft_user_id');
             if (!userId) { alert('User not authenticated.'); return; }
-            await window.AIChallenge.submitWithChallenge(userId, 'performance-team', { team_data: teamData }, {
+            const teamMappings = {
+                execution_dashboard: { teamTakeaways: teamData.teamTakeaways, teamStrategies: teamData.teamStrategies, www: teamData.www }
+            };
+            await window.AIChallenge.submitWithChallenge(userId, 'performance-team', teamMappings, {
                 onReviewStart: () => { setSubmitStatus('saving'); setSubmitMessage('AI coach is reviewing team work...'); },
                 onRevise: () => { setSubmitStatus(null); setSubmitMessage(''); goToStep(9); },
                 onSubmitAnyway: () => { setSubmitStatus('success'); setSubmitMessage('Team meeting submitted successfully!'); },
@@ -714,11 +749,14 @@
                                 {step === 5 && <Step5 d={data} u={u} />}
                                 {step === 6 && <Step6 d={data} u={u} />}
                             </div>
-                            <ButtonFooter onBack={() => step === 1 ? goToStep(0.5) : goToStep(step - 1)} onNext={() => step < 6 ? goToStep(step + 1) : goToStep(7)} nextLabel={step === 6 ? 'Review' : 'Next'} />
+                            <ButtonFooter onBack={() => step === 1 ? goToStep(0.5) : goToStep(step - 1)} onNext={() => step < 6 ? goToStep(step + 0.5) : goToStep(7)} nextLabel={step === 6 ? 'Review' : 'Next'} />
                         </div>
                         <WizardSidebar step={step} teamUnlocked={teamToolUnlocked} onNavigate={goToStep} />
                     </div>
                 )}
+
+                {/* TRANSITION SCREENS */}
+                {window.renderTransitionScreen && [1.5, 2.5, 3.5, 4.5].includes(step) && window.renderTransitionScreen(step, CONFIG, totalSteps, setStep)}
 
                 {/* STEP 7: REVIEW & SUBMIT INDIVIDUAL */}
                 {step === 7 && (

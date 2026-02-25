@@ -339,7 +339,21 @@
         SUPABASE_URL: 'https://lutzzfaedkbsmbobmrzx.supabase.co',
         SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1dHp6ZmFlZGtic21ib2Jtcnp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MDA0MDQsImV4cCI6MjA4NjM3NjQwNH0.o2gJba85vDl4NLS-C8Mq3OudWKxet-b0IqO9kazqb8U',
         TOOL_SLUG: 'fit-abc',
-        AUTOSAVE_DELAY: 2000
+        AUTOSAVE_DELAY: 2000,
+        TRANSITION_CONTENT: {
+            1: {
+                brutalTruth: 'Most companies keep C-players 18 months longer than they should. The cost is not just salary — it is the A-players who leave or disengage because standards are not held.',
+                peerProof: '"A €20M firm ran the ABC analysis and addressed 3 C-players in critical roles. After 60 days — 2 moved on, 1 improved — team productivity increased 25% and voluntary A-player turnover dropped to zero."'
+            },
+            2: {
+                brutalTruth: 'Role clarity is not an HR formality — it is a performance multiplier. When A-players do not know what winning looks like in their role, they default to activity over impact. Clarity unlocks discretionary effort.',
+                peerProof: '"A scale-up rewrote job scorecards for their top 12 roles. Within 2 months, 3 people self-selected out (they no longer fit the role they thought they had), and performance reviews became conversations about outcomes, not feelings."'
+            },
+            3: {
+                brutalTruth: 'Talent density — not headcount — is the true performance lever. One A-player in a key role consistently outperforms three B-players. The question is not how many people you have, but how aligned each one is to where value is created.',
+                peerProof: '"After implementing ABC analysis company-wide, a €50M firm reduced headcount by 8% while revenue grew 22%. They stopped backfilling B-player exits and rebuilt roles around A-player strengths instead."'
+            }
+        }
     };
 
     const { createClient } = supabase;
@@ -381,6 +395,7 @@
       const [showTransition, setShowTransition] = useState(false);
       const [transitionMessage, setTransitionMessage] = useState('');
       const [transitionProgress, setTransitionProgress] = useState(0);
+      const [transitionStep, setTransitionStep] = useState(null);
       const [aiReviewing, setAiReviewing] = useState(false);
 
       const [data, setData] = useState({
@@ -538,11 +553,12 @@
             const progressValues = [25, 50, 75, 100];
             setTransitionMessage(messages[step - 1]);
             setTransitionProgress(progressValues[step - 1]);
+            setTransitionStep(step);
             setShowTransition(true);
             setTimeout(() => {
               setShowTransition(false);
               setStep(step + 1);
-            }, 2000);
+            }, 5000);
           } else if (step === 4) {
             setStep(5);
           }
@@ -688,7 +704,7 @@
 
       // Render different pages based on step
       if (showTransition) {
-        return <TransitionScreen message={transitionMessage} progress={transitionProgress} />;
+        return <TransitionScreen message={transitionMessage} progress={transitionProgress} stepNum={transitionStep} />;
       }
 
       if (step === 0) {
@@ -777,7 +793,7 @@
           <div
             className="absolute inset-0 w-full h-full"
             style={{
-              backgroundImage: 'url("kevin-et-laurianne-langlais-yCg-sSDyxsE-unsplash.jpg")',
+              backgroundImage: 'url("https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1920&q=80")',
               backgroundSize: 'cover',
               backgroundPosition: 'center'
             }}
@@ -928,23 +944,30 @@
     }
 
     // Transition Screen Component
-    function TransitionScreen({ message, progress }) {
+    function TransitionScreen({ message, progress, stepNum }) {
+      const t = stepNum && CONFIG.TRANSITION_CONTENT && CONFIG.TRANSITION_CONTENT[stepNum];
       return (
-        <div className="fixed inset-0 bg-black text-white flex items-center justify-center z-50 fade-in">
-          <div className="text-center px-8">
-            <h1 className="plaak transition-animate-in" style={{fontSize: '120px', marginBottom: '32px'}}>
-              SECTION COMPLETE
-            </h1>
-
-            <div className="max-w-2xl mx-auto mb-8 transition-animate-in" style={{animationDelay: '0.2s'}}>
-              <div className="h-2 bg-gray-800 mb-4">
-                <div
-                  className="h-full bg-white transition-all duration-1000"
-                  style={{width: `${progress}%`}}
-                ></div>
+        <div style={{ position: 'fixed', inset: 0, background: '#000', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '48px 32px' }}>
+          <div style={{ maxWidth: 640, width: '100%', textAlign: 'center' }} className="animate-in">
+            <h1 className="plaak" style={{ fontSize: 64, marginBottom: 24, textTransform: 'uppercase', lineHeight: 1.1 }}>STEP COMPLETE</h1>
+            <div style={{ marginBottom: 32 }}>
+              <div style={{ height: 4, background: '#333', marginBottom: 8 }}>
+                <div style={{ height: '100%', background: '#FFF469', width: progress + '%', transition: 'width 1s ease' }} />
               </div>
-              <p className="monument text-xl tracking-wider">{message}</p>
+              <p style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: '#ccc', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{message}</p>
             </div>
+            {t && t.brutalTruth && (
+              <div style={{ background: '#111', border: '1px solid #333', borderLeft: '4px solid #FFF469', padding: '20px 24px', marginBottom: 20, textAlign: 'left' }}>
+                <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#FFF469', display: 'block', marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>BRUTAL TRUTH</span>
+                <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7, margin: 0 }}>{t.brutalTruth}</p>
+              </div>
+            )}
+            {t && t.peerProof && (
+              <div style={{ background: '#111', border: '1px solid #333', borderLeft: '4px solid #666', padding: '20px 24px', textAlign: 'left' }}>
+                <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#999', display: 'block', marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>PEER PROOF</span>
+                <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7, fontStyle: 'italic', margin: 0 }}>{t.peerProof}</p>
+              </div>
+            )}
           </div>
         </div>
       );

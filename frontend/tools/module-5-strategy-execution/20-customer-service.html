@@ -22,6 +22,7 @@
   <script src="../../shared/js/dependency-injection.js"></script>
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
     <script src="../../shared/js/cognitive-load.js"></script>
+    <script src="../../shared/js/transition-screen.js"></script>
     <script src="../../js/tool-access-control.js"></script>
 
   <!-- jsPDF + html2canvas for PDF export -->
@@ -266,7 +267,21 @@
       SUPABASE_URL: 'https://lutzzfaedkbsmbobmrzx.supabase.co',
       SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1dHp6ZmFlZGtic21ib2Jtcnp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MDA0MDQsImV4cCI6MjA4NjM3NjQwNH0.o2gJba85vDl4NLS-C8Mq3OudWKxet-b0IqO9kazqb8U',
       TOOL_SLUG: 'customer-service',
-      AUTOSAVE_DELAY: 2000
+      AUTOSAVE_DELAY: 2000,
+      TRANSITION_CONTENT: {
+        1: {
+          brutalTruth: 'Acquiring a new customer costs 5-7x more than retaining an existing one. Poor service is not a satisfaction issue — it is a P&L issue. Every churn event is a silent acquisition cost you pay twice.',
+          peerProof: '"A €4M SaaS company tracked NPS monthly and discovered their highest-churning segment was also their most complaint-prone. They assigned a dedicated CS rep. Churn dropped 40% in two quarters."'
+        },
+        2: {
+          brutalTruth: 'Customer complaints are not problems — they are free consulting. The companies that grow fastest treat every complaint as a product roadmap item. The ones that ignore them repeat the same failures quarterly.',
+          peerProof: '"One B2B services firm created a monthly \'complaint digest\' for their leadership team. Three systemic issues surfaced. Fixing them cut support tickets by 55% and improved renewal rates by 28%."'
+        },
+        3: {
+          brutalTruth: 'Service standards without enforcement are just aspirations. If your team does not know what \'good\' looks like — with specific response times, resolution rates, and escalation triggers — you have a policy, not a system.',
+          peerProof: '"A regional bank branch set explicit service standards: 24h response, 48h resolution, personal callback on all complaints. Within 6 months, their NPS moved from 22 to 47. The standard came first. The score followed."'
+        }
+      }
     };
 
     const { createClient } = supabase;
@@ -308,6 +323,7 @@
       const [showTransition, setShowTransition] = useState(false);
       const [transitionMessage, setTransitionMessage] = useState('');
       const [transitionProgress, setTransitionProgress] = useState(0);
+      const [transitionStep, setTransitionStep] = useState(null);
       const [aiReviewing, setAiReviewing] = useState(false);
       const [submitStatus, setSubmitStatus] = useState(null);
       const [submitMessage, setSubmitMessage] = useState('');
@@ -506,11 +522,12 @@
           const progressValues = [20, 40, 60, 80, 100];
           setTransitionMessage(messages[fromStep - 1]);
           setTransitionProgress(progressValues[fromStep - 1]);
+          setTransitionStep(fromStep);
           setShowTransition(true);
           setTimeout(() => {
             setShowTransition(false);
             setStep(fromStep + 1);
-          }, 2000);
+          }, 4000);
         } else if (fromStep === 5) {
           setStep(6);
         }
@@ -654,7 +671,7 @@
 
       // Render different pages based on step
       if (showTransition) {
-        return <TransitionScreen message={transitionMessage} progress={transitionProgress} />;
+        return <TransitionScreen message={transitionMessage} progress={transitionProgress} stepNum={transitionStep} />;
       }
 
       if (step === 0) {
@@ -894,23 +911,30 @@
     }
 
     // Transition Screen Component
-    function TransitionScreen({ message, progress }) {
+    function TransitionScreen({ message, progress, stepNum }) {
+      const t = stepNum && CONFIG.TRANSITION_CONTENT && CONFIG.TRANSITION_CONTENT[stepNum];
       return (
-        <div className="fixed inset-0 bg-black text-white flex items-center justify-center z-50 fade-in">
-          <div className="text-center px-8">
-            <h1 className="plaak transition-animate-in" style={{fontSize: '120px', marginBottom: '32px'}}>
-              SECTION COMPLETE
-            </h1>
-
-            <div className="max-w-2xl mx-auto mb-8 transition-animate-in" style={{animationDelay: '0.2s'}}>
-              <div className="h-2 bg-gray-800 mb-4">
-                <div
-                  className="h-full bg-white transition-all duration-1000"
-                  style={{width: `${progress}%`}}
-                ></div>
+        <div style={{ position: 'fixed', inset: 0, background: '#000', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '48px 32px' }}>
+          <div style={{ maxWidth: 640, width: '100%', textAlign: 'center' }} className="animate-in">
+            <h1 className="plaak" style={{ fontSize: 64, marginBottom: 24, textTransform: 'uppercase', lineHeight: 1.1 }}>STEP COMPLETE</h1>
+            <div style={{ marginBottom: 32 }}>
+              <div style={{ height: 4, background: '#333', marginBottom: 8 }}>
+                <div style={{ height: '100%', background: '#FFF469', width: progress + '%', transition: 'width 1s ease' }} />
               </div>
-              <p className="monument text-xl tracking-wider">{message}</p>
+              <p style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: '#ccc', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{message}</p>
             </div>
+            {t && t.brutalTruth && (
+              <div style={{ background: '#111', border: '1px solid #333', borderLeft: '4px solid #FFF469', padding: '20px 24px', marginBottom: 20, textAlign: 'left' }}>
+                <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#FFF469', display: 'block', marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>BRUTAL TRUTH</span>
+                <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7, margin: 0 }}>{t.brutalTruth}</p>
+              </div>
+            )}
+            {t && t.peerProof && (
+              <div style={{ background: '#111', border: '1px solid #333', borderLeft: '4px solid #666', padding: '20px 24px', textAlign: 'left' }}>
+                <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#999', display: 'block', marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>PEER PROOF</span>
+                <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7, fontStyle: 'italic', margin: 0 }}>{t.peerProof}</p>
+              </div>
+            )}
           </div>
         </div>
       );

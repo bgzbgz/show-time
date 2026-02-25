@@ -14,6 +14,7 @@
     <script src="../../shared/js/dependency-injection.js"></script>
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
     <script src="../../shared/js/cognitive-load.js"></script>
+    <script src="../../shared/js/transition-screen.js"></script>
     <script src="../../js/tool-access-control.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -94,7 +95,26 @@
         SUPABASE_URL: 'https://lutzzfaedkbsmbobmrzx.supabase.co',
         SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1dHp6ZmFlZGtic21ib2Jtcnp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MDA0MDQsImV4cCI6MjA4NjM3NjQwNH0.o2gJba85vDl4NLS-C8Mq3OudWKxet-b0IqO9kazqb8U',
         TOOL_SLUG: 'meeting-rhythm',
-        AUTOSAVE_DELAY: 2000
+        AUTOSAVE_DELAY: 2000,
+        TRANSITION_CONTENT: {
+            1: {
+                brutalTruth: 'Bad meetings are the most expensive line item no one tracks. A weekly leadership meeting with 6 people costs €150k+ per year in senior time — and most are theatre, not decisions. Measure your meeting ROI.',
+                peerProof: '"One CEO cut leadership meetings from 3 hours to 45 minutes with a 3-item agenda cap and a written pre-read requirement. Decision velocity doubled. The team reported higher clarity and 30% less stress."'
+            },
+            2: {
+                brutalTruth: 'Meeting readiness is not about being prepared — it is about respecting everyone else\'s time. Showing up underprepared to a meeting is the same as being late. Both say: my time matters more than yours.',
+                peerProof: '"A €25M company introduced a simple rule: every meeting requires a 5-bullet pre-read sent 24 hours before. Attendance quality improved. Decisions that previously took 3 meetings now happened in one. The rule cost nothing to implement."'
+            },
+            3: {
+                brutalTruth: 'Discussing problems in meetings without designating an owner and a deadline is not problem-solving — it is expensive group therapy. Every issue that leaves a meeting without a clear WHO, WHAT, and WHEN will return at the next meeting.',
+                peerProof: '"A leadership team started ending every meeting with a 2-minute WWW (Who, What, When) round. Issue recurrence in subsequent meetings dropped 70% in 60 days. The recurring agenda items that used to eat 40% of meeting time disappeared."'
+            }
+        },
+        CLOSING_MESSAGES: {
+            1: { title: 'RHYTHM ASSESSED', text: 'Your current meeting reality is clear. Next: evaluate your preparation standards.' },
+            2: { title: 'READINESS MEASURED', text: 'Your preparation gaps are identified. Next: define how you break problems and make decisions.' },
+            3: { title: 'BIG ROCK CRACKED', text: 'Your decision process is built. Take it to the team meeting and align.' }
+        }
     };
 
     const { createClient } = supabase;
@@ -572,6 +592,8 @@
     }
 
     /* === MAIN APP === */
+    const totalSteps = 3;
+
     function MeetingRhythmApp() {
         const [step, setStep] = useState(0);
         const [data, setData] = useState({});
@@ -636,7 +658,10 @@
         const handleIndividualSubmit = async () => {
             const userId = localStorage.getItem('ft_user_id');
             if (!userId) { alert('User not authenticated.'); return; }
-            await window.AIChallenge.submitWithChallenge(userId, 'meeting-rhythm-individual', { meeting_rhythm_data: data }, {
+            const questionMappings = {
+                rhythm_dates: { priorities: data.priorities, agendaItems: data.agendaItems, effectiveness: data.effectiveness, bigRock: data.bigRock }
+            };
+            await window.AIChallenge.submitWithChallenge(userId, 'meeting-rhythm-individual', questionMappings, {
                 onReviewStart: () => { setSubmitStatus('saving'); setSubmitMessage('AI coach is reviewing...'); },
                 onRevise: () => { setSubmitStatus(null); setSubmitMessage(''); goToStep(4); },
                 onSubmitAnyway: () => { setSubmitStatus('success'); setSubmitMessage('Individual assessment submitted!'); setIndividualSubmitted(true); },
@@ -648,7 +673,10 @@
         const handleTeamSubmit = async () => {
             const userId = localStorage.getItem('ft_user_id');
             if (!userId) { alert('User not authenticated.'); return; }
-            await window.AIChallenge.submitWithChallenge(userId, 'meeting-rhythm-team', { team_data: teamData }, {
+            const teamMappings = {
+                rhythm_dates: { teamDecisions: teamData.teamDecisions, teamProcessTools: teamData.teamProcessTools, www: teamData.www }
+            };
+            await window.AIChallenge.submitWithChallenge(userId, 'meeting-rhythm-team', teamMappings, {
                 onReviewStart: () => { setSubmitStatus('saving'); setSubmitMessage('AI coach is reviewing team work...'); },
                 onRevise: () => { setSubmitStatus(null); setSubmitMessage(''); goToStep(7); },
                 onSubmitAnyway: () => { setSubmitStatus('success'); setSubmitMessage('Team meeting submitted successfully!'); },
@@ -724,11 +752,14 @@
                                 {step === 3 && <Step3 d={data} u={u} />}
                                 {step === 4 && <Step4 d={data} u={u} />}
                             </div>
-                            <ButtonFooter onBack={() => step === 1 ? goToStep(0.5) : goToStep(step - 1)} onNext={() => step < 4 ? goToStep(step + 1) : goToStep(5)} nextLabel={step === 4 ? 'Review' : 'Next'} />
+                            <ButtonFooter onBack={() => step === 1 ? goToStep(0.5) : goToStep(step - 1)} onNext={() => step < 4 ? goToStep(step + 0.5) : goToStep(5)} nextLabel={step === 4 ? 'Review' : 'Next'} />
                         </div>
                         <WizardSidebar step={step} teamUnlocked={teamToolUnlocked} onNavigate={goToStep} />
                     </div>
                 )}
+
+                {/* TRANSITION SCREENS */}
+                {window.renderTransitionScreen && [1.5, 2.5, 3.5].includes(step) && window.renderTransitionScreen(step, CONFIG, totalSteps, setStep)}
 
                 {/* STEP 5: REVIEW & SUBMIT INDIVIDUAL */}
                 {step === 5 && (

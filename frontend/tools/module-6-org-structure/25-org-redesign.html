@@ -455,7 +455,25 @@
         SUPABASE_URL: 'https://lutzzfaedkbsmbobmrzx.supabase.co',
         SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1dHp6ZmFlZGtic21ib2Jtcnp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MDA0MDQsImV4cCI6MjA4NjM3NjQwNH0.o2gJba85vDl4NLS-C8Mq3OudWKxet-b0IqO9kazqb8U',
         TOOL_SLUG: 'org-redesign',
-        AUTOSAVE_DELAY: 2000
+        AUTOSAVE_DELAY: 2000,
+        TRANSITION_CONTENT: {
+            1: {
+                brutalTruth: 'Most org charts reflect history, not strategy. Companies structure themselves around the people they have rather than the work they need to do. Your structure is either accelerating your strategy or fighting it.',
+                peerProof: '"A €30M company restructured from functional silos to two business units aligned with their core customer segments. Accountability became clearer. Cross-functional conflict dropped. Revenue per head increased 18% in 12 months."'
+            },
+            2: {
+                brutalTruth: 'Reorganizations fail not because of the structure chosen, but because of what was not addressed: unclear decision rights, informal power structures, and roles created for people rather than outcomes.',
+                peerProof: '"A tech company redesigned their org twice in three years without improvement. On the third attempt, they mapped informal influence alongside formal structure. They discovered their \'VP of Engineering\' had no actual engineering authority — it was held by a senior developer 2 levels down."'
+            },
+            3: {
+                brutalTruth: 'The best organizational structure is the one your team can actually operate. A theoretically perfect org chart with confused humans is worse than an imperfect chart with aligned ones. Design for clarity, not elegance.',
+                peerProof: '"A €15M professional services firm replaced a complex matrix structure with a simple pod model. Three months of confusion followed. Then clarity hit — pods set their own goals, managed their own P&L, and overall revenue grew 31% the next year."'
+            },
+            4: {
+                brutalTruth: 'Personal development plans that sit in a folder do not develop people. PDPs only work when they are tied to real business needs, reviewed quarterly, and connected to visible career progression. Otherwise they are performance review theatre.',
+                peerProof: '"One company tied PDPs to a role-advancement framework visible to all employees. Voluntary turnover dropped 35% in 18 months. The highest performers cited \'clarity about the path forward\' as the primary reason they stayed."'
+            }
+        }
     };
 
     const { createClient } = supabase;
@@ -497,6 +515,7 @@
       const [showTransition, setShowTransition] = useState(false);
       const [transitionMessage, setTransitionMessage] = useState('');
       const [transitionProgress, setTransitionProgress] = useState(0);
+      const [transitionStep, setTransitionStep] = useState(null);
       const [aiReviewing, setAiReviewing] = useState(false);
 
       const [data, setData] = useState({
@@ -892,28 +911,33 @@
           if (step === 1) {
             setTransitionMessage('STEP 1 COMPLETE - 20%');
             setTransitionProgress(20);
+            setTransitionStep(1);
             setShowTransition(true);
-            setTimeout(() => { setShowTransition(false); setStep(2); }, 2000);
+            setTimeout(() => { setShowTransition(false); setStep(2); }, 5000);
           } else if (step === 2) {
             setTransitionMessage('STEP 2 COMPLETE - 40%');
             setTransitionProgress(40);
+            setTransitionStep(2);
             setShowTransition(true);
-            setTimeout(() => { setShowTransition(false); initializeMatrix(); setStep(3); }, 2000);
+            setTimeout(() => { setShowTransition(false); initializeMatrix(); setStep(3); }, 5000);
           } else if (step === 3) {
             setTransitionMessage('STEP 3 COMPLETE - 60%');
             setTransitionProgress(60);
+            setTransitionStep(3);
             setShowTransition(true);
-            setTimeout(() => { setShowTransition(false); categorizeActionPlan(); setStep(4); }, 2000);
+            setTimeout(() => { setShowTransition(false); categorizeActionPlan(); setStep(4); }, 5000);
           } else if (step === 4) {
             setTransitionMessage('STEP 4 COMPLETE - 80%');
             setTransitionProgress(80);
+            setTransitionStep(4);
             setShowTransition(true);
-            setTimeout(() => { setShowTransition(false); initializePDPs(); setStep(5); }, 2000);
+            setTimeout(() => { setShowTransition(false); initializePDPs(); setStep(5); }, 5000);
           } else if (step === 5) {
             setTransitionMessage('STEP 5 COMPLETE - 100%');
             setTransitionProgress(100);
+            setTransitionStep(5);
             setShowTransition(true);
-            setTimeout(() => { setShowTransition(false); setStep(6); }, 2000);
+            setTimeout(() => { setShowTransition(false); setStep(6); }, 5000);
           }
         } else if (step === 0) {
           setStep(0.5);
@@ -1060,7 +1084,7 @@
 
       // Render different pages based on step
       if (showTransition) {
-        return <TransitionScreen message={transitionMessage} progress={transitionProgress} />;
+        return <TransitionScreen message={transitionMessage} progress={transitionProgress} stepNum={transitionStep} />;
       }
 
       if (step === 0) {
@@ -1362,23 +1386,30 @@
     }
 
     // Transition Screen Component
-    function TransitionScreen({ message, progress }) {
+    function TransitionScreen({ message, progress, stepNum }) {
+      const t = stepNum && CONFIG.TRANSITION_CONTENT && CONFIG.TRANSITION_CONTENT[stepNum];
       return (
-        <div className="fixed inset-0 bg-black text-white flex items-center justify-center z-50 fade-in">
-          <div className="text-center px-8">
-            <h1 className="plaak transition-animate-in" style={{fontSize: '120px', marginBottom: '32px'}}>
-              SECTION COMPLETE
-            </h1>
-
-            <div className="max-w-2xl mx-auto mb-8 transition-animate-in" style={{animationDelay: '0.2s'}}>
-              <div className="h-2 bg-gray-800 mb-4">
-                <div
-                  className="h-full bg-white transition-all duration-1000"
-                  style={{width: `${progress}%`}}
-                ></div>
+        <div style={{ position: 'fixed', inset: 0, background: '#000', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '48px 32px' }}>
+          <div style={{ maxWidth: 640, width: '100%', textAlign: 'center' }} className="animate-in">
+            <h1 className="plaak" style={{ fontSize: 64, marginBottom: 24, textTransform: 'uppercase', lineHeight: 1.1 }}>STEP COMPLETE</h1>
+            <div style={{ marginBottom: 32 }}>
+              <div style={{ height: 4, background: '#333', marginBottom: 8 }}>
+                <div style={{ height: '100%', background: '#FFF469', width: progress + '%', transition: 'width 1s ease' }} />
               </div>
-              <p className="monument text-xl tracking-wider">{message}</p>
+              <p style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: '#ccc', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{message}</p>
             </div>
+            {t && t.brutalTruth && (
+              <div style={{ background: '#111', border: '1px solid #333', borderLeft: '4px solid #FFF469', padding: '20px 24px', marginBottom: 20, textAlign: 'left' }}>
+                <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#FFF469', display: 'block', marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>BRUTAL TRUTH</span>
+                <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7, margin: 0 }}>{t.brutalTruth}</p>
+              </div>
+            )}
+            {t && t.peerProof && (
+              <div style={{ background: '#111', border: '1px solid #333', borderLeft: '4px solid #666', padding: '20px 24px', textAlign: 'left' }}>
+                <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#999', display: 'block', marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>PEER PROOF</span>
+                <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7, fontStyle: 'italic', margin: 0 }}>{t.peerProof}</p>
+              </div>
+            )}
           </div>
         </div>
       );

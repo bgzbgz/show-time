@@ -571,7 +571,21 @@
         SUPABASE_URL: 'https://lutzzfaedkbsmbobmrzx.supabase.co',
         SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1dHp6ZmFlZGtic21ib2Jtcnp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MDA0MDQsImV4cCI6MjA4NjM3NjQwNH0.o2gJba85vDl4NLS-C8Mq3OudWKxet-b0IqO9kazqb8U',
         TOOL_SLUG: 'digital-heart',
-        AUTOSAVE_DELAY: 2000
+        AUTOSAVE_DELAY: 2000,
+        TRANSITION_CONTENT: {
+            1: {
+                brutalTruth: 'AI will not replace your business — but competitors who use AI effectively will. The question is not whether to digitize — it is whether you will lead the transition or react to it when it is already too late.',
+                peerProof: '"A traditional recruitment firm integrated AI screening tools. Senior recruiters spent 40% less time on CVs and 40% more time on relationships. Revenue per recruiter increased 30% in one year. The tool cost €400/month."'
+            },
+            2: {
+                brutalTruth: 'The AI tools that deliver ROI are not the most sophisticated ones — they are the ones built around a single, clear, high-frequency task your team does today. Start there. Not with a grand digital strategy.',
+                peerProof: '"A law firm used AI to draft first-pass client summaries. Partners went from writing 45 minutes per brief to reviewing 8 minutes per brief. They handled 35% more clients with the same team. The implementation took 2 weeks."'
+            },
+            3: {
+                brutalTruth: 'Governance without experimentation is how companies fall behind. A policy that requires 3 approval layers before testing a new AI tool will ensure you are always running last year\'s technology.',
+                peerProof: '"A €40M financial services firm created a \'test and learn\' budget of €5k/month for AI experiments. In 18 months, 4 experiments failed and 2 succeeded. The 2 successes saved €180k/year in manual processing. Total investment: €90k."'
+            }
+        }
     };
 
     const { createClient } = supabase;
@@ -605,11 +619,45 @@
             );
         }
 
+    // Transition Screen Component
+    function TransitionScreen({ message, progress, stepNum }) {
+      const t = stepNum && CONFIG.TRANSITION_CONTENT && CONFIG.TRANSITION_CONTENT[stepNum];
+      return (
+        <div style={{ position: 'fixed', inset: 0, background: '#000', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '48px 32px' }}>
+          <div style={{ maxWidth: 640, width: '100%', textAlign: 'center' }} className="animate-in">
+            <h1 className="plaak" style={{ fontSize: 64, marginBottom: 24, textTransform: 'uppercase', lineHeight: 1.1 }}>STEP COMPLETE</h1>
+            <div style={{ marginBottom: 32 }}>
+              <div style={{ height: 4, background: '#333', marginBottom: 8 }}>
+                <div style={{ height: '100%', background: '#FFF469', width: progress + '%', transition: 'width 1s ease' }} />
+              </div>
+              <p style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: '#ccc', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{message}</p>
+            </div>
+            {t && t.brutalTruth && (
+              <div style={{ background: '#111', border: '1px solid #333', borderLeft: '4px solid #FFF469', padding: '20px 24px', marginBottom: 20, textAlign: 'left' }}>
+                <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#FFF469', display: 'block', marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>BRUTAL TRUTH</span>
+                <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7, margin: 0 }}>{t.brutalTruth}</p>
+              </div>
+            )}
+            {t && t.peerProof && (
+              <div style={{ background: '#111', border: '1px solid #333', borderLeft: '4px solid #666', padding: '20px 24px', textAlign: 'left' }}>
+                <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#999', display: 'block', marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>PEER PROOF</span>
+                <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7, fontStyle: 'italic', margin: 0 }}>{t.peerProof}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
     // Main App Component
     function DigitalHeartApp() {
             const [deps, setDeps] = useState([]);
       const [step, setStep] = useState(0);
       const [showHelp, setShowHelp] = useState(false);
+      const [showTransition, setShowTransition] = useState(false);
+      const [transitionMessage, setTransitionMessage] = useState('');
+      const [transitionProgress, setTransitionProgress] = useState(0);
+      const [transitionStep, setTransitionStep] = useState(null);
       const [aiReviewing, setAiReviewing] = useState(false);
 
       const [data, setData] = useState({
@@ -790,45 +838,85 @@
           }
 
           if (step === 1) {
-            setStep(2);
-            const decisions = data.decisions || [];
-            if ((data.technology || []).length === 0) {
-              setData(prev => ({
-                ...prev,
-                technology: decisions.map(d => ({
-                  decisionId: d.id,
-                  decisionName: d.decisionName,
-                  collectionMethod: '',
-                  storageSystem: '',
-                  algorithms: [{ id: 1, algorithm: '', purpose: '', complexity: '' }],
-                  processingFrequency: '',
-                  dataIntegration: '',
-                  securityRequirements: ''
-                }))
-              }));
-            }
+            const messages = ['25% COMPLETE', '50% COMPLETE', '75% COMPLETE', '100% COMPLETE'];
+            const progressValues = [25, 50, 75, 100];
+            setTransitionMessage(messages[step - 1]);
+            setTransitionProgress(progressValues[step - 1]);
+            setTransitionStep(step);
+            setShowTransition(true);
+            setTimeout(() => {
+              setShowTransition(false);
+              setStep(2);
+              const decisions = data.decisions || [];
+              if ((data.technology || []).length === 0) {
+                setData(prev => ({
+                  ...prev,
+                  technology: decisions.map(d => ({
+                    decisionId: d.id,
+                    decisionName: d.decisionName,
+                    collectionMethod: '',
+                    storageSystem: '',
+                    algorithms: [{ id: 1, algorithm: '', purpose: '', complexity: '' }],
+                    processingFrequency: '',
+                    dataIntegration: '',
+                    securityRequirements: ''
+                  }))
+                }));
+              }
+            }, 5000);
           }
           else if (step === 2) {
-            setStep(3);
-            const decisions = data.decisions || [];
-            if ((data.apis || []).length === 0) {
-              setData(prev => ({
-                ...prev,
-                apis: decisions.map(d => ({
-                  decisionId: d.id,
-                  decisionName: d.decisionName,
-                  apiEndpoints: [{ id: 1, endpoint: '', purpose: '', users: '' }],
-                  accessMethod: '',
-                  userInterface: '',
-                  updateFrequency: '',
-                  userTraining: '',
-                  accessControls: ''
-                }))
-              }));
-            }
+            const messages = ['25% COMPLETE', '50% COMPLETE', '75% COMPLETE', '100% COMPLETE'];
+            const progressValues = [25, 50, 75, 100];
+            setTransitionMessage(messages[step - 1]);
+            setTransitionProgress(progressValues[step - 1]);
+            setTransitionStep(step);
+            setShowTransition(true);
+            setTimeout(() => {
+              setShowTransition(false);
+              setStep(3);
+              const decisions = data.decisions || [];
+              if ((data.apis || []).length === 0) {
+                setData(prev => ({
+                  ...prev,
+                  apis: decisions.map(d => ({
+                    decisionId: d.id,
+                    decisionName: d.decisionName,
+                    apiEndpoints: [{ id: 1, endpoint: '', purpose: '', users: '' }],
+                    accessMethod: '',
+                    userInterface: '',
+                    updateFrequency: '',
+                    userTraining: '',
+                    accessControls: ''
+                  }))
+                }));
+              }
+            }, 5000);
           }
-          else if (step === 3) setStep(4);
-          else if (step === 4) setStep(5);
+          else if (step === 3) {
+            const messages = ['25% COMPLETE', '50% COMPLETE', '75% COMPLETE', '100% COMPLETE'];
+            const progressValues = [25, 50, 75, 100];
+            setTransitionMessage(messages[step - 1]);
+            setTransitionProgress(progressValues[step - 1]);
+            setTransitionStep(step);
+            setShowTransition(true);
+            setTimeout(() => {
+              setShowTransition(false);
+              setStep(4);
+            }, 5000);
+          }
+          else if (step === 4) {
+            const messages = ['25% COMPLETE', '50% COMPLETE', '75% COMPLETE', '100% COMPLETE'];
+            const progressValues = [25, 50, 75, 100];
+            setTransitionMessage(messages[step - 1]);
+            setTransitionProgress(progressValues[step - 1]);
+            setTransitionStep(step);
+            setShowTransition(true);
+            setTimeout(() => {
+              setShowTransition(false);
+              setStep(5);
+            }, 5000);
+          }
         }
       };
 
@@ -837,6 +925,10 @@
         else if (step > 1) setStep(step - 1);
         else if (step === 1) setStep(0.5);
       };
+
+      if (showTransition) {
+        return <TransitionScreen message={transitionMessage} progress={transitionProgress} stepNum={transitionStep} />;
+      }
 
       return (
         <div className="min-h-screen bg-white">
