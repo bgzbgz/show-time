@@ -42,6 +42,8 @@
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1dHp6ZmFlZGtic21ib2Jtcnp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MDA0MDQsImV4cCI6MjA4NjM3NjQwNH0.o2gJba85vDl4NLS-C8Mq3OudWKxet-b0IqO9kazqb8U';
     const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    const ALL_TOOLS = ['woop','know-thyself','dream','values','team','fit','cash','energy','goals','focus','performance','meeting-rhythm','market-size','segmentation-target-market','target-segment-deep-dive','value-proposition','value-proposition-testing','product-development','pricing','brand-marketing','customer-service','route-to-market','core-activities','processes-decisions','fit-abc-analysis','org-redesign','employer-branding','agile-teams','digitalization','digital-heart'];
+
     // ─── Helpers ───────────────────────────────────────────────────────────────
 
     function timeAgo(dateStr) {
@@ -72,6 +74,22 @@
       if (hrs > 0) return `${hrs}h ${mins % 60}m`;
       if (mins > 0) return `${mins}m`;
       return '<1m';
+    }
+
+    function exportCSV(rows, filename) {
+      if (!rows.length) return;
+      const keys = Object.keys(rows[0]);
+      const csv = [
+        keys.join(','),
+        ...rows.map(r => keys.map(k => {
+          const v = r[k] == null ? '' : String(r[k]);
+          return v.includes(',') || v.includes('"') || v.includes('\n') ? `"${v.replace(/"/g, '""')}"` : v;
+        }).join(','))
+      ].join('\n');
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+      a.download = filename;
+      a.click();
     }
 
     function actionColor(action) {
@@ -326,6 +344,9 @@
       const [lastActivity, setLastActivity] = useState({});
       const [expanded, setExpanded] = useState(null);
       const [loading, setLoading] = useState(true);
+      const [orgModal, setOrgModal] = useState(null); // null | { mode: 'new'|'edit', id?, name, tag }
+      const [orgSaving, setOrgSaving] = useState(false);
+      const [cohortView, setCohortView] = useState({}); // orgId -> 'members' | 'progress'
 
       useEffect(() => { loadData(); }, []);
 
@@ -359,11 +380,39 @@
         setLoading(false);
       }
 
+      async function saveOrg() {
+        setOrgSaving(true);
+        if (orgModal.mode === 'new') {
+          const { data } = await db.from('organizations').insert({ name: orgModal.name, learnworlds_tag: orgModal.tag || null }).select().single();
+          if (data) setOrgs(prev => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)));
+        } else {
+          await db.from('organizations').update({ name: orgModal.name, learnworlds_tag: orgModal.tag || null }).eq('id', orgModal.id);
+          setOrgs(prev => prev.map(o => o.id === orgModal.id ? { ...o, name: orgModal.name, learnworlds_tag: orgModal.tag || null } : o));
+        }
+        setOrgSaving(false);
+        setOrgModal(null);
+      }
+
+      async function deleteOrg(orgId, orgName) {
+        if (!window.confirm(`Delete "${orgName}"? Members will lose their org assignment.`)) return;
+        await db.from('organizations').delete().eq('id', orgId);
+        setOrgs(prev => prev.filter(o => o.id !== orgId));
+        setExpanded(null);
+      }
+
       if (loading) return <LoadingState />;
 
       return (
         <div>
-          <h2 style={S.viewTitle}>Companies</h2>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+            <h2 style={{ ...S.viewTitle, marginBottom: 0 }}>Companies</h2>
+            <button
+              onClick={() => setOrgModal({ mode: 'new', name: '', tag: '' })}
+              style={{ background: '#FFF469', color: '#000', border: 'none', cursor: 'pointer', padding: '8px 16px', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em' }}
+            >
+              + NEW COMPANY
+            </button>
+          </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {orgs.map(org => {
               const members = users.filter(u => u.organization_id === org.id);
@@ -379,14 +428,12 @@
               return (
                 <div key={org.id} style={S.card}>
                   <div
-                    onClick={() => setExpanded(isOpen ? null : org.id)}
                     style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '20px 24px', cursor: 'pointer',
-                      transition: 'background 0.1s'
+                      padding: '20px 24px',
                     }}
                   >
-                    <div>
+                    <div onClick={() => setExpanded(isOpen ? null : org.id)} style={{ flex: 1, cursor: 'pointer' }}>
                       <div style={{
                         fontFamily: 'Plaak, sans-serif', fontSize: 17,
                         color: '#FFF469', letterSpacing: '0.03em'
@@ -400,50 +447,109 @@
                         {orgLastActivity && ` · Last active ${timeAgo(orgLastActivity)}`}
                       </div>
                     </div>
-                    <div style={{ color: '#444', fontSize: 12 }}>{isOpen ? '▲' : '▼'}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <button onClick={() => setOrgModal({ mode: 'edit', id: org.id, name: org.name, tag: org.learnworlds_tag || '' })}
+                        style={{ background: 'none', border: '1px solid #2a2a2a', color: '#555', cursor: 'pointer', padding: '4px 10px', fontSize: 11 }}>
+                        EDIT
+                      </button>
+                      <button onClick={() => deleteOrg(org.id, org.name)}
+                        style={{ background: 'none', border: '1px solid #2a2a2a', color: '#555', cursor: 'pointer', padding: '4px 10px', fontSize: 11 }}>
+                        DEL
+                      </button>
+                      <div onClick={() => setExpanded(isOpen ? null : org.id)} style={{ color: '#444', fontSize: 12, cursor: 'pointer', padding: '4px 8px' }}>{isOpen ? '▲' : '▼'}</div>
+                    </div>
                   </div>
 
                   {isOpen && (
-                    <div style={{ borderTop: '1px solid #1a1a1a', overflowX: 'auto' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <thead>
-                          <tr style={{ background: '#0d0d0d' }}>
-                            {['Name', 'Email', 'Tools Done', 'Last Active'].map(h => (
-                              <th key={h} style={S.th}>{h}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {members.length === 0 && (
-                            <tr>
-                              <td colSpan={4} style={{ ...S.td, color: '#444', textAlign: 'center', padding: 24 }}>
-                                No members
-                              </td>
-                            </tr>
-                          )}
-                          {members.map(member => {
-                            const done = completions.filter(c => c.user_id === member.id).length;
-                            return (
-                              <tr
-                                key={member.id}
-                                onClick={() => onSelectUser(member)}
-                                style={{ borderTop: '1px solid #1a1a1a', cursor: 'pointer' }}
-                                onMouseEnter={e => e.currentTarget.style.background = '#161600'}
-                                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                              >
-                                <td style={S.td}>
-                                  <span style={{ color: '#FFF469' }}>{member.full_name || '—'}</span>
-                                </td>
-                                <td style={{ ...S.td, color: '#777', fontSize: 12 }}>{member.email}</td>
-                                <td style={S.td}>{done}</td>
-                                <td style={{ ...S.td, color: '#555', fontSize: 12 }}>
-                                  {timeAgo(lastActivity[member.id])}
-                                </td>
+                    <div style={{ borderTop: '1px solid #1a1a1a' }}>
+                      {/* View toggle */}
+                      <div style={{ display: 'flex', borderBottom: '1px solid #1a1a1a' }}>
+                        {['members', 'progress'].map(v => (
+                          <button key={v} onClick={() => setCohortView(prev => ({ ...prev, [org.id]: v }))}
+                            style={{
+                              padding: '8px 16px', background: 'none', border: 'none',
+                              color: (cohortView[org.id] || 'members') === v ? '#FFF469' : '#444',
+                              fontSize: 10, letterSpacing: '0.08em', cursor: 'pointer', textTransform: 'uppercase',
+                              borderBottom: (cohortView[org.id] || 'members') === v ? '2px solid #FFF469' : '2px solid transparent',
+                              marginBottom: -1,
+                            }}>
+                            {v}
+                          </button>
+                        ))}
+                      </div>
+
+                      {(cohortView[org.id] || 'members') === 'members' ? (
+                        <div style={{ overflowX: 'auto' }}>
+                          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <thead>
+                              <tr style={{ background: '#0d0d0d' }}>
+                                {['Name', 'Email', 'Tools Done', 'Last Active'].map(h => (
+                                  <th key={h} style={S.th}>{h}</th>
+                                ))}
                               </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
+                            </thead>
+                            <tbody>
+                              {members.length === 0 && (
+                                <tr>
+                                  <td colSpan={4} style={{ ...S.td, color: '#444', textAlign: 'center', padding: 24 }}>
+                                    No members
+                                  </td>
+                                </tr>
+                              )}
+                              {members.map(member => {
+                                const done = completions.filter(c => c.user_id === member.id).length;
+                                return (
+                                  <tr
+                                    key={member.id}
+                                    onClick={() => onSelectUser(member)}
+                                    style={{ borderTop: '1px solid #1a1a1a', cursor: 'pointer' }}
+                                    onMouseEnter={e => e.currentTarget.style.background = '#161600'}
+                                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                  >
+                                    <td style={S.td}><span style={{ color: '#FFF469' }}>{member.full_name || '—'}</span></td>
+                                    <td style={{ ...S.td, color: '#777', fontSize: 12 }}>{member.email}</td>
+                                    <td style={S.td}>{done}</td>
+                                    <td style={{ ...S.td, color: '#555', fontSize: 12 }}>{timeAgo(lastActivity[member.id])}</td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <div style={{ overflowX: 'auto', padding: '12px 16px' }}>
+                          {members.length === 0 ? (
+                            <div style={{ color: '#444', fontSize: 13, textAlign: 'center', padding: 16 }}>No members</div>
+                          ) : (
+                            <table style={{ borderCollapse: 'collapse', fontSize: 10, fontFamily: 'Monument, monospace' }}>
+                              <thead>
+                                <tr>
+                                  <th style={{ ...S.th, position: 'sticky', left: 0, background: '#111', zIndex: 1, minWidth: 120 }}>NAME</th>
+                                  {['woop','know-thyself','dream','values','team','fit','cash','energy','goals','focus','perf','mtg','mkt','seg','tgt','vp','vp-test','prod','price','brand','cs','rtm','core','proc','fit-abc','org','eb','agile','digital','dh'].map(s => (
+                                    <th key={s} style={{ ...S.th, textAlign: 'center', minWidth: 36, padding: '8px 4px' }}>{s.slice(0,4)}</th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {members.map(member => {
+                                  const memberCompletions = new Set(completions.filter(c => c.user_id === member.id).map(c => c.tool_slug));
+                                  const tools = ['woop','know-thyself','dream','values','team','fit','cash','energy','goals','focus','performance','meeting-rhythm','market-size','segmentation-target-market','target-segment-deep-dive','value-proposition','value-proposition-testing','product-development','pricing','brand-marketing','customer-service','route-to-market','core-activities','processes-decisions','fit-abc-analysis','org-redesign','employer-branding','agile-teams','digitalization','digital-heart'];
+                                  return (
+                                    <tr key={member.id} style={{ borderTop: '1px solid #1a1a1a' }}>
+                                      <td style={{ ...S.td, position: 'sticky', left: 0, background: '#111', fontSize: 12, color: '#FFF469' }}>{member.full_name || member.email}</td>
+                                      {tools.map(slug => (
+                                        <td key={slug} style={{ textAlign: 'center', padding: '8px 4px', fontSize: 13 }}>
+                                          {memberCompletions.has(slug) ? '✅' : '–'}
+                                        </td>
+                                      ))}
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -455,23 +561,64 @@
               </div>
             )}
           </div>
+
+          {/* Org Modal */}
+          {orgModal && (
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+              <div style={{ background: '#111', border: '1px solid #2a2a2a', padding: 28, width: 360 }}>
+                <div style={{ fontFamily: 'Plaak, sans-serif', fontSize: 16, color: '#FFF469', marginBottom: 20, letterSpacing: '0.04em' }}>
+                  {orgModal.mode === 'new' ? 'NEW COMPANY' : 'EDIT COMPANY'}
+                </div>
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ ...S.sectionLabel, marginBottom: 6 }}>NAME</div>
+                  <input value={orgModal.name} onChange={e => setOrgModal(m => ({ ...m, name: e.target.value }))}
+                    placeholder="Company name" style={S.input} />
+                </div>
+                <div style={{ marginBottom: 20 }}>
+                  <div style={{ ...S.sectionLabel, marginBottom: 6 }}>LEARNWORLDS TAG</div>
+                  <input value={orgModal.tag} onChange={e => setOrgModal(m => ({ ...m, tag: e.target.value }))}
+                    placeholder="e.g. ACME" style={S.input} />
+                </div>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button onClick={saveOrg} disabled={orgSaving || !orgModal.name.trim()}
+                    style={{ background: '#FFF469', color: '#000', border: 'none', cursor: 'pointer', padding: '10px 20px', fontSize: 12, fontWeight: 700, letterSpacing: '0.08em' }}>
+                    {orgSaving ? 'SAVING...' : 'SAVE'}
+                  </button>
+                  <button onClick={() => setOrgModal(null)}
+                    style={{ background: 'none', border: '1px solid #2a2a2a', color: '#666', cursor: 'pointer', padding: '10px 20px', fontSize: 12 }}>
+                    CANCEL
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       );
     }
 
     // ─── User Drawer ───────────────────────────────────────────────────────────
 
-    function UserDrawer({ user, completions, onClose }) {
+    function UserDrawer({ user, completions, onClose, onUserUpdate }) {
       const [responses, setResponses] = useState([]);
       const [challenges, setChallenges] = useState([]);
+      const [orgs, setOrgs] = useState([]);
       const [loading, setLoading] = useState(true);
+      const [editMode, setEditMode] = useState(false);
+      const [editName, setEditName] = useState(user.full_name || '');
+      const [editEmail, setEditEmail] = useState(user.email || '');
+      const [editOrgId, setEditOrgId] = useState(user.organization_id || '');
+      const [saving, setSaving] = useState(false);
+      const [notes, setNotes] = useState('');
+      const [savingNotes, setSavingNotes] = useState(false);
+      const [unlocking, setUnlocking] = useState(null);
+      const [adminUnlocks, setAdminUnlocks] = useState([]);
 
       useEffect(() => { loadUserData(); }, [user.id]);
 
       async function loadUserData() {
         setLoading(true);
         try {
-          const [{ data: respData }, { data: chalData }] = await Promise.all([
+          const [{ data: respData }, { data: chalData }, { data: orgsData }, { data: notesData }, { data: unlockData }] = await Promise.all([
             db.from('user_responses')
               .select('id, response_value, response_data, created_at, updated_at, tool_questions(tool_slug, question_text, question_key)')
               .eq('user_id', user.id)
@@ -480,14 +627,55 @@
               .select('tool_slug, user_action, tokens_used, response_time_ms, created_at')
               .eq('user_id', user.id)
               .order('created_at', { ascending: false })
-              .limit(5)
+              .limit(5),
+            db.from('organizations').select('id, name').order('name'),
+            db.from('admin_notes').select('note').eq('target_type', 'user').eq('target_id', user.id).maybeSingle(),
+            db.from('tool_completions').select('tool_slug').eq('user_id', user.id).eq('source', 'admin_unlock')
           ]);
           setResponses(respData || []);
           setChallenges(chalData || []);
+          setOrgs(orgsData || []);
+          setNotes(notesData?.note || '');
+          setAdminUnlocks((unlockData || []).map(r => r.tool_slug));
         } catch (err) {
           console.error('User drawer error:', err);
         }
         setLoading(false);
+      }
+
+      async function saveUser() {
+        setSaving(true);
+        const { error } = await db.from('users').update({
+          full_name: editName, email: editEmail, organization_id: editOrgId || null
+        }).eq('id', user.id);
+        if (!error) {
+          setEditMode(false);
+          if (onUserUpdate) onUserUpdate({ ...user, full_name: editName, email: editEmail, organization_id: editOrgId || null, organization_name: orgs.find(o => o.id === editOrgId)?.name || user.organization_name });
+        }
+        setSaving(false);
+      }
+
+      async function saveNotes() {
+        setSavingNotes(true);
+        const { data: existing } = await db.from('admin_notes').select('id').eq('target_type', 'user').eq('target_id', user.id).maybeSingle();
+        if (existing) {
+          await db.from('admin_notes').update({ note: notes, updated_at: new Date().toISOString() }).eq('id', existing.id);
+        } else {
+          await db.from('admin_notes').insert({ target_type: 'user', target_id: user.id, note: notes });
+        }
+        setSavingNotes(false);
+      }
+
+      async function unlockTool(toolSlug) {
+        if (unlocking) return;
+        if (!window.confirm(`Unlock "${toolSlug}" for ${user.full_name || user.email}?`)) return;
+        setUnlocking(toolSlug);
+        await db.from('tool_completions').insert({
+          user_id: user.id, tool_slug: toolSlug,
+          completed_at: new Date().toISOString(), source: 'admin_unlock'
+        });
+        setAdminUnlocks(prev => [...prev, toolSlug]);
+        setUnlocking(null);
       }
 
       const userCompletions = useMemo(() =>
@@ -532,6 +720,8 @@
 
       const drawerSection = { ...S.sectionLabel, marginTop: 20, marginBottom: 8, paddingTop: 16, borderTop: '1px solid #1a1a1a' };
 
+      const btnStyle = { background: 'none', border: 'none', cursor: 'pointer' };
+
       return (
         <div style={{
           width: 340, borderLeft: '1px solid #222', background: '#0a0a0a',
@@ -543,23 +733,50 @@
             padding: '18px 18px 14px', borderBottom: '1px solid #1a1a1a',
             position: 'sticky', top: 0, background: '#0a0a0a', zIndex: 1
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontFamily: 'Plaak, sans-serif', fontSize: 16, color: '#FFF469', letterSpacing: '0.02em' }}>
-                  {user.full_name || 'Unknown'}
-                </div>
-                <div style={{ fontSize: 11, color: '#777', marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {user.email}
-                </div>
-                <div style={{ fontSize: 11, color: '#444', marginTop: 2 }}>
-                  {user.organization_name || 'No org'} · Joined {timeAgo(user.created_at)}
+            {editMode ? (
+              <div>
+                <input value={editName} onChange={e => setEditName(e.target.value)} placeholder="Full name"
+                  style={{ ...S.input, marginBottom: 8, fontSize: 13, padding: '8px 10px' }} />
+                <input value={editEmail} onChange={e => setEditEmail(e.target.value)} placeholder="Email"
+                  style={{ ...S.input, marginBottom: 8, fontSize: 13, padding: '8px 10px' }} />
+                <select value={editOrgId} onChange={e => setEditOrgId(e.target.value)}
+                  style={{ ...S.input, marginBottom: 10, fontSize: 13, padding: '8px 10px' }}>
+                  <option value="">No org</option>
+                  {orgs.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+                </select>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={saveUser} disabled={saving}
+                    style={{ background: '#FFF469', color: '#000', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 11, letterSpacing: '0.06em', padding: '6px 14px' }}>
+                    {saving ? 'SAVING...' : 'SAVE'}
+                  </button>
+                  <button onClick={() => setEditMode(false)}
+                    style={{ ...btnStyle, color: '#555', fontSize: 11, padding: '6px 10px' }}>CANCEL</button>
                 </div>
               </div>
-              <button
-                onClick={onClose}
-                style={{ background: 'none', border: 'none', color: '#444', cursor: 'pointer', fontSize: 20, padding: '0 0 0 8px', lineHeight: 1, marginTop: -2 }}
-              >×</button>
-            </div>
+            ) : (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontFamily: 'Plaak, sans-serif', fontSize: 16, color: '#FFF469', letterSpacing: '0.02em' }}>
+                    {user.full_name || 'Unknown'}
+                  </div>
+                  <div style={{ fontSize: 11, color: '#777', marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {user.email}
+                  </div>
+                  <div style={{ fontSize: 11, color: '#444', marginTop: 2 }}>
+                    {user.organization_name || 'No org'} · Joined {timeAgo(user.created_at)}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 2, marginLeft: 8, alignItems: 'center' }}>
+                  <button onClick={() => setEditMode(true)} title="Edit user"
+                    style={{ ...btnStyle, color: '#555', fontSize: 15, padding: '2px 6px' }}>✎</button>
+                  <a href={`https://fasttracktools.up.railway.app/dashboard.html?preview_uid=${user.id}`}
+                    target="_blank" rel="noopener noreferrer" title="View as user"
+                    style={{ color: '#555', fontSize: 13, padding: '2px 6px', textDecoration: 'none', lineHeight: 1.5 }}>↗</a>
+                  <button onClick={onClose}
+                    style={{ ...btnStyle, color: '#444', fontSize: 20, padding: '0 0 0 4px', lineHeight: 1, marginTop: -2 }}>×</button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Body */}
@@ -658,6 +875,50 @@
                     ))}
                   </>
                 )}
+
+                {/* Admin Notes */}
+                <div style={drawerSection}>ADMIN NOTES</div>
+                <textarea
+                  value={notes}
+                  onChange={e => setNotes(e.target.value)}
+                  placeholder="Internal notes about this user..."
+                  rows={3}
+                  style={{ ...S.input, resize: 'none', fontSize: 12, fontFamily: 'Riforma, sans-serif', marginBottom: 8 }}
+                />
+                <button
+                  onClick={saveNotes}
+                  disabled={savingNotes}
+                  style={{ background: savingNotes ? '#333' : '#1a1a1a', border: '1px solid #2a2a2a', color: savingNotes ? '#555' : '#888', padding: '5px 14px', fontSize: 11, cursor: 'pointer', letterSpacing: '0.06em' }}
+                >
+                  {savingNotes ? 'SAVING...' : 'SAVE NOTES'}
+                </button>
+
+                {/* Tool Access */}
+                <div style={drawerSection}>TOOL ACCESS — CLICK TO UNLOCK</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                  {ALL_TOOLS.map(slug => {
+                    const isDone = completedSlugs.has(slug);
+                    const isAdminUnlocked = adminUnlocks.includes(slug);
+                    const isUnlockingThis = unlocking === slug;
+                    return (
+                      <button
+                        key={slug}
+                        onClick={() => !isDone && !isAdminUnlocked && unlockTool(slug)}
+                        title={isDone ? 'Completed' : isAdminUnlocked ? 'Admin unlocked' : `Click to unlock ${slug}`}
+                        style={{
+                          fontFamily: 'Monument, monospace', fontSize: 9, padding: '3px 6px',
+                          border: isDone ? '1px solid #44ff88' : isAdminUnlocked ? '1px solid #FFF469' : '1px solid #222',
+                          background: isDone ? '#0a1f0a' : isAdminUnlocked ? '#1a1900' : '#111',
+                          color: isDone ? '#44ff88' : isAdminUnlocked ? '#FFF469' : '#444',
+                          cursor: isDone || isAdminUnlocked ? 'default' : 'pointer',
+                          opacity: isUnlockingThis ? 0.5 : 1,
+                        }}
+                      >
+                        {slug}
+                      </button>
+                    );
+                  })}
+                </div>
               </>
             )}
           </div>
@@ -734,13 +995,29 @@
               <h2 style={{ ...S.viewTitle, marginBottom: 0 }}>
                 Users <span style={{ fontSize: 14, color: '#444', fontFamily: 'Riforma, sans-serif', fontWeight: 'normal' }}>({filtered.length})</span>
               </h2>
-              <input
-                type="text"
-                placeholder="Search name, email, company..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                style={{ ...S.input, width: 260, fontSize: 13, padding: '8px 12px' }}
-              />
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <input
+                  type="text"
+                  placeholder="Search name, email, company..."
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  style={{ ...S.input, width: 240, fontSize: 13, padding: '8px 12px' }}
+                />
+                <button
+                  onClick={() => exportCSV(filtered.map(u => ({
+                    Name: u.full_name || '',
+                    Email: u.email || '',
+                    Company: u.organization_name || '',
+                    Role: u.role || 'participant',
+                    'Tools Done': completions.filter(c => c.user_id === u.id).length,
+                    'Last Active': lastActivity[u.id] ? new Date(lastActivity[u.id]).toLocaleDateString('en-GB') : '',
+                    Joined: u.created_at ? new Date(u.created_at).toLocaleDateString('en-GB') : '',
+                  })), `ft-users-${new Date().toISOString().slice(0,10)}.csv`)}
+                  style={{ background: '#1a1a1a', border: '1px solid #2a2a2a', color: '#888', cursor: 'pointer', padding: '8px 14px', fontSize: 11, letterSpacing: '0.06em', whiteSpace: 'nowrap' }}
+                >
+                  EXPORT CSV
+                </button>
+              </div>
             </div>
 
             <div style={{ ...S.card, overflow: 'auto', flex: 1 }}>
@@ -819,6 +1096,10 @@
               user={selectedUser}
               completions={completions}
               onClose={() => onSelectUser(null)}
+              onUserUpdate={updatedUser => {
+                setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
+                setSelectedUser(updatedUser);
+              }}
             />
           )}
         </div>
@@ -838,18 +1119,17 @@
       async function loadData() {
         setLoading(true);
         try {
-          const [{ data: errData }, { data: chalData }] = await Promise.all([
+          const [{ data: webhookData }, { data: chalData }] = await Promise.all([
             db.from('webhook_events')
-              .select('source, event_type, error_message, payload, created_at')
-              .not('error_message', 'is', null)
+              .select('id, source, event_type, error_message, payload, created_at')
               .order('created_at', { ascending: false })
               .limit(200),
             db.from('ai_challenge_log')
               .select('user_id, tool_slug, user_action, tokens_used, response_time_ms, created_at')
               .order('created_at', { ascending: false })
-              .limit(200)
+              .limit(500)
           ]);
-          setErrors(errData || []);
+          setErrors(webhookData || []);
           setChallenges(chalData || []);
         } catch (err) {
           console.error('Logs load error:', err);
@@ -857,11 +1137,49 @@
         setLoading(false);
       }
 
+      async function replayWebhook(event) {
+        if (!window.confirm(`Replay this ${event.event_type} event?`)) return;
+        try {
+          await fetch('https://backend-production-639c.up.railway.app/api/webhook', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(event.payload)
+          });
+          alert('Replay sent!');
+        } catch (err) {
+          alert('Replay failed: ' + err.message);
+        }
+      }
+
+      const aiStats = useMemo(() => {
+        const byTool = {};
+        challenges.forEach(c => {
+          if (!byTool[c.tool_slug]) byTool[c.tool_slug] = { total: 0, revised: 0, submitted_anyway: 0, tokens: [], ms: [] };
+          const t = byTool[c.tool_slug];
+          t.total++;
+          if (c.user_action === 'revised') t.revised++;
+          if (c.user_action === 'submitted_anyway') t.submitted_anyway++;
+          if (c.tokens_used) t.tokens.push(c.tokens_used);
+          if (c.response_time_ms) t.ms.push(c.response_time_ms);
+        });
+        return Object.entries(byTool).map(([slug, d]) => ({
+          slug,
+          total: d.total,
+          revised: d.revised,
+          submitted_anyway: d.submitted_anyway,
+          passRate: d.total > 0 ? Math.round((d.revised / d.total) * 100) : 0,
+          avgTokens: d.tokens.length ? Math.round(d.tokens.reduce((a, b) => a + b, 0) / d.tokens.length) : null,
+          avgMs: d.ms.length ? Math.round(d.ms.reduce((a, b) => a + b, 0) / d.ms.length) : null,
+        })).sort((a, b) => b.total - a.total);
+      }, [challenges]);
+
       if (loading) return <LoadingState />;
 
+      const errorCount = errors.filter(e => e.error_message).length;
       const tabs = [
-        ['errors', `Errors (${errors.length})`],
-        ['challenges', `AI Challenges (${challenges.length})`]
+        ['webhooks', `Webhooks (${errors.length})`],
+        ['challenges', `AI Challenges (${challenges.length})`],
+        ['aistats', `AI Stats (${aiStats.length} tools)`],
       ];
 
       return (
@@ -887,12 +1205,12 @@
             ))}
           </div>
 
-          {tab === 'errors' && (
+          {tab === 'webhooks' && (
             <div style={{ ...S.card, overflow: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ background: '#0d0d0d' }}>
-                    {['Source', 'Event Type', 'Error', 'Time'].map(h => (
+                    {['Status', 'Source', 'Event Type', 'Error', 'Time', ''].map(h => (
                       <th key={h} style={S.th}>{h}</th>
                     ))}
                   </tr>
@@ -900,22 +1218,29 @@
                 <tbody>
                   {errors.length === 0 && (
                     <tr>
-                      <td colSpan={4} style={{ ...S.td, color: '#444', textAlign: 'center', padding: 40 }}>
-                        No errors — all good!
+                      <td colSpan={6} style={{ ...S.td, color: '#444', textAlign: 'center', padding: 40 }}>
+                        No webhook events
                       </td>
                     </tr>
                   )}
                   {errors.map((e, i) => (
                     <tr key={i} style={{ borderTop: '1px solid #1a1a1a' }}>
-                      <td style={{ ...S.td, fontFamily: 'Monument, monospace', fontSize: 11, color: '#888' }}>
-                        {e.source}
+                      <td style={{ ...S.td, fontSize: 11 }}>
+                        <span style={{ color: e.error_message ? '#ff5555' : '#44ff88', fontFamily: 'Monument, monospace', fontSize: 10 }}>
+                          {e.error_message ? 'ERR' : 'OK'}
+                        </span>
                       </td>
+                      <td style={{ ...S.td, fontFamily: 'Monument, monospace', fontSize: 11, color: '#888' }}>{e.source}</td>
                       <td style={{ ...S.td, fontSize: 12 }}>{e.event_type}</td>
-                      <td style={{ ...S.td, color: '#ff5555', fontSize: 12, maxWidth: 360, wordBreak: 'break-word' }}>
-                        {e.error_message}
+                      <td style={{ ...S.td, color: '#ff5555', fontSize: 12, maxWidth: 280, wordBreak: 'break-word' }}>
+                        {e.error_message || <span style={{ color: '#333' }}>—</span>}
                       </td>
-                      <td style={{ ...S.td, color: '#555', fontSize: 12, whiteSpace: 'nowrap' }}>
-                        {fmtDate(e.created_at)}
+                      <td style={{ ...S.td, color: '#555', fontSize: 12, whiteSpace: 'nowrap' }}>{fmtDate(e.created_at)}</td>
+                      <td style={{ ...S.td, fontSize: 12 }}>
+                        <button onClick={() => replayWebhook(e)}
+                          style={{ background: 'none', border: '1px solid #2a2a2a', color: '#555', cursor: 'pointer', padding: '3px 8px', fontSize: 10, letterSpacing: '0.05em' }}>
+                          REPLAY
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -958,6 +1283,40 @@
                       <td style={{ ...S.td, color: '#555', fontSize: 12, whiteSpace: 'nowrap' }}>
                         {fmtDate(c.created_at)}
                       </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {tab === 'aistats' && (
+            <div style={{ ...S.card, overflow: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ background: '#0d0d0d' }}>
+                    {['Tool', 'Total', 'Revised ✓', 'Forced ✗', 'Pass %', 'Avg Tokens', 'Avg ms'].map(h => (
+                      <th key={h} style={S.th}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {aiStats.length === 0 && (
+                    <tr>
+                      <td colSpan={7} style={{ ...S.td, color: '#444', textAlign: 'center', padding: 40 }}>No AI challenge data</td>
+                    </tr>
+                  )}
+                  {aiStats.map((s, i) => (
+                    <tr key={i} style={{ borderTop: '1px solid #1a1a1a' }}>
+                      <td style={{ ...S.td, fontFamily: 'Monument, monospace', fontSize: 11, color: '#aaa' }}>{s.slug}</td>
+                      <td style={S.td}>{s.total}</td>
+                      <td style={{ ...S.td, color: '#44ff88' }}>{s.revised}</td>
+                      <td style={{ ...S.td, color: '#ff8844' }}>{s.submitted_anyway}</td>
+                      <td style={{ ...S.td, color: s.passRate >= 70 ? '#44ff88' : s.passRate >= 40 ? '#FFF469' : '#ff5555' }}>
+                        {s.passRate}%
+                      </td>
+                      <td style={{ ...S.td, color: '#666' }}>{s.avgTokens ?? '—'}</td>
+                      <td style={{ ...S.td, color: '#666' }}>{s.avgMs ?? '—'}</td>
                     </tr>
                   ))}
                 </tbody>
