@@ -102,7 +102,7 @@ var AIChallenge = (function () {
 
             if (allowSkip) {
                 var skipBtn = document.createElement('button');
-                skipBtn.textContent = 'Submit Anyway';
+                skipBtn.textContent = 'Continue Anyway';
                 skipBtn.style.cssText = 'font-family:Riforma,sans-serif;font-size:14px;padding:10px 20px;background:#fff;color:#666;border:1px solid #ccc;cursor:pointer;letter-spacing:0.02em';
                 skipBtn.onmouseenter = function () { skipBtn.style.background = '#f5f5f5'; };
                 skipBtn.onmouseleave = function () { skipBtn.style.background = '#fff'; };
@@ -111,7 +111,7 @@ var AIChallenge = (function () {
             }
 
             var reviseBtn = document.createElement('button');
-            reviseBtn.textContent = allowSkip ? 'Revise My Answers' : 'Got It \u2014 Let Me Improve';
+            reviseBtn.textContent = 'Sharpen My Answer';
             reviseBtn.style.cssText = 'font-family:Riforma,sans-serif;font-size:14px;padding:10px 24px;background:#000;color:#fff;border:2px solid #000;cursor:pointer;font-weight:600;letter-spacing:0.02em';
             reviseBtn.onmouseenter = function () { reviseBtn.style.background = '#222'; };
             reviseBtn.onmouseleave = function () { reviseBtn.style.background = '#000'; };
@@ -141,7 +141,7 @@ var AIChallenge = (function () {
         toast.style.cssText = 'position:fixed;top:24px;right:24px;z-index:10001;background:#000;color:#fff;padding:16px 40px 16px 24px;border:2px solid #FFF469;box-shadow:0 8px 24px rgba(0,0,0,0.3);animation:aicFadeIn 0.25s ease;max-width:380px';
         toast.innerHTML = '<div style="display:flex;align-items:center;gap:10px">' +
             '<div style="width:24px;height:24px;background:#FFF469;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;color:#000;font-weight:bold;flex-shrink:0">\u2713</div>' +
-            '<p style="font-family:Riforma,sans-serif;font-size:14px;margin:0;color:#fff">' + escapeHtml(message || 'Strong answers! Moving on.') + '</p>' +
+            '<p style="font-family:Riforma,sans-serif;font-size:14px;margin:0;color:#fff">' + escapeHtml(message || 'Sharp. Moving on.') + '</p>' +
             '</div>' +
             '<button onclick="this.parentNode.remove()" style="position:absolute;top:8px;right:8px;background:none;border:none;color:#fff;font-size:18px;cursor:pointer;padding:2px 6px;line-height:1;opacity:0.7">&times;</button>';
         toast.style.position = 'fixed';
@@ -168,9 +168,9 @@ var AIChallenge = (function () {
         return review(userId, toolSlug, stepAnswers, attempt)
             .then(function (feedback) {
                 if (feedback.has_challenges && feedback.challenges.length > 0) {
-                    return showModal(feedback, { allowSkip: false, stepName: stepName })
-                        .then(function () {
-                            return false; // always 'revise' — user must improve
+                    return showModal(feedback, { allowSkip: true, stepName: stepName })
+                        .then(function (action) {
+                            return action !== 'revise'; // 'submit_anyway' → proceed, 'revise' → stay
                         });
                 }
                 // No challenges — show brief approval
