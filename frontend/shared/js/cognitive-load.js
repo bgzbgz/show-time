@@ -254,3 +254,27 @@ window.CognitiveLoad = (function() {
         }
     };
 })();
+
+// =============================================================================
+// Textarea auto-grow — remove resize handle, expand with content
+// =============================================================================
+(function () {
+    function autoGrow(el) {
+        el.style.height = 'auto';
+        el.style.height = el.scrollHeight + 'px';
+    }
+    function initTextareas(root) {
+        var els = (root || document).querySelectorAll('textarea');
+        els.forEach(function (el) {
+            autoGrow(el);
+            el.addEventListener('input', function () { autoGrow(el); });
+        });
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function () { initTextareas(); });
+    } else {
+        initTextareas();
+    }
+    // Expose for React tools that render after DOM ready
+    window.initTextareaAutoGrow = initTextareas;
+})();
