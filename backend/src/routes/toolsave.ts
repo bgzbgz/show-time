@@ -122,7 +122,8 @@ router.post(
       .upsert(safeRows, { onConflict: 'user_id,question_id' });
 
     if (error) {
-      return sendError(res, 'Save failed', undefined, 500);
+      console.error('[ToolSave] Upsert error:', error);
+      return sendError(res, 'Save failed', error.message, 500);
     }
 
     return sendSuccess(res, { saved: safeRows.length });
