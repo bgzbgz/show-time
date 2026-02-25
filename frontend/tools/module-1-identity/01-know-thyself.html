@@ -257,7 +257,7 @@
         }
         .btn-secondary:hover { background: #F8F8F8; }
 
-        textarea { resize: none; min-height: 100px; }
+        textarea { resize: none !important; min-height: 100px; }
     </style>
 </head>
 <body>
@@ -732,30 +732,32 @@
             const SECTION_NAMES = { 1: 'Dream Launcher', 2: 'Strengths Amplifier', 3: 'Values Compass', 4: 'Growth Blueprint' };
 
             // Navigate to next sub-step or next section
+            // AI challenge fires after every slide, not just the last one
             const nextSubStep = () => {
                 const totalSubSteps = SUBSTEPS[step] || 0;
-                if (subStep < totalSubSteps - 1) {
-                    setSubStep(subStep + 1);
-                } else {
-                    // Section complete — trigger AI review before celebration screen
-                    const sectionNum = Math.floor(step);
-                    const userId = localStorage.getItem('ft_user_id') || 'anon-' + Date.now();
-                    setAiReviewing(true);
-                    window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, getSectionAnswers(sectionNum), SECTION_NAMES[sectionNum])
-                        .then(function (canProceed) {
-                            setAiReviewing(false);
-                            if (canProceed) {
-                                setSubStep(0);
-                                setStep(step + 0.5);
-                            }
-                        })
-                        .catch(function () {
-                            setAiReviewing(false);
-                            // On error, allow passage
-                            setSubStep(0);
-                            setStep(step + 0.5);
-                        });
-                }
+                const isLastSubStep = subStep >= totalSubSteps - 1;
+                const sectionNum = Math.floor(step);
+                const userId = localStorage.getItem('ft_user_id') || 'anon-' + Date.now();
+
+                const advance = () => {
+                    if (isLastSubStep) {
+                        setSubStep(0);
+                        setStep(step + 0.5);
+                    } else {
+                        setSubStep(subStep + 1);
+                    }
+                };
+
+                setAiReviewing(true);
+                window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, getSectionAnswers(sectionNum), SECTION_NAMES[sectionNum])
+                    .then(function (canProceed) {
+                        setAiReviewing(false);
+                        if (canProceed) advance();
+                    })
+                    .catch(function () {
+                        setAiReviewing(false);
+                        advance();
+                    });
             };
             
             // Navigate to previous sub-step or previous section
