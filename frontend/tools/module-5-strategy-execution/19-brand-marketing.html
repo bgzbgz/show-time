@@ -256,6 +256,72 @@
     .char-counter.invalid {
       color: #EF4444;
     }
+
+    /* Wizard Layout */
+    .wizard-layout {
+      display: flex;
+      min-height: 100vh;
+    }
+    .wizard-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+    .wizard-content {
+      flex: 1;
+      padding: 48px 64px;
+      max-width: 860px;
+    }
+    .wizard-sidebar {
+      width: 280px;
+      background: #1a1a1a;
+      color: #fff;
+      padding: 40px 32px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .wizard-footer {
+      padding: 24px 64px;
+      border-top: 1px solid #E0E0E0;
+      display: flex;
+      gap: 16px;
+      background: #fff;
+    }
+    .btn-wiz-back {
+      background: #fff;
+      color: #000;
+      padding: 14px 24px;
+      border: 2px solid #000;
+      font-family: 'Riforma', sans-serif;
+      font-size: 14px;
+      cursor: pointer;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .btn-wiz-next {
+      flex: 1;
+      background: #000;
+      color: #fff;
+      padding: 14px 24px;
+      border: 2px solid #000;
+      font-family: 'Riforma', sans-serif;
+      font-size: 14px;
+      cursor: pointer;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .btn-wiz-next:disabled {
+      background: #E0E0E0;
+      border-color: #E0E0E0;
+      cursor: not-allowed;
+      color: #999;
+    }
   </style>
 </head>
 <body>
@@ -282,12 +348,22 @@
         3: {
           brutalTruth: 'Content without distribution is a tree falling in an empty forest. The best brand strategy in the world is invisible if your customers are not in the channels where you are publishing.',
           peerProof: '"A B2B SaaS company shifted from posting across 4 social channels to focusing entirely on LinkedIn for 6 months. Engagement per post increased 8x. Inbound demo requests from content doubled. Less volume. More focus. Better results."'
+        },
+        4: {
+          brutalTruth: 'Strategy without execution is fiction. Most brands have excellent mission statements and zero consistent follow-through. A marketing plan that sits in a document is worth exactly nothing.',
+          peerProof: '"A B2B tech firm wrote a 30-page marketing strategy. Six months later, nothing had shipped. They stripped it to 3 actions with named owners and 30-day deadlines. Within 90 days they had doubled their qualified pipeline."'
+        },
+        5: {
+          brutalTruth: 'Measurement without action is theatre. Tracking metrics you never act on is a sophisticated way of avoiding accountability. Define the number. Own the number. Move the number.',
+          peerProof: '"A professional services firm tracked 22 marketing KPIs weekly. Nothing improved. They cut to 3 metrics, assigned a single owner to each, and reviewed monthly. Brand awareness doubled in 6 months."'
         }
       },
       CLOSING_MESSAGES: {
         1: { title: 'BRAND DEFINED', text: 'Your brand foundation is set. Next: translate it into a consistent visual and messaging system.' },
         2: { title: 'IDENTITY LOCKED', text: 'Your brand identity is complete. Next: build the content and channel strategy to bring it to life.' },
-        3: { title: 'STRATEGY COMPLETE', text: 'Your brand and marketing strategy is built. Now execute it with ruthless consistency.' }
+        3: { title: 'STRATEGY COMPLETE', text: 'Your brand and marketing strategy is built. Now execute it with ruthless consistency.' },
+        4: { title: 'STRATEGY LOCKED', text: 'Your marketing strategy is complete. Now build the implementation plan that brings it to life.' },
+        5: { title: 'PLAN COMPLETE', text: 'Your brand and marketing strategy is built. Review your canvas and submit.' }
       }
     };
 
@@ -333,9 +409,6 @@
     function BrandApp() {
             const [deps, setDeps] = useState([]);
       const [step, setStep] = useState(0);
-      const [showTransition, setShowTransition] = useState(false);
-      const [transitionMessage, setTransitionMessage] = useState('');
-      const [transitionProgress, setTransitionProgress] = useState(0);
       const [aiReviewing, setAiReviewing] = useState(false);
       const [submitStatus, setSubmitStatus] = useState(null);
       const [submitMessage, setSubmitMessage] = useState('');
@@ -475,13 +548,7 @@
       };
 
       const advanceStep = (fromStep) => {
-        if (fromStep >= 1 && fromStep <= 3) {
-          // Use renderTransitionScreen for steps 1-3 with TRANSITION_CONTENT
-          setStep(fromStep + 0.5);
-        } else if (fromStep === 4 || fromStep === 5) {
-          // Steps 4-5 skip to next step directly
-          setStep(fromStep + 1);
-        }
+        setStep(fromStep + 0.5);
       };
 
       const goNext = () => {
@@ -669,13 +736,8 @@
       };
 
       // Render different pages based on step
-      if (showTransition) {
-        return <TransitionScreen message={transitionMessage} progress={transitionProgress} />;
-      }
-
-      // Transition screens for steps 1-3
-      if (step === 1.5 || step === 2.5 || step === 3.5) {
-        return window.renderTransitionScreen(step, CONFIG, 4, setStep);
+      if ([1.5, 2.5, 3.5, 4.5, 5.5].includes(step)) {
+        return window.renderTransitionScreen(step, CONFIG, 5, setStep);
       }
 
       if (step === 0) {
@@ -686,82 +748,38 @@
         return <IntroPage onNext={goNext} />;
       }
 
-      if (step === 1) {
+      // Steps 1-5: Wizard layout
+      if (step >= 1 && step <= 5) {
+        const stepLabels = ['Brand Promise', 'Brand Personality', 'Cult Brand Model', 'Marketing Strategy', 'Implementation'];
+        const isValid = step === 1 ? isStep1Valid() : step === 2 ? isStep2Valid() : step === 3 ? isStep3Valid() : step === 4 ? isStep4Valid() : isStep5Valid();
+        const canProceed = !aiReviewing && isValid;
+        const nextLabels = {
+          1: 'NEXT: PERSONALITY →',
+          2: 'NEXT: CULT BRAND →',
+          3: 'NEXT: MARKETING STRATEGY →',
+          4: 'NEXT: IMPLEMENTATION →',
+          5: 'VIEW BRAND STRATEGY →'
+        };
         return (
-          <><DependencyContext deps={deps} /><Step1Page
-            data={data}
-            updateData={updateData}
-            onNext={() => handleNext(1)}
-            onBack={goBack}
-            canProceed={!aiReviewing && isStep1Valid()}
-            aiReviewing={aiReviewing}
-            setShowHelp={setShowHelp}
-          /></>
-        );
-      }
-
-      if (step === 2) {
-        return (
-          <Step2Page
-            data={data}
-            updateData={updateData}
-            updateTrait={updateTrait}
-            addTrait={addTrait}
-            removeTrait={removeTrait}
-            onNext={() => handleNext(2)}
-            onBack={goBack}
-            canProceed={!aiReviewing && isStep2Valid()}
-            aiReviewing={aiReviewing}
-            setShowHelp={setShowHelp}
-          />
-        );
-      }
-
-      if (step === 3) {
-        return (
-          <Step3Page
-            data={data}
-            updateData={updateData}
-            onNext={() => handleNext(3)}
-            onBack={goBack}
-            canProceed={!aiReviewing && isStep3Valid()}
-            aiReviewing={aiReviewing}
-            setShowHelp={setShowHelp}
-          />
-        );
-      }
-
-      if (step === 4) {
-        return (
-          <Step4Page
-            data={data}
-            updateData={updateData}
-            updatePillar={updatePillar}
-            addPillar={addPillar}
-            removePillar={removePillar}
-            onNext={() => handleNext(4)}
-            onBack={goBack}
-            canProceed={!aiReviewing && isStep4Valid()}
-            aiReviewing={aiReviewing}
-            setShowHelp={setShowHelp}
-          />
-        );
-      }
-
-      if (step === 5) {
-        return (
-          <Step5Page
-            data={data}
-            updateData={updateData}
-            updateAction={updateAction}
-            addAction={addAction}
-            removeAction={removeAction}
-            onNext={() => handleNext(5)}
-            onBack={goBack}
-            canProceed={!aiReviewing && isStep5Valid()}
-            aiReviewing={aiReviewing}
-            setShowHelp={setShowHelp}
-          />
+          <div className="wizard-layout">
+            <div className="wizard-main">
+              <div className="wizard-content animate-in">
+                <DependencyContext deps={deps} />
+                {step === 1 && <Step1Page data={data} updateData={updateData} />}
+                {step === 2 && <Step2Page data={data} updateData={updateData} updateTrait={updateTrait} addTrait={addTrait} removeTrait={removeTrait} />}
+                {step === 3 && <Step3Page data={data} updateData={updateData} />}
+                {step === 4 && <Step4Page data={data} updateData={updateData} updatePillar={updatePillar} addPillar={addPillar} removePillar={removePillar} />}
+                {step === 5 && <Step5Page data={data} updateData={updateData} updateAction={updateAction} addAction={addAction} removeAction={removeAction} />}
+              </div>
+              <div className="wizard-footer">
+                <button className="btn-wiz-back" onClick={goBack}>← BACK</button>
+                <button className="btn-wiz-next" disabled={!canProceed} onClick={() => handleNext(step)}>
+                  {aiReviewing ? 'AI COACH REVIEWING...' : (nextLabels[step] || 'NEXT →')}
+                </button>
+              </div>
+            </div>
+            <WizardSidebar currentStep={step} stepLabels={stepLabels} totalSteps={5} />
+          </div>
         );
       }
 
@@ -926,29 +944,6 @@
       );
     }
 
-    // Transition Screen Component
-    function TransitionScreen({ message, progress }) {
-      return (
-        <div className="fixed inset-0 bg-black text-white flex items-center justify-center z-50 fade-in">
-          <div className="text-center px-8">
-            <h1 className="plaak transition-animate-in" style={{fontSize: '120px', marginBottom: '32px'}}>
-              SECTION COMPLETE
-            </h1>
-
-            <div className="max-w-2xl mx-auto mb-8 transition-animate-in" style={{animationDelay: '0.2s'}}>
-              <div className="h-2 bg-gray-800 mb-4">
-                <div
-                  className="h-full bg-white transition-all duration-1000"
-                  style={{width: `${progress}%`}}
-                ></div>
-              </div>
-              <p className="monument text-xl tracking-wider">{message}</p>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
     // Help Modal Component
     function HelpModal({ step, onClose }) {
       const helpContent = {
@@ -1030,15 +1025,9 @@
     }
 
     // Step 1: Brand Promise
-    function Step1Page({ data, updateData, onNext, onBack, canProceed, aiReviewing, setShowHelp }) {
-      const [showHelpModal, setShowHelpModal] = useState(false);
-
+    function Step1Page({ data, updateData }) {
       return (
-        <div className="bg-white min-h-screen p-16 pb-32">
-          {showHelpModal && <HelpModal step={1} onClose={() => setShowHelpModal(false)} />}
-          <div className="max-w-5xl mx-auto">
-            <ProgressIndicator currentStep={1} />
-
+        <div>
             <div className="numbered-section mb-8 animate-in">01. BRAND PROMISE</div>
 
             {/* Fast Track Insight */}
@@ -1128,34 +1117,14 @@
               </div>
             </div>
 
-            {/* Navigation */}
-            <div className="flex gap-6">
-              <button onClick={onBack} className="btn-secondary flex-1">
-                ← BACK
-              </button>
-              <button
-                onClick={onNext}
-                disabled={!canProceed}
-                className="btn-primary flex-1"
-              >
-                {aiReviewing ? 'AI Coach Reviewing...' : 'NEXT: PERSONALITY →'}
-              </button>
-            </div>
-          </div>
         </div>
       );
     }
 
     // Step 2: Brand Personality
-    function Step2Page({ data, updateData, updateTrait, addTrait, removeTrait, onNext, onBack, canProceed, aiReviewing, setShowHelp }) {
-      const [showHelpModal, setShowHelpModal] = useState(false);
-
+    function Step2Page({ data, updateData, updateTrait, addTrait, removeTrait }) {
       return (
-        <div className="bg-white min-h-screen p-16 pb-32">
-          {showHelpModal && <HelpModal step={2} onClose={() => setShowHelpModal(false)} />}
-          <div className="max-w-5xl mx-auto">
-            <ProgressIndicator currentStep={2} />
-
+        <div>
             <div className="numbered-section mb-8 animate-in">02. BRAND PERSONALITY</div>
 
             {/* Fast Track Insight */}
@@ -1266,34 +1235,14 @@
               </div>
             </div>
 
-            {/* Navigation */}
-            <div className="flex gap-6">
-              <button onClick={onBack} className="btn-secondary flex-1">
-                ← BACK
-              </button>
-              <button
-                onClick={onNext}
-                disabled={!canProceed}
-                className="btn-primary flex-1"
-              >
-                {aiReviewing ? 'AI Coach Reviewing...' : 'NEXT: CULT BRAND →'}
-              </button>
-            </div>
-          </div>
         </div>
       );
     }
 
     // Step 3: Cult Brand Model
-    function Step3Page({ data, updateData, onNext, onBack, canProceed, aiReviewing, setShowHelp }) {
-      const [showHelpModal, setShowHelpModal] = useState(false);
-
+    function Step3Page({ data, updateData }) {
       return (
-        <div className="bg-white min-h-screen p-16 pb-32">
-          {showHelpModal && <HelpModal step={3} onClose={() => setShowHelpModal(false)} />}
-          <div className="max-w-5xl mx-auto">
-            <ProgressIndicator currentStep={3} />
-
+        <div>
             <div className="numbered-section mb-8 animate-in">03. CULT BRAND MODEL</div>
 
             {/* Fast Track Insight */}
@@ -1405,34 +1354,14 @@
               </div>
             </div>
 
-            {/* Navigation */}
-            <div className="flex gap-6">
-              <button onClick={onBack} className="btn-secondary flex-1">
-                ← BACK
-              </button>
-              <button
-                onClick={onNext}
-                disabled={!canProceed}
-                className="btn-primary flex-1"
-              >
-                {aiReviewing ? 'AI Coach Reviewing...' : 'NEXT: MARKETING STRATEGY →'}
-              </button>
-            </div>
-          </div>
         </div>
       );
     }
 
     // Step 4: Marketing Strategy
-    function Step4Page({ data, updateData, updatePillar, addPillar, removePillar, onNext, onBack, canProceed, aiReviewing, setShowHelp }) {
-      const [showHelpModal, setShowHelpModal] = useState(false);
-
+    function Step4Page({ data, updateData, updatePillar, addPillar, removePillar }) {
       return (
-        <div className="bg-white min-h-screen p-16 pb-32">
-          {showHelpModal && <HelpModal step={4} onClose={() => setShowHelpModal(false)} />}
-          <div className="max-w-5xl mx-auto">
-            <ProgressIndicator currentStep={4} />
-
+        <div>
             <div className="numbered-section mb-8 animate-in">04. MARKETING STRATEGY</div>
 
             {/* Fast Track Insight */}
@@ -1543,34 +1472,14 @@
               </div>
             </div>
 
-            {/* Navigation */}
-            <div className="flex gap-6">
-              <button onClick={onBack} className="btn-secondary flex-1">
-                ← BACK
-              </button>
-              <button
-                onClick={onNext}
-                disabled={!canProceed}
-                className="btn-primary flex-1"
-              >
-                {aiReviewing ? 'AI Coach Reviewing...' : 'NEXT: IMPLEMENTATION →'}
-              </button>
-            </div>
-          </div>
         </div>
       );
     }
 
     // Step 5: Implementation
-    function Step5Page({ data, updateData, updateAction, addAction, removeAction, onNext, onBack, canProceed, aiReviewing, setShowHelp }) {
-      const [showHelpModal, setShowHelpModal] = useState(false);
-
+    function Step5Page({ data, updateData, updateAction, addAction, removeAction }) {
       return (
-        <div className="bg-white min-h-screen p-16 pb-32">
-          {showHelpModal && <HelpModal step={5} onClose={() => setShowHelpModal(false)} />}
-          <div className="max-w-5xl mx-auto">
-            <ProgressIndicator currentStep={5} />
-
+        <div>
             <div className="numbered-section mb-8 animate-in">05. IMPLEMENTATION PLAN</div>
 
             {/* Fast Track Insight */}
@@ -1682,20 +1591,6 @@
               </div>
             </div>
 
-            {/* Navigation */}
-            <div className="flex gap-6">
-              <button onClick={onBack} className="btn-secondary flex-1">
-                ← BACK
-              </button>
-              <button
-                onClick={onNext}
-                disabled={!canProceed}
-                className="btn-primary flex-1"
-              >
-                {aiReviewing ? 'AI Coach Reviewing...' : 'VIEW BRAND STRATEGY →'}
-              </button>
-            </div>
-          </div>
         </div>
       );
     }
@@ -1806,6 +1701,40 @@
                 after={"After completing the Brand and Marketing sprint, they defined a single brand promise ('We turn data chaos into decisions in 24 hours'), aligned all touchpoints to three messaging pillars, and cut marketing channels from six to two. Within 90 days: lead volume dropped 40% but qualified lead conversion jumped to 18%. Cost per acquisition fell by 62%."}
                 quote={"We finally stopped trying to be the cool startup AND the trusted enterprise vendor. When we picked a lane and owned it — every email, every slide, every post sounding like us — the right customers started finding us. Our sales team said closing deals felt like a different job."}
             />
+          </div>
+        </div>
+      );
+    }
+
+    // Wizard Sidebar
+    function WizardSidebar({ currentStep, stepLabels, totalSteps }) {
+      return (
+        <div className="wizard-sidebar">
+          <div style={{ marginBottom: '48px' }}>
+            <div className="monument" style={{ fontSize: '10px', color: '#888', letterSpacing: '0.1em', marginBottom: '8px' }}>SPRINT 19</div>
+            <div className="plaak" style={{ fontSize: '20px', lineHeight: '1.1', color: '#fff' }}>BRAND AND<br />MARKETING</div>
+          </div>
+          <div style={{ flex: 1 }}>
+            {stepLabels.map((label, i) => {
+              const stepNum = i + 1;
+              const isActive = Math.floor(currentStep) === stepNum;
+              const isCompleted = currentStep > stepNum;
+              return (
+                <div key={stepNum} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '24px', opacity: isActive || isCompleted ? 1 : 0.4 }}>
+                  <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: isCompleted ? '#FFF469' : isActive ? '#fff' : 'transparent', border: `2px solid ${isCompleted ? '#FFF469' : isActive ? '#fff' : '#555'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
+                    {isCompleted ? (
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                    ) : (
+                      <span style={{ fontSize: '10px', color: isActive ? '#000' : '#555', fontFamily: "'Monument', monospace" }}>{stepNum}</span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: '11px', fontFamily: "'Monument', monospace", letterSpacing: '0.05em', color: isActive ? '#fff' : isCompleted ? '#FFF469' : '#555', textTransform: 'uppercase', paddingTop: '4px' }}>{label}</div>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ borderTop: '1px solid #333', paddingTop: '24px' }}>
+            <div className="monument" style={{ fontSize: '10px', color: '#555', letterSpacing: '0.05em' }}>STEP {Math.floor(Math.max(1, currentStep))} OF {totalSteps}</div>
           </div>
         </div>
       );
