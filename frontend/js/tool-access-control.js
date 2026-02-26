@@ -195,17 +195,9 @@ var ToolAccessControl = (function () {
         // WOOP is always accessible
         if (toolSlug === 'woop') return Promise.resolve();
 
-        return checkPrerequisites(toolSlug).then(function (result) {
-            if (!result.allowed && result.reason === 'missing_prereqs') {
-                console.log('[ToolAccessControl] Blocked — missing:', result.missing);
-                showLockScreen(toolSlug, result.missing);
-            } else if (!result.allowed && result.reason === 'no_user') {
-                // No user logged in — allow access (playground/testing mode)
-                console.log('[ToolAccessControl] No user — allowing access (test mode)');
-            } else {
-                console.log('[ToolAccessControl] Access granted for', toolSlug);
-            }
-        });
+        // All tools are open — no prerequisite lock
+        console.log('[ToolAccessControl] Access granted for', toolSlug, '(open access)');
+        return Promise.resolve();
     }
 
     return {
