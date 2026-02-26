@@ -237,6 +237,18 @@
     .btn-wiz-back { background: #fff; color: #000; padding: 14px 24px; border: 2px solid #000; font-family: 'Riforma', sans-serif; font-size: 14px; cursor: pointer; letter-spacing: 0.05em; text-transform: uppercase; }
     .btn-wiz-next { flex: 1; background: #000; color: #fff; padding: 14px 24px; border: 2px solid #000; font-family: 'Riforma', sans-serif; font-size: 14px; cursor: pointer; letter-spacing: 0.05em; text-transform: uppercase; }
     .btn-wiz-next:disabled { background: #E0E0E0; border-color: #E0E0E0; cursor: not-allowed; color: #999; }
+
+    /* Typeform item progress dots */
+    .tf-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #D0D0D0;
+      display: inline-block;
+      transition: background 0.2s;
+    }
+    .tf-dot.active { background: #000; }
+    .tf-dot.done { background: #555; }
   </style>
 </head>
 <body>
@@ -320,13 +332,37 @@
             );
         }
 
+    // ─────────────────────────────────────────────
+    // Typeform Item Dots Progress Component
+    // ─────────────────────────────────────────────
+    function ItemDots({ total, current }) {
+      return (
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 24 }}>
+          {Array.from({ length: total }).map((_, i) => (
+            <span key={i} className={`tf-dot${i === current ? ' active' : i < current ? ' done' : ''}`} />
+          ))}
+          <span className="monument" style={{ fontSize: 11, color: '#888', marginLeft: 8 }}>
+            {current + 1} OF {total}
+          </span>
+        </div>
+      );
+    }
+
+    // ─────────────────────────────────────────────
     // Main App Component
+    // ─────────────────────────────────────────────
     function ServiceApp() {
             const [deps, setDeps] = useState([]);
       const [step, setStep] = useState(0);
       const [aiReviewing, setAiReviewing] = useState(false);
       const [submitStatus, setSubmitStatus] = useState(null);
       const [submitMessage, setSubmitMessage] = useState('');
+
+      // Typeform sub-indices for each section
+      const [stageIndex, setStageIndex] = useState(0);
+      const [wowIndex, setWowIndex] = useState(0);
+      const [betterIndex, setBetterIndex] = useState(0);
+      const [implIndex, setImplIndex] = useState(0);
 
       const [data, setData] = useState({
         // Step 1: Journey Mapping
@@ -432,15 +468,37 @@
           ...prev,
           journeyStages: [...prev.journeyStages, { id: newId, stage: '', customerGoal: '', customerAction: '', customerThought: '' }]
         }));
+        // Navigate to the new stage
+        setStageIndex(data.journeyStages.length);
       };
 
       const removeStage = (id) => {
         if (data.journeyStages.length > 3) {
+          const idx = data.journeyStages.findIndex(s => s.id === id);
           setData(prev => ({
             ...prev,
             journeyStages: prev.journeyStages.filter(s => s.id !== id)
           }));
+          setStageIndex(prev => Math.min(prev, Math.max(0, data.journeyStages.length - 2)));
         }
+      };
+
+      const addWow = () => {
+        const newId = Math.max(...data.wowTouchpoints.map(w => w.id)) + 1;
+        setData(prev => ({
+          ...prev,
+          wowTouchpoints: [...prev.wowTouchpoints, { id: newId, moment: '', emotional: '', action: '', measurement: '' }]
+        }));
+        setWowIndex(data.wowTouchpoints.length);
+      };
+
+      const addBetter = () => {
+        const newId = Math.max(...data.justBetter.map(b => b.id)) + 1;
+        setData(prev => ({
+          ...prev,
+          justBetter: [...prev.justBetter, { id: newId, improvement: '', execution: '', responsible: '', metric: '' }]
+        }));
+        setBetterIndex(data.justBetter.length);
       };
 
       const updateWow = (id, field, value) => {
@@ -470,33 +528,38 @@
         }));
       };
 
-      // Validation functions
-      const isStep1Valid = () => {
-        return data.journeyStages.every(s =>
-          s.stage.length >= 3 &&
-          s.customerGoal.length >= 20 &&
-          s.customerAction.length >= 20 &&
-          s.customerThought.length >= 20
-        );
-      };
+      // ── Validation helpers ──────────────────────────────────
 
-      const isStep2Valid = () => {
-        return data.wowTouchpoints.every(w =>
-          w.moment.length >= 30 &&
-          w.emotional.length >= 20 &&
-          w.action.length >= 30 &&
-          w.measurement.length >= 20
-        );
-      };
+      const isStageValid = (s) =>
+        s.stage.length >= 3 &&
+        s.customerGoal.length >= 20 &&
+        s.customerAction.length >= 20 &&
+        s.customerThought.length >= 20;
 
-      const isStep3Valid = () => {
-        return data.justBetter.every(b =>
-          b.improvement.length >= 30 &&
-          b.execution.length >= 30 &&
-          b.responsible.length >= 5 &&
-          b.metric.length >= 20
-        );
-      };
+      const isWowValid = (w) =>
+        w.moment.length >= 30 &&
+        w.emotional.length >= 20 &&
+        w.action.length >= 30 &&
+        w.measurement.length >= 20;
+
+      const isBetterValid = (b) =>
+        b.improvement.length >= 30 &&
+        b.execution.length >= 30 &&
+        b.responsible.length >= 5 &&
+        b.metric.length >= 20;
+
+      const implFields = [
+        { key: 'executionPlan', min: 50 },
+        { key: 'frontlineCommunication', min: 50 },
+        { key: 'metricTracking', min: 30 },
+        { key: 'quarterlyReview', min: 30 }
+      ];
+
+      const isImplFieldValid = (idx) => data[implFields[idx].key].length >= implFields[idx].min;
+
+      const isStep1Valid = () => data.journeyStages.every(isStageValid);
+      const isStep2Valid = () => data.wowTouchpoints.every(isWowValid);
+      const isStep3Valid = () => data.justBetter.every(isBetterValid);
 
       const isStep4Valid = () => {
         return data.ownership.every(o =>
@@ -506,18 +569,17 @@
         );
       };
 
-      const isStep5Valid = () => {
-        return (
-          data.executionPlan.length >= 50 &&
-          data.frontlineCommunication.length >= 50 &&
-          data.metricTracking.length >= 30 &&
-          data.quarterlyReview.length >= 30
-        );
-      };
+      const isStep5Valid = () => implFields.every((_, i) => isImplFieldValid(i));
 
-      // Navigation
+      // ── Navigation ──────────────────────────────────────────
+
       const advanceStep = (fromStep) => {
         setStep(fromStep + 0.5);
+        // reset sub-indices for the next step
+        if (fromStep === 1) setWowIndex(0);
+        if (fromStep === 2) setBetterIndex(0);
+        if (fromStep === 3) { /* ownership has no sub-index */ }
+        if (fromStep === 4) setImplIndex(0);
       };
 
       const goNext = () => {
@@ -528,6 +590,7 @@
         }
       };
 
+      // AI-gated advancement: called only when we are at the LAST item of a section
       const handleNext = async (fromStep) => {
         const userId = localStorage.getItem('ft_user_id');
         if (!userId) { alert('User not authenticated.'); return; }
@@ -568,6 +631,20 @@
           setStep(0);
         } else if (step === 6) {
           setStep(5);
+        } else if (step === 1) {
+          if (stageIndex > 0) { setStageIndex(i => i - 1); return; }
+          setStep(0.5);
+        } else if (step === 2) {
+          if (wowIndex > 0) { setWowIndex(i => i - 1); return; }
+          setStep(1);
+        } else if (step === 3) {
+          if (betterIndex > 0) { setBetterIndex(i => i - 1); return; }
+          setStep(2);
+        } else if (step === 4) {
+          setStep(3);
+        } else if (step === 5) {
+          if (implIndex > 0) { setImplIndex(i => i - 1); return; }
+          setStep(4);
         } else if (step > 1) {
           setStep(step - 1);
         }
@@ -653,7 +730,8 @@
         }
       };
 
-      // Render different pages based on step
+      // ── Render ──────────────────────────────────────────────
+
       if ([1.5, 2.5, 3.5, 4.5, 5.5].includes(step)) {
         return window.renderTransitionScreen(step, CONFIG, 5, setStep);
       }
@@ -666,27 +744,114 @@
         return <IntroPage onNext={goNext} />;
       }
 
-      // Steps 1-5: Wizard layout
       if (step >= 1 && step <= 5) {
         const stepLabels = ['Customer Journey Map', 'WOW Touchpoints', 'Just Better', 'Ownership & Metrics', 'Implementation'];
-        const isValid = step === 1 ? isStep1Valid() : step === 2 ? isStep2Valid() : step === 3 ? isStep3Valid() : step === 4 ? isStep4Valid() : isStep5Valid();
-        const canProceed = !aiReviewing && isValid;
-        const nextLabels = { 1: 'NEXT: WOW MOMENTS →', 2: 'NEXT: JUST BETTER →', 3: 'NEXT: OWNERSHIP →', 4: 'NEXT: IMPLEMENTATION →', 5: 'VIEW SUMMARY →' };
+
+        // ── Determine footer button state per step / sub-index ──
+        let canProceed = false;
+        let nextLabel = 'NEXT →';
+        let onNext = null;
+
+        if (step === 1) {
+          const currentStage = data.journeyStages[stageIndex];
+          const isLast = stageIndex === data.journeyStages.length - 1;
+          canProceed = !aiReviewing && isStageValid(currentStage);
+          if (isLast) {
+            nextLabel = aiReviewing ? 'AI COACH REVIEWING...' : 'NEXT: WOW MOMENTS →';
+            onNext = () => handleNext(1);
+          } else {
+            nextLabel = `NEXT STAGE →`;
+            onNext = () => setStageIndex(i => i + 1);
+          }
+        } else if (step === 2) {
+          const currentWow = data.wowTouchpoints[wowIndex];
+          const isLast = wowIndex === data.wowTouchpoints.length - 1;
+          canProceed = !aiReviewing && isWowValid(currentWow);
+          if (isLast) {
+            nextLabel = aiReviewing ? 'AI COACH REVIEWING...' : 'NEXT: JUST BETTER →';
+            onNext = () => handleNext(2);
+          } else {
+            nextLabel = `NEXT TOUCHPOINT →`;
+            onNext = () => setWowIndex(i => i + 1);
+          }
+        } else if (step === 3) {
+          const currentBetter = data.justBetter[betterIndex];
+          const isLast = betterIndex === data.justBetter.length - 1;
+          canProceed = !aiReviewing && isBetterValid(currentBetter);
+          if (isLast) {
+            nextLabel = aiReviewing ? 'AI COACH REVIEWING...' : 'NEXT: OWNERSHIP →';
+            onNext = () => handleNext(3);
+          } else {
+            nextLabel = `NEXT IMPROVEMENT →`;
+            onNext = () => setBetterIndex(i => i + 1);
+          }
+        } else if (step === 4) {
+          canProceed = !aiReviewing && isStep4Valid();
+          nextLabel = aiReviewing ? 'AI COACH REVIEWING...' : 'NEXT: IMPLEMENTATION →';
+          onNext = () => handleNext(4);
+        } else if (step === 5) {
+          const isLast = implIndex === implFields.length - 1;
+          canProceed = !aiReviewing && isImplFieldValid(implIndex);
+          if (isLast) {
+            nextLabel = aiReviewing ? 'AI COACH REVIEWING...' : 'VIEW SUMMARY →';
+            onNext = () => handleNext(5);
+          } else {
+            nextLabel = `NEXT →`;
+            onNext = () => setImplIndex(i => i + 1);
+          }
+        }
+
         return (
           <div className="wizard-layout">
             <div className="wizard-main">
               <div className="wizard-content animate-in">
                 <DependencyContext deps={deps} />
-                {step === 1 && <Step1Page data={data} updateStage={updateStage} addStage={addStage} removeStage={removeStage} />}
-                {step === 2 && <Step2Page data={data} updateWow={updateWow} />}
-                {step === 3 && <Step3Page data={data} updateBetter={updateBetter} />}
+                {step === 1 && (
+                  <Step1Page
+                    data={data}
+                    stageIndex={stageIndex}
+                    setStageIndex={setStageIndex}
+                    updateStage={updateStage}
+                    addStage={addStage}
+                    removeStage={removeStage}
+                    isStageValid={isStageValid}
+                  />
+                )}
+                {step === 2 && (
+                  <Step2Page
+                    data={data}
+                    wowIndex={wowIndex}
+                    setWowIndex={setWowIndex}
+                    updateWow={updateWow}
+                    addWow={addWow}
+                    isWowValid={isWowValid}
+                  />
+                )}
+                {step === 3 && (
+                  <Step3Page
+                    data={data}
+                    betterIndex={betterIndex}
+                    setBetterIndex={setBetterIndex}
+                    updateBetter={updateBetter}
+                    addBetter={addBetter}
+                    isBetterValid={isBetterValid}
+                  />
+                )}
                 {step === 4 && <Step4Page data={data} updateOwnership={updateOwnership} />}
-                {step === 5 && <Step5Page data={data} updateData={updateData} />}
+                {step === 5 && (
+                  <Step5Page
+                    data={data}
+                    updateData={updateData}
+                    implIndex={implIndex}
+                    setImplIndex={setImplIndex}
+                    isImplFieldValid={isImplFieldValid}
+                  />
+                )}
               </div>
               <div className="wizard-footer">
                 <button className="btn-wiz-back" onClick={goBack}>← BACK</button>
-                <button className="btn-wiz-next" disabled={!canProceed} onClick={() => handleNext(step)}>
-                  {aiReviewing ? 'AI COACH REVIEWING...' : (nextLabels[step] || 'NEXT →')}
+                <button className="btn-wiz-next" disabled={!canProceed} onClick={onNext}>
+                  {nextLabel}
                 </button>
               </div>
             </div>
@@ -708,7 +873,9 @@
       return null;
     }
 
+    // ─────────────────────────────────────────────
     // Cover Page Component
+    // ─────────────────────────────────────────────
     function CoverPage({ onStart }) {
       return (
         <div className="relative min-h-screen flex items-center justify-center bg-black">
@@ -744,7 +911,9 @@
       );
     }
 
+    // ─────────────────────────────────────────────
     // Intro Page Component
+    // ─────────────────────────────────────────────
     function IntroPage({ onNext }) {
       return (
         <div className="bg-black text-white min-h-screen p-16">
@@ -856,7 +1025,9 @@
       );
     }
 
+    // ─────────────────────────────────────────────
     // Wizard Sidebar
+    // ─────────────────────────────────────────────
     function WizardSidebar({ currentStep, stepLabels, totalSteps }) {
       return (
         <div className="wizard-sidebar">
@@ -890,328 +1061,342 @@
       );
     }
 
-    // Progress Indicator Component
-    function ProgressIndicator({ currentStep }) {
-      const steps = [1, 2, 3, 4, 5];
+    // ─────────────────────────────────────────────
+    // Step 1: Customer Journey Map — Typeform style
+    // ─────────────────────────────────────────────
+    function Step1Page({ data, stageIndex, setStageIndex, updateStage, addStage, removeStage, isStageValid }) {
+      const stages = data.journeyStages;
+      const stage = stages[stageIndex];
+      const total = stages.length;
+
       return (
-        <div className="flex items-center justify-center mb-8">
-          {steps.map((s, index) => (
-            <Fragment key={s}>
-              <div
-                className={`progress-dot ${s === currentStep ? 'active' : ''} ${s < currentStep ? 'completed' : ''}`}
-              ></div>
-              {index < steps.length - 1 && <div className="progress-line" style={{width: '40px'}}></div>}
-            </Fragment>
-          ))}
-        </div>
-      );
-    }
+        <div key={stageIndex} className="animate-in">
+          <div className="numbered-section mb-6">01. CUSTOMER JOURNEY MAP</div>
 
-    // Step 1: Customer Journey Map
-    function Step1Page({ data, updateStage, addStage, removeStage }) {
-      return (
-        <div>
-            <div className="numbered-section mb-8 animate-in">01. CUSTOMER JOURNEY MAP</div>
+          <h3 className="riforma-bold mb-4" style={{ fontSize: '36px' }}>
+            Map every touchpoint where trust is built or broken
+          </h3>
 
-            {/* Fast Track Insight */}
-
-            {/* The Science */}
-            
-
-            {/* Common Mistake */}
-
-
-            <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
-              Map every touchpoint where trust is built or broken
-            </h3>
-
-            <div className="border-l-4 border-yellow-400 pl-6 mb-12 animate-in" style={{animationDelay: '0.1s'}}>
-              <p className="text-2xl italic">
-                &quot;Great service requires being bad at something else. No company can be excellent everywhere.&quot; — Frances Frei, Uncommon Service
-              </p>
-            </div>
-
-            <p className="text-xl mb-8 text-gray-700">
-              Map 5-8 key customer-facing stages from first awareness to post-sale. For each stage, document what the customer is trying to achieve, what they actually do, and what&apos;s going through their mind. Use their language, not internal jargon.
+          <div className="border-l-4 border-yellow-400 pl-6 mb-8">
+            <p className="text-xl italic">
+              &quot;Great service requires being bad at something else. No company can be excellent everywhere.&quot; — Frances Frei
             </p>
+          </div>
 
-            <div className="space-y-8 mb-12">
-              {data.journeyStages.map((stage, index) => (
-                <div key={stage.id} className="bg-gray-50 border-2 border-gray-200 p-6 animate-in" style={{animationDelay: `${0.15 + index * 0.03}s`}}>
-                  <div className="flex justify-between items-start mb-4">
-                    <h4 className="riforma-bold text-2xl">Stage {index + 1}</h4>
-                    {data.journeyStages.length > 3 && (
-                      <button
-                        onClick={() => removeStage(stage.id)}
-                        className="text-red-600 hover:text-red-800 text-sm"
-                      >
-                        REMOVE
-                      </button>
-                    )}
-                  </div>
+          <ItemDots total={total} current={stageIndex} />
 
-                  <div className="space-y-4">
-                    <div>
-                      <label className="monument text-sm block mb-2">STAGE NAME <span className="text-red-500">*</span></label>
-                      <ScienceBookmarkIcon>
-                          Frances Frei (Uncommon Service): Great service requires being bad at something else. No company can be excellent everywhere -- name each stage based on what the customer is trying to accomplish, not your internal process.
-                      </ScienceBookmarkIcon>
-                      <input
-                        type="text"
-                        value={stage.stage}
-                        onChange={(e) => updateStage(stage.id, 'stage', e.target.value)}
-                        placeholder="First Contact"
-                        className="w-full"
-                      />
-                      <div className="char-counter">{stage.stage.length}/100 (min 3)</div>
-                    </div>
-
-                    <div>
-                      <label className="monument text-sm block mb-2">CUSTOMER GOAL <span className="text-red-500">*</span></label>
-                      <ScienceBookmarkIcon>
-                          Matthew Dixon (The Effortless Experience): The strongest driver of customer retention is reducing effort. Document what the customer is actually trying to achieve -- the less energy they expend, the more loyal they become.
-                      </ScienceBookmarkIcon>
-                      <p className="text-sm text-gray-400 mb-2">What are they trying to accomplish at this stage?</p>
-                      <textarea
-                        value={stage.customerGoal}
-                        onChange={(e) => updateStage(stage.id, 'customerGoal', e.target.value)}
-                        placeholder="I need to understand if this company can solve my specific problem. I want a quick response that shows they actually read my inquiry, not a template."
-                        className="w-full"
-                        rows={3}
-                      />
-                      <div className="char-counter">{stage.customerGoal.length}/500 (min 20)</div>
-                    </div>
-
-                    <div>
-                      <label className="monument text-sm block mb-2">CUSTOMER ACTION <span className="text-red-500">*</span></label>
-                      <ScienceBookmarkIcon>
-                          Bain &amp; Company: 96% of customers say service is critical to brand loyalty, but only 8% believe companies deliver excellent service. Map what customers actually do at each stage -- the gap between expectation and reality is where trust is built or broken.
-                      </ScienceBookmarkIcon>
-                      <p className="text-sm text-gray-400 mb-2">What do they actually do?</p>
-                      <textarea
-                        value={stage.customerAction}
-                        onChange={(e) => updateStage(stage.id, 'customerAction', e.target.value)}
-                        placeholder="I fill out the contact form, describing my situation in detail. Then I wait. I check my email multiple times in the first hour, then less frequently over the next 24 hours."
-                        className="w-full"
-                        rows={3}
-                      />
-                      <div className="char-counter">{stage.customerAction.length}/500 (min 20)</div>
-                    </div>
-
-                    <div>
-                      <label className="monument text-sm block mb-2">CUSTOMER THOUGHT <span className="text-red-500">*</span></label>
-                      <p className="text-sm text-gray-400 mb-2">What&apos;s going through their mind?</p>
-                      <textarea
-                        value={stage.customerThought}
-                        onChange={(e) => updateStage(stage.id, 'customerThought', e.target.value)}
-                        placeholder="I hope they respond quickly. I&apos;m comparing three companies right now. If they take more than 24 hours, I&apos;ll probably go with someone else. I&apos;m wondering if they&apos;ll actually understand what I need or just send me generic pricing."
-                        className="w-full"
-                        rows={3}
-                      />
-                      <div className="char-counter">{stage.customerThought.length}/500 (min 20)</div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+          <div className="bg-gray-50 border-2 border-gray-200 p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h4 className="riforma-bold text-2xl">Stage {stageIndex + 1}</h4>
+              {total > 3 && (
+                <button
+                  onClick={() => removeStage(stage.id)}
+                  style={{ color: '#dc2626', fontSize: 13, fontFamily: "'Monument', monospace", letterSpacing: '0.05em', textTransform: 'uppercase', background: 'none', border: 'none', cursor: 'pointer' }}
+                >
+                  REMOVE
+                </button>
+              )}
             </div>
 
-            {data.journeyStages.length < 8 && (
-              <button onClick={addStage} className="btn-secondary text-sm w-full mb-12">
+            <div className="space-y-5">
+              <div>
+                <label className="monument text-sm block mb-2">STAGE NAME <span style={{ color: '#ef4444' }}>*</span></label>
+                <ScienceBookmarkIcon>
+                  Frances Frei (Uncommon Service): Great service requires being bad at something else. Name each stage based on what the customer is trying to accomplish, not your internal process.
+                </ScienceBookmarkIcon>
+                <input
+                  type="text"
+                  value={stage.stage}
+                  onChange={(e) => updateStage(stage.id, 'stage', e.target.value)}
+                  placeholder="First Contact"
+                  className="w-full"
+                />
+                <div className={`char-counter${stage.stage.length < 3 && stage.stage.length > 0 ? ' invalid' : ''}`}>
+                  {stage.stage.length}/100 (min 3)
+                </div>
+              </div>
+
+              <div>
+                <label className="monument text-sm block mb-2">CUSTOMER GOAL <span style={{ color: '#ef4444' }}>*</span></label>
+                <ScienceBookmarkIcon>
+                  Matthew Dixon (The Effortless Experience): The strongest driver of customer retention is reducing effort. Document what the customer is actually trying to achieve.
+                </ScienceBookmarkIcon>
+                <p className="text-sm text-gray-400 mb-2">What are they trying to accomplish at this stage?</p>
+                <textarea
+                  value={stage.customerGoal}
+                  onChange={(e) => updateStage(stage.id, 'customerGoal', e.target.value)}
+                  placeholder="I need to understand if this company can solve my specific problem. I want a quick response that shows they actually read my inquiry, not a template."
+                  className="w-full"
+                  rows={3}
+                />
+                <div className={`char-counter${stage.customerGoal.length > 0 && stage.customerGoal.length < 20 ? ' invalid' : ''}`}>
+                  {stage.customerGoal.length}/500 (min 20)
+                </div>
+              </div>
+
+              <div>
+                <label className="monument text-sm block mb-2">CUSTOMER ACTION <span style={{ color: '#ef4444' }}>*</span></label>
+                <ScienceBookmarkIcon>
+                  Bain &amp; Company: 96% of customers say service is critical, but only 8% believe companies deliver excellent service. Map what customers actually do at each stage.
+                </ScienceBookmarkIcon>
+                <p className="text-sm text-gray-400 mb-2">What do they actually do?</p>
+                <textarea
+                  value={stage.customerAction}
+                  onChange={(e) => updateStage(stage.id, 'customerAction', e.target.value)}
+                  placeholder="I fill out the contact form, describing my situation in detail. Then I wait. I check my email multiple times in the first hour, then less frequently over the next 24 hours."
+                  className="w-full"
+                  rows={3}
+                />
+                <div className={`char-counter${stage.customerAction.length > 0 && stage.customerAction.length < 20 ? ' invalid' : ''}`}>
+                  {stage.customerAction.length}/500 (min 20)
+                </div>
+              </div>
+
+              <div>
+                <label className="monument text-sm block mb-2">CUSTOMER THOUGHT <span style={{ color: '#ef4444' }}>*</span></label>
+                <p className="text-sm text-gray-400 mb-2">What&apos;s going through their mind?</p>
+                <textarea
+                  value={stage.customerThought}
+                  onChange={(e) => updateStage(stage.id, 'customerThought', e.target.value)}
+                  placeholder="I hope they respond quickly. I'm comparing three companies right now. If they take more than 24 hours, I'll probably go with someone else."
+                  className="w-full"
+                  rows={3}
+                />
+                <div className={`char-counter${stage.customerThought.length > 0 && stage.customerThought.length < 20 ? ' invalid' : ''}`}>
+                  {stage.customerThought.length}/500 (min 20)
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Add Another / nav row */}
+          <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
+            {stageIndex > 0 && (
+              <button className="btn-secondary" style={{ fontSize: 13 }} onClick={() => setStageIndex(i => i - 1)}>
+                ← PREV STAGE
+              </button>
+            )}
+            {total < 8 && isStageValid(stage) && stageIndex === total - 1 && (
+              <button className="btn-secondary" style={{ fontSize: 13 }} onClick={addStage}>
                 + ADD ANOTHER STAGE
               </button>
             )}
-
+          </div>
         </div>
       );
     }
 
-    // Step 2: WOW Touchpoints
-    function Step2Page({ data, updateWow }) {
+    // ─────────────────────────────────────────────
+    // Step 2: WOW Touchpoints — Typeform style
+    // ─────────────────────────────────────────────
+    function Step2Page({ data, wowIndex, setWowIndex, updateWow, addWow, isWowValid }) {
+      const items = data.wowTouchpoints;
+      const wow = items[wowIndex];
+      const total = items.length;
+
       return (
-        <div>
-            <div className="numbered-section mb-8 animate-in">02. WOW TOUCHPOINTS</div>
+        <div key={wowIndex} className="animate-in">
+          <div className="numbered-section mb-6">02. WOW TOUCHPOINTS</div>
 
-            {/* Fast Track Insight */}
+          <h3 className="riforma-bold mb-4" style={{ fontSize: '36px' }}>
+            Design 3 memorable, emotional, share-worthy moments
+          </h3>
 
-            {/* The Science */}
-            
-
-
-            <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
-              Design 3 memorable, emotional, share-worthy moments
-            </h3>
-
-            <div className="border-l-4 border-yellow-400 pl-6 mb-12 animate-in" style={{animationDelay: '0.1s'}}>
-              <p className="text-2xl italic">
-                &quot;Memories are built on peaks, pits, and transitions. Deliberately create signature moments in the customer journey.&quot; — Chip & Dan Heath, The Power of Moments
-              </p>
-            </div>
-
-            <p className="text-xl mb-8 text-gray-700">
-              Identify 3 moments where you can create unexpected, emotional, memorable experiences that reinforce your value proposition. Think Ritz-Carlton empowering staff to spend $2,000 instantly to solve guest problems. Make it share-worthy.
+          <div className="border-l-4 border-yellow-400 pl-6 mb-8">
+            <p className="text-xl italic">
+              &quot;Memories are built on peaks, pits, and transitions. Deliberately create signature moments in the customer journey.&quot; — Chip & Dan Heath
             </p>
+          </div>
 
-            <div className="space-y-8 mb-12">
-              {data.wowTouchpoints.map((wow, index) => (
-                <div key={wow.id} className="bg-gray-50 border-2 border-gray-200 p-6 animate-in" style={{animationDelay: `${0.15 + index * 0.05}s`}}>
-                  <h4 className="riforma-bold text-2xl mb-4">WOW Touchpoint {index + 1}</h4>
+          <ItemDots total={total} current={wowIndex} />
 
-                  <div className="space-y-4">
-                    <div>
-                      <label className="monument text-sm block mb-2">WHAT WOULD MAKE THIS MOMENT MEMORABLE? <span className="text-red-500">*</span></label>
-                      <textarea
-                        value={wow.moment}
-                        onChange={(e) => updateWow(wow.id, 'moment', e.target.value)}
-                        placeholder="When a customer reports a critical issue on Friday evening, we don&apos;t just log a ticket. Our CEO personally calls them within 30 minutes, stays on the line until it&apos;s resolved, and follows up Monday morning to ensure everything is working perfectly."
-                        className="w-full"
-                        rows={4}
-                      />
-                      <div className="char-counter">{wow.moment.length}/1000 (min 30)</div>
-                    </div>
+          <div className="bg-gray-50 border-2 border-gray-200 p-6">
+            <h4 className="riforma-bold text-2xl mb-6">WOW Touchpoint {wowIndex + 1}</h4>
 
-                    <div>
-                      <label className="monument text-sm block mb-2">WHAT EMOTIONAL EFFECT ARE WE AIMING FOR? <span className="text-red-500">*</span></label>
-                      <textarea
-                        value={wow.emotional}
-                        onChange={(e) => updateWow(wow.id, 'emotional', e.target.value)}
-                        placeholder="Shock that someone at the top cares this much. Relief that they&apos;re not alone with the problem. Trust that we&apos;re genuinely invested in their success, not just their money."
-                        className="w-full"
-                        rows={3}
-                      />
-                      <div className="char-counter">{wow.emotional.length}/500 (min 20)</div>
-                    </div>
-
-                    <div>
-                      <label className="monument text-sm block mb-2">WHAT ACTION OR CHANGE IS REQUIRED? <span className="text-red-500">*</span></label>
-                      <textarea
-                        value={wow.action}
-                        onChange={(e) => updateWow(wow.id, 'action', e.target.value)}
-                        placeholder="Set up 24/7 escalation protocol. CEO and CTO on rotating on-call for P1 issues. Implement 30-minute response SLA for critical problems. Train support team to identify and escalate immediately. Create follow-up automation for Monday check-ins."
-                        className="w-full"
-                        rows={4}
-                      />
-                      <div className="char-counter">{wow.action.length}/1000 (min 30)</div>
-                    </div>
-
-                    <div>
-                      <label className="monument text-sm block mb-2">HOW WILL SUCCESS BE MEASURED? <span className="text-red-500">*</span></label>
-                      <textarea
-                        value={wow.measurement}
-                        onChange={(e) => updateWow(wow.id, 'measurement', e.target.value)}
-                        placeholder="Track: Response time to P1 issues, NPS score after CEO intervention, number of customers who mention this in testimonials, customer retention rate after critical issues."
-                        className="w-full"
-                        rows={3}
-                      />
-                      <div className="char-counter">{wow.measurement.length}/500 (min 20)</div>
-                    </div>
-                  </div>
+            <div className="space-y-5">
+              <div>
+                <label className="monument text-sm block mb-2">WHAT WOULD MAKE THIS MOMENT MEMORABLE? <span style={{ color: '#ef4444' }}>*</span></label>
+                <textarea
+                  value={wow.moment}
+                  onChange={(e) => updateWow(wow.id, 'moment', e.target.value)}
+                  placeholder="When a customer reports a critical issue on Friday evening, we don't just log a ticket. Our CEO personally calls them within 30 minutes, stays on the line until it's resolved, and follows up Monday morning."
+                  className="w-full"
+                  rows={4}
+                />
+                <div className={`char-counter${wow.moment.length > 0 && wow.moment.length < 30 ? ' invalid' : ''}`}>
+                  {wow.moment.length}/1000 (min 30)
                 </div>
-              ))}
-            </div>
+              </div>
 
+              <div>
+                <label className="monument text-sm block mb-2">WHAT EMOTIONAL EFFECT ARE WE AIMING FOR? <span style={{ color: '#ef4444' }}>*</span></label>
+                <textarea
+                  value={wow.emotional}
+                  onChange={(e) => updateWow(wow.id, 'emotional', e.target.value)}
+                  placeholder="Shock that someone at the top cares this much. Relief that they're not alone. Trust that we're genuinely invested in their success."
+                  className="w-full"
+                  rows={3}
+                />
+                <div className={`char-counter${wow.emotional.length > 0 && wow.emotional.length < 20 ? ' invalid' : ''}`}>
+                  {wow.emotional.length}/500 (min 20)
+                </div>
+              </div>
+
+              <div>
+                <label className="monument text-sm block mb-2">WHAT ACTION OR CHANGE IS REQUIRED? <span style={{ color: '#ef4444' }}>*</span></label>
+                <textarea
+                  value={wow.action}
+                  onChange={(e) => updateWow(wow.id, 'action', e.target.value)}
+                  placeholder="Set up 24/7 escalation protocol. CEO and CTO on rotating on-call for P1 issues. Implement 30-minute response SLA. Train support team to identify and escalate immediately."
+                  className="w-full"
+                  rows={4}
+                />
+                <div className={`char-counter${wow.action.length > 0 && wow.action.length < 30 ? ' invalid' : ''}`}>
+                  {wow.action.length}/1000 (min 30)
+                </div>
+              </div>
+
+              <div>
+                <label className="monument text-sm block mb-2">HOW WILL SUCCESS BE MEASURED? <span style={{ color: '#ef4444' }}>*</span></label>
+                <textarea
+                  value={wow.measurement}
+                  onChange={(e) => updateWow(wow.id, 'measurement', e.target.value)}
+                  placeholder="Track: Response time to P1 issues, NPS score after CEO intervention, number of customers who mention this in testimonials, retention rate after critical issues."
+                  className="w-full"
+                  rows={3}
+                />
+                <div className={`char-counter${wow.measurement.length > 0 && wow.measurement.length < 20 ? ' invalid' : ''}`}>
+                  {wow.measurement.length}/500 (min 20)
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
+            {wowIndex > 0 && (
+              <button className="btn-secondary" style={{ fontSize: 13 }} onClick={() => setWowIndex(i => i - 1)}>
+                ← PREV TOUCHPOINT
+              </button>
+            )}
+            {isWowValid(wow) && wowIndex === total - 1 && (
+              <button className="btn-secondary" style={{ fontSize: 13 }} onClick={addWow}>
+                + ADD ANOTHER TOUCHPOINT
+              </button>
+            )}
+          </div>
         </div>
       );
     }
 
-    // Step 3: Just Better Improvements
-    function Step3Page({ data, updateBetter }) {
+    // ─────────────────────────────────────────────
+    // Step 3: Just Better Improvements — Typeform style
+    // ─────────────────────────────────────────────
+    function Step3Page({ data, betterIndex, setBetterIndex, updateBetter, addBetter, isBetterValid }) {
+      const items = data.justBetter;
+      const better = items[betterIndex];
+      const total = items.length;
+
       return (
-        <div>
-            <div className="numbered-section mb-8 animate-in">03. JUST BETTER IMPROVEMENTS</div>
+        <div key={betterIndex} className="animate-in">
+          <div className="numbered-section mb-6">03. JUST BETTER IMPROVEMENTS</div>
 
-            {/* Fast Track Insight */}
+          <h3 className="riforma-bold mb-4" style={{ fontSize: '36px' }}>
+            Outperform the norm through reliability and simplicity
+          </h3>
 
-            {/* The Science */}
-            
-
-
-            <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
-              Outperform the norm through reliability and simplicity
-            </h3>
-
-            <div className="border-l-4 border-yellow-400 pl-6 mb-12 animate-in" style={{animationDelay: '0.1s'}}>
-              <p className="text-2xl italic">
-                &quot;Reduce effort, not just add delight. Simplicity wins. Eliminate repeat contacts—it&apos;s the #1 driver of dissatisfaction.&quot; — Matthew Dixon, The Effortless Experience
-              </p>
-            </div>
-
-            <p className="text-xl mb-8 text-gray-700">
-              Identify 3 touchpoints where you&apos;ll outperform industry standards through superior speed, clarity, tone, simplicity, or consistency. These aren&apos;t flashy, but they build trust through reliability. Focus on reducing friction.
+          <div className="border-l-4 border-yellow-400 pl-6 mb-8">
+            <p className="text-xl italic">
+              &quot;Reduce effort, not just add delight. Simplicity wins. Eliminate repeat contacts — it&apos;s the #1 driver of dissatisfaction.&quot; — Matthew Dixon
             </p>
+          </div>
 
-            <div className="space-y-8 mb-12">
-              {data.justBetter.map((better, index) => (
-                <div key={better.id} className="bg-gray-50 border-2 border-gray-200 p-6 animate-in" style={{animationDelay: `${0.15 + index * 0.05}s`}}>
-                  <h4 className="riforma-bold text-2xl mb-4">Just Better Improvement {index + 1}</h4>
+          <ItemDots total={total} current={betterIndex} />
 
-                  <div className="space-y-4">
-                    <div>
-                      <label className="monument text-sm block mb-2">WHAT NEEDS TO BE IMPROVED? <span className="text-red-500">*</span></label>
-                      <textarea
-                        value={better.improvement}
-                        onChange={(e) => updateBetter(better.id, 'improvement', e.target.value)}
-                        placeholder="Our current onboarding email sequence is 5 emails over 10 days with dense paragraphs and multiple CTAs per email. Customers are confused about what to do first. We need to simplify to 3 emails, single clear action per email, plain language."
-                        className="w-full"
-                        rows={4}
-                      />
-                      <div className="char-counter">{better.improvement.length}/1000 (min 30)</div>
-                    </div>
+          <div className="bg-gray-50 border-2 border-gray-200 p-6">
+            <h4 className="riforma-bold text-2xl mb-6">Just Better Improvement {betterIndex + 1}</h4>
 
-                    <div>
-                      <label className="monument text-sm block mb-2">HOW WILL IT BE EXECUTED? <span className="text-red-500">*</span></label>
-                      <textarea
-                        value={better.execution}
-                        onChange={(e) => updateBetter(better.id, 'execution', e.target.value)}
-                        placeholder="Rewrite all onboarding emails to 6th grade reading level. Each email has one primary CTA. Sequence: Day 1 (Welcome + one setup task), Day 3 (One key feature), Day 7 (Where to get help). A/B test new sequence with 500 customers before full rollout."
-                        className="w-full"
-                        rows={4}
-                      />
-                      <div className="char-counter">{better.execution.length}/1000 (min 30)</div>
-                    </div>
-
-                    <div>
-                      <label className="monument text-sm block mb-2">WHO IS RESPONSIBLE? <span className="text-red-500">*</span></label>
-                      <input
-                        type="text"
-                        value={better.responsible}
-                        onChange={(e) => updateBetter(better.id, 'responsible', e.target.value)}
-                        placeholder="Sarah Chen, Customer Success Manager"
-                        className="w-full"
-                      />
-                      <div className="char-counter">{better.responsible.length}/200 (min 5)</div>
-                    </div>
-
-                    <div>
-                      <label className="monument text-sm block mb-2">WHAT METRIC WILL TRACK IT? <span className="text-red-500">*</span></label>
-                      <textarea
-                        value={better.metric}
-                        onChange={(e) => updateBetter(better.id, 'metric', e.target.value)}
-                        placeholder="Primary: Onboarding completion rate (target: 80% complete all setup tasks within 7 days). Secondary: Support tickets during first 14 days (target: reduce by 40%). Tertiary: Day 30 activation rate."
-                        className="w-full"
-                        rows={3}
-                      />
-                      <div className="char-counter">{better.metric.length}/500 (min 20)</div>
-                    </div>
-                  </div>
+            <div className="space-y-5">
+              <div>
+                <label className="monument text-sm block mb-2">WHAT NEEDS TO BE IMPROVED? <span style={{ color: '#ef4444' }}>*</span></label>
+                <textarea
+                  value={better.improvement}
+                  onChange={(e) => updateBetter(better.id, 'improvement', e.target.value)}
+                  placeholder="Our current onboarding email sequence is 5 emails over 10 days with dense paragraphs and multiple CTAs per email. Customers are confused about what to do first."
+                  className="w-full"
+                  rows={4}
+                />
+                <div className={`char-counter${better.improvement.length > 0 && better.improvement.length < 30 ? ' invalid' : ''}`}>
+                  {better.improvement.length}/1000 (min 30)
                 </div>
-              ))}
-            </div>
+              </div>
 
+              <div>
+                <label className="monument text-sm block mb-2">HOW WILL IT BE EXECUTED? <span style={{ color: '#ef4444' }}>*</span></label>
+                <textarea
+                  value={better.execution}
+                  onChange={(e) => updateBetter(better.id, 'execution', e.target.value)}
+                  placeholder="Rewrite all onboarding emails to 6th grade reading level. Each email has one primary CTA. Sequence: Day 1 (Welcome + setup), Day 3 (Key feature), Day 7 (Where to get help)."
+                  className="w-full"
+                  rows={4}
+                />
+                <div className={`char-counter${better.execution.length > 0 && better.execution.length < 30 ? ' invalid' : ''}`}>
+                  {better.execution.length}/1000 (min 30)
+                </div>
+              </div>
+
+              <div>
+                <label className="monument text-sm block mb-2">WHO IS RESPONSIBLE? <span style={{ color: '#ef4444' }}>*</span></label>
+                <input
+                  type="text"
+                  value={better.responsible}
+                  onChange={(e) => updateBetter(better.id, 'responsible', e.target.value)}
+                  placeholder="Sarah Chen, Customer Success Manager"
+                  className="w-full"
+                />
+                <div className={`char-counter${better.responsible.length > 0 && better.responsible.length < 5 ? ' invalid' : ''}`}>
+                  {better.responsible.length}/200 (min 5)
+                </div>
+              </div>
+
+              <div>
+                <label className="monument text-sm block mb-2">WHAT METRIC WILL TRACK IT? <span style={{ color: '#ef4444' }}>*</span></label>
+                <textarea
+                  value={better.metric}
+                  onChange={(e) => updateBetter(better.id, 'metric', e.target.value)}
+                  placeholder="Primary: Onboarding completion rate (target: 80% within 7 days). Secondary: Support tickets during first 14 days (target: reduce by 40%)."
+                  className="w-full"
+                  rows={3}
+                />
+                <div className={`char-counter${better.metric.length > 0 && better.metric.length < 20 ? ' invalid' : ''}`}>
+                  {better.metric.length}/500 (min 20)
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
+            {betterIndex > 0 && (
+              <button className="btn-secondary" style={{ fontSize: 13 }} onClick={() => setBetterIndex(i => i - 1)}>
+                ← PREV IMPROVEMENT
+              </button>
+            )}
+            {isBetterValid(better) && betterIndex === total - 1 && (
+              <button className="btn-secondary" style={{ fontSize: 13 }} onClick={addBetter}>
+                + ADD ANOTHER IMPROVEMENT
+              </button>
+            )}
+          </div>
         </div>
       );
     }
 
-    // Step 4: Ownership & Metrics
+    // ─────────────────────────────────────────────
+    // Step 4: Ownership & Metrics (unchanged — all items shown)
+    // ─────────────────────────────────────────────
     function Step4Page({ data, updateOwnership }) {
       return (
         <div>
             <div className="numbered-section mb-8 animate-in">04. OWNERSHIP & METRICS</div>
-
-            {/* Fast Track Insight */}
-
-            {/* The Science */}
-            
-
 
             <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
               Assign clear accountability for every touchpoint
@@ -1277,91 +1462,97 @@
       );
     }
 
-    // Step 5: Implementation Plan
-    function Step5Page({ data, updateData }) {
+    // ─────────────────────────────────────────────
+    // Step 5: Implementation Plan — Typeform style
+    // ─────────────────────────────────────────────
+    const IMPL_FIELDS = [
+      {
+        key: 'executionPlan',
+        label: 'EXECUTION SEQUENCE & ROLLOUT PLAN',
+        hint: "What gets implemented first, second, third? What are the dependencies? What's the timeline for each phase?",
+        placeholder: "Phase 1 (Weeks 1-2): Implement all 3 Just Better improvements — quick wins that build momentum.\n\nPhase 2 (Weeks 3-6): Roll out first WOW moment — CEO escalation protocol. Train support team, set up on-call rotation.\n\nPhase 3 (Weeks 7-10): Implement WOW moments 2 and 3. Each gets a 2-week pilot.\n\nPhase 4 (Week 11+): Full operation mode. Daily metric monitoring. Weekly team reviews.",
+        rows: 10,
+        max: 3000,
+        min: 50
+      },
+      {
+        key: 'frontlineCommunication',
+        label: 'FRONTLINE COMMUNICATION PLAN',
+        hint: "How will you communicate these changes to customer-facing teams? What training is needed?",
+        placeholder: "All-hands kickoff: Present customer journey map, explain WOW vs Just Better strategy.\n\nWeekly training (4 weeks): Segment psychology, WOW escalation protocols, Just Better execution, metrics & empowerment.\n\nEmpowerment: Support team authorized up to $500 without approval. Monthly recognition for memorable moments.",
+        rows: 10,
+        max: 3000,
+        min: 50
+      },
+      {
+        key: 'metricTracking',
+        label: 'METRIC TRACKING SYSTEM',
+        hint: "How will you track performance? What dashboards? What review cadence? What triggers escalation?",
+        placeholder: "Dashboard: 6 sections (one per touchpoint). Each shows primary KPI, 30-day trend, weekly performance, customer verbatim.\n\nReview cadence: Daily owner check (5 min). Weekly team review (30 min). Monthly leadership review.\n\nEscalation: Any KPI drops 15% week-over-week → owner presents action plan within 24 hours.",
+        rows: 8,
+        max: 2000,
+        min: 30
+      },
+      {
+        key: 'quarterlyReview',
+        label: 'QUARTERLY REVIEW & UPGRADE PLAN',
+        hint: "How will you audit and improve the journey every 90 days? What gets upgraded each quarter?",
+        placeholder: "Q1 Review: Full journey audit. 10-15 customer interviews. What's working? What's falling short?\n\nUpgrade commitment per quarter: One WOW moment enhancement, two Just Better fixes, journey map update.\n\nReview structure: Half-day workshop. Verbatim review, metric deep dive, prioritization, 30/60/90 day milestones.",
+        rows: 8,
+        max: 2000,
+        min: 30
+      }
+    ];
+
+    function Step5Page({ data, updateData, implIndex, setImplIndex, isImplFieldValid }) {
+      const field = IMPL_FIELDS[implIndex];
+      const total = IMPL_FIELDS.length;
+
       return (
-        <div>
-            <div className="numbered-section mb-8 animate-in">05. IMPLEMENTATION PLAN</div>
+        <div key={implIndex} className="animate-in">
+          <div className="numbered-section mb-6">05. IMPLEMENTATION PLAN</div>
 
-            {/* Fast Track Insight */}
+          <h3 className="riforma-bold mb-4" style={{ fontSize: '36px' }}>
+            Turn strategy into execution with clear actions and timelines
+          </h3>
 
-            {/* The Science */}
-            
-
-
-            <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
-              Turn strategy into execution with clear actions and timelines
-            </h3>
-
-            <div className="border-l-4 border-yellow-400 pl-6 mb-12 animate-in" style={{animationDelay: '0.1s'}}>
-              <p className="text-2xl italic">
-                &quot;Service isn&apos;t what you do. It&apos;s who you are. Culture equals execution.&quot; — Tony Hsieh, Zappos
-              </p>
-            </div>
-
-            <p className="text-xl mb-8 text-gray-700">
-              Strategy without execution is fantasy. Create your roadmap for rolling out improvements, communicating to frontline teams, tracking metrics, and reviewing performance quarterly. Make service excellence operational reality.
+          <div className="border-l-4 border-yellow-400 pl-6 mb-8">
+            <p className="text-xl italic">
+              &quot;Service isn&apos;t what you do. It&apos;s who you are. Culture equals execution.&quot; — Tony Hsieh, Zappos
             </p>
+          </div>
 
-            <div className="space-y-8 mb-12">
-              <div className="bg-gray-50 border-2 border-gray-200 p-6 animate-in" style={{animationDelay: '0.15s'}}>
-                <label className="monument text-sm block mb-2">EXECUTION SEQUENCE & ROLLOUT PLAN <span className="text-red-500">*</span></label>
-                <p className="text-sm text-gray-400 mb-2">What gets implemented first, second, third? What are the dependencies? What&apos;s the timeline for each phase?</p>
-                <textarea
-                  value={data.executionPlan}
-                  onChange={(e) => updateData('executionPlan', e.target.value)}
-                  placeholder="Phase 1 (Weeks 1-2): Implement all 3 Just Better improvements—these are quick wins that build momentum. Start with onboarding email simplification, then response time improvements, then tone training.&#10;&#10;Phase 2 (Weeks 3-6): Roll out first WOW moment—CEO escalation protocol. Train support team on identification criteria, set up on-call rotation, test with 10 customers before full launch.&#10;&#10;Phase 3 (Weeks 7-10): Implement WOW moments 2 and 3. Each gets 2-week pilot with selected segment customers before company-wide rollout.&#10;&#10;Phase 4 (Week 11+): Full operation mode. All touchpoints live. Daily metric monitoring. Weekly team reviews."
-                  className="w-full"
-                  rows={12}
-                />
-                <div className="char-counter">{data.executionPlan.length}/3000 (min 50)</div>
-              </div>
+          <ItemDots total={total} current={implIndex} />
 
-              <div className="bg-gray-50 border-2 border-gray-200 p-6 animate-in" style={{animationDelay: '0.2s'}}>
-                <label className="monument text-sm block mb-2">FRONTLINE COMMUNICATION PLAN <span className="text-red-500">*</span></label>
-                <p className="text-sm text-gray-400 mb-2">How will you communicate these changes to customer-facing teams? What training is needed? How will you empower them to execute?</p>
-                <textarea
-                  value={data.frontlineCommunication}
-                  onChange={(e) => updateData('frontlineCommunication', e.target.value)}
-                  placeholder="All-hands kickoff meeting: Present customer journey map, explain WOW vs Just Better strategy, show how this aligns with our value proposition and segment focus.&#10;&#10;Weekly training sessions (4 weeks): Week 1—Segment psychology and pain points. Week 2—WOW moment identification and escalation protocols. Week 3—Just Better execution details and scripts. Week 4—Metric understanding and empowerment boundaries.&#10;&#10;Empowerment guidelines: Support team authorized to make decisions up to $500 without approval. Clear escalation paths for WOW moments. Monthly recognition for team members who create memorable customer moments.&#10;&#10;Living documentation: Notion workspace with journey map, touchpoint playbooks, customer stories, and lessons learned. Updated weekly."
-                  className="w-full"
-                  rows={12}
-                />
-                <div className="char-counter">{data.frontlineCommunication.length}/3000 (min 50)</div>
-              </div>
-
-              <div className="bg-gray-50 border-2 border-gray-200 p-6 animate-in" style={{animationDelay: '0.25s'}}>
-                <label className="monument text-sm block mb-2">METRIC TRACKING SYSTEM <span className="text-red-500">*</span></label>
-                <p className="text-sm text-gray-400 mb-2">How will you track performance? What dashboards? What review cadence? What triggers escalation?</p>
-                <textarea
-                  value={data.metricTracking}
-                  onChange={(e) => updateData('metricTracking', e.target.value)}
-                  placeholder="Dashboard setup: Tableau dashboard with 6 sections (one per touchpoint). Each shows: primary KPI, trend over 30 days, current week performance, customer verbatim feedback.&#10;&#10;Review cadence: Daily check by touchpoint owners (5 min scan). Weekly team review (30 min deep dive on any red flags). Monthly leadership review (strategic adjustments).&#10;&#10;Escalation triggers: Any touchpoint KPI drops 15% week-over-week. Any customer sentiment below 70% positive. Any WOW moment not executed as designed. Owner must present action plan within 24 hours."
-                  className="w-full"
-                  rows={8}
-                />
-                <div className="char-counter">{data.metricTracking.length}/2000 (min 30)</div>
-              </div>
-
-              <div className="bg-gray-50 border-2 border-gray-200 p-6 animate-in" style={{animationDelay: '0.3s'}}>
-                <label className="monument text-sm block mb-2">QUARTERLY REVIEW & UPGRADE PLAN <span className="text-red-500">*</span></label>
-                <p className="text-sm text-gray-400 mb-2">How will you audit and improve the journey every 90 days? What gets upgraded each quarter?</p>
-                <textarea
-                  value={data.quarterlyReview}
-                  onChange={(e) => updateData('quarterlyReview', e.target.value)}
-                  placeholder="Q1 Review (End of March): Full journey audit. Customer interviews (10-15 from target segment). Identify: What&apos;s working? What&apos;s falling short? Where is segment evolution happening?&#10;&#10;Upgrade commitment per quarter: One WOW moment enhancement (make it even more memorable). Two Just Better fixes (address new friction points). Update journey map based on customer feedback and market changes.&#10;&#10;Review meeting structure: Half-day workshop. Customer verbatim feedback review. Metric deep dive. Prioritization session. Action assignment. 30/60/90 day milestones set."
-                  className="w-full"
-                  rows={8}
-                />
-                <div className="char-counter">{data.quarterlyReview.length}/2000 (min 30)</div>
-              </div>
+          <div className="bg-gray-50 border-2 border-gray-200 p-6">
+            <label className="monument text-sm block mb-2">{field.label} <span style={{ color: '#ef4444' }}>*</span></label>
+            <p className="text-sm text-gray-400 mb-3">{field.hint}</p>
+            <textarea
+              value={data[field.key]}
+              onChange={(e) => updateData(field.key, e.target.value)}
+              placeholder={field.placeholder}
+              className="w-full"
+              rows={field.rows}
+            />
+            <div className={`char-counter${data[field.key].length > 0 && data[field.key].length < field.min ? ' invalid' : ''}`}>
+              {data[field.key].length}/{field.max} (min {field.min})
             </div>
+          </div>
 
+          {implIndex > 0 && (
+            <div style={{ marginTop: 16 }}>
+              <button className="btn-secondary" style={{ fontSize: 13 }} onClick={() => setImplIndex(i => i - 1)}>
+                ← PREV
+              </button>
+            </div>
+          )}
         </div>
       );
     }
 
+    // ─────────────────────────────────────────────
     // Canvas Page Component
+    // ─────────────────────────────────────────────
     function CanvasPage({ data, onExport, onSubmit }) {
       return (
         <div className="bg-black text-white min-h-screen p-16">
@@ -1429,6 +1620,23 @@
                           <div><span className="monument text-xs">EXECUTION:</span> {better.execution}</div>
                           <div><span className="monument text-xs">RESPONSIBLE:</span> {better.responsible}</div>
                           <div><span className="monument text-xs">METRIC:</span> {better.metric}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Ownership */}
+                <div>
+                  <h2 className="riforma-bold text-4xl mb-6 pb-3 border-b-4 border-black">Ownership & Metrics</h2>
+                  <div className="space-y-3">
+                    {data.ownership.map((item, i) => (
+                      <div key={item.id} className="border-2 border-black p-4">
+                        <h3 className="riforma-bold text-lg mb-2">{item.touchpoint}</h3>
+                        <div className="grid grid-cols-3 gap-3 text-sm">
+                          <div><span className="monument text-xs block">OWNER</span>{item.owner}</div>
+                          <div><span className="monument text-xs block">KPI</span>{item.kpi}</div>
+                          <div><span className="monument text-xs block">DEADLINE</span>{item.deadline}</div>
                         </div>
                       </div>
                     ))}
