@@ -42,12 +42,14 @@
 
         return R.createElement('div', {
             style: {
-                minHeight: '100vh',
+                position: 'fixed',
+                top: 0, left: 0, right: 0, bottom: 0,
                 background: '#000',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                padding: '48px 32px'
+                padding: '48px 32px',
+                zIndex: 9999
             }
         },
             R.createElement('div', {
