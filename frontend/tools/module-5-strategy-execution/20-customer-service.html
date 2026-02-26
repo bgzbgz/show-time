@@ -463,42 +463,45 @@
       };
 
       const addStage = () => {
-        const newId = Math.max(...data.journeyStages.map(s => s.id)) + 1;
+        const stages = data.journeyStages || [];
+        const newId = stages.length > 0 ? Math.max(...stages.map(s => s.id)) + 1 : Date.now();
         setData(prev => ({
           ...prev,
-          journeyStages: [...prev.journeyStages, { id: newId, stage: '', customerGoal: '', customerAction: '', customerThought: '' }]
+          journeyStages: [...(prev.journeyStages || []), { id: newId, stage: '', customerGoal: '', customerAction: '', customerThought: '' }]
         }));
-        // Navigate to the new stage
-        setStageIndex(data.journeyStages.length);
+        setStageIndex(stages.length);
       };
 
       const removeStage = (id) => {
-        if (data.journeyStages.length > 3) {
-          const idx = data.journeyStages.findIndex(s => s.id === id);
+        const stages = data.journeyStages || [];
+        if (stages.length > 3) {
+          const idx = stages.findIndex(s => s.id === id);
           setData(prev => ({
             ...prev,
-            journeyStages: prev.journeyStages.filter(s => s.id !== id)
+            journeyStages: (prev.journeyStages || []).filter(s => s.id !== id)
           }));
-          setStageIndex(prev => Math.min(prev, Math.max(0, data.journeyStages.length - 2)));
+          setStageIndex(prev => Math.min(prev, Math.max(0, stages.length - 2)));
         }
       };
 
       const addWow = () => {
-        const newId = Math.max(...data.wowTouchpoints.map(w => w.id)) + 1;
+        const wows = data.wowTouchpoints || [];
+        const newId = wows.length > 0 ? Math.max(...wows.map(w => w.id)) + 1 : Date.now();
         setData(prev => ({
           ...prev,
-          wowTouchpoints: [...prev.wowTouchpoints, { id: newId, moment: '', emotional: '', action: '', measurement: '' }]
+          wowTouchpoints: [...(prev.wowTouchpoints || []), { id: newId, moment: '', emotional: '', action: '', measurement: '' }]
         }));
-        setWowIndex(data.wowTouchpoints.length);
+        setWowIndex(wows.length);
       };
 
       const addBetter = () => {
-        const newId = Math.max(...data.justBetter.map(b => b.id)) + 1;
+        const betters = data.justBetter || [];
+        const newId = betters.length > 0 ? Math.max(...betters.map(b => b.id)) + 1 : Date.now();
         setData(prev => ({
           ...prev,
-          justBetter: [...prev.justBetter, { id: newId, improvement: '', execution: '', responsible: '', metric: '' }]
+          justBetter: [...(prev.justBetter || []), { id: newId, improvement: '', execution: '', responsible: '', metric: '' }]
         }));
-        setBetterIndex(data.justBetter.length);
+        setBetterIndex(betters.length);
       };
 
       const updateWow = (id, field, value) => {
@@ -557,12 +560,12 @@
 
       const isImplFieldValid = (idx) => data[implFields[idx].key].length >= implFields[idx].min;
 
-      const isStep1Valid = () => data.journeyStages.every(isStageValid);
-      const isStep2Valid = () => data.wowTouchpoints.every(isWowValid);
-      const isStep3Valid = () => data.justBetter.every(isBetterValid);
+      const isStep1Valid = () => (data.journeyStages || []).every(isStageValid);
+      const isStep2Valid = () => (data.wowTouchpoints || []).every(isWowValid);
+      const isStep3Valid = () => (data.justBetter || []).every(isBetterValid);
 
       const isStep4Valid = () => {
-        return data.ownership.every(o =>
+        return (data.ownership || []).every(o =>
           o.owner && o.owner.length >= 5 &&
           o.kpi && o.kpi.length >= 15 &&
           o.deadline && o.deadline.length >= 8
@@ -753,8 +756,8 @@
         let onNext = null;
 
         if (step === 1) {
-          const currentStage = data.journeyStages[stageIndex];
-          const isLast = stageIndex === data.journeyStages.length - 1;
+          const currentStage = (data.journeyStages || [])[stageIndex];
+          const isLast = stageIndex === (data.journeyStages || []).length - 1;
           canProceed = !aiReviewing && isStageValid(currentStage);
           if (isLast) {
             nextLabel = aiReviewing ? 'AI COACH REVIEWING...' : 'NEXT: WOW MOMENTS →';
@@ -764,8 +767,8 @@
             onNext = () => setStageIndex(i => i + 1);
           }
         } else if (step === 2) {
-          const currentWow = data.wowTouchpoints[wowIndex];
-          const isLast = wowIndex === data.wowTouchpoints.length - 1;
+          const currentWow = (data.wowTouchpoints || [])[wowIndex];
+          const isLast = wowIndex === (data.wowTouchpoints || []).length - 1;
           canProceed = !aiReviewing && isWowValid(currentWow);
           if (isLast) {
             nextLabel = aiReviewing ? 'AI COACH REVIEWING...' : 'NEXT: JUST BETTER →';
@@ -775,8 +778,8 @@
             onNext = () => setWowIndex(i => i + 1);
           }
         } else if (step === 3) {
-          const currentBetter = data.justBetter[betterIndex];
-          const isLast = betterIndex === data.justBetter.length - 1;
+          const currentBetter = (data.justBetter || [])[betterIndex];
+          const isLast = betterIndex === (data.justBetter || []).length - 1;
           canProceed = !aiReviewing && isBetterValid(currentBetter);
           if (isLast) {
             nextLabel = aiReviewing ? 'AI COACH REVIEWING...' : 'NEXT: OWNERSHIP →';
@@ -1413,7 +1416,7 @@
             </p>
 
             <div className="space-y-8 mb-12">
-              {data.ownership.map((item, index) => (
+              {(data.ownership || []).map((item, index) => (
                 <div key={item.id} className="bg-gray-50 border-2 border-gray-200 p-6 animate-in" style={{animationDelay: `${0.15 + index * 0.02}s`}}>
                   <h4 className="riforma-bold text-2xl mb-4">{item.touchpoint}</h4>
 
@@ -1568,7 +1571,7 @@
                 <div>
                   <h2 className="riforma-bold text-4xl mb-6 pb-3 border-b-4 border-black">Customer Journey Map</h2>
                   <div className="grid gap-4">
-                    {data.journeyStages.map((stage, i) => (
+                    {(data.journeyStages || []).map((stage, i) => (
                       <div key={stage.id} className="border-2 border-black p-4">
                         <h3 className="riforma-bold text-xl mb-3">{stage.stage || `Stage ${i + 1}`}</h3>
                         <div className="grid grid-cols-3 gap-3 text-sm">
@@ -1594,7 +1597,7 @@
                 <div>
                   <h2 className="riforma-bold text-4xl mb-6 pb-3 border-b-4 border-black">WOW Touchpoints</h2>
                   <div className="space-y-4">
-                    {data.wowTouchpoints.map((wow, i) => (
+                    {(data.wowTouchpoints || []).map((wow, i) => (
                       <div key={wow.id} className="border-2 border-black p-4">
                         <h3 className="riforma-bold text-lg mb-2">WOW {i + 1}</h3>
                         <div className="space-y-2 text-sm">
@@ -1612,7 +1615,7 @@
                 <div>
                   <h2 className="riforma-bold text-4xl mb-6 pb-3 border-b-4 border-black">Just Better Improvements</h2>
                   <div className="space-y-4">
-                    {data.justBetter.map((better, i) => (
+                    {(data.justBetter || []).map((better, i) => (
                       <div key={better.id} className="border-2 border-black p-4">
                         <h3 className="riforma-bold text-lg mb-2">Just Better {i + 1}</h3>
                         <div className="space-y-2 text-sm">
@@ -1630,7 +1633,7 @@
                 <div>
                   <h2 className="riforma-bold text-4xl mb-6 pb-3 border-b-4 border-black">Ownership & Metrics</h2>
                   <div className="space-y-3">
-                    {data.ownership.map((item, i) => (
+                    {(data.ownership || []).map((item, i) => (
                       <div key={item.id} className="border-2 border-black p-4">
                         <h3 className="riforma-bold text-lg mb-2">{item.touchpoint}</h3>
                         <div className="grid grid-cols-3 gap-3 text-sm">
