@@ -904,34 +904,34 @@
         if (step === 0.5) {
           setStep(1);
         } else if (step >= 1 && step <= 5) {
-          const userId = localStorage.getItem('ft_user_id');
-          if (userId) {
-            setAiReviewing(true);
-            try {
-              let stepAnswers = {};
-              let stepName = '';
-              if (step === 1) {
-                stepName = 'Current Team Assessment';
-                stepAnswers = { current_team: (data.currentTeam || []).map(m => ({ name: m.name, currentPosition: m.currentPosition, companyFit: m.companyFit, jobFit: m.jobFit, bossFit: m.bossFit, teamFit: m.teamFit, totalFit: m.totalFit })) };
-              } else if (step === 2) {
-                stepName = 'Define New Roles';
-                stepAnswers = { new_roles: (data.newRoles || []).map(r => ({ roleTitle: r.roleTitle, criticality: r.criticality, requiredSkills: r.requiredSkills })) };
-              } else if (step === 3) {
-                stepName = 'Decision Matrix';
-                stepAnswers = { decision_matrix: data.decisionMatrix || [] };
-              } else if (step === 4) {
-                stepName = 'Action Plan';
-                stepAnswers = { action_plan: data.actionPlan || {} };
-              } else if (step === 5) {
-                stepName = 'PDPs';
-                stepAnswers = { pdps: data.pdps || [] };
+          // Step 1 (Team Assessment) handles per-member review internally — skip AI here
+          if (step !== 1) {
+            const userId = localStorage.getItem('ft_user_id');
+            if (userId) {
+              setAiReviewing(true);
+              try {
+                let stepAnswers = {};
+                let stepName = '';
+                if (step === 2) {
+                  stepName = 'Define New Roles';
+                  stepAnswers = { new_roles: (data.newRoles || []).map(r => ({ roleTitle: r.roleTitle, criticality: r.criticality, requiredSkills: r.requiredSkills })) };
+                } else if (step === 3) {
+                  stepName = 'Decision Matrix';
+                  stepAnswers = { decision_matrix: data.decisionMatrix || [] };
+                } else if (step === 4) {
+                  stepName = 'Action Plan';
+                  stepAnswers = { action_plan: data.actionPlan || {} };
+                } else if (step === 5) {
+                  stepName = 'PDPs';
+                  stepAnswers = { pdps: data.pdps || [] };
+                }
+                const canProceed = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, stepName);
+                if (!canProceed) { setAiReviewing(false); return; }
+              } catch (err) {
+                console.warn('[AIChallenge] Error, allowing passage:', err);
+              } finally {
+                setAiReviewing(false);
               }
-              const canProceed = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, stepName);
-              if (!canProceed) { setAiReviewing(false); return; }
-            } catch (err) {
-              console.warn('[AIChallenge] Error, allowing passage:', err);
-            } finally {
-              setAiReviewing(false);
             }
           }
 
@@ -1121,26 +1121,34 @@
       // Steps 1-5: Wizard layout
       if (step >= 1 && step <= 5) {
         const stepLabels = ['Team Assessment', 'Define New Roles', 'Decision Matrix', 'Action Plan', 'Dev Plans'];
-        const isValid = step === 1 ? isStep1Valid() : step === 2 ? isStep2Valid() : step === 3 ? isStep3Valid() : step === 4 ? isStep4Valid() : isStep5Valid();
+        // Step 1 uses internal per-member navigation — skip standard validation gate for footer
+        const isValid = step === 1 ? true : step === 2 ? isStep2Valid() : step === 3 ? isStep3Valid() : step === 4 ? isStep4Valid() : isStep5Valid();
         const canProceed = !aiReviewing && isValid;
-        const nextLabels = { 1: 'NEXT: DEFINE NEW ROLES →', 2: 'NEXT: DECISION MATRIX →', 3: 'NEXT: ACTION PLAN →', 4: 'NEXT: DEV PLANS →', 5: 'VIEW CANVAS →' };
+        const nextLabels = { 2: 'NEXT: DECISION MATRIX →', 3: 'NEXT: ACTION PLAN →', 4: 'NEXT: DEV PLANS →', 5: 'VIEW CANVAS →' };
         return (
           <div className="wizard-layout">
             <div className="wizard-main">
               <div className="wizard-content animate-in">
                 <DependencyContext deps={deps} />
-                {step === 1 && <Step1Page data={data} updateTeamMember={updateTeamMember} addTeamMember={addTeamMember} removeTeamMember={removeTeamMember} />}
+                {step === 1 && <Step1Page data={data} updateTeamMember={updateTeamMember} addTeamMember={addTeamMember} removeTeamMember={removeTeamMember} onAdvanceStep={goNext} />}
                 {step === 2 && <Step2Page data={data} updateRole={updateRole} addRole={addRole} removeRole={removeRole} addSkill={addSkill} removeSkill={removeSkill} updateSkill={updateSkill} />}
                 {step === 3 && <Step3Page data={data} updateMatrixScore={updateMatrixScore} />}
                 {step === 4 && <Step4Page data={data} updateActionPlanItem={updateActionPlanItem} />}
                 {step === 5 && <Step5Page data={data} updatePDP={updatePDP} addCapability={addCapability} removeCapability={removeCapability} updateCapability={updateCapability} />}
               </div>
-              <div className="wizard-footer">
-                <button className="btn-wiz-back" onClick={goBack}>← BACK</button>
-                <button className="btn-wiz-next" disabled={!canProceed} onClick={goNext}>
-                  {aiReviewing ? 'AI COACH REVIEWING...' : (nextLabels[step] || 'NEXT →')}
-                </button>
-              </div>
+              {step !== 1 && (
+                <div className="wizard-footer">
+                  <button className="btn-wiz-back" onClick={goBack}>← BACK</button>
+                  <button className="btn-wiz-next" disabled={!canProceed} onClick={goNext}>
+                    {aiReviewing ? 'AI COACH REVIEWING...' : (nextLabels[step] || 'NEXT →')}
+                  </button>
+                </div>
+              )}
+              {step === 1 && (
+                <div className="wizard-footer">
+                  <button className="btn-wiz-back" onClick={goBack}>← BACK TO INTRO</button>
+                </div>
+              )}
             </div>
             <WizardSidebar currentStep={step} stepLabels={stepLabels} totalSteps={5} />
           </div>
@@ -1412,167 +1420,246 @@
       return 'score-poor';
     }
 
-    // Step 1: Current Team Assessment Component
-    function Step1Page({ data, updateTeamMember, addTeamMember, removeTeamMember }) {
+    // Step 1: Current Team Assessment Component — typeform-style, one member at a time
+    function Step1Page({ data, updateTeamMember, addTeamMember, removeTeamMember, onAdvanceStep }) {
+      const members = data.currentTeam || [];
+      const [memberIndex, setMemberIndex] = useState(0);
+      const [transitioning, setTransitioning] = useState(false);
+
+      const currentMember = members[memberIndex] || {};
+      const totalMembers = members.length;
+      const fitInterpretation = getFitInterpretation(currentMember.totalFit || 0);
+
+      // Validate current member before advancing
+      const isMemberValid = () => {
+        return (
+          (currentMember.name || '').trim().length >= 2 &&
+          (currentMember.currentPosition || '').trim().length >= 2 &&
+          currentMember.companyFit >= 0 && currentMember.companyFit <= 1 &&
+          currentMember.jobFit >= 0 && currentMember.jobFit <= 1 &&
+          currentMember.bossFit >= 0 && currentMember.bossFit <= 1 &&
+          currentMember.teamFit >= 0 && currentMember.teamFit <= 1
+        );
+      };
+
+      const goNextMember = () => {
+        if (transitioning) return;
+        if (memberIndex < totalMembers - 1) {
+          setTransitioning(true);
+          setMemberIndex(memberIndex + 1);
+          setTransitioning(false);
+        } else {
+          // All members done — advance wizard step
+          if (onAdvanceStep) onAdvanceStep();
+        }
+      };
+
+      const goPrevMember = () => {
+        if (memberIndex > 0) {
+          setMemberIndex(memberIndex - 1);
+        }
+      };
+
+      const handleAddMember = () => {
+        addTeamMember();
+        // Navigate to the new member (will be last)
+        setMemberIndex(totalMembers); // totalMembers is current length, new item will be at that index
+      };
+
+      const isLastMember = memberIndex === totalMembers - 1;
+      const canAdvance = isMemberValid();
+
+      if (!currentMember.id && totalMembers === 0) return null;
+
       return (
         <div>
-            <div className="mb-8 animate-in">
-              <div className="numbered-section mb-4">STEP 01</div>
+          <div className="numbered-section mb-6 animate-in">STEP 01 — CURRENT TEAM ASSESSMENT</div>
 
-              {/* Fast Track Insight */}
+          {/* Progress bar */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
+            <div style={{ flex: 1, height: 4, background: '#E0E0E0', borderRadius: 2 }}>
+              <div style={{ height: '100%', background: '#000', borderRadius: 2, width: `${((memberIndex + 1) / totalMembers) * 100}%`, transition: 'width 0.4s ease' }} />
+            </div>
+            <span className="monument" style={{ fontSize: 11, color: '#666', whiteSpace: 'nowrap' }}>
+              {memberIndex + 1} / {totalMembers}
+            </span>
+          </div>
 
-              {(data.currentTeam[0]?.name || '').length >= 2 && (
-                  <div className="ft-reveal">
-                      <div className="ft-reveal-label">FAST TRACK SCIENCE</div>
-                      <p className="ft-reveal-text">Research on person-environment fit shows that multi-dimensional assessment (Company-Job-Boss-Team) predicts job performance and retention significantly better than single-factor evaluations (Kristof-Brown et al., 2005, Personnel Psychology). Only 12% of organizational transformations achieve their full potential, primarily due to failures in managing the people side of change (McKinsey, 2023). Structured FIT scoring eliminates the subjectivity bias that causes 87% of restructurings to misalign people.</p>
-                  </div>
+          {/* Science reveal */}
+          {(currentMember.name || '').length >= 2 && (
+            <div className="ft-reveal" style={{ marginBottom: 20 }}>
+              <div className="ft-reveal-label">FAST TRACK SCIENCE</div>
+              <p className="ft-reveal-text">Research on person-environment fit shows that multi-dimensional assessment (Company-Job-Boss-Team) predicts job performance and retention significantly better than single-factor evaluations (Kristof-Brown et al., 2005, Personnel Psychology). Structured FIT scoring eliminates the subjectivity bias that causes 87% of restructurings to misalign people.</p>
+            </div>
+          )}
+
+          {/* Member card */}
+          <div key={currentMember.id} className="animate-in">
+
+            {/* Member header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+              <div className="monument" style={{ fontSize: 11, color: '#666', letterSpacing: '0.08em' }}>
+                MEMBER {memberIndex + 1} OF {totalMembers}
+              </div>
+              {totalMembers > 1 && (
+                <button
+                  onClick={() => {
+                    removeTeamMember(currentMember.id);
+                    setMemberIndex(Math.max(0, memberIndex - 1));
+                  }}
+                  className="btn-remove"
+                  style={{ padding: '4px 12px', fontSize: 12 }}
+                >
+                  REMOVE
+                </button>
               )}
+            </div>
 
-              {/* Common Mistake */}
+            <div className="border-4 border-black p-6 mb-4">
 
-              <h1 className="plaak text-6xl mb-4">CURRENT TEAM ASSESSMENT</h1>
-              <p className="text-2xl text-gray-600 mb-4">
-                Import FIT scores from Sprint 24. Total FIT auto-calculates as average of all 4 dimensions.
-              </p>
-              <div className="bg-yellow-100 border-l-4 border-yellow-600 p-4">
-                <p className="text-lg"><strong>Remember:</strong> Use 0-1 scale (e.g., 0.85, 0.70, 0.45). Total FIT = (Company + Job + Boss + Team) / 4</p>
+              {/* Name + Position */}
+              <div className="grid grid-cols-2 gap-6 mb-6">
+                <div>
+                  <label className="monument text-sm block mb-2">NAME <span style={{ color: '#EF4444' }}>*</span></label>
+                  <ScienceBookmarkIcon>
+                    Geoff Smart's "Who" method shows that precisely identifying individuals by name and role eliminates the vagueness that causes 62% of placement failures. Specificity drives accountability.
+                  </ScienceBookmarkIcon>
+                  <input
+                    type="text"
+                    value={currentMember.name || ''}
+                    onChange={(e) => updateTeamMember(currentMember.id, 'name', e.target.value)}
+                    placeholder="Full name"
+                    className="w-full"
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <label className="monument text-sm block mb-2">CURRENT POSITION <span style={{ color: '#EF4444' }}>*</span></label>
+                  <ScienceBookmarkIcon>
+                    Collins' "First Who, Then What" principle: documenting current positions exposes structural gaps. Companies that map existing roles before redesigning outperform those that skip this step by 3x (Good to Great, Jim Collins).
+                  </ScienceBookmarkIcon>
+                  <input
+                    type="text"
+                    value={currentMember.currentPosition || ''}
+                    onChange={(e) => updateTeamMember(currentMember.id, 'currentPosition', e.target.value)}
+                    placeholder="Current role"
+                    className="w-full"
+                  />
+                </div>
+              </div>
+
+              {/* FIT Scores */}
+              <div style={{ background: '#FFFBEB', borderLeft: '3px solid #F59E0B', padding: '10px 14px', marginBottom: 16, fontSize: 13, color: '#666' }}>
+                Enter FIT scores using 0–1 scale (e.g., 0.85 = strong fit, 0.45 = weak fit). Total FIT auto-calculates.
+              </div>
+
+              <div className="grid grid-cols-4 gap-4 mb-4">
+                <div>
+                  <label className="monument text-sm block mb-2">COMPANY FIT</label>
+                  <ScienceBookmarkIcon>
+                    Four-dimensional FIT analysis (Company-Job-Boss-Team) predicts retention and performance 2.4x better than single-factor assessments. Missing any dimension creates hidden failure points (Kristof-Brown et al., Personnel Psychology).
+                  </ScienceBookmarkIcon>
+                  <input
+                    type="number"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={currentMember.companyFit || 0}
+                    onChange={(e) => updateTeamMember(currentMember.id, 'companyFit', parseFloat(e.target.value) || 0)}
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <label className="monument text-sm block mb-2">JOB FIT</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={currentMember.jobFit || 0}
+                    onChange={(e) => updateTeamMember(currentMember.id, 'jobFit', parseFloat(e.target.value) || 0)}
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <label className="monument text-sm block mb-2">BOSS FIT</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={currentMember.bossFit || 0}
+                    onChange={(e) => updateTeamMember(currentMember.id, 'bossFit', parseFloat(e.target.value) || 0)}
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <label className="monument text-sm block mb-2">TEAM FIT</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={currentMember.teamFit || 0}
+                    onChange={(e) => updateTeamMember(currentMember.id, 'teamFit', parseFloat(e.target.value) || 0)}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+
+              {/* Total FIT */}
+              <div className="bg-gray-100 p-4 border-l-4 border-black">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="monument text-sm mb-1">TOTAL FIT SCORE</p>
+                    <p className="text-4xl font-bold">{(currentMember.totalFit || 0).toFixed(2)}</p>
+                  </div>
+                  <div className="text-right">
+                    <span className={`fit-indicator ${fitInterpretation.class}`}>
+                      {fitInterpretation.label}
+                    </span>
+                    <p className="text-sm text-gray-600 mt-2">{fitInterpretation.text}</p>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Team Members */}
-            <div className="space-y-6 mb-8">
-              {(data.currentTeam || []).map((member, index) => {
-                const fitInterpretation = getFitInterpretation(member.totalFit || 0);
-
-                return (
-                  <div key={member.id} className="border-4 border-black p-6 animate-in" style={{animationDelay: `${index * 0.1}s`}}>
-                    <div className="flex justify-between items-start mb-4">
-                      <h3 className="plaak text-3xl">TEAM MEMBER {index + 1}</h3>
-                      {(data.currentTeam || []).length > 1 && (
-                        <button
-                          onClick={() => removeTeamMember(member.id)}
-                          className="btn-remove"
-                        >
-                          REMOVE
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-6 mb-6">
-                      <div>
-                        <label className="monument text-sm block mb-2">NAME</label>
-                        <ScienceBookmarkIcon>
-                            Geoff Smart's "Who" method shows that precisely identifying individuals by name and role eliminates the vagueness that causes 62% of placement failures. Specificity drives accountability.
-                        </ScienceBookmarkIcon>
-                        <input
-                          type="text"
-                          value={member.name || ''}
-                          onChange={(e) => updateTeamMember(member.id, 'name', e.target.value)}
-                          placeholder="Full name"
-                          className="w-full"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="monument text-sm block mb-2">CURRENT POSITION</label>
-                        <ScienceBookmarkIcon>
-                            Collins' "First Who, Then What" principle: documenting current positions exposes structural gaps. Companies that map existing roles before redesigning outperform those that skip this step by 3x (Good to Great, Jim Collins).
-                        </ScienceBookmarkIcon>
-                        <input
-                          type="text"
-                          value={member.currentPosition || ''}
-                          onChange={(e) => updateTeamMember(member.id, 'currentPosition', e.target.value)}
-                          placeholder="Current role"
-                          className="w-full"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-4 gap-4 mb-6">
-                      <div>
-                        <label className="monument text-sm block mb-2">COMPANY FIT (0-1)</label>
-                        <ScienceBookmarkIcon>
-                            Four-dimensional FIT analysis (Company-Job-Boss-Team) predicts retention and performance 2.4x better than single-factor assessments. Missing any dimension creates hidden failure points (Kristof-Brown et al., Personnel Psychology).
-                        </ScienceBookmarkIcon>
-                        <input
-                          type="number"
-                          min="0"
-                          max="1"
-                          step="0.01"
-                          value={member.companyFit || 0}
-                          onChange={(e) => updateTeamMember(member.id, 'companyFit', parseFloat(e.target.value) || 0)}
-                          className="w-full"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="monument text-sm block mb-2">JOB FIT (0-1)</label>
-                        <input
-                          type="number"
-                          min="0"
-                          max="1"
-                          step="0.01"
-                          value={member.jobFit || 0}
-                          onChange={(e) => updateTeamMember(member.id, 'jobFit', parseFloat(e.target.value) || 0)}
-                          className="w-full"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="monument text-sm block mb-2">BOSS FIT (0-1)</label>
-                        <input
-                          type="number"
-                          min="0"
-                          max="1"
-                          step="0.01"
-                          value={member.bossFit || 0}
-                          onChange={(e) => updateTeamMember(member.id, 'bossFit', parseFloat(e.target.value) || 0)}
-                          className="w-full"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="monument text-sm block mb-2">TEAM FIT (0-1)</label>
-                        <input
-                          type="number"
-                          min="0"
-                          max="1"
-                          step="0.01"
-                          value={member.teamFit || 0}
-                          onChange={(e) => updateTeamMember(member.id, 'teamFit', parseFloat(e.target.value) || 0)}
-                          className="w-full"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Total FIT Display */}
-                    <div className="bg-gray-100 p-4 border-l-4 border-black">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="monument text-sm mb-1">TOTAL FIT SCORE</p>
-                          <p className="text-4xl font-bold">{(member.totalFit || 0).toFixed(2)}</p>
-                        </div>
-                        <div className="text-right">
-                          <span className={`fit-indicator ${fitInterpretation.class}`}>
-                            {fitInterpretation.label}
-                          </span>
-                          <p className="text-sm text-gray-600 mt-2">{fitInterpretation.text}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+            {/* Navigation buttons */}
+            <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
+              {memberIndex > 0 && (
+                <button
+                  className="btn-wiz-back"
+                  onClick={goPrevMember}
+                  style={{ flexShrink: 0 }}
+                >
+                  ← PREV MEMBER
+                </button>
+              )}
+              <button
+                className="btn-wiz-next"
+                disabled={!canAdvance}
+                onClick={goNextMember}
+                style={{ flex: 1 }}
+              >
+                {isLastMember ? 'COMPLETE TEAM ASSESSMENT →' : 'NEXT MEMBER →'}
+              </button>
             </div>
 
-            {/* Add Team Member Button */}
+            {/* Add new member button */}
             <button
-              onClick={addTeamMember}
-              className="btn-add w-full mb-8 py-4 text-xl"
+              onClick={handleAddMember}
+              className="btn-add w-full py-3"
+              style={{ fontSize: 15 }}
             >
               + ADD TEAM MEMBER
             </button>
 
+            {!canAdvance && (
+              <p className="monument" style={{ fontSize: 10, color: '#999', marginTop: 8, textAlign: 'center' }}>
+                FILL IN NAME, POSITION AND ALL FIT SCORES TO CONTINUE
+              </p>
+            )}
+          </div>
         </div>
       );
     }

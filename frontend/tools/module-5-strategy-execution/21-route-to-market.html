@@ -709,7 +709,8 @@
             }
           };
 
-          await ToolDB.saveResponses(userId, CONFIG.TOOL_SLUG, questionMappings);
+          await ToolDB.save(userId, questionMappings);
+          await ToolDB.markComplete(userId);
           setSubmitStatus('success');
           setSubmitMessage('Submission saved successfully!');
         } catch (error) {
@@ -766,6 +767,7 @@
             data={data}
             onExport={exportPDF}
             onSubmit={handleSubmit}
+            submitStatus={submitStatus}
           />
         );
       }
@@ -1632,7 +1634,7 @@
     }
 
     // Canvas Page
-    function CanvasPage({ data, onExport, onSubmit }) {
+    function CanvasPage({ data, onExport, onSubmit, submitStatus }) {
       return (
         <div className="bg-black text-white min-h-screen p-16">
           <div className="max-w-6xl mx-auto">
@@ -1714,10 +1716,20 @@
               <button onClick={onExport} className="btn-primary flex-1">
                 EXPORT PDF
               </button>
-              <button onClick={onSubmit} className="btn-primary flex-1">
-                SUBMIT
-              </button>
+              {submitStatus !== 'success' && (
+                <button onClick={onSubmit} className="btn-primary flex-1">
+                  SUBMIT
+                </button>
+              )}
             </div>
+
+            {/* Success Panel */}
+            {submitStatus === 'success' && (
+              <div style={{ background: '#F0FFF4', border: '2px solid #38A169', borderLeft: '6px solid #38A169', padding: '20px 24px', marginBottom: '24px', borderRadius: '2px' }}>
+                <div style={{ fontFamily: "'Monument', monospace", fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#38A169', marginBottom: '6px' }}>SUBMITTED SUCCESSFULLY</div>
+                <div style={{ fontSize: '14px', color: '#2D3748' }}>Your Route to Market strategy has been saved. Return to the dashboard to continue your program.</div>
+              </div>
+            )}
 
             {/* Case Study */}
             <CaseStudy

@@ -516,32 +516,32 @@
         if (step === 0.5) {
           setStep(1);
         } else if (step >= 1 && step <= 4) {
-          const userId = localStorage.getItem('ft_user_id');
-          if (userId && step >= 1 && step <= 4) {
-            setAiReviewing(true);
-            try {
-              let stepAnswers = {};
-              let stepName = '';
-              const teamMembers = data.teamMembers || [];
-              if (step === 1) {
-                stepName = 'Team Members';
-                stepAnswers = { team_list: teamMembers.map(m => ({ name: m.name, role: m.role, tenure: m.tenure })) };
-              } else if (step === 2) {
-                stepName = 'FIT Analysis';
-                stepAnswers = { fit_scores: teamMembers.map(m => ({ name: m.name, energyScore: m.energyScore, skillScore: m.skillScore, valuesScore: m.valuesScore, impactScore: m.impactScore })) };
-              } else if (step === 3) {
-                stepName = 'ABC Classification';
-                stepAnswers = { classification: teamMembers.map(m => ({ name: m.name, abcRating: m.abcRating, abcReasoning: m.abcReasoning })) };
-              } else if (step === 4) {
-                stepName = 'Action Plans';
-                stepAnswers = { action_plans: teamMembers.filter(m => m.abcRating === 'B' || m.abcRating === 'C').map(m => ({ name: m.name, abcRating: m.abcRating, developmentNeeds: m.developmentNeeds, coachingPlan: m.coachingPlan, roleChanges: m.roleChanges, toughDecisions: m.toughDecisions })) };
+          // Step 2 (FIT Analysis) handles its own per-question AI reviews — skip here
+          if (step !== 2) {
+            const userId = localStorage.getItem('ft_user_id');
+            if (userId) {
+              setAiReviewing(true);
+              try {
+                let stepAnswers = {};
+                let stepName = '';
+                const teamMembers = data.teamMembers || [];
+                if (step === 1) {
+                  stepName = 'Team Members';
+                  stepAnswers = { team_list: teamMembers.map(m => ({ name: m.name, role: m.role, tenure: m.tenure })) };
+                } else if (step === 3) {
+                  stepName = 'ABC Classification';
+                  stepAnswers = { classification: teamMembers.map(m => ({ name: m.name, abcRating: m.abcRating, abcReasoning: m.abcReasoning })) };
+                } else if (step === 4) {
+                  stepName = 'Action Plans';
+                  stepAnswers = { action_plans: teamMembers.filter(m => m.abcRating === 'B' || m.abcRating === 'C').map(m => ({ name: m.name, abcRating: m.abcRating, developmentNeeds: m.developmentNeeds, coachingPlan: m.coachingPlan, roleChanges: m.roleChanges, toughDecisions: m.toughDecisions })) };
+                }
+                const canProceed = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, stepName);
+                if (!canProceed) { setAiReviewing(false); return; }
+              } catch (err) {
+                console.warn('[AIChallenge] Error, allowing passage:', err);
+              } finally {
+                setAiReviewing(false);
               }
-              const canProceed = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, stepName);
-              if (!canProceed) { setAiReviewing(false); return; }
-            } catch (err) {
-              console.warn('[AIChallenge] Error, allowing passage:', err);
-            } finally {
-              setAiReviewing(false);
             }
           }
 
@@ -711,25 +711,33 @@
       // Steps 1-4: Wizard layout
       if (step >= 1 && step <= 4) {
         const stepLabels = ['Team Members', 'FIT Analysis', 'ABC Classification', 'Action Plans'];
-        const isValid = step === 1 ? isStep1Valid() : step === 2 ? isStep2Valid() : step === 3 ? isStep3Valid() : isStep4Valid();
+        // Step 2 uses internal navigation — footer shows only Back
+        const isValid = step === 1 ? isStep1Valid() : step === 2 ? true : step === 3 ? isStep3Valid() : isStep4Valid();
         const canProceed = !aiReviewing && isValid;
-        const nextLabels = { 1: 'NEXT: FIT ANALYSIS →', 2: 'NEXT: ABC CLASSIFICATION →', 3: 'NEXT: ACTION PLANS →', 4: 'VIEW CANVAS →' };
+        const nextLabels = { 1: 'NEXT: FIT ANALYSIS →', 3: 'NEXT: ACTION PLANS →', 4: 'VIEW CANVAS →' };
         return (
           <div className="wizard-layout">
             <div className="wizard-main">
               <div className="wizard-content animate-in">
                 <DependencyContext deps={deps} />
                 {step === 1 && <Step1Page data={data} updateTeamMember={updateTeamMember} addTeamMember={addTeamMember} removeTeamMember={removeTeamMember} />}
-                {step === 2 && <Step2Page data={data} updateTeamMember={updateTeamMember} />}
+                {step === 2 && <Step2Page data={data} updateTeamMember={updateTeamMember} onAdvanceStep={goNext} />}
                 {step === 3 && <Step3Page data={data} updateTeamMember={updateTeamMember} />}
                 {step === 4 && <Step4Page data={data} updateTeamMember={updateTeamMember} />}
               </div>
-              <div className="wizard-footer">
-                <button className="btn-wiz-back" onClick={goBack}>← BACK</button>
-                <button className="btn-wiz-next" disabled={!canProceed} onClick={goNext}>
-                  {aiReviewing ? 'AI COACH REVIEWING...' : (nextLabels[step] || 'NEXT →')}
-                </button>
-              </div>
+              {step !== 2 && (
+                <div className="wizard-footer">
+                  <button className="btn-wiz-back" onClick={goBack}>← BACK</button>
+                  <button className="btn-wiz-next" disabled={!canProceed} onClick={goNext}>
+                    {aiReviewing ? 'AI COACH REVIEWING...' : (nextLabels[step] || 'NEXT →')}
+                  </button>
+                </div>
+              )}
+              {step === 2 && (
+                <div className="wizard-footer">
+                  <button className="btn-wiz-back" onClick={goBack}>← BACK TO TEAM LIST</button>
+                </div>
+              )}
             </div>
             <WizardSidebar currentStep={step} stepLabels={stepLabels} totalSteps={4} />
           </div>
@@ -1037,165 +1045,251 @@
       );
     }
 
-    // Step 2: FIT Analysis
-    function Step2Page({ data, updateTeamMember }) {
-      const [expandedMember, setExpandedMember] = useState(0);
+    // Step 2: FIT Analysis — typeform-style, one member at a time
+    function Step2Page({ data, updateTeamMember, onAdvanceStep }) {
+      const members = data.teamMembers || [];
+      const [fitMemberIndex, setFitMemberIndex] = useState(0);
+      const [fitQuestionIndex, setFitQuestionIndex] = useState(0);
+      const [aiReviewingQ, setAiReviewingQ] = useState(false);
+      const [transitioning, setTransitioning] = useState(false);
 
-      const RatingScale = ({ value, onChange, label }) => {
-        return (
-          <div className="mb-6">
-            <label className="monument text-sm block mb-3">{label} <span className="text-red-500">*</span></label>
-            <div className="rating-scale mb-3">
-              {[1, 2, 3, 4, 5].map(score => (
-                <button
-                  key={score}
-                  type="button"
-                  onClick={() => onChange(score)}
-                  className={`rating-button ${(value || 0) === score ? 'selected' : ''}`}
-                >
-                  {score}
-                </button>
-              ))}
-              <div className="flex justify-between flex-1 ml-4 text-sm text-gray-400">
-                <span>1 = Low</span>
-                <span>5 = High</span>
-              </div>
-            </div>
+      const FIT_QUESTIONS = [
+        {
+          key: 'energyScore',
+          notesKey: 'energyNotes',
+          label: 'ENERGY',
+          question: 'Does this role energize them or drain them?',
+          context: 'Energy is the most underrated dimension of FIT. A-players in the wrong role will still underperform because the work depletes rather than fuels them. Look for: Do they light up when talking about this work? Do they stay late by choice or obligation?',
+          placeholder: 'What evidence shows they\'re energized or drained? Do they light up or show fatigue?',
+          bg: null
+        },
+        {
+          key: 'skillScore',
+          notesKey: 'skillNotes',
+          label: 'SKILL',
+          question: 'Do they have the natural talents and learned skills for this role?',
+          context: 'Skill FIT asks: can they do this job with excellence? Consider both natural aptitude (hard to train) and learned competency (can be developed). Low skill + high energy = teachable. High skill + low energy = misplaced.',
+          placeholder: 'What skills do they excel at? Where do they struggle? Natural talent or learned competency?',
+          bg: null
+        },
+        {
+          key: 'valuesScore',
+          notesKey: 'valuesNotes',
+          label: 'VALUES',
+          question: 'Are their personal values aligned with company values?',
+          context: 'Values misalignment is the silent killer of team performance. You can\'t train values. A person who doesn\'t share the company\'s core values will create cultural friction even if they are a high performer. Be honest here — it\'s the hardest dimension to confront.',
+          placeholder: 'How do they demonstrate company values? Any cultural misalignment?',
+          bg: 'bg-purple-50 border-purple-200'
+        },
+        {
+          key: 'impactScore',
+          notesKey: 'impactNotes',
+          label: 'IMPACT',
+          question: 'Are they making a significant, measurable contribution?',
+          context: 'Impact is the output dimension. Not effort, not intention — results. Ask: what would be measurably different if this person were not in the role? If the answer is "not much," that\'s your score. Look for concrete numbers, outcomes, and decisions with real consequences.',
+          placeholder: 'What measurable results have they delivered? How significant is their contribution?',
+          bg: 'bg-orange-50 border-orange-200'
+        }
+      ];
+
+      const currentMember = members[fitMemberIndex];
+      const currentQuestion = FIT_QUESTIONS[fitQuestionIndex];
+      const totalMembers = members.length;
+      const totalQuestions = FIT_QUESTIONS.length;
+
+      // Compute global question number for progress display
+      const globalCurrent = fitMemberIndex * totalQuestions + fitQuestionIndex + 1;
+      const globalTotal = totalMembers * totalQuestions;
+
+      if (!currentMember || !currentQuestion) return null;
+
+      const currentScore = currentMember[currentQuestion.key] || 0;
+      const currentNotes = currentMember[currentQuestion.notesKey] || '';
+
+      const RatingScale = ({ value, onChange }) => (
+        <div className="rating-scale mb-3">
+          {[1, 2, 3, 4, 5].map(score => (
+            <button
+              key={score}
+              type="button"
+              onClick={() => onChange(score)}
+              className={`rating-button ${value === score ? 'selected' : ''}`}
+            >
+              {score}
+            </button>
+          ))}
+          <div className="flex justify-between flex-1 ml-4 text-sm text-gray-400">
+            <span>1 = Low</span>
+            <span>5 = High</span>
           </div>
-        );
+        </div>
+      );
+
+      const advanceQuestion = async () => {
+        if (transitioning) return;
+        setTransitioning(true);
+
+        // AI review for this question answer
+        const userId = localStorage.getItem('ft_user_id');
+        if (userId && currentScore >= 1) {
+          setAiReviewingQ(true);
+          try {
+            const stepAnswers = {
+              member_name: currentMember.name || `Team Member ${fitMemberIndex + 1}`,
+              dimension: currentQuestion.label,
+              score: currentScore,
+              notes: currentNotes
+            };
+            const canProceed = await window.AIChallenge.reviewStep(
+              userId,
+              CONFIG.TOOL_SLUG,
+              stepAnswers,
+              `FIT Analysis - ${currentMember.name || 'Member'} - ${currentQuestion.label}`
+            );
+            if (!canProceed) {
+              setAiReviewingQ(false);
+              setTransitioning(false);
+              return;
+            }
+          } catch (err) {
+            console.warn('[AIChallenge] Error, allowing passage:', err);
+          } finally {
+            setAiReviewingQ(false);
+          }
+        }
+
+        // Move to next question or next member
+        if (fitQuestionIndex < totalQuestions - 1) {
+          setFitQuestionIndex(fitQuestionIndex + 1);
+        } else if (fitMemberIndex < totalMembers - 1) {
+          setFitMemberIndex(fitMemberIndex + 1);
+          setFitQuestionIndex(0);
+        } else {
+          // All done — advance wizard step
+          if (onAdvanceStep) onAdvanceStep();
+        }
+        setTransitioning(false);
       };
+
+      const goBackQuestion = () => {
+        if (fitQuestionIndex > 0) {
+          setFitQuestionIndex(fitQuestionIndex - 1);
+        } else if (fitMemberIndex > 0) {
+          setFitMemberIndex(fitMemberIndex - 1);
+          setFitQuestionIndex(totalQuestions - 1);
+        }
+      };
+
+      const isLastQuestion = fitMemberIndex === totalMembers - 1 && fitQuestionIndex === totalQuestions - 1;
+      const canAdvance = currentScore >= 1;
 
       return (
         <div>
-            <div className="numbered-section mb-8 animate-in">02. FIT ANALYSIS</div>
+          <div className="numbered-section mb-6 animate-in">02. FIT ANALYSIS</div>
 
-            {/* Fast Track Insight */}
+          {/* Progress bar */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 32 }}>
+            <div style={{ flex: 1, height: 4, background: '#E0E0E0', borderRadius: 2 }}>
+              <div style={{ height: '100%', background: '#000', borderRadius: 2, width: `${(globalCurrent / globalTotal) * 100}%`, transition: 'width 0.4s ease' }} />
+            </div>
+            <span className="monument" style={{ fontSize: 11, color: '#666', whiteSpace: 'nowrap' }}>
+              {globalCurrent} / {globalTotal}
+            </span>
+          </div>
 
-            {/* The Science */}
-            
+          {/* Member indicator */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 24 }}>
+            <span className="monument" style={{ fontSize: 11, color: '#999', letterSpacing: '0.08em' }}>
+              MEMBER {fitMemberIndex + 1} OF {totalMembers}
+            </span>
+            <span style={{ color: '#E0E0E0' }}>·</span>
+            <span className="monument" style={{ fontSize: 11, color: '#999', letterSpacing: '0.08em' }}>
+              QUESTION {fitQuestionIndex + 1} OF {totalQuestions}
+            </span>
+          </div>
 
+          {/* Question card */}
+          <div key={`${fitMemberIndex}-${fitQuestionIndex}`} className="animate-in">
+            {/* Member name header */}
+            <div style={{ marginBottom: 24, padding: '12px 16px', background: '#F8F8F8', borderLeft: '4px solid #000' }}>
+              <div className="monument" style={{ fontSize: 10, color: '#999', marginBottom: 4 }}>EVALUATING</div>
+              <div className="riforma-bold" style={{ fontSize: 22 }}>
+                {(currentMember.name || `Team Member ${fitMemberIndex + 1}`).substring(0, 60)}
+                {currentMember.role && <span style={{ fontWeight: 'normal', color: '#666', fontSize: 18 }}> — {currentMember.role.substring(0, 50)}</span>}
+              </div>
+            </div>
 
-            <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
-              Rate each team member on the four FIT dimensions
+            {/* Dimension badge */}
+            <div className="monument" style={{ fontSize: 11, letterSpacing: '0.1em', color: '#666', marginBottom: 12 }}>
+              DIMENSION: {currentQuestion.label}
+            </div>
+
+            {/* Question */}
+            <h3 className="riforma-bold" style={{ fontSize: 32, lineHeight: 1.3, marginBottom: 20 }}>
+              {currentQuestion.question}
             </h3>
 
-            <div className="border-l-4 border-yellow-400 pl-6 mb-12 animate-in" style={{animationDelay: '0.1s'}}>
-              <p className="text-2xl italic">
-                "When all four FIT questions are 'yes,' performance and engagement skyrocket. Misalignment in any area leads to frustration, turnover, or mediocrity."
+            {/* Context */}
+            <div style={{ background: '#FFFBEB', borderLeft: '3px solid #F59E0B', padding: '12px 16px', marginBottom: 28, fontSize: 15, color: '#555', lineHeight: 1.6 }}>
+              {currentQuestion.context}
+            </div>
+
+            {/* Rating */}
+            <div className={`p-6 mb-4 border-2 ${currentQuestion.bg || 'border-gray-200'}`} style={{ background: currentQuestion.bg ? undefined : '#fff' }}>
+              <label className="monument text-sm block mb-3">
+                RATE {currentQuestion.label} <span style={{ color: '#EF4444' }}>*</span>
+              </label>
+              <RatingScale
+                value={currentScore}
+                onChange={(score) => updateTeamMember(currentMember.id, currentQuestion.key, score)}
+              />
+
+              <label className="monument text-xs block mb-2" style={{ marginTop: 16, color: '#666' }}>
+                NOTES (OPTIONAL)
+              </label>
+              <textarea
+                value={currentNotes}
+                onChange={(e) => updateTeamMember(currentMember.id, currentQuestion.notesKey, e.target.value)}
+                placeholder={currentQuestion.placeholder}
+                className="w-full"
+                rows={3}
+              />
+              <div className="char-counter">{currentNotes.length}/500</div>
+            </div>
+
+            {/* Navigation */}
+            <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+              {(fitMemberIndex > 0 || fitQuestionIndex > 0) && (
+                <button
+                  className="btn-wiz-back"
+                  onClick={goBackQuestion}
+                  style={{ flexShrink: 0 }}
+                >
+                  ← BACK
+                </button>
+              )}
+              <button
+                className="btn-wiz-next"
+                disabled={!canAdvance || aiReviewingQ}
+                onClick={advanceQuestion}
+                style={{ flex: 1 }}
+              >
+                {aiReviewingQ
+                  ? 'AI COACH REVIEWING...'
+                  : isLastQuestion
+                    ? 'COMPLETE FIT ANALYSIS →'
+                    : fitQuestionIndex < totalQuestions - 1
+                      ? `NEXT QUESTION →`
+                      : `NEXT MEMBER →`}
+              </button>
+            </div>
+
+            {!canAdvance && (
+              <p className="monument" style={{ fontSize: 10, color: '#999', marginTop: 8, textAlign: 'center' }}>
+                SELECT A RATING TO CONTINUE
               </p>
-            </div>
-
-            <p className="text-xl mb-8 text-gray-300">
-              Rate each person on a 1-5 scale for Energy, Skill, Values, and Impact. Be honest, not kind. Add notes to explain your ratings with specific examples.
-            </p>
-
-            <div className="mb-12">
-              {(data.teamMembers || []).map((member, index) => (
-                <div key={member.id} className="mb-3 animate-in" style={{animationDelay: `${0.15 + index * 0.05}s`}}>
-                  {/* Accordion Header */}
-                  <button
-                    onClick={() => setExpandedMember(expandedMember === index ? null : index)}
-                    style={{
-                      width: '100%',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      background: expandedMember === index ? '#000' : '#f9f9f9',
-                      color: expandedMember === index ? '#fff' : '#000',
-                      border: '1px solid #000',
-                      padding: '12px 16px',
-                      cursor: 'pointer',
-                      fontFamily: "'Monument', monospace",
-                      fontSize: 11,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.06em',
-                      fontWeight: 600
-                    }}
-                  >
-                    <span>{(member.name || `TEAM MEMBER ${index + 1}`).substring(0, 50)}</span>
-                    <span style={{ fontSize: 16 }}>{expandedMember === index ? '−' : '+'}</span>
-                  </button>
-
-                  {/* Accordion Content */}
-                  {expandedMember === index && (
-                    <div className="border-4 border-gray-200 border-t-0 p-6">
-                      <h4 className="riforma-bold text-2xl mb-6">
-                        {(member.name || 'Team Member').substring(0, 50)} - {(member.role || 'Role').substring(0, 50)}
-                      </h4>
-
-                      {/* Energy */}
-                      <div className="border-2 border-gray-200 p-6 mb-6">
-                        <RatingScale
-                          label="ENERGY: Does this role energize them or drain them?"
-                          value={member.energyScore || 0}
-                          onChange={(score) => updateTeamMember(member.id, 'energyScore', score)}
-                        />
-                        <textarea
-                          value={member.energyNotes || ''}
-                          onChange={(e) => updateTeamMember(member.id, 'energyNotes', e.target.value)}
-                          placeholder="Notes: What evidence shows they're energized or drained? Do they light up or show fatigue?"
-                          className="w-full"
-                          rows={3}
-                        />
-                        <div className="char-counter">{(member.energyNotes || '').length}/500</div>
-                      </div>
-
-                      {/* Skill */}
-                      <div className="border-2 border-gray-200 p-6 mb-6">
-                        <RatingScale
-                          label="SKILL: Do they have natural talents and learned skills for this role?"
-                          value={member.skillScore || 0}
-                          onChange={(score) => updateTeamMember(member.id, 'skillScore', score)}
-                        />
-                        <textarea
-                          value={member.skillNotes || ''}
-                          onChange={(e) => updateTeamMember(member.id, 'skillNotes', e.target.value)}
-                          placeholder="Notes: What skills do they excel at? Where do they struggle? Natural talent or learned competency?"
-                          className="w-full"
-                          rows={3}
-                        />
-                        <div className="char-counter">{(member.skillNotes || '').length}/500</div>
-                      </div>
-
-                      {/* Values */}
-                      <div className="bg-purple-50 border-2 border-purple-200 p-6 mb-6">
-                        <RatingScale
-                          label="VALUES: Are their personal values aligned with company values?"
-                          value={member.valuesScore || 0}
-                          onChange={(score) => updateTeamMember(member.id, 'valuesScore', score)}
-                        />
-                        <textarea
-                          value={member.valuesNotes || ''}
-                          onChange={(e) => updateTeamMember(member.id, 'valuesNotes', e.target.value)}
-                          placeholder="Notes: How do they demonstrate company values? Any cultural misalignment?"
-                          className="w-full"
-                          rows={3}
-                        />
-                        <div className="char-counter">{(member.valuesNotes || '').length}/500</div>
-                      </div>
-
-                      {/* Impact */}
-                      <div className="bg-orange-50 border-2 border-orange-200 p-6">
-                        <RatingScale
-                          label="IMPACT: Are they making significant, measurable contribution?"
-                          value={member.impactScore || 0}
-                          onChange={(score) => updateTeamMember(member.id, 'impactScore', score)}
-                        />
-                        <textarea
-                          value={member.impactNotes || ''}
-                          onChange={(e) => updateTeamMember(member.id, 'impactNotes', e.target.value)}
-                          placeholder="Notes: What measurable results have they delivered? How significant is their contribution?"
-                          className="w-full"
-                          rows={3}
-                        />
-                        <div className="char-counter">{(member.impactNotes || '').length}/500</div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-
+            )}
+          </div>
         </div>
       );
     }

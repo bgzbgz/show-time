@@ -1088,109 +1088,212 @@
       );
     }
 
-    // Step 2: Decision Data & KPIs
-    function Step2Page({ data, updateActivity, addKpi, removeKpi, updateKpi, onNext, onBack, canProceed, setShowHelp, aiReviewing }) {
+    // Step 2: Decision Data & KPIs — typeform: one activity at a time
+    function Step2Page({ data, updateActivity, addKpi, removeKpi, updateKpi, aiReviewing }) {
+      const activities = data.coreActivities || [];
+      const [actIdx, setActIdx] = useState(0);
+      const [kpiIdx, setKpiIdx] = useState(0);
+
+      const totalActivities = activities.length;
+      const activity = activities[actIdx] || {};
+      const kpis = activity.kpis || [];
+      const kpi = kpis[kpiIdx] || {};
+      const isLastActivity = actIdx === totalActivities - 1;
+      const isLastKpi = kpiIdx === kpis.length - 1;
+
+      // Which sub-screen: 'data' for data inputs, 'kpi' for individual KPI entry
+      const [subScreen, setSubScreen] = useState('data');
+
+      const canAdvanceData = (activity.dataInputs || '').trim().length >= 50;
+      const canAdvanceKpi = (kpi.kpi || '').trim().length >= 10 && (kpi.target || '').trim().length >= 5;
+
+      const handleNextFromData = () => {
+        if (!canAdvanceData) return;
+        // Move to first KPI
+        setKpiIdx(0);
+        setSubScreen('kpi');
+      };
+
+      const handleNextKpi = () => {
+        if (!canAdvanceKpi) return;
+        if (!isLastKpi) {
+          // Go to next KPI
+          setKpiIdx(kpiIdx + 1);
+        } else {
+          // All KPIs for this activity done — move to next activity or finish
+          if (!isLastActivity) {
+            setActIdx(actIdx + 1);
+            setKpiIdx(0);
+            setSubScreen('data');
+          }
+          // If last activity: the outer "NEXT" button in the wizard footer handles moving to step 3
+        }
+      };
+
+      const handleAddKpi = () => {
+        addKpi(activity.id);
+        // Will advance to the new (last) KPI after state update
+        setKpiIdx(kpis.length); // new index = old length
+      };
+
       return (
-        <div>
+        <div className="animate-in">
+          <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
+            STEP 2 OF 4
+          </div>
+          <div className="numbered-section mb-8">02. DECISION DATA & KPIs</div>
 
-            <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
-              STEP 2 OF 4
+          {/* Activity progress indicator */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 24 }}>
+            {activities.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => { setActIdx(i); setKpiIdx(0); setSubScreen('data'); }}
+                title={`Activity ${i + 1}`}
+                style={{
+                  width: 32, height: 6, border: 'none', borderRadius: 3, cursor: 'pointer', padding: 0,
+                  background: i === actIdx ? '#FFF469' : i < actIdx ? '#555' : '#333',
+                  transition: 'background 0.2s'
+                }}
+              />
+            ))}
+            <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#999', marginLeft: 6 }}>
+              ACTIVITY {actIdx + 1} OF {totalActivities}
+            </span>
+          </div>
+
+          {/* Activity label */}
+          <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', background: '#111', display: 'inline-block', padding: '4px 12px', marginBottom: 16, letterSpacing: '0.1em', border: '1px solid #333' }}>
+            {(activity.name || '').substring(0, 40) || `Activity ${actIdx + 1}`}
+          </div>
+
+          {subScreen === 'data' && (
+            <div className="animate-in">
+              <h3 className="riforma-bold mb-4" style={{ fontSize: 28 }}>
+                What data inputs drive decisions for this activity?
+              </h3>
+              <p style={{ color: '#999', marginBottom: 16, fontSize: 14 }}>What information is needed to make smart decisions for <strong style={{color:'#fff'}}>{activity.name || `Activity ${actIdx + 1}`}</strong>?</p>
+              <div className="border-l-4 border-yellow-400 pl-6 mb-8">
+                <p style={{ fontStyle: 'italic', color: '#ccc', fontSize: 16 }}>
+                  "Zara's Design KPIs: Time from sketch to shelf, SKU success rate, weekly trend adoption rate."
+                </p>
+              </div>
+              <textarea
+                value={activity.dataInputs || ''}
+                onChange={(e) => updateActivity(activity.id, 'dataInputs', e.target.value)}
+                placeholder="Real-time sales data by region, inventory levels, customer feedback scores, competitor trend analysis, store manager reports"
+                className="w-full"
+                rows={5}
+                autoFocus
+              />
+              <div className="char-counter">{(activity.dataInputs || '').length}/1000 (min 50)</div>
+
+              <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
+                {actIdx > 0 && (
+                  <button
+                    onClick={() => { setActIdx(actIdx - 1); setKpiIdx(0); setSubScreen('data'); }}
+                    className="btn-secondary"
+                    style={{ flexShrink: 0 }}
+                  >← PREV</button>
+                )}
+                <button
+                  onClick={handleNextFromData}
+                  disabled={!canAdvanceData}
+                  className="btn-primary"
+                  style={{ flex: 1 }}
+                >
+                  ADD KPIs FOR THIS ACTIVITY →
+                </button>
+              </div>
             </div>
-            <div className="numbered-section mb-8 animate-in">02. DECISION DATA & KPIs</div>
+          )}
 
-            {/* Fast Track Insight */}
+          {subScreen === 'kpi' && (
+            <div className="animate-in">
+              {/* KPI progress */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+                {kpis.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setKpiIdx(i)}
+                    style={{
+                      width: 24, height: 6, border: 'none', borderRadius: 3, cursor: 'pointer', padding: 0,
+                      background: i === kpiIdx ? '#FFF469' : (kpis[i].kpi && kpis[i].target) ? '#888' : '#333',
+                      transition: 'background 0.2s'
+                    }}
+                  />
+                ))}
+                <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#999', marginLeft: 6 }}>
+                  KPI {kpiIdx + 1} OF {kpis.length}
+                </span>
+              </div>
 
-            {/* The Science */}
-            
+              <h3 className="riforma-bold mb-2" style={{ fontSize: 26 }}>
+                KPI {kpiIdx + 1}: What will you measure?
+              </h3>
+              <p style={{ color: '#999', marginBottom: 20, fontSize: 14 }}>Define a specific, measurable outcome metric for this activity.</p>
 
+              <div style={{ marginBottom: 16 }}>
+                <label className="monument text-xs block mb-1" style={{ color: '#FFF469' }}>KPI METRIC <span style={{color:'#ef4444'}}>*</span></label>
+                <input
+                  type="text"
+                  value={kpi.kpi || ''}
+                  onChange={(e) => updateKpi(activity.id, kpi.id, 'kpi', e.target.value)}
+                  placeholder="Time from sketch to shelf / Lead conversion rate / Employee satisfaction score"
+                  className="w-full"
+                  autoFocus
+                  onKeyDown={(e) => { if (e.key === 'Enter' && canAdvanceKpi) handleNextKpi(); }}
+                />
+                <div className="char-counter text-xs">{(kpi.kpi || '').length}/300 (min 10)</div>
+              </div>
 
-            <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
-              Define data inputs needed and KPIs to measure outcomes
-            </h3>
+              <div style={{ marginBottom: 24 }}>
+                <label className="monument text-xs block mb-1" style={{ color: '#FFF469' }}>TARGET / BENCHMARK <span style={{color:'#ef4444'}}>*</span></label>
+                <input
+                  type="text"
+                  value={kpi.target || ''}
+                  onChange={(e) => updateKpi(activity.id, kpi.id, 'target', e.target.value)}
+                  placeholder="Under 14 days / Above 15% / 8/10 or higher"
+                  className="w-full"
+                  onKeyDown={(e) => { if (e.key === 'Enter' && canAdvanceKpi) handleNextKpi(); }}
+                />
+                <div className="char-counter text-xs">{(kpi.target || '').length}/200 (min 5)</div>
+              </div>
 
-            <div className="border-l-4 border-yellow-400 pl-6 mb-12 animate-in" style={{animationDelay: '0.1s'}}>
-              <p className="text-2xl italic">
-                "Zara's Design KPIs: Time from sketch to shelf (speed), SKU success rate (hit ratio), weekly trend adoption rate (customer alignment). These signals tell them if they're building momentum or wasting cycles."
-              </p>
+              <div style={{ display: 'flex', gap: 12 }}>
+                <button
+                  onClick={() => kpiIdx > 0 ? setKpiIdx(kpiIdx - 1) : setSubScreen('data')}
+                  className="btn-secondary"
+                  style={{ flexShrink: 0 }}
+                >←</button>
+
+                <button
+                  onClick={handleAddKpi}
+                  className="btn-secondary"
+                  style={{ flexShrink: 0 }}
+                >+ ADD KPI</button>
+
+                <button
+                  onClick={handleNextKpi}
+                  disabled={!canAdvanceKpi}
+                  className="btn-primary"
+                  style={{ flex: 1 }}
+                >
+                  {isLastKpi
+                    ? isLastActivity
+                      ? '✓ Done with KPIs — Click NEXT →'
+                      : `Next Activity (${actIdx + 2}/${totalActivities}) →`
+                    : `Next KPI →`}
+                </button>
+              </div>
+
+              {kpis.length >= 2 && isLastKpi && isLastActivity && (
+                <p style={{ marginTop: 12, fontSize: 12, color: '#10B981', fontFamily: "'Monument', monospace", textAlign: 'center' }}>
+                  ✓ {kpis.filter(k => k.kpi && k.target).length} KPIs defined — ready to continue
+                </p>
+              )}
             </div>
-
-            <p className="text-xl mb-8 text-gray-300">
-              Every decision needs feedback. Decision data fuels smarter choices before decisions are made. Outcome KPIs measure whether decisions drove desired results. Without both, you're flying blind.
-            </p>
-
-            <div className="space-y-8 mb-12">
-              {(data.coreActivities || []).map((activity, actIndex) => (
-                <div key={activity.id} className="border-4 border-gray-700 p-6 animate-in" style={{animationDelay: `${0.15 + actIndex * 0.05}s`}}>
-                  <h4 className="riforma-bold text-3xl mb-6">
-                    {(activity.name || '').substring(0, 50) || `Activity ${actIndex + 1}`}
-                  </h4>
-
-                  <div className="mb-6 border-2 border-gray-700 p-6" style={{background:"#1a1a1a"}}>
-                    <label className="monument text-sm block mb-2">DECISION DATA INPUTS <span className="text-red-500">*</span></label>
-                    <p className="text-sm text-gray-400 mb-2">What information is needed to make smart decisions for this activity?</p>
-                    <textarea
-                      value={activity.dataInputs || ''}
-                      onChange={(e) => updateActivity(activity.id, 'dataInputs', e.target.value)}
-                      placeholder="Real-time sales data by region, inventory levels, customer feedback scores, competitor trend analysis, store manager reports"
-                      className="w-full"
-                      rows={4}
-                    />
-                    <div className="char-counter">{(activity.dataInputs || '').length}/1000 (min 50)</div>
-                  </div>
-
-                  <div>
-                    <h5 className="riforma-bold text-2xl mb-3">Outcome KPIs (minimum 2)</h5>
-                    {(activity.kpis || []).map((kpi, kpiIndex) => (
-                      <div key={kpi.id} className="border-2 border-gray-700 p-4 mb-4" style={{background:"#1a1a1a"}}>
-                        <div className="flex justify-between items-center mb-3">
-                          <span className="monument text-xs">KPI {kpiIndex + 1}</span>
-                          {(activity.kpis || []).length > 1 && (
-                            <button
-                              onClick={() => removeKpi(activity.id, kpi.id)}
-                              className="text-red-600 hover:text-red-800 text-sm"
-                            >
-                              REMOVE
-                            </button>
-                          )}
-                        </div>
-
-                        <div className="space-y-3">
-                          <div>
-                            <label className="monument text-xs block mb-1">KPI METRIC <span className="text-red-500">*</span></label>
-                            <input
-                              type="text"
-                              value={kpi.kpi || ''}
-                              onChange={(e) => updateKpi(activity.id, kpi.id, 'kpi', e.target.value)}
-                              placeholder="Time from sketch to shelf / Lead conversion rate / Employee satisfaction score"
-                              className="w-full"
-                            />
-                            <div className="char-counter text-xs">{(kpi.kpi || '').length}/300 (min 10)</div>
-                          </div>
-
-                          <div>
-                            <label className="monument text-xs block mb-1">TARGET / BENCHMARK <span className="text-red-500">*</span></label>
-                            <input
-                              type="text"
-                              value={kpi.target || ''}
-                              onChange={(e) => updateKpi(activity.id, kpi.id, 'target', e.target.value)}
-                              placeholder="Under 14 days / Above 15% / 8/10 or higher"
-                              className="w-full"
-                            />
-                            <div className="char-counter text-xs">{(kpi.target || '').length}/200 (min 5)</div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                    <button
-                      onClick={() => addKpi(activity.id)}
-                      className="btn-secondary text-sm w-full"
-                    >
-                      + ADD KPI
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+          )}
         </div>
       );
     }
@@ -1251,86 +1354,174 @@
       );
     }
 
-    // Step 4: Gap Analysis
-    function Step4Page({ data, updateActivity, onNext, onBack, canProceed, setShowHelp, aiReviewing }) {
+    // Step 4: Gap Analysis — typeform: one activity at a time, three sub-screens per activity
+    function Step4Page({ data, updateActivity, aiReviewing }) {
+      const activities = data.coreActivities || [];
+      const [actIdx, setActIdx] = useState(0);
+      // subScreen: 'current' | 'gap' | 'plan'
+      const [subScreen, setSubScreen] = useState('current');
+
+      const totalActivities = activities.length;
+      const activity = activities[actIdx] || {};
+      const isLastActivity = actIdx === totalActivities - 1;
+
+      const subScreens = ['current', 'gap', 'plan'];
+      const subScreenIndex = subScreens.indexOf(subScreen);
+      const isLastSubScreen = subScreen === 'plan';
+
+      const canAdvanceCurrent = (activity.currentCapabilities || '').trim().length >= 50;
+      const canAdvanceGap = (activity.capabilityGap || '').trim().length >= 50;
+      const canAdvancePlan = (activity.developmentPlan || '').trim().length >= 100;
+
+      const canAdvanceCurrent_ai = canAdvanceCurrent;
+
+      const goNextSubScreen = () => {
+        if (subScreen === 'current' && canAdvanceCurrent) setSubScreen('gap');
+        else if (subScreen === 'gap' && canAdvanceGap) setSubScreen('plan');
+        else if (subScreen === 'plan' && canAdvancePlan) {
+          if (!isLastActivity) {
+            setActIdx(actIdx + 1);
+            setSubScreen('current');
+          }
+          // last activity + last sub: outer NEXT handles step advancement
+        }
+      };
+
+      const goBackSubScreen = () => {
+        if (subScreen === 'current' && actIdx > 0) {
+          setActIdx(actIdx - 1);
+          setSubScreen('plan');
+        } else if (subScreen === 'gap') setSubScreen('current');
+        else if (subScreen === 'plan') setSubScreen('gap');
+      };
+
+      const subScreenLabels = { current: 'CURRENT CAPABILITIES', gap: 'CAPABILITY GAPS', plan: 'DEVELOPMENT PLAN' };
+      const subScreenNums = { current: 1, gap: 2, plan: 3 };
+
       return (
-        <div>
+        <div className="animate-in">
+          <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
+            STEP 4 OF 4
+          </div>
+          <div className="numbered-section mb-8">04. GAP ANALYSIS</div>
 
-            <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
-              STEP 4 OF 4
+          {/* Activity progress dots */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+            {activities.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => { setActIdx(i); setSubScreen('current'); }}
+                title={`Activity ${i + 1}`}
+                style={{
+                  width: 32, height: 6, border: 'none', borderRadius: 3, cursor: 'pointer', padding: 0,
+                  background: i === actIdx ? '#FFF469' : i < actIdx ? '#555' : '#333',
+                  transition: 'background 0.2s'
+                }}
+              />
+            ))}
+            <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#999', marginLeft: 6 }}>
+              ACTIVITY {actIdx + 1} OF {totalActivities}
+            </span>
+          </div>
+
+          {/* Sub-screen progress dots */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 24 }}>
+            {subScreens.map((s, i) => (
+              <div
+                key={s}
+                style={{
+                  width: 16, height: 4, borderRadius: 2,
+                  background: s === subScreen ? '#FFF469' : subScreenIndex > i ? '#666' : '#333'
+                }}
+              />
+            ))}
+            <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#999', marginLeft: 6 }}>
+              {subScreenLabels[subScreen]} ({subScreenNums[subScreen]}/3)
+            </span>
+          </div>
+
+          {/* Activity label */}
+          <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', background: '#111', display: 'inline-block', padding: '4px 12px', marginBottom: 20, letterSpacing: '0.1em', border: '1px solid #333' }}>
+            {(activity.name || '').substring(0, 40) || `Activity ${actIdx + 1}`}
+          </div>
+
+          {subScreen === 'current' && (
+            <div className="animate-in">
+              <h3 className="riforma-bold mb-2" style={{ fontSize: 26 }}>What capabilities do you have today?</h3>
+              <p style={{ color: '#999', marginBottom: 16, fontSize: 14 }}>Be honest: what skills, systems, and resources do we currently have for <strong style={{color:'#fff'}}>{activity.name || `Activity ${actIdx + 1}`}</strong>?</p>
+              <textarea
+                value={activity.currentCapabilities || ''}
+                onChange={(e) => updateActivity(activity.id, 'currentCapabilities', e.target.value)}
+                placeholder={"HUMAN: 2 curriculum designers, 3 part-time facilitators\n\nSYSTEMIC: Basic LMS platform (no analytics), manual content review\n\nRELATIONAL: 3 industry partners, informal regulatory contacts"}
+                className="w-full"
+                rows={7}
+                autoFocus
+              />
+              <div className="char-counter">{(activity.currentCapabilities || '').length}/2000 (min 50)</div>
+              <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
+                <button onClick={goBackSubScreen} disabled={actIdx === 0 && subScreen === 'current'} className="btn-secondary" style={{ flexShrink: 0 }}>←</button>
+                <button onClick={goNextSubScreen} disabled={!canAdvanceCurrent} className="btn-primary" style={{ flex: 1 }}>
+                  IDENTIFY GAPS →
+                </button>
+              </div>
             </div>
-            <div className="numbered-section mb-8 animate-in">04. GAP ANALYSIS</div>
+          )}
 
-            {/* Fast Track Insight */}
-
-            {/* The Science */}
-            
-
-
-            <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
-              Compare current vs required capabilities and define development plans
-            </h3>
-
-            <div className="border-l-4 border-yellow-400 pl-6 mb-12 animate-in" style={{animationDelay: '0.1s'}}>
-              <p className="text-2xl italic">
-                "The gap between required and current capabilities becomes your training agenda, hiring spec, partner criteria, and Personal Development Plans. It's not about blaming people—it's about designing success."
-              </p>
+          {subScreen === 'gap' && (
+            <div className="animate-in">
+              <h3 className="riforma-bold mb-2" style={{ fontSize: 26 }}>What are the capability gaps?</h3>
+              <p style={{ color: '#999', marginBottom: 16, fontSize: 14 }}>Compare current vs required. What's missing for <strong style={{color:'#fff'}}>{activity.name || `Activity ${actIdx + 1}`}</strong>?</p>
+              <div className="border-l-4 border-yellow-400 pl-4 mb-6" style={{ borderColor: '#FFF469' }}>
+                <p style={{ fontStyle: 'italic', color: '#ccc', fontSize: 14 }}>
+                  "The gap becomes your training agenda, hiring spec, and partner criteria."
+                </p>
+              </div>
+              <textarea
+                value={activity.capabilityGap || ''}
+                onChange={(e) => updateActivity(activity.id, 'capabilityGap', e.target.value)}
+                placeholder={"HUMAN GAPS: Need 1 senior designer with dual expertise\n\nSYSTEMIC GAPS: LMS lacks analytics, no automated QA workflow\n\nRELATIONAL GAPS: Need 7 more industry partners"}
+                className="w-full"
+                rows={7}
+                autoFocus
+              />
+              <div className="char-counter">{(activity.capabilityGap || '').length}/2000 (min 50)</div>
+              <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
+                <button onClick={goBackSubScreen} className="btn-secondary" style={{ flexShrink: 0 }}>←</button>
+                <button onClick={goNextSubScreen} disabled={!canAdvanceGap} className="btn-primary" style={{ flex: 1 }}>
+                  BUILD DEVELOPMENT PLAN →
+                </button>
+              </div>
             </div>
+          )}
 
-            <p className="text-xl mb-8 text-gray-300">
-              Be brutally honest about current state. Document what you have, what you need, specific gaps, and concrete actions to close them. This is your roadmap for scaling.
-            </p>
-
-            <div className="space-y-8 mb-12">
-              {(data.coreActivities || []).map((activity, actIndex) => (
-                <div key={activity.id} className="border-4 border-gray-700 p-6 animate-in" style={{animationDelay: `${0.15 + actIndex * 0.05}s`}}>
-                  <h4 className="riforma-bold text-3xl mb-6">
-                    {(activity.name || '').substring(0, 50) || `Activity ${actIndex + 1}`}
-                  </h4>
-
-                  <div className="space-y-6">
-                    <div className="border-2 border-gray-700 p-6" style={{background:"#1a1a1a"}}>
-                      <label className="monument text-sm block mb-2">CURRENT CAPABILITIES <span className="text-red-500">*</span></label>
-                      <p className="text-sm text-gray-400 mb-2">What skills, systems, and resources do we have today?</p>
-                      <textarea
-                        value={activity.currentCapabilities || ''}
-                        onChange={(e) => updateActivity(activity.id, 'currentCapabilities', e.target.value)}
-                        placeholder="HUMAN: 2 curriculum designers (1 with healthcare background, 1 with education background), 3 part-time facilitators&#10;&#10;SYSTEMIC: Basic LMS platform (no analytics), manual content review process&#10;&#10;RELATIONAL: 3 industry partners, informal relationships with 2 regulatory contacts"
-                        className="w-full"
-                        rows={6}
-                      />
-                      <div className="char-counter">{(activity.currentCapabilities || '').length}/2000 (min 50)</div>
-                    </div>
-
-                    <div className="bg-yellow-50 border-2 border-yellow-400 p-6">
-                      <label className="monument text-sm block mb-2">CAPABILITY GAPS <span className="text-red-500">*</span></label>
-                      <p className="text-sm text-gray-400 mb-2">What are the specific gaps between current and required?</p>
-                      <textarea
-                        value={activity.capabilityGap || ''}
-                        onChange={(e) => updateActivity(activity.id, 'capabilityGap', e.target.value)}
-                        placeholder="HUMAN GAPS: Need 1 senior designer with both regulation AND pedagogy expertise, need 2 more experienced facilitators&#10;&#10;SYSTEMIC GAPS: LMS lacks analytics module, no automated QA workflow, content production too slow&#10;&#10;RELATIONAL GAPS: Need 7 more industry partners, formal partnerships with regulatory bodies, no peer review network"
-                        className="w-full"
-                        rows={6}
-                      />
-                      <div className="char-counter">{(activity.capabilityGap || '').length}/2000 (min 50)</div>
-                    </div>
-
-                    <div className="bg-neutral-900 border-2 border-black p-6">
-                      <label className="monument text-sm block mb-2">DEVELOPMENT PLAN <span className="text-red-500">*</span></label>
-                      <p className="text-sm text-gray-400 mb-2">Concrete actions to close gaps (training, hiring, partnering, systems investment)</p>
-                      <textarea
-                        value={activity.developmentPlan || ''}
-                        onChange={(e) => updateActivity(activity.id, 'developmentPlan', e.target.value)}
-                        placeholder="Q2 2025: Hire senior curriculum designer with dual expertise (budget: $120K)&#10;Q2 2025: Send current designers to regulatory training program (2-day workshop)&#10;Q3 2025: Upgrade LMS to include analytics module (investment: $50K)&#10;Q3 2025: Build QA automation workflow with operations team&#10;Q4 2025: Partner outreach campaign to secure 7 new industry partners&#10;Q1 2026: Recruit 2 experienced facilitators (budget: $80K each)"
-                        className="w-full"
-                        rows={8}
-                      />
-                      <div className="char-counter">{(activity.developmentPlan || '').length}/3000 (min 100)</div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+          {subScreen === 'plan' && (
+            <div className="animate-in">
+              <h3 className="riforma-bold mb-2" style={{ fontSize: 26 }}>How will you close the gaps?</h3>
+              <p style={{ color: '#999', marginBottom: 16, fontSize: 14 }}>Concrete actions with timelines to close the gaps for <strong style={{color:'#fff'}}>{activity.name || `Activity ${actIdx + 1}`}</strong>.</p>
+              <textarea
+                value={activity.developmentPlan || ''}
+                onChange={(e) => updateActivity(activity.id, 'developmentPlan', e.target.value)}
+                placeholder={"Q2 2025: Hire senior designer (budget: $120K)\nQ2 2025: Regulatory training workshop (2 days)\nQ3 2025: Upgrade LMS analytics module ($50K)\nQ4 2025: Partner outreach campaign — 7 new partners\nQ1 2026: Recruit 2 experienced facilitators ($80K each)"}
+                className="w-full"
+                rows={8}
+                autoFocus
+              />
+              <div className="char-counter">{(activity.developmentPlan || '').length}/3000 (min 100)</div>
+              <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
+                <button onClick={goBackSubScreen} className="btn-secondary" style={{ flexShrink: 0 }}>←</button>
+                <button onClick={goNextSubScreen} disabled={!canAdvancePlan} className="btn-primary" style={{ flex: 1 }}>
+                  {isLastActivity
+                    ? '✓ Done — Click VIEW CANVAS →'
+                    : `Next Activity (${actIdx + 2}/${totalActivities}) →`}
+                </button>
+              </div>
+              {isLastActivity && canAdvancePlan && (
+                <p style={{ marginTop: 12, fontSize: 12, color: '#10B981', fontFamily: "'Monument', monospace", textAlign: 'center' }}>
+                  ✓ All {totalActivities} activities analysed — ready to view canvas
+                </p>
+              )}
             </div>
+          )}
         </div>
       );
     }
