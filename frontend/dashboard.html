@@ -149,6 +149,21 @@
     // ── LearnWorlds Config ──
     const LEARNWORLDS_URL = 'https://fasttrack.learnworlds.com';
 
+    // ── Preview Mode ──
+    // Activated by ?preview in URL. Persists for the full browser session.
+    // Share link: https://fasttracktools.up.railway.app/dashboard.html?preview
+    const PREVIEW_MODE = (() => {
+      if (new URLSearchParams(window.location.search).has('preview')) {
+        sessionStorage.setItem('ft_preview_mode', '1');
+        // Generate a stable anon ID for this browser (persists across page loads)
+        if (!localStorage.getItem('ft_user_id')) {
+          localStorage.setItem('ft_user_id', 'preview-' + Math.random().toString(36).slice(2, 10));
+        }
+        return true;
+      }
+      return sessionStorage.getItem('ft_preview_mode') === '1';
+    })();
+
     // ── Tool Registry (30 tools) ──
     const TOOLS = [
       { sprint: 0,  slug: 'woop',                       name: 'WOOP',                        file: 'module-0-intro-sprint/00-woop.html' },
@@ -204,6 +219,13 @@
     // Guru access: set role = 'guru' in the users table in Supabase.
     // The GURU VIEW button appears automatically for any user with that role.
     async function identifyUser() {
+      // Preview mode: skip all auth, return a guest user instantly
+      if (PREVIEW_MODE) {
+        const anonId = localStorage.getItem('ft_user_id') || ('preview-' + Math.random().toString(36).slice(2, 10));
+        localStorage.setItem('ft_user_id', anonId);
+        return { user: { id: anonId, full_name: 'Preview User', email: '', role: 'participant' }, isGuru: false };
+      }
+
       const params = new URLSearchParams(window.location.search);
 
       // Save raw params for debug display before URL is cleaned
@@ -318,6 +340,17 @@
 
     // ── Data Fetching ──
     async function fetchToolProgress(userId) {
+      // Preview mode: all tools unlocked, no Supabase queries needed
+      if (PREVIEW_MODE) {
+        return TOOLS.map((tool, index) => ({
+          ...tool,
+          id: tool.slug,
+          status: 'unlocked',
+          progress: 0,
+          completedAt: null,
+        }));
+      }
+
       // 1. Get completions
       const { data: completions } = await sb
         .from('tool_completions')
@@ -468,7 +501,8 @@
 
     // ── Launch Tool ──
     function launchTool(tool) {
-      window.location.href = `tools/${tool.file}`;
+      const url = PREVIEW_MODE ? `tools/${tool.file}?preview` : `tools/${tool.file}`;
+      window.location.href = url;
     }
 
     // ── Components ──
@@ -1293,6 +1327,11 @@
 
       return (
         <div className="min-h-screen bg-black">
+          {PREVIEW_MODE && (
+            <div style={{ background: '#FFF469', color: '#000', textAlign: 'center', padding: '8px 24px', fontFamily: 'var(--font-monument)', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+              PREVIEW MODE — Internal Testing Only. All tools unlocked.
+            </div>
+          )}
           <Header user={user} overallProgress={overallProgress} isGuru={isGuru} onGuruClick={() => setShowGuruPanel(true)} />
           <Hero completed={completedCount} total={TOOLS.length} currentTool={currentTool} />
           <main className="max-w-7xl mx-auto" style={{ padding: '48px 24px' }}>
