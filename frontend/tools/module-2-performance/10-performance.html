@@ -218,8 +218,8 @@
     function Step2({ d, u }) {
         const tasks = d.tasks || Array(8).fill(null).map(() => ({ task: '', status: 'not-done', owner: '', reason: '' }));
         const updateTask = (i, f, v) => { const next = [...tasks]; next[i] = { ...next[i], [f]: v }; u('tasks', next); };
-        const doneCount = tasks.filter(t => t.status === 'done' && t.task.trim()).length;
-        const totalFilled = tasks.filter(t => t.task.trim()).length;
+        const doneCount = tasks.filter(t => t.status === 'done' && (t.task || '').trim()).length;
+        const totalFilled = tasks.filter(t => (t.task || '').trim()).length;
         const rate = totalFilled > 0 ? Math.round((doneCount / totalFilled) * 100) : 0;
         return (
             <div className="animate-in">
@@ -252,7 +252,7 @@
                                     </td>
                                     <td style={{ padding: 8 }}><input className="ft-input" style={{ border: 'none', height: 36, fontSize: 13 }} placeholder="Owner" value={t.owner} onChange={e => updateTask(i, 'owner', e.target.value)} /></td>
                                 </tr>
-                                {t.status === 'not-done' && t.task.trim() && (
+                                {t.status === 'not-done' && (t.task || '').trim() && (
                                     <tr style={{ background: '#FEF2F2' }}>
                                         <td colSpan={4} style={{ padding: '8px 12px' }}>
                                             <input className="ft-input" style={{ border: 'none', height: 32, background: 'transparent', fontSize: 13, color: '#991B1B' }} placeholder="Why not done? (Document the reason)" value={t.reason} onChange={e => updateTask(i, 'reason', e.target.value)} />
@@ -321,7 +321,7 @@
         const up = (f, v) => u('eighty20', { ...p, [f]: v });
         const inputs = p.inputs || [];
         const updateInput = (i, f, v) => { const next = [...inputs]; next[i] = { ...next[i], [f]: v }; up('inputs', next); };
-        const sorted = [...inputs].filter(inp => inp.input.trim()).sort((a, b) => (b.contribution || 0) - (a.contribution || 0));
+        const sorted = [...inputs].filter(inp => inp && (inp.input || '').trim()).sort((a, b) => (b.contribution || 0) - (a.contribution || 0));
         const totalContrib = sorted.reduce((s, inp) => s + (parseInt(inp.contribution) || 0), 0);
         return (
             <div className="animate-in">
@@ -340,7 +340,7 @@
                     </tr></thead>
                     <tbody>
                         {inputs.map((inp, i) => (
-                            <tr key={i} style={{ borderBottom: '1px solid #E5E7EB', background: sorted.indexOf(inp) < Math.ceil(sorted.length * 0.2) && inp.input.trim() ? '#FEFCE8' : 'transparent' }}>
+                            <tr key={i} style={{ borderBottom: '1px solid #E5E7EB', background: sorted.indexOf(inp) < Math.ceil(sorted.length * 0.2) && (inp.input || '').trim() ? '#FEFCE8' : 'transparent' }}>
                                 <td style={{ padding: '8px 12px', fontWeight: 600 }}>{i + 1}</td>
                                 <td style={{ padding: 8 }}><input className="ft-input" style={{ border: 'none', height: 36 }} placeholder={['Customer segment A', 'Product line X', 'Marketing channel Y', 'Sales rep team', 'Referral program'][i] || `Input ${i + 1}`} value={inp.input} onChange={e => updateInput(i, 'input', e.target.value)} /></td>
                                 <td style={{ padding: 8 }}><input className="ft-input" type="number" min="0" max="100" style={{ border: 'none', height: 36, textAlign: 'center', width: 80 }} placeholder="%" value={inp.contribution} onChange={e => updateInput(i, 'contribution', e.target.value)} /></td>
@@ -752,41 +752,62 @@
                 {window.renderTransitionScreen && [1.5, 2.5, 3.5, 4.5].includes(step) && window.renderTransitionScreen(step, CONFIG, totalSteps, setStep)}
 
                 {/* STEP 7: REVIEW & SUBMIT INDIVIDUAL */}
-                {step === 7 && (
-                    <div className="wizard-layout">
-                        <div className="wizard-main">
-                            <div className="wizard-content animate-in">
-                                <div className="step-indicator"><span>Review & Submit</span></div>
-                                <h2 className="step-heading">YOUR PERFORMANCE PROTOCOL</h2>
-                                <p className="step-hint">Review your work across all 6 frameworks, then submit for AI coaching.</p>
+                {step === 7 && (() => {
+                    try {
+                        const reviewItems = [
+                            { title: 'Goals', content: (data.goals || []).filter(g => g && g.goal).length + ' goals defined' },
+                            { title: 'Task Tracking', content: (data.tasks || []).filter(t => t && (t.task || '').trim()).length + ' tasks tracked' },
+                            { title: '5 Whys', content: (data.fiveWhys || {}).rootCause ? 'Root cause: ' + ((data.fiveWhys || {}).rootCause || '').substring(0, 60) + '...' : 'Not completed' },
+                            { title: '80/20', content: (data.eighty20 || {}).objective ? 'Analyzing: ' + ((data.eighty20 || {}).objective || '').substring(0, 60) : 'Not completed' },
+                            { title: 'Constraints', content: (data.constraints || {}).constraint ? 'Bottleneck: ' + ((data.constraints || {}).constraint || '').substring(0, 60) : 'Not completed' },
+                            { title: 'Accountability', content: (data.accountability || {}).expectations ? 'Framework defined' : 'Not completed' }
+                        ];
+                        return (
+                            <div className="wizard-layout">
+                                <div className="wizard-main">
+                                    <div className="wizard-content animate-in">
+                                        <div className="step-indicator"><span>Review & Submit</span></div>
+                                        <h2 className="step-heading">YOUR PERFORMANCE PROTOCOL</h2>
+                                        <p className="step-hint">Review your work across all 6 frameworks, then submit for AI coaching.</p>
 
-                                {[
-                                    { title: 'Goals', content: (data.goals || []).filter(g => g.goal).length + ' goals defined' },
-                                    { title: 'Task Tracking', content: (data.tasks || []).filter(t => t.task.trim()).length + ' tasks tracked' },
-                                    { title: '5 Whys', content: (data.fiveWhys || {}).rootCause ? 'Root cause: ' + data.fiveWhys.rootCause.substring(0, 60) + '...' : 'Not completed' },
-                                    { title: '80/20', content: (data.eighty20 || {}).objective ? 'Analyzing: ' + data.eighty20.objective.substring(0, 60) : 'Not completed' },
-                                    { title: 'Constraints', content: (data.constraints || {}).constraint ? 'Bottleneck: ' + data.constraints.constraint.substring(0, 60) : 'Not completed' },
-                                    { title: 'Accountability', content: (data.accountability || {}).expectations ? 'Framework defined' : 'Not completed' }
-                                ].map((s, i) => (
-                                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 0', borderBottom: '1px solid #E5E7EB' }}>
-                                        <div style={{ fontWeight: 600 }}>{s.title}</div>
-                                        <div style={{ fontSize: 14, color: '#6B7280', maxWidth: 400, textAlign: 'right' }}>{s.content}</div>
+                                        {reviewItems.map((s, i) => (
+                                            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 0', borderBottom: '1px solid #E5E7EB' }}>
+                                                <div style={{ fontWeight: 600 }}>{s.title}</div>
+                                                <div style={{ fontSize: 14, color: '#6B7280', maxWidth: 400, textAlign: 'right' }}>{s.content}</div>
+                                            </div>
+                                        ))}
+
+                                        <CaseStudy
+                                            before="A 30-person SaaS company tracked effort instead of outcomes. Quarterly targets were missed 60% of the time."
+                                            after="Binary task tracking, weekly dashboards, and 5 Whys for root cause analysis pushed task completion from 55% to 88% in one quarter."
+                                            quote="Once we stopped tracking effort and started tracking outcomes, everything changed. — Operations Director"
+                                        />
+
+                                        {submitStatus && <div style={{ padding: 16, marginTop: 16, background: submitStatus === 'success' ? '#F0FDF4' : submitStatus === 'error' ? '#FEF2F2' : '#F5F5F5', border: '1px solid ' + (submitStatus === 'success' ? '#BBF7D0' : submitStatus === 'error' ? '#FECACA' : '#E0E0E0'), textAlign: 'center' }}>{submitMessage}</div>}
                                     </div>
-                                ))}
-
-                                <CaseStudy
-                                    before="A 30-person SaaS company tracked effort instead of outcomes. Quarterly targets were missed 60% of the time."
-                                    after="Binary task tracking, weekly dashboards, and 5 Whys for root cause analysis pushed task completion from 55% to 88% in one quarter."
-                                    quote="Once we stopped tracking effort and started tracking outcomes, everything changed. — Operations Director"
-                                />
-
-                                {submitStatus && <div style={{ padding: 16, marginTop: 16, background: submitStatus === 'success' ? '#F0FDF4' : submitStatus === 'error' ? '#FEF2F2' : '#F5F5F5', border: '1px solid ' + (submitStatus === 'success' ? '#BBF7D0' : submitStatus === 'error' ? '#FECACA' : '#E0E0E0'), textAlign: 'center' }}>{submitMessage}</div>}
+                                    <ButtonFooter onBack={() => goToStep(6)} onNext={handleIndividualSubmit} nextLabel={submitStatus === 'saving' ? 'AI Reviewing...' : 'Submit Individual'} disabled={submitStatus === 'saving'} />
+                                </div>
+                                <WizardSidebar step={step} teamUnlocked={teamToolUnlocked} onNavigate={goToStep} />
                             </div>
-                            <ButtonFooter onBack={() => goToStep(6)} onNext={handleIndividualSubmit} nextLabel={submitStatus === 'saving' ? 'AI Reviewing...' : 'Submit Individual'} disabled={submitStatus === 'saving'} />
-                        </div>
-                        <WizardSidebar step={step} teamUnlocked={teamToolUnlocked} onNavigate={goToStep} />
-                    </div>
-                )}
+                        );
+                    } catch(e) {
+                        console.error('[Performance] Review render error:', e);
+                        return (
+                            <div className="wizard-layout">
+                                <div className="wizard-main">
+                                    <div className="wizard-content animate-in">
+                                        <div className="step-indicator"><span>Review & Submit</span></div>
+                                        <h2 className="step-heading">YOUR PERFORMANCE PROTOCOL</h2>
+                                        <p style={{ color: '#6B7280', marginBottom: 24 }}>Loading your performance summary...</p>
+                                        {submitStatus && <div style={{ padding: 16, marginTop: 16, background: submitStatus === 'success' ? '#F0FDF4' : submitStatus === 'error' ? '#FEF2F2' : '#F5F5F5', border: '1px solid ' + (submitStatus === 'success' ? '#BBF7D0' : submitStatus === 'error' ? '#FECACA' : '#E0E0E0'), textAlign: 'center' }}>{submitMessage}</div>}
+                                    </div>
+                                    <ButtonFooter onBack={() => goToStep(6)} onNext={handleIndividualSubmit} nextLabel={submitStatus === 'saving' ? 'AI Reviewing...' : 'Submit Individual'} disabled={submitStatus === 'saving'} />
+                                </div>
+                                <WizardSidebar step={step} teamUnlocked={teamToolUnlocked} onNavigate={goToStep} />
+                            </div>
+                        );
+                    }
+                })()}
 
                 {/* TEAM STEPS 8-9 */}
                 {[8, 9].includes(step) && (

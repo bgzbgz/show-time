@@ -656,38 +656,54 @@
 
         /* === STEP 9: REVIEW & SUBMIT === */
         function Step9({ d, onSubmit, submitStatus, submitMessage }) {
-            const sections = [
-                { title: 'Top 3 Priorities', items: [d.priority1, d.priority2, d.priority3].filter(Boolean) },
-                { title: 'Gold Hour Set', items: ['Mon','Tue','Wed','Thu','Fri'].map(day => d[`gold${['Monday','Tuesday','Wednesday','Thursday','Friday'][['Mon','Tue','Wed','Thu','Fri'].indexOf(day)]}`]).filter(Boolean).length > 0 ? ['Scheduled'] : [] },
-                { title: 'Activities Rated', items: [(d.activities||[]).filter(a=>a.name).length + ' activities rated'] },
-                { title: 'If-Then Plans', items: [(d.ifThens||[]).filter(it=>it.distraction).length + ' plans created'] },
-                { title: 'Routines Defined', items: [(d.routines||[]).filter(r=>r.name).length + ' routines'] },
-                { title: 'Flow Activities', items: [(d.flows||[]).filter(f=>f.activity).length + ' flow activities'] }
-            ];
-            return (
-                <div className="animate-in" id="canvas-content">
-                    <div className="step-indicator"><span>Step 9 of 9</span></div>
-                    <h2 className="step-heading">REVIEW & SUBMIT</h2>
-                    <p className="step-hint">Review your complete Focus Protocol before submitting.</p>
-                    {sections.map((sec, i) => (
-                        <div key={i} style={{ borderBottom: '1px solid #E5E7EB', padding: '16px 0' }}>
-                            <div className="monument" style={{ fontSize: 11, textTransform: 'uppercase', color: '#6B7280', marginBottom: 4 }}>{sec.title}</div>
-                            {sec.items.map((item, j) => <div key={j} style={{ fontSize: 15, lineHeight: 1.6 }}>{item}</div>)}
-                            {sec.items.length === 0 && <div style={{ fontSize: 14, color: '#DC2626' }}>Not completed</div>}
+            try {
+                const sections = [
+                    { title: 'Top 3 Priorities', items: [d.priority1, d.priority2, d.priority3].filter(Boolean) },
+                    { title: 'Gold Hour Set', items: ['Mon','Tue','Wed','Thu','Fri'].map(day => d[`gold${['Monday','Tuesday','Wednesday','Thursday','Friday'][['Mon','Tue','Wed','Thu','Fri'].indexOf(day)]}`]).filter(Boolean).length > 0 ? ['Scheduled'] : [] },
+                    { title: 'Activities Rated', items: [(d.activities||[]).filter(a=>a&&a.name).length + ' activities rated'] },
+                    { title: 'If-Then Plans', items: [(d.ifThens||[]).filter(it=>it&&it.distraction).length + ' plans created'] },
+                    { title: 'Routines Defined', items: [(d.routines||[]).filter(r=>r&&r.name).length + ' routines'] },
+                    { title: 'Flow Activities', items: [(d.flows||[]).filter(f=>f&&f.activity).length + ' flow activities'] }
+                ];
+                return (
+                    <div className="animate-in" id="canvas-content">
+                        <div className="step-indicator"><span>Step 9 of 9</span></div>
+                        <h2 className="step-heading">REVIEW & SUBMIT</h2>
+                        <p className="step-hint">Review your complete Focus Protocol before submitting.</p>
+                        {sections.map((sec, i) => (
+                            <div key={i} style={{ borderBottom: '1px solid #E5E7EB', padding: '16px 0' }}>
+                                <div className="monument" style={{ fontSize: 11, textTransform: 'uppercase', color: '#6B7280', marginBottom: 4 }}>{sec.title}</div>
+                                {sec.items.map((item, j) => <div key={j} style={{ fontSize: 15, lineHeight: 1.6 }}>{item}</div>)}
+                                {sec.items.length === 0 && <div style={{ fontSize: 14, color: '#DC2626' }}>Not completed</div>}
+                            </div>
+                        ))}
+                        <div style={{ marginTop: 32 }}>
+                            <CaseStudy title="From Scattered to Strategic" beforeLabel="BEFORE" beforeText="A CEO of a 150-person tech company worked 12-hour days, constantly switching tasks. Projects were late. The team mirrored this scattered approach." afterLabel="AFTER" afterText="After the Fast Track Focus Protocol — brain dumps, impact/easy prioritization, 90-minute deep work sprints — the CEO cut to 8-hour days while increasing strategic output by 60%. Project delivery improved 40%." quote="I thought being busy meant being productive. Flipping the 80/20 ratio changed everything." quoteAuthor="Tech Company CEO" quoteRole="Fast Track Participant"/>
                         </div>
-                    ))}
-                    <div style={{ marginTop: 32 }}>
-                        <CaseStudy title="From Scattered to Strategic" beforeLabel="BEFORE" beforeText="A CEO of a 150-person tech company worked 12-hour days, constantly switching tasks. Projects were late. The team mirrored this scattered approach." afterLabel="AFTER" afterText="After the Fast Track Focus Protocol — brain dumps, impact/easy prioritization, 90-minute deep work sprints — the CEO cut to 8-hour days while increasing strategic output by 60%. Project delivery improved 40%." quote="I thought being busy meant being productive. Flipping the 80/20 ratio changed everything." quoteAuthor="Tech Company CEO" quoteRole="Fast Track Participant"/>
+                        {submitStatus === 'success' && <div className="badge badge-green" style={{ marginTop: 16 }}>Submitted successfully!</div>}
+                        {submitStatus === 'error' && <div style={{ color: '#DC2626', marginTop: 16 }}>{submitMessage}</div>}
+                        <div style={{ marginTop: 32, textAlign: 'center' }}>
+                            <button className="btn-primary" onClick={onSubmit} disabled={submitStatus === 'submitting'} style={{ width: '100%' }}>
+                                {submitStatus === 'submitting' ? 'SUBMITTING...' : 'SUBMIT FOCUS PROTOCOL'}
+                            </button>
+                        </div>
                     </div>
-                    {submitStatus === 'success' && <div className="badge badge-green" style={{ marginTop: 16 }}>Submitted successfully!</div>}
-                    {submitStatus === 'error' && <div style={{ color: '#DC2626', marginTop: 16 }}>{submitMessage}</div>}
-                    <div style={{ marginTop: 32, textAlign: 'center' }}>
-                        <button className="btn-primary" onClick={onSubmit} disabled={submitStatus === 'submitting'} style={{ width: '100%' }}>
-                            {submitStatus === 'submitting' ? 'SUBMITTING...' : 'SUBMIT FOCUS PROTOCOL'}
-                        </button>
+                );
+            } catch(e) {
+                console.error('[Focus] Step9 render error:', e);
+                return (
+                    <div className="animate-in" id="canvas-content">
+                        <div className="step-indicator"><span>Step 9 of 9</span></div>
+                        <h2 className="step-heading">REVIEW & SUBMIT</h2>
+                        <p style={{ color: '#6B7280', marginBottom: 24 }}>Loading your focus protocol summary...</p>
+                        <div style={{ marginTop: 32, textAlign: 'center' }}>
+                            <button className="btn-primary" onClick={onSubmit} disabled={submitStatus === 'submitting'} style={{ width: '100%' }}>
+                                {submitStatus === 'submitting' ? 'SUBMITTING...' : 'SUBMIT FOCUS PROTOCOL'}
+                            </button>
+                        </div>
                     </div>
-                </div>
-            );
+                );
+            }
         }
 
         /* === TEAM STEP 10: MEETING AGENDA === */

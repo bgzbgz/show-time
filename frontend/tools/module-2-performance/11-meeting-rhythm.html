@@ -178,7 +178,7 @@
         const updateP = (i, f, v) => { const next = [...priorities]; next[i] = { ...next[i], [f]: v }; u('priorities', next); };
         const updateStep = (pi, si, f, v) => {
             const next = [...priorities];
-            const steps = [...next[pi].steps];
+            const steps = [...(next[pi].steps || Array(5).fill(null).map(() => ({ step: '', hours: '', week: '' })))];
             steps[si] = { ...steps[si], [f]: v };
             next[pi] = { ...next[pi], steps };
             u('priorities', next);
@@ -220,7 +220,7 @@
                                 <th style={{ padding: '8px 12px', width: 100, fontFamily: "'Monument', monospace", fontSize: 11 }}>WEEK</th>
                             </tr></thead>
                             <tbody>
-                                {p.steps.map((s, si) => (
+                                {(p.steps || []).map((s, si) => (
                                     <tr key={si} style={{ borderBottom: '1px solid #E5E7EB' }}>
                                         <td style={{ padding: '6px 12px', fontWeight: 600, color: si === 0 ? '#16A34A' : '#000' }}>{si + 1}{si === 0 && ' ★'}</td>
                                         <td style={{ padding: 4 }}><input className="ft-input" style={{ border: 'none', height: 36, fontSize: 14 }} placeholder={si === 0 ? 'Start SIMPLE — almost too easy' : `Step ${si + 1} (gradually increase complexity)`} value={s.step} onChange={e => updateStep(i, si, 'step', e.target.value)} /></td>
@@ -231,7 +231,7 @@
                             </tbody>
                         </table>
                         {(() => {
-                            const totalAllocated = p.steps.reduce((sum, s) => sum + (parseInt(s.hours) || 0), 0);
+                            const totalAllocated = (p.steps || []).reduce((sum, s) => sum + (parseInt(s.hours) || 0), 0);
                             const budget = parseInt(p.totalHours) || 0;
                             return budget > 0 && (
                                 <div style={{ padding: '8px 12px', background: totalAllocated > budget ? '#FEF2F2' : '#F0FDF4', marginTop: 8, fontSize: 13 }}>
@@ -828,39 +828,60 @@
                 {window.renderTransitionScreen && [1.5, 2.5, 3.5].includes(step) && window.renderTransitionScreen(step, CONFIG, totalSteps, setStep)}
 
                 {/* STEP 5: REVIEW & SUBMIT INDIVIDUAL */}
-                {step === 5 && (
-                    <div className="wizard-layout">
-                        <div className="wizard-main">
-                            <div className="wizard-content animate-in">
-                                <div className="step-indicator"><span>Review & Submit</span></div>
-                                <h2 className="step-heading">YOUR MEETING TOOLKIT</h2>
-                                <p className="step-hint">Review your work across all 4 frameworks, then submit for AI coaching.</p>
+                {step === 5 && (() => {
+                    try {
+                        const reviewItems = [
+                            { title: 'Priorities Breakdown', content: ((data.priorities || []).filter(p => p && p.priority).length) + ' priorities with action steps' },
+                            { title: 'Meeting Readiness', content: (data.meetingPurpose || '').length > 10 ? 'Purpose: ' + (data.meetingPurpose || '').substring(0, 50) + '...' : 'Not completed' },
+                            { title: 'Meeting Evaluation', content: data.effectiveness ? 'Rating: ' + data.effectiveness + '/5' : 'Not completed' },
+                            { title: 'Big Rock Discussion', content: (data.bigRock || {}).issue ? 'Issue: ' + ((data.bigRock || {}).issue || '').substring(0, 50) + '...' : 'Not completed' }
+                        ];
+                        return (
+                            <div className="wizard-layout">
+                                <div className="wizard-main">
+                                    <div className="wizard-content animate-in">
+                                        <div className="step-indicator"><span>Review & Submit</span></div>
+                                        <h2 className="step-heading">YOUR MEETING TOOLKIT</h2>
+                                        <p className="step-hint">Review your work across all 4 frameworks, then submit for AI coaching.</p>
 
-                                {[
-                                    { title: 'Priorities Breakdown', content: ((data.priorities || []).filter(p => p.priority).length) + ' priorities with action steps' },
-                                    { title: 'Meeting Readiness', content: (data.meetingPurpose || '').length > 10 ? 'Purpose: ' + data.meetingPurpose.substring(0, 50) + '...' : 'Not completed' },
-                                    { title: 'Meeting Evaluation', content: data.effectiveness ? 'Rating: ' + data.effectiveness + '/5' : 'Not completed' },
-                                    { title: 'Big Rock Discussion', content: (data.bigRock || {}).issue ? 'Issue: ' + data.bigRock.issue.substring(0, 50) + '...' : 'Not completed' }
-                                ].map((s, i) => (
-                                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 0', borderBottom: '1px solid #E5E7EB' }}>
-                                        <div style={{ fontWeight: 600 }}>{s.title}</div>
-                                        <div style={{ fontSize: 14, color: '#6B7280', maxWidth: 300, textAlign: 'right' }}>{s.content}</div>
+                                        {reviewItems.map((s, i) => (
+                                            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 0', borderBottom: '1px solid #E5E7EB' }}>
+                                                <div style={{ fontWeight: 600 }}>{s.title}</div>
+                                                <div style={{ fontSize: 14, color: '#6B7280', maxWidth: 300, textAlign: 'right' }}>{s.content}</div>
+                                            </div>
+                                        ))}
+
+                                        <CaseStudy
+                                            before="A 40-person logistics company spent 25 hours per week per manager in meetings. Most had no agenda, no clear owner, and ended without action items."
+                                            after="After implementing the Meeting Rhythm (daily huddles, weekly tacticals, quarterly reviews), meeting time dropped to 8 hours per week. Quarterly targets went from 60% to 92% completion."
+                                            quote="The meeting rhythm gave us back 17 hours per week per manager — 850 productive hours per year. — COO, logistics company"
+                                        />
+
+                                        {submitStatus && <div style={{ padding: 16, marginTop: 16, background: submitStatus === 'success' ? '#F0FDF4' : submitStatus === 'error' ? '#FEF2F2' : '#F5F5F5', border: '1px solid ' + (submitStatus === 'success' ? '#BBF7D0' : submitStatus === 'error' ? '#FECACA' : '#E0E0E0'), textAlign: 'center' }}>{submitMessage}</div>}
                                     </div>
-                                ))}
-
-                                <CaseStudy
-                                    before="A 40-person logistics company spent 25 hours per week per manager in meetings. Most had no agenda, no clear owner, and ended without action items."
-                                    after="After implementing the Meeting Rhythm (daily huddles, weekly tacticals, quarterly reviews), meeting time dropped to 8 hours per week. Quarterly targets went from 60% to 92% completion."
-                                    quote="The meeting rhythm gave us back 17 hours per week per manager — 850 productive hours per year. — COO, logistics company"
-                                />
-
-                                {submitStatus && <div style={{ padding: 16, marginTop: 16, background: submitStatus === 'success' ? '#F0FDF4' : submitStatus === 'error' ? '#FEF2F2' : '#F5F5F5', border: '1px solid ' + (submitStatus === 'success' ? '#BBF7D0' : submitStatus === 'error' ? '#FECACA' : '#E0E0E0'), textAlign: 'center' }}>{submitMessage}</div>}
+                                    <ButtonFooter onBack={() => goToStep(4)} onNext={handleIndividualSubmit} nextLabel={submitStatus === 'saving' ? 'AI Reviewing...' : 'Submit Individual'} disabled={submitStatus === 'saving'} />
+                                </div>
+                                <WizardSidebar step={step} teamUnlocked={teamToolUnlocked} onNavigate={goToStep} />
                             </div>
-                            <ButtonFooter onBack={() => goToStep(4)} onNext={handleIndividualSubmit} nextLabel={submitStatus === 'saving' ? 'AI Reviewing...' : 'Submit Individual'} disabled={submitStatus === 'saving'} />
-                        </div>
-                        <WizardSidebar step={step} teamUnlocked={teamToolUnlocked} onNavigate={goToStep} />
-                    </div>
-                )}
+                        );
+                    } catch(e) {
+                        console.error('[MeetingRhythm] Review render error:', e);
+                        return (
+                            <div className="wizard-layout">
+                                <div className="wizard-main">
+                                    <div className="wizard-content animate-in">
+                                        <div className="step-indicator"><span>Review & Submit</span></div>
+                                        <h2 className="step-heading">YOUR MEETING TOOLKIT</h2>
+                                        <p style={{ color: '#6B7280', marginBottom: 24 }}>Loading your meeting toolkit summary...</p>
+                                        {submitStatus && <div style={{ padding: 16, marginTop: 16, background: submitStatus === 'success' ? '#F0FDF4' : submitStatus === 'error' ? '#FEF2F2' : '#F5F5F5', border: '1px solid ' + (submitStatus === 'success' ? '#BBF7D0' : submitStatus === 'error' ? '#FECACA' : '#E0E0E0'), textAlign: 'center' }}>{submitMessage}</div>}
+                                    </div>
+                                    <ButtonFooter onBack={() => goToStep(4)} onNext={handleIndividualSubmit} nextLabel={submitStatus === 'saving' ? 'AI Reviewing...' : 'Submit Individual'} disabled={submitStatus === 'saving'} />
+                                </div>
+                                <WizardSidebar step={step} teamUnlocked={teamToolUnlocked} onNavigate={goToStep} />
+                            </div>
+                        );
+                    }
+                })()}
 
                 {/* TEAM STEPS 6-7 */}
                 {[6, 7].includes(step) && (
