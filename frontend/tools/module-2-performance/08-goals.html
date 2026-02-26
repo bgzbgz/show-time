@@ -1077,766 +1077,103 @@
             /* ============================================================
                INTRO SCREEN (step 0.5)
                ============================================================ */
-            if (step === 0.5) {
-                return (
-                    <div className="tool-frame">
-                        <div className="tool-inner">
-                            <div style={{ minHeight: '100vh', background: '#000', color: '#fff', padding: 64 }}>
-                                <div style={{ maxWidth: 640, margin: '0 auto' }} className="animate-in">
-                                    <h1 className="plaak" style={{ fontSize: 64, marginBottom: 48 }}>HOW THIS TOOL WORKS</h1>
+            if (step === 0.5) { return <IntroPage onNext={() => setStep(1)} />; }
 
-                                    <div style={{ marginBottom: 48 }}>
-                                        <div style={{ fontSize: 16, lineHeight: 2.2, color: '#ccc' }}>
-                                            {[
-                                                'Set your quarterly targets, brainstorm actions, rate Impact (1-3) and Ease (1-3)',
-                                                'See your priorities ranked automatically -- top scores win',
-                                                'Cut the Elephant -- break your top 3-5 priorities into bite-sized steps',
-                                                'Accountability check -- assess your team\'s accountability habits',
-                                                'Alignment check -- verify your priorities align with company goals'
-                                            ].map((text, i) => (
-                                                <div key={i} style={{ display: 'flex', gap: 16, alignItems: 'flex-start', marginBottom: 8 }}>
-                                                    <span className="monument" style={{ color: '#FFF469', fontSize: 14, minWidth: 24, marginTop: 2 }}>{i + 1}.</span>
-                                                    <span>{text}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
 
-                                    <div style={{ background: '#111', border: '1px solid #333', padding: '16px 20px', marginBottom: 48, fontSize: 14, color: '#999', lineHeight: 1.6 }}>
-                                        <span className="monument" style={{ fontSize: 10, color: '#FFF469', display: 'block', marginBottom: 8 }}>ESTIMATED TIME</span>
-                                        ~50 minutes total across 5 steps. You can save and return at any time.
-                                    </div>
+    function IntroPage({ onNext }) {
+      return (
+        <div className="bg-black text-white min-h-screen p-16">
+          <div className="max-w-5xl mx-auto">
+            <h1 className="plaak mb-16 animate-in" style={{fontSize: '100px'}}>
+              BEFORE WE START
+            </h1>
 
-                                    <button
-                                        onClick={() => goToStep(1)}
-                                        style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 48px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s ease' }}
-                                        onMouseOver={e => { e.target.style.background = '#FFF469'; }}
-                                        onMouseOut={e => { e.target.style.background = '#fff'; }}
-                                    >LET'S START</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                );
-            }
-
-            /* ============================================================
-               TRANSITION SCREENS (steps 1.5, 2.5, 3.5, 4.5)
-               ============================================================ */
-            if (step === 1.5 || step === 2.5 || step === 3.5 || step === 4.5) {
-                const tKey = Math.floor(step);
-                const t = TRANSITION_CONTENT[tKey];
-                const nextStep = tKey + 1;
-                const completedStep = tKey;
-
-                const handleContinue = () => {
-                    if (tKey === 2) {
-                        populateElephants();
-                    }
-                    goToStep(nextStep);
-                };
-
-                return (
-                    <div className="tool-frame">
-                        <div className="tool-inner">
-                            <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <div style={{ maxWidth: 640, padding: '0 32px', textAlign: 'center', color: '#fff' }} className="animate-in">
-                                    <div className="monument" style={{ fontSize: 12, color: '#FFF469', letterSpacing: '0.1em', marginBottom: 16 }}>
-                                        STEP {completedStep} OF 5 COMPLETE
-                                    </div>
-                                    <h1 className="plaak" style={{ fontSize: 48, marginBottom: 12 }}>{t.title}</h1>
-                                    <p style={{ fontSize: 16, color: '#ccc', marginBottom: 48 }}>{t.text}</p>
-
-                                    <div style={{ background: '#111', border: '1px solid #333', borderLeft: '4px solid #FFF469', padding: '20px 24px', marginBottom: 24, textAlign: 'left' }}>
-                                        <span className="monument" style={{ fontSize: 10, color: '#FFF469', display: 'block', marginBottom: 8 }}>BRUTAL TRUTH</span>
-                                        <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7 }}>{t.brutalTruth}</p>
-                                    </div>
-
-                                    <div style={{ background: '#111', border: '1px solid #333', borderLeft: '4px solid #666', padding: '20px 24px', marginBottom: 48, textAlign: 'left' }}>
-                                        <span className="monument" style={{ fontSize: 10, color: '#999', display: 'block', marginBottom: 8 }}>PEER PROOF</span>
-                                        <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7, fontStyle: 'italic' }}>{t.peerProof}</p>
-                                    </div>
-
-                                    <button
-                                        onClick={handleContinue}
-                                        style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 48px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s ease' }}
-                                        onMouseOver={e => { e.target.style.background = '#FFF469'; }}
-                                        onMouseOut={e => { e.target.style.background = '#fff'; }}
-                                    >CONTINUE</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                );
-            }
-
-            /* ============================================================
-               WIZARD STEPS (1-6)
-               ============================================================ */
-            const intStep = Math.ceil(step);
-
-            /* ---- STEP 1: Impact/Easy Matrix ---- */
-            const renderStep1 = () => (
-                <div>
-                    <DependencyContext deps={deps} />
-                    <div className="step-indicator">
-                        <span>Step 1 of 5</span>
-                        <span className="step-time">~15 min</span>
-                    </div>
-                    <h2 className="step-heading">Brainstorm & Rate</h2>
-                    <p className="step-hint">List all potential actions, rate Impact (1-3, weight 2x) and Ease (1-3, weight 1x). Score = (Impact x 2) + Ease. Maximum 9 points.</p>
-
-                    {(formData.ideas[0].idea || '').length >= 20 && (
-                        <div className="ft-reveal">
-                            <div className="ft-reveal-label">FAST TRACK INSIGHT</div>
-                            <p className="ft-reveal-text">Locke and Latham's goal-setting research shows that specific, challenging goals lead to 90% better performance than vague "do your best" targets. Companies using structured prioritization matrices like this one report 25% higher follow-through rates.</p>
-                        </div>
-                    )}
-
-                    <div style={{ background: '#F3F4F6', padding: 16, marginBottom: 24, borderLeft: '4px solid #000' }}>
-                        <h4 style={{ fontWeight: 'bold', fontSize: 16, marginBottom: 8 }}>Scoring Guide: Score = Impact x 2 + Ease. Max = 9</h4>
-                        <div className="grid grid-cols-2 gap-6 text-sm">
-                            <div>
-                                <p style={{ fontWeight: 'bold', marginBottom: 4 }}>IMPACT (weight 2x):</p>
-                                <p>3 = Biggest impact on goals</p>
-                                <p>2 = Moderate impact</p>
-                                <p>1 = Least impact</p>
-                            </div>
-                            <div>
-                                <p style={{ fontWeight: 'bold', marginBottom: 4 }}>EASE (weight 1x):</p>
-                                <p>3 = Very easy to implement</p>
-                                <p>2 = Moderate difficulty</p>
-                                <p>1 = Very difficult</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div style={{ overflowX: 'auto' }}>
-                        <table className="w-full" style={{ border: '2px solid #000' }}>
-                            <thead>
-                                <tr style={{ background: '#000', color: '#fff' }}>
-                                    <th className="p-3 text-left plaak" style={{ width: 40 }}>#</th>
-                                    <th className="p-3 text-left plaak">Idea / Action</th>
-                                    <th className="p-3 text-center plaak" style={{ width: 80 }}>Impact</th>
-                                    <th className="p-3 text-center plaak" style={{ width: 80 }}>Easy</th>
-                                    <th className="p-3 text-center plaak" style={{ width: 80 }}>Score</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {formData.ideas.map((idea, i) => {
-                                    const score = calculateScore(idea.impact, idea.easy);
-                                    return (
-                                        <tr key={i} className="border-t border-gray-300 priority-row">
-                                            <td className="p-3 font-bold text-gray-500">{i + 1}</td>
-                                            <td className="p-3" style={{ minWidth: 280 }}>
-                                                <input
-                                                    className="ft-input"
-                                                    style={{ fontSize: 15, padding: '10px 12px', height: 'auto' }}
-                                                    placeholder={`Idea ${i + 1}`}
-                                                    value={idea.idea}
-                                                    onChange={(e) => updateIdea(i, 'idea', e.target.value)}
-                                                />
-                                            </td>
-                                            <td className="p-3 text-center">
-                                                <select
-                                                    className="ft-input text-center font-bold"
-                                                    style={{ minWidth: 64, fontSize: 16, padding: '8px 4px' }}
-                                                    value={idea.impact}
-                                                    onChange={(e) => updateIdea(i, 'impact', parseInt(e.target.value))}
-                                                >
-                                                    <option value={0}>–</option>
-                                                    <option value={1}>1</option>
-                                                    <option value={2}>2</option>
-                                                    <option value={3}>3</option>
-                                                </select>
-                                            </td>
-                                            <td className="p-3 text-center">
-                                                <select
-                                                    className="ft-input text-center font-bold"
-                                                    style={{ minWidth: 64, fontSize: 16, padding: '8px 4px' }}
-                                                    value={idea.easy}
-                                                    onChange={(e) => updateIdea(i, 'easy', parseInt(e.target.value))}
-                                                >
-                                                    <option value={0}>–</option>
-                                                    <option value={1}>1</option>
-                                                    <option value={2}>2</option>
-                                                    <option value={3}>3</option>
-                                                </select>
-                                            </td>
-                                            <td className="p-3 text-center">
-                                                {idea.idea.trim() && idea.impact > 0 && idea.easy > 0 && (
-                                                    <span className={`score-badge ${getScoreClass(score)}`}>
-                                                        {score}
-                                                    </span>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* Quick Wins Summary */}
-                    {(() => {
-                        const sorted = getSortedIdeas();
-                        const top5 = sorted.slice(0, 5);
-                        if (top5.length === 0) return null;
-                        return (
-                            <div className="quick-wins-box">
-                                <h4>TOP {Math.min(5, top5.length)} QUICK WINS</h4>
-                                {top5.map((item, i) => (
-                                    <div key={i} className="quick-win-item">
-                                        <span className={`score-badge ${getScoreClass(item.score)}`}>{item.score}</span>
-                                        <span style={{ fontSize: 15 }}>{item.idea}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        );
-                    })()}
-
-                    {!validateStep1() && (
-                        <p className="ft-error-msg" style={{ marginTop: 16, textAlign: 'right' }}>
-                            Add at least 5 ideas (10+ characters each) and rate Impact &amp; Ease to continue
-                        </p>
-                    )}
+            {/* Sprint Info */}
+            <div className="mb-12 animate-in" style={{animationDelay: '0.08s'}}>
+              <h2 className="plaak text-6xl mb-6" style={{color: '#FFF469'}}>SPRINT INFO</h2>
+              <div className="bg-white text-black p-8">
+                <p className="text-2xl font-bold mb-4">Sprint 8: Goals & Priorities</p>
+                <p className="text-xl leading-relaxed mb-4">Transform your list of priorities into a ranked action plan. Rate each idea on impact and ease, let the score decide what you work on first, then break the top priorities into executable steps with named owners.</p>
+                <div className="border-l-4 border-black pl-4 italic text-lg">
+                  "The essence of strategy is choosing what not to do."
                 </div>
-            );
+              </div>
+            </div>
 
-            /* ---- STEP 2: Priority Rankings ---- */
-            const renderStep2 = () => {
-                const sortedIdeas = getSortedIdeas();
+            {/* Purpose */}
+            <div className="mb-12 animate-in" style={{animationDelay: '0.1s'}}>
+              <h2 className="plaak text-6xl mb-6">PURPOSE</h2>
+              <div className="border-l-4 border-white pl-6 mb-6">
+                <p className="text-3xl italic mb-2">"What gets measured gets managed — but what gets prioritised gets done."</p>
+                <p className="text-xl text-gray-400">— adapted from Peter Drucker</p>
+              </div>
+              <p className="text-3xl leading-relaxed mb-4">Most leadership teams have 30+ things they feel they 'should' do. This tool cuts through the noise to identify the vital few initiatives that will move the needle — and builds the accountability structure to ensure they actually happen.</p>
+              <p className="text-2xl text-gray-400">Teams that formally prioritise using an impact/ease matrix complete 73% of their top initiatives vs 31% for teams without a prioritisation system.</p>
+            </div>
 
-                return (
-                    <div>
-                        <div className="step-indicator">
-                            <span>Step 2 of 5</span>
-                            <span className="step-time">~5 min</span>
-                        </div>
-                        <h2 className="step-heading">Your Prioritized Action List</h2>
-                        <p className="step-hint">Your ideas are ranked by score (Impact x 2 + Ease). Focus on high-scoring items first.</p>
+            {/* Mistakes to Avoid */}
+            <div className="mb-12 animate-in" style={{animationDelay: '0.2s'}}>
+              <h2 className="plaak text-6xl mb-6" style={{color: '#FFF469'}}>MISTAKES TO AVOID</h2>
+              <ul className="text-2xl space-y-4">
+                <li className="flex items-start">
+                  <span className="text-4xl mr-4">•</span>
+                  <span>Treating all priorities as equally important — they never are.</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-4xl mr-4">•</span>
+                  <span>Rating ease too generously: if it's easy, someone should already have done it.</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-4xl mr-4">•</span>
+                  <span>Skipping the 'cut the elephant' step and leaving priorities as vague goals.</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-4xl mr-4">•</span>
+                  <span>Setting priorities without naming the single owner responsible for each one.</span>
+                </li>
+              </ul>
+            </div>
 
-                        <div style={{ border: '2px solid #000', marginBottom: 32 }}>
-                            <div style={{ background: '#000', color: '#fff', padding: 16 }}>
-                                <h3 className="plaak" style={{ fontSize: 24 }}>PRIORITY RANKINGS</h3>
-                            </div>
-
-                            <table className="w-full">
-                                <thead>
-                                    <tr style={{ background: '#F3F4F6', borderBottom: '2px solid #000' }}>
-                                        <th className="p-3 text-left plaak" style={{ width: 60 }}>Rank</th>
-                                        <th className="p-3 text-left plaak">Action / Idea</th>
-                                        <th className="p-3 text-center plaak" style={{ width: 70 }}>Impact</th>
-                                        <th className="p-3 text-center plaak" style={{ width: 70 }}>Easy</th>
-                                        <th className="p-3 text-center plaak" style={{ width: 70 }}>Score</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {sortedIdeas.map((idea, i) => (
-                                        <tr key={i} className="border-b border-gray-200 hover:bg-gray-50" style={i < 5 ? { background: '#FFFDE7' } : {}}>
-                                            <td className="p-3">
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                                    <span className="plaak text-2xl text-gray-400">#{i + 1}</span>
-                                                    {i < 5 && <span className="top-priority-badge">TOP 5</span>}
-                                                </div>
-                                            </td>
-                                            <td className="p-3">
-                                                <p style={{ fontWeight: i < 5 ? 600 : 400 }}>{idea.idea}</p>
-                                            </td>
-                                            <td className="p-3 text-center font-bold text-lg">{idea.impact}</td>
-                                            <td className="p-3 text-center font-bold text-lg">{idea.easy}</td>
-                                            <td className="p-3 text-center">
-                                                <span className={`score-badge ${getScoreClass(idea.score)}`}>
-                                                    {idea.score}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <div style={{ background: '#FFF469', border: '3px solid #000', padding: '16px 20px', marginBottom: 32, fontSize: 15, lineHeight: 1.6 }}>
-                            <strong>These top {Math.min(5, sortedIdeas.length)} priorities will flow into the Cut the Elephant step</strong>, where you will break each one into 5 incremental steps with deadlines.
-                        </div>
-                    </div>
-                );
-            };
-
-            /* ---- STEP 3: Cut the Elephant ---- */
-            const renderStep3 = () => {
-                const stepLabels = [
-                    'The simplest possible first action',
-                    'Gradually increasing complexity',
-                    'Gradually increasing complexity',
-                    'Gradually increasing complexity',
-                    'Final milestone'
-                ];
-
-                return (
-                    <div>
-                        <div className="step-indicator">
-                            <span>Step 3 of 5</span>
-                            <span className="step-time">~15 min</span>
-                        </div>
-                        <h2 className="step-heading">Cut the Elephant</h2>
-                        <p className="step-hint">Break each top priority into 5 incremental steps. Start absurdly simple, then gradually increase complexity. Every step gets a non-negotiable deadline.</p>
-
-                        {(formData.elephants[0] && (formData.elephants[0].steps[0].action || '').length >= 20) && (
-                            <div className="ft-reveal">
-                                <div className="ft-reveal-label">FAST TRACK INSIGHT</div>
-                                <p className="ft-reveal-text">Research shows that breaking goals into specific sub-tasks increases completion rates by 44%. Teams that define the first step as "embarrassingly easy" start 3x faster than those who plan complex rollouts from the outset.</p>
-                            </div>
-                        )}
-
-
-                        {formData.elephants.length === 0 ? (
-                            <div style={{ textAlign: 'center', padding: 48, color: '#999' }}>
-                                <p>No priorities loaded. Go back to Step 2 to generate your priority list.</p>
-                            </div>
-                        ) : (
-                            formData.elephants.map((elephant, eIdx) => (
-                                <div key={eIdx} className="elephant-card">
-                                    <div className="elephant-card-header">
-                                        <div>
-                                            <span className="monument" style={{ fontSize: 10, color: '#FFF469', marginRight: 12 }}>PRIORITY {eIdx + 1}</span>
-                                            <span style={{ fontSize: 15, fontWeight: 600 }}>{elephant.idea}</span>
-                                        </div>
-                                        <span className={`score-badge ${getScoreClass(elephant.score)}`}>{elephant.score}</span>
-                                    </div>
-                                    <div className="elephant-card-body">
-                                        {elephant.steps.map((s, sIdx) => (
-                                            <div key={sIdx} className="elephant-step-row">
-                                                <div className="elephant-step-num">{sIdx + 1}</div>
-                                                <div className="elephant-step-fields">
-                                                    <input
-                                                        className="ft-input"
-                                                        placeholder={stepLabels[sIdx]}
-                                                        value={s.action}
-                                                        onChange={(e) => updateElephantStep(eIdx, sIdx, 'action', e.target.value)}
-                                                    />
-                                                    <input
-                                                        type="date"
-                                                        value={s.deadline}
-                                                        onChange={(e) => updateElephantStep(eIdx, sIdx, 'deadline', e.target.value)}
-                                                        title="Deadline"
-                                                    />
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            ))
-                        )}
-
-                        {!validateStep3() && formData.elephants.length > 0 && (
-                            <p className="ft-error-msg" style={{ marginTop: 16, textAlign: 'right' }}>
-                                At least 1 priority must have Step 1 action + deadline filled
-                            </p>
-                        )}
-                    </div>
-                );
-            };
-
-            /* ---- STEP 4: Accountability Checklist ---- */
-            const ACCOUNTABILITY_ITEMS = [
-                'Do team members consistently meet or exceed their targets?',
-                'Do individuals proactively communicate progress and challenges without prompting?',
-                'Do team members accept responsibility for outcomes -- both good and bad?',
-                'Are tasks and projects consistently delivered on time?',
-                'Is there a culture of ownership rather than blame-shifting?',
-                'Do team members willingly commit to tasks without trying to offload?',
-                'Are there clear consequences for missed commitments?',
-                'Does the team celebrate wins and learn from failures openly?'
-            ];
-
-            const renderStep4 = () => {
-                const yesCount = formData.accountabilityChecks.filter(c => c === true).length;
-
-                return (
-                    <div>
-                        <div className="step-indicator">
-                            <span>Step 4 of 5</span>
-                            <span className="step-time">~5 min</span>
-                        </div>
-                        <h2 className="step-heading">Accountability Check</h2>
-                        <p className="step-hint">Teams with high accountability show 50% higher performance. Be brutally honest.</p>
-
-                        {(formData.accountabilityAction || '').length >= 20 && (
-                            <div className="ft-reveal">
-                                <div className="ft-reveal-label">FAST TRACK INSIGHT</div>
-                                <p className="ft-reveal-text">Teams lacking accountability see project failure rates increase by 30%. Teams with high accountability show 50% higher performance than those without — they achieve targets consistently and drive growth (Fast Track research across 200+ leadership teams).</p>
-                            </div>
-                        )}
-
-                        <div className="signs-box signs-good">
-                            <strong style={{ display: 'block', marginBottom: 4 }}>3 Signs of Accountability:</strong>
-                            <div>1. Team members meet or exceed targets consistently</div>
-                            <div>2. People proactively communicate progress without being asked</div>
-                            <div>3. Individuals accept responsibility for outcomes -- good and bad</div>
-                        </div>
-
-                        <div className="signs-box signs-bad">
-                            <strong style={{ display: 'block', marginBottom: 4 }}>3 Signs of Lack of Accountability:</strong>
-                            <div>1. Deadlines are regularly missed with excuses instead of solutions</div>
-                            <div>2. Blame-shifting is common -- "it's not my job"</div>
-                            <div>3. No consequences for missed commitments</div>
-                        </div>
-
-                        {ACCOUNTABILITY_ITEMS.map((text, i) => (
-                            <div key={i} className="checklist-item">
-                                <div className="checklist-text">{text}</div>
-                                <ChecklistToggle
-                                    value={formData.accountabilityChecks[i]}
-                                    onChange={(val) => updateChecklistItem('accountability', i, val)}
-                                />
-                            </div>
-                        ))}
-
-                        <div className={`score-summary ${getChecklistScoreClass(yesCount)}`}>
-                            <div className="score-number">{yesCount}/8</div>
-                            <div className="score-label">{getChecklistLabel(yesCount)}</div>
-                        </div>
-
-                        <div className="ft-field-group">
-                            <label className="ft-label">
-                                What one change will you make to improve accountability?
-                                <span className="ft-required">*</span>
-                            </label>
-                            <textarea
-                                className="ft-textarea"
-                                placeholder="Be specific. What will you start doing differently this week?"
-                                value={formData.accountabilityAction}
-                                onChange={(e) => setFormData(prev => ({ ...prev, accountabilityAction: e.target.value }))}
-                            />
-                        </div>
-
-                        {!validateStep4() && (
-                            <p className="ft-error-msg" style={{ marginTop: 16, textAlign: 'right' }}>
-                                Answer at least 6 of 8 items and write your accountability action to continue
-                            </p>
-                        )}
-                    </div>
-                );
-            };
-
-            /* ---- STEP 5: Alignment Checklist ---- */
-            const ALIGNMENT_ITEMS = [
-                'Is there regular, clear communication of goals across all levels?',
-                'Do decisions across departments support the overall company strategy?',
-                'Do team members show high engagement and commitment to shared objectives?',
-                'Are priorities consistent across teams -- no conflicting goals?',
-                'Is planning collaborative rather than siloed?',
-                'Is morale high and turnover low?',
-                'Can every team member articulate how their work connects to company goals?',
-                'Are resources allocated in line with strategic priorities?'
-            ];
-
-            const renderStep5 = () => {
-                const yesCount = formData.alignmentChecks.filter(c => c === true).length;
-
-                return (
-                    <div>
-                        <div className="step-indicator">
-                            <span>Step 5 of 5</span>
-                            <span className="step-time">~5 min</span>
-                        </div>
-                        <h2 className="step-heading">Alignment Check</h2>
-                        <p className="step-hint">Organizations with aligned teams are 72% more likely to achieve project success.</p>
-
-                        {(formData.alignmentAction || '').length >= 20 && (
-                            <div className="ft-reveal">
-                                <div className="ft-reveal-label">FAST TRACK INSIGHT</div>
-                                <p className="ft-reveal-text">Misalignment costs companies 33% in employee morale and 29% in profitability. Organizations with highly aligned teams are 72% more likely to achieve project success — alignment not only streamlines efforts but maximizes resource utilization.</p>
-                            </div>
-                        )}
-
-                        <div className="signs-box signs-good">
-                            <strong style={{ display: 'block', marginBottom: 4 }}>3 Signs of Alignment:</strong>
-                            <div>1. Goals are clearly communicated and consistent across all levels</div>
-                            <div>2. Decisions across departments support the overall strategy</div>
-                            <div>3. Team members show high engagement and commitment to shared objectives</div>
-                        </div>
-
-                        <div className="signs-box signs-bad">
-                            <strong style={{ display: 'block', marginBottom: 4 }}>3 Signs of Misalignment:</strong>
-                            <div>1. Departments have conflicting priorities and compete for resources</div>
-                            <div>2. Planning is siloed -- teams don't know what others are working on</div>
-                            <div>3. Employees can't explain how their work connects to company goals</div>
-                        </div>
-
-                        {ALIGNMENT_ITEMS.map((text, i) => (
-                            <div key={i} className="checklist-item">
-                                <div className="checklist-text">{text}</div>
-                                <ChecklistToggle
-                                    value={formData.alignmentChecks[i]}
-                                    onChange={(val) => updateChecklistItem('alignment', i, val)}
-                                />
-                            </div>
-                        ))}
-
-                        <div className={`score-summary ${getChecklistScoreClass(yesCount)}`}>
-                            <div className="score-number">{yesCount}/8</div>
-                            <div className="score-label">{getChecklistLabel(yesCount)}</div>
-                        </div>
-
-                        <div className="ft-field-group">
-                            <label className="ft-label">
-                                What one change will you make to improve alignment?
-                                <span className="ft-required">*</span>
-                            </label>
-                            <textarea
-                                className="ft-textarea"
-                                placeholder="Be specific. What will you start doing differently this week?"
-                                value={formData.alignmentAction}
-                                onChange={(e) => setFormData(prev => ({ ...prev, alignmentAction: e.target.value }))}
-                            />
-                        </div>
-
-                        {!validateStep5() && (
-                            <p className="ft-error-msg" style={{ marginTop: 16, textAlign: 'right' }}>
-                                Answer at least 6 of 8 items and write your alignment action to continue
-                            </p>
-                        )}
-                    </div>
-                );
-            };
-
-            /* ---- STEP 6: Review & Submit ---- */
-            const renderStep6 = () => {
-                const sortedIdeas = getSortedIdeas();
-                const top5 = sortedIdeas.slice(0, 5);
-                const accScore = formData.accountabilityChecks.filter(c => c === true).length;
-                const alignScore = formData.alignmentChecks.filter(c => c === true).length;
-
-                return (
-                    <div>
-                        <div className="step-indicator">
-                            <span>Review & Submit</span>
-                            <span className="step-time">~5 min</span>
-                        </div>
-                        <h2 className="step-heading">Review Your Work</h2>
-                        <p className="step-hint">Review everything before submitting. Your AI coach will provide feedback.</p>
-
-                        {/* Section 1: Top Priorities */}
-                        <div className="review-section">
-                            <div className="review-section-header">Impact/Easy Matrix -- Top 5 Priorities</div>
-                            <div className="review-section-body">
-                                {top5.length === 0 ? (
-                                    <p style={{ color: '#999' }}>No priorities scored yet.</p>
-                                ) : (
-                                    top5.map((item, i) => (
-                                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderBottom: i < top5.length - 1 ? '1px solid #F3F4F6' : 'none' }}>
-                                            <span className="plaak" style={{ fontSize: 18, color: '#999', minWidth: 32 }}>#{i + 1}</span>
-                                            <span style={{ flex: 1 }}>{item.idea}</span>
-                                            <span className={`score-badge ${getScoreClass(item.score)}`}>{item.score}</span>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Section 2: Elephant Breakdowns */}
-                        <div className="review-section">
-                            <div className="review-section-header">Cut the Elephant -- Breakdowns</div>
-                            <div className="review-section-body">
-                                {formData.elephants.length === 0 ? (
-                                    <p style={{ color: '#999' }}>No elephant breakdowns yet.</p>
-                                ) : (
-                                    formData.elephants.map((el, eIdx) => {
-                                        const filledSteps = el.steps.filter(s => s.action.trim().length > 0);
-                                        if (filledSteps.length === 0) return null;
-                                        return (
-                                            <div key={eIdx} style={{ marginBottom: 16, paddingBottom: 16, borderBottom: eIdx < formData.elephants.length - 1 ? '1px solid #E5E7EB' : 'none' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                                                    <span className="monument" style={{ fontSize: 10, color: '#666' }}>PRIORITY {eIdx + 1}</span>
-                                                    <span style={{ fontWeight: 600 }}>{el.idea}</span>
-                                                    <span className={`score-badge ${getScoreClass(el.score)}`} style={{ fontSize: 12, padding: '2px 8px' }}>{el.score}</span>
-                                                </div>
-                                                {el.steps.map((s, sIdx) => {
-                                                    if (!s.action.trim()) return null;
-                                                    return (
-                                                        <div key={sIdx} style={{ display: 'flex', gap: 8, fontSize: 14, paddingLeft: 16, marginBottom: 4, color: '#444' }}>
-                                                            <span style={{ fontWeight: 600, minWidth: 20 }}>{sIdx + 1}.</span>
-                                                            <span style={{ flex: 1 }}>{s.action}</span>
-                                                            {s.deadline && <span style={{ color: '#999', fontSize: 13 }}>{s.deadline}</span>}
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        );
-                                    })
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Section 3: Accountability & Alignment */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
-                            <div className="review-section" style={{ marginBottom: 0 }}>
-                                <div className="review-section-header" style={{ fontSize: 16 }}>Accountability</div>
-                                <div className="review-section-body" style={{ textAlign: 'center' }}>
-                                    <div className={`score-summary ${getChecklistScoreClass(accScore)}`} style={{ border: 'none', padding: '12px 0', margin: 0 }}>
-                                        <div className="score-number" style={{ fontSize: 36 }}>{accScore}/8</div>
-                                        <div className="score-label">{getChecklistLabel(accScore)}</div>
-                                    </div>
-                                    {formData.accountabilityAction && (
-                                        <p style={{ fontSize: 13, color: '#666', marginTop: 8, textAlign: 'left', fontStyle: 'italic' }}>
-                                            "{formData.accountabilityAction}"
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-                            <div className="review-section" style={{ marginBottom: 0 }}>
-                                <div className="review-section-header" style={{ fontSize: 16 }}>Alignment</div>
-                                <div className="review-section-body" style={{ textAlign: 'center' }}>
-                                    <div className={`score-summary ${getChecklistScoreClass(alignScore)}`} style={{ border: 'none', padding: '12px 0', margin: 0 }}>
-                                        <div className="score-number" style={{ fontSize: 36 }}>{alignScore}/8</div>
-                                        <div className="score-label">{getChecklistLabel(alignScore)}</div>
-                                    </div>
-                                    {formData.alignmentAction && (
-                                        <p style={{ fontSize: 13, color: '#666', marginTop: 8, textAlign: 'left', fontStyle: 'italic' }}>
-                                            "{formData.alignmentAction}"
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Submit & Export */}
-                        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-                            <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
-                                <button onClick={() => window.print()} className="btn-back no-print">
-                                    Export PDF
-                                </button>
-                                <button onClick={handleSubmit} className="btn-next no-print" style={{ padding: '12px 32px' }} disabled={submitStatus === 'saving'}>
-                                    {submitStatus === 'saving' ? 'AI Coach Reviewing...' : 'Submit Answers'}
-                                </button>
-                            </div>
-                            {submitStatus && submitMessage && (
-                                <div style={{ marginTop: 16, padding: '12px 16px', textAlign: 'center', background: submitStatus === 'success' ? '#f0fdf4' : submitStatus === 'error' ? '#fef2f2' : '#f5f5f5', border: `1px solid ${submitStatus === 'success' ? '#bbf7d0' : submitStatus === 'error' ? '#fecaca' : '#e0e0e0'}`, fontSize: 14 }}>
-                                    <span style={{ color: submitStatus === 'success' ? '#166534' : submitStatus === 'error' ? '#991b1b' : '#333' }}>{submitMessage}</span>
-                                </div>
-                            )}
-                        </div>
-
-                        <CaseStudy
-                            before={"A mid-size tech company had 47 scattered goals across departments with no alignment to a central strategy. Teams duplicated effort, pulled in conflicting directions, and only 20% of goals were completed each quarter."}
-                            after={"Using the Impact/Easy Matrix, leadership narrowed focus to 3 company-level OKRs broken into quarterly priorities. Goal completion rate jumped from 20% to 75%, and cross-team alignment improved dramatically within one cycle."}
-                            quote={"When we stopped trying to do everything, we finally started achieving the things that mattered. Fewer goals meant better goals."}
-                        />
-                    </div>
-                );
-            };
-
-            /* ============================================================
-               WIZARD LAYOUT RENDER
-               ============================================================ */
-            const getFooterForStep = () => {
-                switch (intStep) {
-                    case 1:
-                        return (
-                            <>
-                                {aiMessage && <div style={{color:'#dc2626',fontSize:'13px',marginTop:'8px',padding:'8px 12px',background:'#fef2f2',borderRadius:'6px'}}>{aiMessage}</div>}
-                                <ButtonFooter
-                                    onBack={() => goToStep(0.5)}
-                                    onNext={() => handleNext(1, 1.5)}
-                                    disabled={!validateStep1() || aiReviewing}
-                                    nextLabel={aiReviewing ? 'Reviewing...' : 'View Priorities'}
-                                    showBack={true}
-                                />
-                            </>
-                        );
-                    case 2:
-                        return (
-                            <ButtonFooter
-                                onBack={() => goToStep(1)}
-                                onNext={() => goToStep(2.5)}
-                                nextLabel="Cut the Elephant"
-                                showBack={true}
-                            />
-                        );
-                    case 3:
-                        return (
-                            <>
-                                {aiMessage && <div style={{color:'#dc2626',fontSize:'13px',marginTop:'8px',padding:'8px 12px',background:'#fef2f2',borderRadius:'6px'}}>{aiMessage}</div>}
-                                <ButtonFooter
-                                    onBack={() => goToStep(2)}
-                                    onNext={() => handleNext(3, 3.5)}
-                                    disabled={!validateStep3() || aiReviewing}
-                                    nextLabel={aiReviewing ? 'Reviewing...' : 'Accountability Check'}
-                                    showBack={true}
-                                />
-                            </>
-                        );
-                    case 4:
-                        return (
-                            <>
-                                {aiMessage && <div style={{color:'#dc2626',fontSize:'13px',marginTop:'8px',padding:'8px 12px',background:'#fef2f2',borderRadius:'6px'}}>{aiMessage}</div>}
-                                <ButtonFooter
-                                    onBack={() => goToStep(3)}
-                                    onNext={() => handleNext(4, 4.5)}
-                                    disabled={!validateStep4() || aiReviewing}
-                                    nextLabel={aiReviewing ? 'Reviewing...' : 'Alignment Check'}
-                                    showBack={true}
-                                />
-                            </>
-                        );
-                    case 5:
-                        return (
-                            <>
-                                {aiMessage && <div style={{color:'#dc2626',fontSize:'13px',marginTop:'8px',padding:'8px 12px',background:'#fef2f2',borderRadius:'6px'}}>{aiMessage}</div>}
-                                <ButtonFooter
-                                    onBack={() => goToStep(4)}
-                                    onNext={() => handleNext(5, 6)}
-                                    disabled={!validateStep5() || aiReviewing}
-                                    nextLabel={aiReviewing ? 'Reviewing...' : 'Review & Submit'}
-                                    showBack={true}
-                                />
-                            </>
-                        );
-                    case 6:
-                        return (
-                            <ButtonFooter
-                                onBack={() => goToStep(5)}
-                                onNext={() => {}}
-                                nextLabel="Submitted"
-                                showBack={true}
-                                disabled={true}
-                            />
-                        );
-                    default:
-                        return null;
-                }
-            };
-
-            return (
-                <div className="tool-frame">
-                    <div className="tool-inner">
-                        <div className="wizard-layout">
-                            <div className="wizard-main">
-                                <MobileStepBar currentStep={intStep} totalSteps={6} />
-
-                                <div className="wizard-content animate-in" key={intStep}>
-                                    {intStep === 1 && renderStep1()}
-                                    {intStep === 2 && renderStep2()}
-                                    {intStep === 3 && renderStep3()}
-                                    {intStep === 4 && renderStep4()}
-                                    {intStep === 5 && renderStep5()}
-                                    {intStep === 6 && renderStep6()}
-                                </div>
-
-                                {getFooterForStep()}
-                            </div>
-                            <WizardSidebar currentStep={step} formData={formData} onNavigate={goToStep} getSortedIdeas={getSortedIdeas} />
-                        </div>
-                    </div>
+            {/* The Journey */}
+            <div className="mb-16 animate-in" style={{animationDelay: '0.3s'}}>
+              <h2 className="plaak text-6xl mb-8">THE JOURNEY</h2>
+              <div className="grid grid-cols-3 gap-6 text-center">
+                <div className="border-2 border-white p-6">
+                  <div className="text-8xl plaak mb-4">01</div>
+                  <p className="text-xl font-bold mb-2">IMPACT MATRIX</p>
+                  <p className="text-base text-gray-400">Rate by impact and ease</p>
                 </div>
-            );
-        };
+                <div className="border-2 border-white p-6">
+                  <div className="text-8xl plaak mb-4">02</div>
+                  <p className="text-xl font-bold mb-2">PRIORITY RANKINGS</p>
+                  <p className="text-base text-gray-400">Top priorities auto-ranked</p>
+                </div>
+                <div className="border-2 border-white p-6">
+                  <div className="text-8xl plaak mb-4">03</div>
+                  <p className="text-xl font-bold mb-2">CUT THE ELEPHANT</p>
+                  <p className="text-base text-gray-400">Break into bite-sized steps</p>
+                </div>
+                <div className="border-2 border-white p-6">
+                  <div className="text-8xl plaak mb-4">04</div>
+                  <p className="text-xl font-bold mb-2">ACCOUNTABILITY</p>
+                  <p className="text-base text-gray-400">Team accountability check</p>
+                </div>
+                <div className="border-2 border-white p-6">
+                  <div className="text-8xl plaak mb-4">05</div>
+                  <p className="text-xl font-bold mb-2">ALIGNMENT</p>
+                  <p className="text-base text-gray-400">Verify strategic alignment</p>
+                </div>
+              </div>
+            </div>
 
-        // Render
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<GoalsPrioritiesPlanning />);
-    </script>
-</body>
-</html>
+            <button
+              onClick={onNext}
+              className="btn-primary w-full text-3xl py-8 plaak"
+            >
+              LET'S START →
+            </button>
+          </div>
+        </div>
+      );
+    }
+
