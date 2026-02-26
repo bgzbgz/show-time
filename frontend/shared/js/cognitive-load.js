@@ -259,22 +259,40 @@ window.CognitiveLoad = (function() {
 // Textarea auto-grow — remove resize handle, expand with content
 // =============================================================================
 (function () {
+    var attached = new WeakSet();
     function autoGrow(el) {
         el.style.height = 'auto';
         el.style.height = el.scrollHeight + 'px';
     }
+    function initTextarea(el) {
+        if (attached.has(el)) return;
+        attached.add(el);
+        autoGrow(el);
+        el.addEventListener('input', function () { autoGrow(el); });
+    }
     function initTextareas(root) {
         var els = (root || document).querySelectorAll('textarea');
-        els.forEach(function (el) {
-            autoGrow(el);
-            el.addEventListener('input', function () { autoGrow(el); });
+        els.forEach(initTextarea);
+    }
+    // Watch for textareas added by React/dynamic rendering
+    var observer = new MutationObserver(function (mutations) {
+        mutations.forEach(function (m) {
+            m.addedNodes.forEach(function (node) {
+                if (node.nodeType !== 1) return;
+                if (node.tagName === 'TEXTAREA') { initTextarea(node); }
+                else { node.querySelectorAll && node.querySelectorAll('textarea').forEach(initTextarea); }
+            });
         });
+    });
+    function start() {
+        initTextareas();
+        observer.observe(document.body, { childList: true, subtree: true });
     }
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function () { initTextareas(); });
+        document.addEventListener('DOMContentLoaded', start);
     } else {
-        initTextareas();
+        start();
     }
-    // Expose for React tools that render after DOM ready
+    // Expose for manual calls if needed
     window.initTextareaAutoGrow = initTextareas;
 })();

@@ -183,37 +183,14 @@ var AIChallenge = (function () {
             });
     }
 
-    // Full final-submit flow with save
+    // Full final-submit flow — saves directly, no AI review gate at final submit
     function submitWithChallenge(userId, toolSlug, questionMappings, callbacks) {
-        var onRevise = callbacks.onRevise;
         var onSubmitAnyway = callbacks.onSubmitAnyway;
-        var onReviewStart = callbacks.onReviewStart;
         var onError = callbacks.onError;
 
-        if (onReviewStart) onReviewStart();
-
-        var attempt = getAttempt(toolSlug + ':final');
-        return review(userId, toolSlug, questionMappings, attempt)
+        return doSave(userId, questionMappings, { has_challenges: false }, onSubmitAnyway)
             .catch(function (err) {
-                console.warn('[AIChallenge] Review failed, proceeding to save:', err.message);
-                return { has_challenges: false, challenges: [], encouragement: '' };
-            })
-            .then(function (feedback) {
-                if (feedback.has_challenges && feedback.challenges.length > 0) {
-                    return showModal(feedback, { allowSkip: true }).then(function (action) {
-                        if (action === 'revise') {
-                            if (onRevise) onRevise();
-                            return { action: 'revised', feedback: feedback };
-                        }
-                        // Submit anyway
-                        return doSave(userId, questionMappings, feedback, onSubmitAnyway);
-                    });
-                }
-                // No challenges
-                return doSave(userId, questionMappings, feedback, onSubmitAnyway);
-            })
-            .catch(function (err) {
-                console.error('[AIChallenge] Error:', err);
+                console.error('[AIChallenge] Save error:', err);
                 if (onError) onError(err); else throw err;
             });
     }
