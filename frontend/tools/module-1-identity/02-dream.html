@@ -1198,7 +1198,7 @@
            ============================================================ */
         function Step2CompanyDream({ data, updateData }) {
             const questions = [
-                { id: 'achievement', label: 'What have you achieved?', placeholder: '\u20AC50M revenue | 500 employees | 40% market share', hint: 'The accomplishment you are most proud of' },
+                { id: 'achievement', label: 'What have you achieved?', placeholder: '€50M revenue | 500 employees | 40% market share', hint: 'The accomplishment you are most proud of' },
                 { id: 'customersSay', label: 'What do customers say about you?', placeholder: 'They solved a problem nobody else could solve', hint: 'The one quote from your best customer' },
                 { id: 'employeesSay', label: 'What do your employees say?', placeholder: "I'm learning more here than I ever could elsewhere", hint: 'Why your best people choose to stay' },
                 { id: 'marketPosition', label: 'What is your market position?', placeholder: 'The category-defining leader in sustainable retail', hint: "How you're known in your industry" },
@@ -1210,37 +1210,114 @@
                 { id: 'whoYouveBecome', label: 'Who is the person you have become along this journey?', placeholder: 'A confident, purpose-driven leader', hint: 'Your identity at the end of this journey' }
             ];
 
-            return (
-                <>
-                    <p className="step-indicator">STEP 2 OF 4 <span className="step-time">~5 MIN</span></p>
-                    <h1 className="step-heading">Company Dream</h1>
-                    <p className="step-hint">Imagine it is 5 years from today and answer the following questions:</p>
+            const [qIdx, setQIdx] = useState(() => {
+                // Start at the first unanswered question
+                const firstEmpty = questions.findIndex(q => !data.dreamAnswers[q.id] || data.dreamAnswers[q.id].trim() === '');
+                return firstEmpty === -1 ? questions.length - 1 : firstEmpty;
+            });
 
-                    {questions.map((q, idx) => {
-                        const currentValue = data.dreamAnswers[q.id];
-                        const analysis = analyzeText(currentValue, 10);
-                        return (
-                            <div key={q.id} className="ft-field-group">
-                                <label className="ft-label">
-                                    {q.label} <span className="ft-required">*</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    className="ft-input"
-                                    placeholder={q.placeholder}
-                                    value={currentValue}
-                                    onChange={(e) => updateData(`dreamAnswers.${q.id}`, e.target.value)}
+            const q = questions[qIdx];
+            const currentValue = data.dreamAnswers[q.id] || '';
+            const analysis = analyzeText(currentValue, 10);
+            const isLast = qIdx === questions.length - 1;
+            const answeredCount = questions.filter(q2 => data.dreamAnswers[q2.id] && data.dreamAnswers[q2.id].trim().length > 0).length;
+
+            const handleNext = () => {
+                if (qIdx < questions.length - 1) setQIdx(qIdx + 1);
+            };
+
+            const handleBack = () => {
+                if (qIdx > 0) setQIdx(qIdx - 1);
+            };
+
+            return (
+                <div style={{ minHeight: 400, display: 'flex', flexDirection: 'column' }}>
+                    {/* Header */}
+                    <p className="step-indicator">STEP 2 OF 4 <span className="step-time">~5 MIN</span></p>
+
+                    {/* Progress dots */}
+                    <div style={{ display: 'flex', gap: 6, marginBottom: 32 }}>
+                        {questions.map((q2, i) => {
+                            const answered = data.dreamAnswers[q2.id] && data.dreamAnswers[q2.id].trim().length > 0;
+                            return (
+                                <button
+                                    key={i}
+                                    onClick={() => setQIdx(i)}
+                                    title={q2.label}
+                                    style={{
+                                        width: 24,
+                                        height: 6,
+                                        border: 'none',
+                                        borderRadius: 3,
+                                        cursor: 'pointer',
+                                        background: i === qIdx ? '#000' : answered ? '#FFF469' : '#ddd',
+                                        transition: 'background 0.2s',
+                                        padding: 0
+                                    }}
                                 />
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
-                                    <p className="ft-help">{q.hint}</p>
-                                    {currentValue && (
-                                        <span style={{ fontSize: 13, fontWeight: 700, color: analysis.color }}>{analysis.label}</span>
-                                    )}
-                                </div>
-                            </div>
-                        );
-                    })}
-                </>
+                            );
+                        })}
+                        <span style={{ fontSize: 11, color: '#999', fontFamily: "'Monument', monospace", marginLeft: 8, alignSelf: 'center' }}>{answeredCount}/{questions.length}</span>
+                    </div>
+
+                    {/* Question number */}
+                    <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', background: '#000', display: 'inline-block', padding: '4px 10px', marginBottom: 20, letterSpacing: '0.1em' }}>
+                        QUESTION {qIdx + 1} OF {questions.length}
+                    </div>
+
+                    {/* Question */}
+                    <h1 style={{ fontFamily: "'Plaak', sans-serif", fontSize: 32, fontWeight: 700, lineHeight: 1.2, marginBottom: 8, textTransform: 'uppercase' }}>
+                        {q.label}
+                    </h1>
+                    <p style={{ color: '#888', fontSize: 14, marginBottom: 28, fontStyle: 'italic' }}>{q.hint}</p>
+
+                    {/* Input */}
+                    <input
+                        key={q.id}
+                        type="text"
+                        className="ft-input"
+                        placeholder={q.placeholder}
+                        value={currentValue}
+                        autoFocus
+                        onChange={(e) => updateData(`dreamAnswers.${q.id}`, e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && currentValue.trim()) handleNext();
+                        }}
+                        style={{ fontSize: 18, padding: '16px 18px' }}
+                    />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, marginBottom: 32 }}>
+                        <p className="ft-help">{currentValue && <span style={{ fontWeight: 700, color: analysis.color }}>{analysis.label}</span>}</p>
+                        <p style={{ fontSize: 12, color: '#aaa' }}>Press Enter to continue</p>
+                    </div>
+
+                    {/* Question navigation */}
+                    <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+                        {qIdx > 0 && (
+                            <button onClick={handleBack} className="btn-back" style={{ flex: 'none', padding: '10px 20px' }}>
+                                ←
+                            </button>
+                        )}
+                        <button
+                            onClick={handleNext}
+                            disabled={!currentValue.trim() || isLast}
+                            style={{
+                                flex: 1,
+                                background: currentValue.trim() && !isLast ? '#000' : '#e0e0e0',
+                                color: currentValue.trim() && !isLast ? '#fff' : '#999',
+                                border: 'none',
+                                padding: '12px 24px',
+                                fontSize: 13,
+                                fontFamily: "'Monument', monospace",
+                                letterSpacing: '0.08em',
+                                textTransform: 'uppercase',
+                                cursor: currentValue.trim() && !isLast ? 'pointer' : 'default',
+                                transition: 'all 0.2s'
+                            }}
+                        >
+                            {isLast ? (answeredCount === questions.length ? '✓ All Questions Answered — Click NEXT →' : 'Last Question') : 'Next Question →'}
+                        </button>
+                    </div>
+                </div>
             );
         }
 

@@ -844,6 +844,20 @@
             const upBS = (k, v) => setBS(prev => ({ ...prev, [k]: v }));
             const upWC = (k, v) => setWC(prev => ({ ...prev, [k]: v }));
 
+            // Auto-calculate Days in A/R from Balance Sheet and P&L
+            const autoDaysAR = React.useMemo(() => {
+                const ar = parseFloat(bs.ar);
+                const rev = parseFloat(pl.revenue);
+                if (ar > 0 && rev > 0) return Math.round((ar / rev) * 365);
+                return '';
+            }, [bs.ar, pl.revenue]);
+
+            React.useEffect(() => {
+                if (autoDaysAR !== '') {
+                    setWC(prev => ({ ...prev, daysAR: String(autoDaysAR) }));
+                }
+            }, [autoDaysAR]);
+
             const toggleSection = (section) => {
                 setOpenSection(openSection === section ? null : section);
             };
@@ -951,7 +965,14 @@
                     {openSection === 'wc' && (
                         <div style={accordionBodyStyle}>
                             <div className="two-col" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
-                                <NumField label="Days in A/R" value={wc.daysAR} onChange={v => upWC('daysAR', v)} placeholder="70" help="Days to collect from customers" />
+                                <div className="field-group">
+                                    <label className="field-label">Days in A/R <span style={{ background: '#FFF469', color: '#000', fontSize: 9, padding: '2px 5px', fontFamily: "'Monument', monospace", letterSpacing: '0.06em', marginLeft: 6 }}>AUTO</span></label>
+                                    <div style={{ padding: '10px 12px', background: '#f3f3f3', border: '1px solid #e0e0e0', fontSize: 18, fontWeight: 700, fontFamily: "'Monument', monospace" }}>
+                                        {autoDaysAR !== '' ? autoDaysAR : '—'}
+                                        {autoDaysAR !== '' && <span style={{ fontSize: 11, color: '#888', fontWeight: 400, marginLeft: 10 }}>= (AR / Revenue) × 365</span>}
+                                    </div>
+                                    {autoDaysAR === '' && <div style={{ fontSize: 11, color: '#999', marginTop: 4 }}>Enter Revenue (P&L) and Accounts Receivable (Balance Sheet) to auto-calculate</div>}
+                                </div>
                                 <NumField label="Days in A/P" value={wc.daysAP} onChange={v => upWC('daysAP', v)} placeholder="60" help="Days to pay suppliers" />
                                 <NumField label={labels.daysInv} value={wc.daysInv} onChange={v => upWC('daysInv', v)} placeholder="154" help="Days of stock on hand" />
                             </div>
