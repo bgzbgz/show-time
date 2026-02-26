@@ -584,6 +584,7 @@
       const [deps, setDeps] = useState([]);
       const [step, setStep] = useState(0);
       const [aiReviewing, setAiReviewing] = useState(false);
+      const [aiMessage, setAiMessage] = useState('');
 
       const [data, setData] = useState({
         // User details
@@ -815,10 +816,14 @@
           try {
               const canProceed = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, stepName);
               if (canProceed) {
+                  setAiMessage('');
                   setStep(nextStepValue);
+              } else {
+                  setAiMessage(window.AIChallenge?.getLastFeedback?.()?.suggestion || 'Please expand your answer before continuing.');
               }
           } catch (err) {
               console.warn('[AIChallenge] Error, allowing passage:', err);
+              setAiMessage('');
               setStep(nextStepValue);
           } finally {
               setAiReviewing(false);
@@ -988,6 +993,7 @@
                     {step === 5 && <Step5Page data={data} updateData={updateData} updateValidation={updateValidation} />}
                   </div>
 
+                  {aiMessage && <div style={{color:'#dc2626',fontSize:'13px',marginTop:'8px',padding:'8px 12px',background:'#fef2f2',borderRadius:'6px'}}>{aiMessage}</div>}
                   <ButtonFooter
                     onBack={() => setStep(step === 1 ? 0 : step - 1)}
                     onNext={() => {
