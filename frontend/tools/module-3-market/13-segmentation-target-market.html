@@ -240,7 +240,7 @@
     /* Wizard Layout */
     .wizard-layout { display: flex; min-height: 100vh; }
     .wizard-main { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
-    .wizard-content { flex: 1; padding: 48px 64px; max-width: 860px; }
+    .wizard-content { flex: 1; padding: 48px 32px; max-width: 720px; width: 100%; margin: 0 auto; }
     .wizard-footer { padding: 24px 64px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; background: #fff; }
     .wizard-sidebar { width: 280px; background: #1a1a1a; min-height: 100vh; padding: 48px 32px; display: flex; flex-direction: column; position: sticky; top: 0; align-self: flex-start; height: 100vh; overflow-y: auto; }
     .btn-wiz-back { background: transparent; border: 2px solid #d1d5db; color: #6b7280; padding: 14px 28px; font-family: 'Monument', monospace; font-size: 12px; letter-spacing: 0.06em; cursor: pointer; transition: all 0.2s; }
@@ -704,8 +704,8 @@
                 <DependencyContext deps={deps} />
                 {step === 1 && <Step1Page data={data} updateData={updateData} addSegment={addSegment} removeSegment={removeSegment} updateSegment={updateSegment} />}
                 {step === 2 && <Step2Page data={data} updateData={updateData} addSegmentSize={addSegmentSize} removeSegmentSize={removeSegmentSize} updateSegmentSize={updateSegmentSize} />}
-                {step === 3 && <Step3Page data={data} updateData={updateData} addAttractiveness={addAttractiveness} removeAttractiveness={removeAttractiveness} updateAttractiveness={updateAttractiveness} />}
-                {step === 4 && <Step4Page data={data} updateData={updateData} addMarketShareGoal={addMarketShareGoal} removeMarketShareGoal={removeMarketShareGoal} updateMarketShareGoal={updateMarketShareGoal} />}
+                {step === 3 && <Step3Page data={data} updateData={updateData} addAttractiveness={addAttractiveness} removeAttractiveness={removeAttractiveness} updateAttractiveness={updateAttractiveness} openAttractivenessIdx={openAttractivenessIdx} setOpenAttractivenessIdx={setOpenAttractivenessIdx} />}
+                {step === 4 && <Step4Page data={data} updateData={updateData} addMarketShareGoal={addMarketShareGoal} removeMarketShareGoal={removeMarketShareGoal} updateMarketShareGoal={updateMarketShareGoal} openGoalIdx={openGoalIdx} setOpenGoalIdx={setOpenGoalIdx} />}
               </div>
               {aiMessage && <div style={{color:'#dc2626',fontSize:'13px',marginTop:'8px',padding:'8px 12px',background:'#fef2f2',borderRadius:'6px'}}>{aiMessage}</div>}
               <div className="wizard-footer">
@@ -974,7 +974,7 @@
                     Each segment must be mutually exclusive (no overlap) and collectively exhaustive (covers entire market).
                   </p>
 
-                  {data.segments.map((segment, index) => (
+                  {(data.segments || []).map((segment, index) => (
                     <div key={index} className="bg-gray-50 p-6 mb-4 border-2 border-gray-200">
                       <div className="flex justify-between items-start mb-4">
                         <span className="monument text-xs">SEGMENT {index + 1}</span>
@@ -1084,7 +1084,7 @@
                   <p className="text-base">Total Segment Value = Accessible Market (# customers) × Average Revenue per Customer</p>
                 </div>
 
-                {data.segmentSizes.map((size, index) => (
+                {(data.segmentSizes || []).map((size, index) => (
                   <div key={index} className="border-2 border-black p-6 mb-4">
                     <div className="flex justify-between items-start mb-4">
                       <span className="monument text-xs">SEGMENT {index + 1}</span>
@@ -1173,7 +1173,7 @@
     }
 
     // Step 3: Attractiveness Index
-    function Step3Page({ data, updateData, addAttractiveness, removeAttractiveness, updateAttractiveness }) {
+    function Step3Page({ data, updateData, addAttractiveness, removeAttractiveness, updateAttractiveness, openAttractivenessIdx, setOpenAttractivenessIdx }) {
       return (
         <div>
             <div className="animate-in">
@@ -1253,7 +1253,7 @@
                   <p className="text-base">Rate each criterion 1-10 (10 = most attractive). Total score auto-calculates using your weights above.</p>
                 </div>
 
-                {data.attractivenessCriteria.map((criteria, index) => (
+                {(data.attractivenessCriteria || []).map((criteria, index) => (
                   <div key={index} style={{ marginBottom: 8 }}>
                     <button
                       onClick={() => setOpenAttractivenessIdx(openAttractivenessIdx === index ? null : index)}
@@ -1368,7 +1368,7 @@
     }
 
     // Step 4: Target Market & Goals
-    function Step4Page({ data, updateData, addMarketShareGoal, removeMarketShareGoal, updateMarketShareGoal }) {
+    function Step4Page({ data, updateData, addMarketShareGoal, removeMarketShareGoal, updateMarketShareGoal, openGoalIdx, setOpenGoalIdx }) {
       return (
         <div>
             <div className="animate-in">
@@ -1414,7 +1414,7 @@
                 <div>
                   <h4 className="riforma-bold text-2xl mb-4">Market Share Goals</h4>
 
-                  {data.marketShareGoals.map((goal, index) => (
+                  {(data.marketShareGoals || []).map((goal, index) => (
                     <div key={index} style={{ marginBottom: 8 }}>
                       <button
                         onClick={() => setOpenGoalIdx(openGoalIdx === index ? null : index)}
@@ -1536,7 +1536,7 @@
     // Canvas Page Component
     function CanvasPage({ data, onBack, onExport, onSubmit }) {
       // Sort segments by attractiveness score
-      const rankedSegments = [...data.attractivenessCriteria].sort((a, b) =>
+      const rankedSegments = [...(data.attractivenessCriteria || [])].sort((a, b) =>
         parseFloat(b.total || 0) - parseFloat(a.total || 0)
       );
 
@@ -1574,7 +1574,7 @@
                   <p className="monument text-xs mb-2">OBSERVED BEHAVIORS:</p>
                   <p className="text-base">{data.customerBehaviors}</p>
                 </div>
-                {data.segments.map((segment, index) => (
+                {(data.segments || []).map((segment, index) => (
                   <div key={index} className="mb-4 p-4 bg-gray-50 border-l-4 border-black">
                     <h3 className="riforma-bold text-xl mb-2">{segment.name}</h3>
                     <p className="text-base mb-2">{segment.description}</p>
@@ -1599,7 +1599,7 @@
                     </tr>
                   </thead>
                   <tbody>
-                    {data.segmentSizes.map((size, index) => (
+                    {(data.segmentSizes || []).map((size, index) => (
                       <tr key={index} className="border-b">
                         <td className="p-3 riforma-bold">{size.segment}</td>
                         <td className="text-right p-3">{size.totalMarket ? parseInt(size.totalMarket).toLocaleString() : '-'}</td>
@@ -1653,7 +1653,7 @@
 
                 <div className="mb-6">
                   <h3 className="riforma-bold text-xl mb-3">Market Share Goals:</h3>
-                  {data.marketShareGoals.map((goal, index) => (
+                  {(data.marketShareGoals || []).map((goal, index) => (
                     <div key={index} className="mb-4 p-4 bg-gray-50 border-2 border-black">
                       <div className="flex justify-between items-start mb-2">
                         <h4 className="riforma-bold text-lg">{goal.segment}</h4>
