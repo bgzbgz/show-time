@@ -545,6 +545,107 @@
         }));
       };
 
+      // Auto-populate Step 2 segmentSizes from Step 1 segments when advancing to step 2
+      useEffect(() => {
+        if (step === 2 && data.segments && data.segments.length > 0) {
+          const existingNames = (data.segmentSizes || []).map(s => s.segment);
+          const step1Names = data.segments.map(s => s.name).filter(n => n.length >= 3);
+          // Only rebuild if the segment list has changed (different count or different names)
+          const needsRebuild = step1Names.length !== data.segmentSizes.length ||
+            step1Names.some((name, i) => existingNames[i] !== name);
+          if (needsRebuild && step1Names.length > 0) {
+            setData(prev => ({
+              ...prev,
+              segmentSizes: step1Names.map((name, i) => {
+                const existing = (prev.segmentSizes || [])[i];
+                return {
+                  segment: name,
+                  totalMarket: existing ? existing.totalMarket : '',
+                  accessibleMarket: existing ? existing.accessibleMarket : '',
+                  avgRevenue: existing ? existing.avgRevenue : '',
+                  totalValue: existing ? existing.totalValue : ''
+                };
+              })
+            }));
+          }
+        }
+      }, [step]);
+
+      // Auto-populate Step 3 attractivenessCriteria from Step 1 segments when advancing to step 3
+      useEffect(() => {
+        if (step === 3 && data.segments && data.segments.length > 0) {
+          const step1Names = data.segments.map(s => s.name).filter(n => n.length >= 3);
+          const existingNames = (data.attractivenessCriteria || []).map(a => a.segment);
+          const needsRebuild = step1Names.length !== data.attractivenessCriteria.length ||
+            step1Names.some((name, i) => existingNames[i] !== name);
+          if (needsRebuild && step1Names.length > 0) {
+            setData(prev => ({
+              ...prev,
+              attractivenessCriteria: step1Names.map((name, i) => {
+                const existing = (prev.attractivenessCriteria || [])[i];
+                return {
+                  segment: name,
+                  size: existing ? existing.size : '',
+                  growth: existing ? existing.growth : '',
+                  profitability: existing ? existing.profitability : '',
+                  fit: existing ? existing.fit : '',
+                  total: existing ? existing.total : ''
+                };
+              })
+            }));
+          }
+        }
+      }, [step]);
+
+      // Auto-populate Step 4 marketShareGoals from top-ranked Step 3 segments and pre-fill targetSegments
+      useEffect(() => {
+        if (step === 4 && data.attractivenessCriteria && data.attractivenessCriteria.length > 0) {
+          const ranked = [...data.attractivenessCriteria]
+            .filter(a => a.segment && a.segment.length >= 3)
+            .sort((a, b) => parseFloat(b.total || 0) - parseFloat(a.total || 0));
+          if (ranked.length === 0) return;
+
+          // Rebuild marketShareGoals if segment names differ
+          const topSegments = ranked.slice(0, Math.min(3, ranked.length));
+          const existingGoalNames = (data.marketShareGoals || []).map(g => g.segment);
+          const topNames = topSegments.map(s => s.segment);
+          const needsRebuild = topNames.length !== data.marketShareGoals.length ||
+            topNames.some((name, i) => existingGoalNames[i] !== name);
+          if (needsRebuild) {
+            setData(prev => ({
+              ...prev,
+              marketShareGoals: topSegments.map((seg, i) => {
+                const existing = (prev.marketShareGoals || [])[i];
+                // Find size data from step 2
+                const sizeEntry = (prev.segmentSizes || []).find(s => s.segment === seg.segment);
+                return {
+                  segment: seg.segment,
+                  currentShare: existing ? existing.currentShare : '',
+                  targetShare: existing ? existing.targetShare : '',
+                  timeline: existing ? existing.timeline : '',
+                  strategy: existing ? existing.strategy : '',
+                  // carry forward accessible market as context (stored but not shown as input)
+                  accessibleMarket: sizeEntry ? sizeEntry.accessibleMarket : '',
+                  totalValue: sizeEntry ? sizeEntry.totalValue : ''
+                };
+              })
+            }));
+          }
+
+          // Pre-fill targetSegments if empty
+          if (!data.targetSegments || data.targetSegments.length < 5) {
+            const suggestions = topSegments.map((seg, i) => {
+              const sizeEntry = (data.segmentSizes || []).find(s => s.segment === seg.segment);
+              const valueStr = sizeEntry && sizeEntry.totalValue
+                ? ` (total value: $${parseInt(sizeEntry.totalValue).toLocaleString()})`
+                : '';
+              return `${i + 1}. ${seg.segment} — attractiveness score: ${seg.total}${valueStr}`;
+            }).join('\n');
+            setData(prev => ({ ...prev, targetSegments: suggestions }));
+          }
+        }
+      }, [step]);
+
       const doTransition = (nextStep) => {
         setStep(step + 0.5);
       };
@@ -613,19 +714,19 @@
 
       const canProceedFromStep2 = () => {
         return data.segmentSizes.every(s =>
-          s.segment.length >= 3 && s.totalMarket.length > 0 && s.accessibleMarket.length > 0
+          s.totalMarket.length > 0 && s.accessibleMarket.length > 0
         );
       };
 
       const canProceedFromStep3 = () => {
         return data.attractivenessCriteria.every(a =>
-          a.segment.length >= 3 && a.size.length > 0 && a.growth.length > 0
+          a.size.length > 0 && a.growth.length > 0
         );
       };
 
       const canProceedFromStep4 = () => {
         return data.targetSegments.length >= 30 &&
-               data.marketShareGoals.every(g => g.segment.length >= 3 && g.targetShare.length > 0) &&
+               data.marketShareGoals.every(g => g.targetShare.length > 0) &&
                data.endGame.length >= 50;
       };
 
@@ -1100,14 +1201,10 @@
 
                     <div className="space-y-4">
                       <div>
-                        <label className="monument text-xs block mb-2">SEGMENT NAME <span className="text-red-500">*</span></label>
-                        <input
-                          type="text"
-                          value={size.segment}
-                          onChange={(e) => updateSegmentSize(index, 'segment', e.target.value)}
-                          placeholder="Price-Conscious Comparers"
-                          className="w-full text-base"
-                        />
+                        <label className="monument text-xs block mb-2">SEGMENT NAME</label>
+                        <div style={{ padding: '12px 16px', background: '#f3f4f6', border: '1px solid #e0e0e0', fontSize: 18, fontFamily: "'Riforma', sans-serif", color: '#111' }}>
+                          {size.segment}
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
@@ -1283,15 +1380,23 @@
 
                         <div className="space-y-4">
                           <div>
-                            <label className="monument text-xs block mb-2">SEGMENT NAME <span className="text-red-500">*</span></label>
-                            <input
-                              type="text"
-                              value={criteria.segment}
-                              onChange={(e) => updateAttractiveness(index, 'segment', e.target.value)}
-                              placeholder="Price-Conscious Comparers"
-                              className="w-full text-base"
-                            />
+                            <label className="monument text-xs block mb-2">SEGMENT NAME</label>
+                            <div style={{ padding: '12px 16px', background: '#f3f4f6', border: '1px solid #e0e0e0', fontSize: 18, fontFamily: "'Riforma', sans-serif", color: '#111' }}>
+                              {criteria.segment}
+                            </div>
                           </div>
+
+                          {(() => {
+                            const sizeEntry = (data.segmentSizes || []).find(s => s.segment === criteria.segment);
+                            if (!sizeEntry) return null;
+                            return (
+                              <div style={{ background: '#fafafa', border: '1px solid #e5e7eb', borderLeft: '3px solid #d1d5db', padding: '10px 14px', fontSize: 13, display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+                                <div><span style={{ fontFamily: "'Monument', monospace", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#6b7280' }}>ACCESSIBLE MARKET</span><br /><strong>{sizeEntry.accessibleMarket ? parseInt(sizeEntry.accessibleMarket).toLocaleString() : '—'} customers</strong></div>
+                                <div><span style={{ fontFamily: "'Monument', monospace", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#6b7280' }}>TOTAL VALUE</span><br /><strong>{sizeEntry.totalValue ? '$' + parseInt(sizeEntry.totalValue).toLocaleString() : '—'}</strong></div>
+                                <div><span style={{ fontFamily: "'Monument', monospace", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#6b7280' }}>AVG REVENUE / CUSTOMER</span><br /><strong>{sizeEntry.avgRevenue ? '$' + parseInt(sizeEntry.avgRevenue).toLocaleString() : '—'}</strong></div>
+                              </div>
+                            );
+                          })()}
 
                           <div className="grid grid-cols-5 gap-4">
                             <div>
@@ -1444,15 +1549,25 @@
 
                           <div className="space-y-4">
                             <div>
-                              <label className="monument text-xs block mb-2">SEGMENT NAME <span className="text-red-500">*</span></label>
-                              <input
-                                type="text"
-                                value={goal.segment}
-                                onChange={(e) => updateMarketShareGoal(index, 'segment', e.target.value)}
-                                placeholder="Price-Conscious Comparers"
-                                className="w-full text-base"
-                              />
+                              <label className="monument text-xs block mb-2">SEGMENT NAME</label>
+                              <div style={{ padding: '12px 16px', background: '#f3f4f6', border: '1px solid #e0e0e0', fontSize: 18, fontFamily: "'Riforma', sans-serif", color: '#111' }}>
+                                {goal.segment}
+                              </div>
                             </div>
+
+                            {(() => {
+                              const sizeEntry = (data.segmentSizes || []).find(s => s.segment === goal.segment);
+                              const attrEntry = (data.attractivenessCriteria || []).find(a => a.segment === goal.segment);
+                              const hasData = (sizeEntry && (sizeEntry.accessibleMarket || sizeEntry.totalValue)) || (attrEntry && attrEntry.total);
+                              if (!hasData) return null;
+                              return (
+                                <div style={{ background: '#fafafa', border: '1px solid #e5e7eb', borderLeft: '3px solid #d1d5db', padding: '10px 14px', fontSize: 13, display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+                                  {sizeEntry && sizeEntry.accessibleMarket && <div><span style={{ fontFamily: "'Monument', monospace", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#6b7280' }}>ACCESSIBLE MARKET</span><br /><strong>{parseInt(sizeEntry.accessibleMarket).toLocaleString()} customers</strong></div>}
+                                  {sizeEntry && sizeEntry.totalValue && <div><span style={{ fontFamily: "'Monument', monospace", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#6b7280' }}>TOTAL VALUE</span><br /><strong>${parseInt(sizeEntry.totalValue).toLocaleString()}</strong></div>}
+                                  {attrEntry && attrEntry.total && <div><span style={{ fontFamily: "'Monument', monospace", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#6b7280' }}>ATTRACTIVENESS SCORE</span><br /><strong>{attrEntry.total} / 10</strong></div>}
+                                </div>
+                              );
+                            })()}
 
                             <div className="grid grid-cols-3 gap-4">
                               <div>
