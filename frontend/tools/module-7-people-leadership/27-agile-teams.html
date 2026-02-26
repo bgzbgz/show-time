@@ -565,6 +565,18 @@
     #canvas-content { background: #fff !important; color: #000 !important; }
     #canvas-content input, #canvas-content textarea { background: #fff !important; color: #000 !important; }
 
+    /* Wizard Layout */
+    .wizard-layout { display: flex; min-height: 100vh; }
+    .wizard-main { flex: 1; overflow-y: auto; }
+    .wizard-content { padding: 48px 64px; max-width: 860px; }
+    .wizard-footer { display: flex; justify-content: space-between; align-items: center; padding: 24px 64px; border-top: 2px solid #e5e7eb; background: #fff; position: sticky; bottom: 0; }
+    .btn-wiz-back { font-family: 'Monument', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; background: transparent; border: 2px solid #000; padding: 14px 28px; cursor: pointer; }
+    .btn-wiz-back:hover { background: #f5f5f5; }
+    .btn-wiz-next { font-family: 'Monument', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; background: #000; color: #fff; border: 2px solid #000; padding: 14px 28px; cursor: pointer; }
+    .btn-wiz-next:hover:not(:disabled) { background: #333; }
+    .btn-wiz-next:disabled { opacity: 0.4; cursor: not-allowed; }
+    .wizard-sidebar { width: 280px; min-width: 280px; background: #1a1a1a; color: #fff; padding: 48px 32px; position: sticky; top: 0; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; }
+
   </style>
 </head>
 <body>
@@ -637,11 +649,48 @@
             );
         }
 
+    function WizardSidebar({ currentStep, stepLabels, totalSteps }) {
+      return (
+        <div className="wizard-sidebar">
+          <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, letterSpacing: '0.12em', color: '#888', textTransform: 'uppercase', marginBottom: 32 }}>
+            SPRINT 27 / AGILE TEAMS
+          </div>
+          <div style={{ flex: 1 }}>
+            {stepLabels.map((label, i) => {
+              const stepNum = i + 1;
+              const isDone = currentStep > stepNum;
+              const isActive = Math.floor(currentStep) === stepNum;
+              return (
+                <div key={stepNum} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+                  <div style={{
+                    width: 28, height: 28, borderRadius: '50%', border: `2px solid ${isDone ? '#FFF469' : isActive ? '#fff' : '#444'}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                    background: isDone ? '#FFF469' : 'transparent', color: isDone ? '#000' : isActive ? '#fff' : '#444',
+                    fontSize: 13, fontWeight: 'bold'
+                  }}>
+                    {isDone ? '✓' : stepNum}
+                  </div>
+                  <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', color: isDone ? '#FFF469' : isActive ? '#fff' : '#555' }}>
+                    {label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#444', letterSpacing: '0.06em' }}>
+            STEP {Math.floor(currentStep)} OF {totalSteps}
+          </div>
+        </div>
+      );
+    }
+
     // Main App Component
     function AgileTeamsApp() {
             const [deps, setDeps] = useState([]);
       const [step, setStep] = useState(0);
       const totalSteps = 3;
+
+      const [showHelp, setShowHelp] = useState(false);
 
       const [data, setData] = useState({
         items: [
@@ -959,6 +1008,17 @@
         }
       };
 
+      // Wizard Navigation
+      const goNext = () => {
+        if (step === 1) { setStep(1.5); }
+        else if (step === 2) { initializeCharters(); setStep(2.5); }
+        else if (step === 3) { setStep(3.5); }
+      };
+      const goBack = () => {
+        if (step === 1) { setStep(0.5); }
+        else if (step >= 2) { setStep(step - 1); }
+      };
+
       // Render Functions
       const renderCoverPage = () => (
         <div className="relative min-h-screen flex items-center justify-center bg-black">
@@ -1084,13 +1144,8 @@
         const items = data.items || [];
 
         return (
-          <div className="min-h-screen bg-black text-white p-8 animate-in">
-            <div className="max-w-4xl mx-auto">
-              <ProgressIndicator currentStep={1} />
-              <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
-                STEP 1 OF 4
-              </div>
-              <div className="numbered-section mb-8">01</div>
+          <div>
+            <div className="numbered-section mb-8">01</div>
 
               {/* Fast Track Insight */}
 
@@ -1196,20 +1251,6 @@
                 <strong>Validation:</strong> You need at least 8 items, each with 100+ characters and type selected.
                 <p className="mt-2">Valid items: {items.filter(i => (i.description || '').length >= 100 && i.type).length} / 8</p>
               </div>
-
-              <div className="flex gap-4 mt-12">
-                <button onClick={() => setStep(0.5)} className="btn-secondary">
-                  Back
-                </button>
-                <button
-                  onClick={() => setStep(1.5)}
-                  className="btn-primary"
-                  disabled={!isStep1Valid()}
-                >
-                  Continue to Prioritization
-                </button>
-              </div>
-            </div>
           </div>
         );
       };
@@ -1226,13 +1267,8 @@
         const mediumImpactEasy = items.filter(i => i.impact === 2 && i.ease === 3);
 
         return (
-          <div className="min-h-screen bg-black text-white p-8 animate-in">
-            <div className="max-w-5xl mx-auto">
-              <ProgressIndicator currentStep={2} />
-              <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
-                STEP 2 OF 4
-              </div>
-              <div className="numbered-section mb-8">02</div>
+          <div>
+            <div className="numbered-section mb-8">02</div>
 
               {/* Fast Track Insight */}
 
@@ -1400,23 +1436,6 @@
                 <p className="mt-2"><strong>Impact:</strong> Consider business value, customer impact, revenue potential, strategic importance</p>
                 <p className="mt-2"><strong>Ease:</strong> Consider time needed, cost, resources available, technical complexity</p>
               </div>
-
-              <div className="flex gap-4 mt-12">
-                <button onClick={() => setStep(1)} className="btn-secondary">
-                  Back
-                </button>
-                <button
-                  onClick={() => {
-                    initializeCharters();
-                    setStep(2.5);
-                  }}
-                  className="btn-primary"
-                  disabled={!isStep2Valid()}
-                >
-                  Create Team Charters
-                </button>
-              </div>
-            </div>
           </div>
         );
       };
@@ -1431,13 +1450,8 @@
         const charter = charters[activeCharterIndex];
 
         return (
-          <div className="min-h-screen bg-black text-white p-8 animate-in">
-            <div className="max-w-5xl mx-auto">
-              <ProgressIndicator currentStep={3} />
-              <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
-                STEP 3 OF 4
-              </div>
-              <div className="numbered-section mb-8">03</div>
+          <div>
+            <div className="numbered-section mb-8">03</div>
 
               {/* Fast Track Insight */}
 
@@ -1834,19 +1848,6 @@
                 </ul>
               </div>
 
-              <div className="flex gap-4 mt-12">
-                <button onClick={() => setStep(2)} className="btn-secondary">
-                  Back to Matrix
-                </button>
-                <button
-                  onClick={() => setStep(3.5)}
-                  className="btn-primary"
-                  disabled={!isStep3Valid()}
-                >
-                  View Canvas
-                </button>
-              </div>
-            </div>
           </div>
         );
       };
@@ -2186,14 +2187,29 @@
           {step === 0 && renderCoverPage()}
           {step === 0.5 && renderIntroduction()}
           {renderTransitionScreen(step, CONFIG, totalSteps, setStep)}
-          {step === 1 && <><DependencyContext deps={deps} />{renderStep1()}</>}
-          {step === 2 && renderStep2()}
-          {step === 3 && renderStep3()}
+          {step >= 1 && step <= 3 && (() => {
+            const stepLabels = ['Agile Map & Velocity', 'Prioritization Matrix', 'Team Charters'];
+            const nextLabels = { 1: 'NEXT: PRIORITIZATION →', 2: 'NEXT: TEAM CHARTERS →', 3: 'VIEW CANVAS →' };
+            return (
+              <div className="wizard-layout">
+                <div className="wizard-main">
+                  <div className="wizard-content animate-in">
+                    {step === 1 && <><DependencyContext deps={deps} />{renderStep1()}</>}
+                    {step === 2 && renderStep2()}
+                    {step === 3 && renderStep3()}
+                  </div>
+                  <div className="wizard-footer">
+                    <button className="btn-wiz-back" onClick={goBack}>← BACK</button>
+                    <button className="btn-wiz-next" disabled={!canProceed()} onClick={goNext}>
+                      {nextLabels[step] || 'NEXT →'}
+                    </button>
+                  </div>
+                </div>
+                <WizardSidebar currentStep={step} stepLabels={stepLabels} totalSteps={3} />
+              </div>
+            );
+          })()}
           {step === 4 && renderStep4()}
-
-          {step >= 1 && step <= 3 && (
-            
-          )}
 
           {showHelp && renderHelpModal()}
         </div>

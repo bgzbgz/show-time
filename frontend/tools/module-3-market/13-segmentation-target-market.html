@@ -263,6 +263,18 @@
     .char-counter.invalid {
       color: #EF4444;
     }
+
+    /* Wizard Layout */
+    .wizard-layout { display: flex; min-height: 100vh; }
+    .wizard-main { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+    .wizard-content { flex: 1; padding: 48px 64px; max-width: 860px; }
+    .wizard-footer { padding: 24px 64px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; background: #fff; }
+    .wizard-sidebar { width: 280px; background: #1a1a1a; min-height: 100vh; padding: 48px 32px; display: flex; flex-direction: column; position: sticky; top: 0; align-self: flex-start; height: 100vh; overflow-y: auto; }
+    .btn-wiz-back { background: transparent; border: 2px solid #d1d5db; color: #6b7280; padding: 14px 28px; font-family: 'Monument', monospace; font-size: 12px; letter-spacing: 0.06em; cursor: pointer; transition: all 0.2s; }
+    .btn-wiz-back:hover { border-color: #000; color: #000; }
+    .btn-wiz-next { background: #000; color: #fff; border: 2px solid #000; padding: 14px 32px; font-family: 'Monument', monospace; font-size: 12px; letter-spacing: 0.06em; cursor: pointer; transition: all 0.2s; }
+    .btn-wiz-next:hover:not(:disabled) { background: #222; }
+    .btn-wiz-next:disabled { background: #e5e7eb; border-color: #e5e7eb; color: #9ca3af; cursor: not-allowed; }
   </style>
 </head>
 <body>
@@ -289,12 +301,17 @@
         3: {
           brutalTruth: 'Attractiveness scoring is not an academic exercise. It is the decision framework that tells you where to concentrate resources. The company that tries to win every segment wins none of them.',
           peerProof: '"A €20M distribution company scored 8 potential segments on 5 criteria. Two clear winners emerged — segments they had been treating as secondary. Refocusing sales effort on those two increased revenue 28% without adding headcount."'
+        },
+        4: {
+          brutalTruth: 'A target market without a market share goal is a wish. A goal without a timeline is a fantasy. The companies that win are the ones who commit to specific numbers and hold themselves accountable to them.',
+          peerProof: '"A €8M B2B software company set a concrete goal: 15% market share in a 200-company segment within 24 months. Breaking it to monthly new-customer targets made the goal feel real. They hit 18% in 20 months because every weekly standup started with the number."'
         }
       },
       CLOSING_MESSAGES: {
         1: { title: 'SEGMENTS MAPPED', text: 'Your market segments are defined. Next: score them against what matters most to your growth.' },
         2: { title: 'CRITERIA SET', text: 'Your scoring framework is built. Next: rank each segment to find your highest-value focus area.' },
-        3: { title: 'TARGET LOCKED', text: 'Your primary segment is chosen. This is where your energy goes. Everything else is optional.' }
+        3: { title: 'TARGET LOCKED', text: 'Your primary segment is chosen. This is where your energy goes. Everything else is optional.' },
+        4: { title: 'STRATEGY COMPLETE', text: 'Your target market is defined with concrete goals. This is your growth north star.' }
       }
     };
 
@@ -333,9 +350,6 @@
     function SegmentationApp() {
       const [deps, setDeps] = useState([]);
       const [step, setStep] = useState(0); // 0=cover, 0.5=intro, 1-4=steps, 5=canvas
-      const [showTransition, setShowTransition] = useState(false);
-      const [transitionMessage, setTransitionMessage] = useState('');
-      const [transitionProgress, setTransitionProgress] = useState(0);
       const [aiReviewing, setAiReviewing] = useState(false);
       const [openAttractivenessIdx, setOpenAttractivenessIdx] = useState(0);
       const [openGoalIdx, setOpenGoalIdx] = useState(0);
@@ -551,12 +565,7 @@
       };
 
       const doTransition = (nextStep) => {
-        if (step >= 1 && step <= 3) {
-          // Use renderTransitionScreen for steps 1-3 with TRANSITION_CONTENT
-          setStep(step + 0.5);
-        } else {
-          setStep(nextStep);
-        }
+        setStep(step + 0.5);
       };
 
       const goNext = async () => {
@@ -688,20 +697,7 @@
       };
 
       // Render different pages based on step
-      if (showTransition) {
-        return <TransitionScreen message={transitionMessage} progress={transitionProgress} />;
-      }
-
-      // Transition screens for steps 1-3
-      if (step === 1.5) {
-        return window.renderTransitionScreen(step, CONFIG, 4, setStep);
-      }
-
-      if (step === 2.5) {
-        return window.renderTransitionScreen(step, CONFIG, 4, setStep);
-      }
-
-      if (step === 3.5) {
+      if ([1.5, 2.5, 3.5, 4.5].includes(step)) {
         return window.renderTransitionScreen(step, CONFIG, 4, setStep);
       }
 
@@ -713,80 +709,31 @@
         return <IntroPage data={data} updateData={updateData} onNext={goNext} canProceed={canProceedFromIntro()} />;
       }
 
-      if (step === 1) {
+      // Steps 1-4: Wizard layout
+      if (step >= 1 && step <= 4) {
+        const stepLabels = ['Define Segments', 'Quantify Segments', 'Rank Segments', 'Target Market'];
+        const isValid = step === 1 ? canProceedFromStep1() : step === 2 ? canProceedFromStep2() : step === 3 ? canProceedFromStep3() : canProceedFromStep4();
+        const canProceed = !aiReviewing && isValid;
+        const nextLabels = { 1: 'NEXT: QUANTIFY SEGMENTS →', 2: 'NEXT: RANK SEGMENTS →', 3: 'NEXT: TARGET MARKET →', 4: 'VIEW CANVAS →' };
         return (
-          <>
-            <DependencyContext deps={deps} />
-            <Step1Page
-              data={data}
-              updateData={updateData}
-              onNext={goNext}
-              onBack={goBack}
-              canProceed={canProceedFromStep1()}
-              setShowHelp={setShowHelp}
-              addSegment={addSegment}
-              removeSegment={removeSegment}
-              updateSegment={updateSegment}
-              aiReviewing={aiReviewing}
-            />
-          </>
-        );
-      }
-
-      if (step === 2) {
-        return (
-          <>
-            <Step2Page
-              data={data}
-              updateData={updateData}
-              onNext={goNext}
-              onBack={goBack}
-              canProceed={canProceedFromStep2()}
-              setShowHelp={setShowHelp}
-              addSegmentSize={addSegmentSize}
-              removeSegmentSize={removeSegmentSize}
-              updateSegmentSize={updateSegmentSize}
-              aiReviewing={aiReviewing}
-            />
-          </>
-        );
-      }
-
-      if (step === 3) {
-        return (
-          <>
-            <Step3Page
-              data={data}
-              updateData={updateData}
-              onNext={goNext}
-              onBack={goBack}
-              canProceed={canProceedFromStep3()}
-              setShowHelp={setShowHelp}
-              addAttractiveness={addAttractiveness}
-              removeAttractiveness={removeAttractiveness}
-              updateAttractiveness={updateAttractiveness}
-              aiReviewing={aiReviewing}
-            />
-          </>
-        );
-      }
-
-      if (step === 4) {
-        return (
-          <>
-            <Step4Page
-              data={data}
-              updateData={updateData}
-              onNext={goNext}
-              onBack={goBack}
-              canProceed={canProceedFromStep4()}
-              setShowHelp={setShowHelp}
-              addMarketShareGoal={addMarketShareGoal}
-              removeMarketShareGoal={removeMarketShareGoal}
-              updateMarketShareGoal={updateMarketShareGoal}
-              aiReviewing={aiReviewing}
-            />
-          </>
+          <div className="wizard-layout">
+            <div className="wizard-main">
+              <div className="wizard-content animate-in">
+                <DependencyContext deps={deps} />
+                {step === 1 && <Step1Page data={data} updateData={updateData} addSegment={addSegment} removeSegment={removeSegment} updateSegment={updateSegment} />}
+                {step === 2 && <Step2Page data={data} updateData={updateData} addSegmentSize={addSegmentSize} removeSegmentSize={removeSegmentSize} updateSegmentSize={updateSegmentSize} />}
+                {step === 3 && <Step3Page data={data} updateData={updateData} addAttractiveness={addAttractiveness} removeAttractiveness={removeAttractiveness} updateAttractiveness={updateAttractiveness} />}
+                {step === 4 && <Step4Page data={data} updateData={updateData} addMarketShareGoal={addMarketShareGoal} removeMarketShareGoal={removeMarketShareGoal} updateMarketShareGoal={updateMarketShareGoal} />}
+              </div>
+              <div className="wizard-footer">
+                <button className="btn-wiz-back" onClick={goBack}>← BACK</button>
+                <button className="btn-wiz-next" disabled={!canProceed} onClick={goNext}>
+                  {aiReviewing ? 'AI COACH REVIEWING...' : (nextLabels[step] || 'NEXT →')}
+                </button>
+              </div>
+            </div>
+            <WizardSidebar currentStep={step} stepLabels={stepLabels} totalSteps={4} />
+          </div>
         );
       }
 
@@ -1006,41 +953,40 @@
     }
 
     // Transition Screen Component
-    function TransitionScreen({ message, progress }) {
+    // Wizard Sidebar Component
+    function WizardSidebar({ currentStep, stepLabels, totalSteps }) {
       return (
-        <div className="fixed inset-0 bg-black text-white flex items-center justify-center z-50 fade-in">
-          <div className="text-center px-8">
-            <h1 className="plaak transition-animate-in" style={{fontSize: '120px', marginBottom: '32px'}}>
-              SECTION COMPLETE
-            </h1>
-
-            <div className="max-w-2xl mx-auto mb-8 transition-animate-in" style={{animationDelay: '0.2s'}}>
-              <div className="h-2 bg-gray-800 mb-4">
-                <div
-                  className="h-full bg-white transition-all duration-1000"
-                  style={{width: `${progress}%`}}
-                ></div>
-              </div>
-              <p className="monument text-xl tracking-wider">{message}</p>
-            </div>
+        <div className="wizard-sidebar">
+          <div style={{ marginBottom: 48 }}>
+            <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#666', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>SPRINT 13</div>
+            <div style={{ fontFamily: "'Monument', monospace", fontSize: 13, color: '#fff', letterSpacing: '0.06em', textTransform: 'uppercase', lineHeight: 1.4 }}>SEGMENTATION & TARGET MARKET</div>
           </div>
+          <div style={{ flex: 1 }}>
+            {stepLabels.map((label, i) => {
+              const stepNum = i + 1;
+              const isDone = stepNum < currentStep;
+              const isActive = stepNum === Math.floor(currentStep);
+              return (
+                <div key={stepNum} style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 28 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: '50%', border: `2px solid ${isDone ? '#FFF469' : isActive ? '#fff' : '#444'}`, background: isDone ? '#FFF469' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2 }}>
+                    {isDone ? <span style={{ color: '#000', fontSize: 13, fontWeight: 700 }}>✓</span> : <span style={{ color: isActive ? '#fff' : '#555', fontSize: 12, fontFamily: "'Monument', monospace" }}>{stepNum}</span>}
+                  </div>
+                  <div>
+                    <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: isDone ? '#FFF469' : isActive ? '#fff' : '#555', letterSpacing: '0.08em', textTransform: 'uppercase', lineHeight: 1.5 }}>{label}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#444', letterSpacing: '0.08em', textTransform: 'uppercase' }}>STEP {Math.floor(currentStep)} OF {totalSteps}</div>
         </div>
       );
     }
 
     // Step 1: Define Segments
-    function Step1Page({ data, updateData, onNext, onBack, canProceed, setShowHelp, addSegment, removeSegment, updateSegment, aiReviewing }) {
+    function Step1Page({ data, updateData, addSegment, removeSegment, updateSegment }) {
       return (
-        <div className="min-h-screen bg-white">
-
-          <header className="border-b-2 border-black py-6 px-8 no-print">
-            <h1 className="plaak text-3xl">SEGMENTATION & TARGET MARKET</h1>
-            <p className="text-sm mt-2 text-gray-600">Focus on the vital few that matter most</p>
-          </header>
-
-          <ProgressIndicator currentStep={1} />
-
-          <main className="p-12 max-w-6xl mx-auto">
+        <div>
             <div className="animate-in">
               <div className="numbered-section mb-8">
                 [01] DEFINE MARKET SEGMENTS
@@ -1164,37 +1110,15 @@
                 </div>
               </div>
 
-              <div className="flex justify-between mt-12">
-                <button onClick={onBack} className="btn-secondary">
-                  ← Back
-                </button>
-                <button
-                  onClick={onNext}
-                  disabled={!canProceed || aiReviewing}
-                  className="btn-primary"
-                >
-                  {aiReviewing ? 'AI Coach Reviewing...' : 'Next: Quantify Segments →'}
-                </button>
-              </div>
             </div>
-          </main>
         </div>
       );
     }
 
     // Step 2: Quantify Segments
-    function Step2Page({ data, updateData, onNext, onBack, canProceed, setShowHelp, addSegmentSize, removeSegmentSize, updateSegmentSize, aiReviewing }) {
+    function Step2Page({ data, updateData, addSegmentSize, removeSegmentSize, updateSegmentSize }) {
       return (
-        <div className="min-h-screen bg-white">
-
-          <header className="border-b-2 border-black py-6 px-8 no-print">
-            <h1 className="plaak text-3xl">SEGMENTATION & TARGET MARKET</h1>
-            <p className="text-sm mt-2 text-gray-600">Focus on the vital few that matter most</p>
-          </header>
-
-          <ProgressIndicator currentStep={2} />
-
-          <main className="p-12 max-w-6xl mx-auto">
+        <div>
             <div className="animate-in">
               <div className="numbered-section mb-8">
                 [02] QUANTIFY SEGMENTS
@@ -1307,37 +1231,15 @@
                 </button>
               </div>
 
-              <div className="flex justify-between mt-12">
-                <button onClick={onBack} className="btn-secondary">
-                  ← Back
-                </button>
-                <button
-                  onClick={onNext}
-                  disabled={!canProceed || aiReviewing}
-                  className="btn-primary"
-                >
-                  {aiReviewing ? 'AI Coach Reviewing...' : 'Next: Rank Segments →'}
-                </button>
-              </div>
             </div>
-          </main>
         </div>
       );
     }
 
     // Step 3: Attractiveness Index
-    function Step3Page({ data, updateData, onNext, onBack, canProceed, setShowHelp, addAttractiveness, removeAttractiveness, updateAttractiveness, aiReviewing }) {
+    function Step3Page({ data, updateData, addAttractiveness, removeAttractiveness, updateAttractiveness }) {
       return (
-        <div className="min-h-screen bg-white">
-
-          <header className="border-b-2 border-black py-6 px-8 no-print">
-            <h1 className="plaak text-3xl">SEGMENTATION & TARGET MARKET</h1>
-            <p className="text-sm mt-2 text-gray-600">Focus on the vital few that matter most</p>
-          </header>
-
-          <ProgressIndicator currentStep={3} />
-
-          <main className="p-12 max-w-6xl mx-auto">
+        <div>
             <div className="animate-in">
               <div className="numbered-section mb-8">
                 [03] ATTRACTIVENESS INDEX
@@ -1524,37 +1426,15 @@
                 </button>
               </div>
 
-              <div className="flex justify-between mt-12">
-                <button onClick={onBack} className="btn-secondary">
-                  ← Back
-                </button>
-                <button
-                  onClick={onNext}
-                  disabled={!canProceed || aiReviewing}
-                  className="btn-primary"
-                >
-                  {aiReviewing ? 'AI Coach Reviewing...' : 'Next: Target Market Selection →'}
-                </button>
-              </div>
             </div>
-          </main>
         </div>
       );
     }
 
     // Step 4: Target Market & Goals
-    function Step4Page({ data, updateData, onNext, onBack, canProceed, setShowHelp, addMarketShareGoal, removeMarketShareGoal, updateMarketShareGoal, aiReviewing }) {
+    function Step4Page({ data, updateData, addMarketShareGoal, removeMarketShareGoal, updateMarketShareGoal }) {
       return (
-        <div className="min-h-screen bg-white">
-
-          <header className="border-b-2 border-black py-6 px-8 no-print">
-            <h1 className="plaak text-3xl">SEGMENTATION & TARGET MARKET</h1>
-            <p className="text-sm mt-2 text-gray-600">Focus on the vital few that matter most</p>
-          </header>
-
-          <ProgressIndicator currentStep={4} />
-
-          <main className="p-12 max-w-6xl mx-auto">
+        <div>
             <div className="animate-in">
               <div className="numbered-section mb-8">
                 [04] TARGET MARKET & GOALS
@@ -1712,20 +1592,7 @@
                 </div>
               </div>
 
-              <div className="flex justify-between mt-12">
-                <button onClick={onBack} className="btn-secondary">
-                  ← Back
-                </button>
-                <button
-                  onClick={onNext}
-                  disabled={!canProceed || aiReviewing}
-                  className="btn-primary"
-                >
-                  {aiReviewing ? 'AI Coach Reviewing...' : 'Complete & View Canvas →'}
-                </button>
-              </div>
             </div>
-          </main>
         </div>
       );
     }

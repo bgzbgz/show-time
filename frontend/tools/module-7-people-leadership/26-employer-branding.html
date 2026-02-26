@@ -431,6 +431,18 @@
     .checkbox-custom.checked {
       background: #000000;
     }
+
+    /* Wizard Layout */
+    .wizard-layout { display: flex; min-height: 100vh; }
+    .wizard-main { flex: 1; overflow-y: auto; }
+    .wizard-content { padding: 48px 64px; max-width: 860px; }
+    .wizard-footer { display: flex; justify-content: space-between; align-items: center; padding: 24px 64px; border-top: 2px solid #e5e7eb; background: #fff; position: sticky; bottom: 0; }
+    .btn-wiz-back { font-family: 'Monument', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; background: transparent; border: 2px solid #000; padding: 14px 28px; cursor: pointer; }
+    .btn-wiz-back:hover { background: #f5f5f5; }
+    .btn-wiz-next { font-family: 'Monument', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; background: #000; color: #fff; border: 2px solid #000; padding: 14px 28px; cursor: pointer; }
+    .btn-wiz-next:hover:not(:disabled) { background: #333; }
+    .btn-wiz-next:disabled { opacity: 0.4; cursor: not-allowed; }
+    .wizard-sidebar { width: 280px; min-width: 280px; background: #1a1a1a; color: #fff; padding: 48px 32px; position: sticky; top: 0; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; }
   </style>
 </head>
 <body>
@@ -508,10 +520,46 @@
             );
         }
 
+    function WizardSidebar({ currentStep, stepLabels, totalSteps }) {
+      return (
+        <div className="wizard-sidebar">
+          <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, letterSpacing: '0.12em', color: '#888', textTransform: 'uppercase', marginBottom: 32 }}>
+            SPRINT 26 / EMPLOYER BRANDING
+          </div>
+          <div style={{ flex: 1 }}>
+            {stepLabels.map((label, i) => {
+              const stepNum = i + 1;
+              const isDone = currentStep > stepNum;
+              const isActive = Math.floor(currentStep) === stepNum;
+              return (
+                <div key={stepNum} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+                  <div style={{
+                    width: 28, height: 28, borderRadius: '50%', border: `2px solid ${isDone ? '#FFF469' : isActive ? '#fff' : '#444'}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                    background: isDone ? '#FFF469' : 'transparent', color: isDone ? '#000' : isActive ? '#fff' : '#444',
+                    fontSize: 13, fontWeight: 'bold'
+                  }}>
+                    {isDone ? '✓' : stepNum}
+                  </div>
+                  <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', color: isDone ? '#FFF469' : isActive ? '#fff' : '#555' }}>
+                    {label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#444', letterSpacing: '0.06em' }}>
+            STEP {Math.floor(currentStep)} OF {totalSteps}
+          </div>
+        </div>
+      );
+    }
+
     // Main App Component
     function EmployerBrandingApp() {
             const [deps, setDeps] = useState([]);
       const [step, setStep] = useState(0);
+      const [showHelp, setShowHelp] = useState(false);
       const totalSteps = 5;
 
       const [data, setData] = useState({
@@ -807,6 +855,22 @@
         }
       };
 
+      const goNext = () => {
+        if (step === 1) { setStep(1.5); }
+        else if (step === 2) {
+          const topNeed = (data.needsRanking || []).find(n => n.rank === 1);
+          if (topNeed && !(data.evp || {}).primaryNeed) { updateNested('evp', 'primaryNeed', topNeed.category); }
+          setStep(2.5);
+        }
+        else if (step === 3) { setStep(3.5); }
+        else if (step === 4) { setStep(4.5); }
+        else if (step === 5) { setStep(6); }
+      };
+      const goBack = () => {
+        if (step === 1) { setStep(0.5); }
+        else if (step >= 2) { setStep(step - 1); }
+      };
+
       // Supabase submission
       const handleSubmit = async () => {
         const userId = localStorage.getItem('ft_user_id');
@@ -994,12 +1058,7 @@
         const seg = data.targetSegment || {};
 
         return (
-          <div className="min-h-screen bg-white p-8 animate-in">
-            <div className="max-w-4xl mx-auto">
-              <ProgressIndicator currentStep={1} />
-              <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
-                STEP 1 OF 6
-              </div>
+          <div><div className="animate-in">
               <div className="numbered-section mb-8">01</div>
 
               {/* Fast Track Insight */}
@@ -1128,21 +1187,7 @@
                   Motivation: Pride in quality, job stability, growth in technically sophisticated environment
                 </p>
               </div>
-
-              <div className="flex gap-4 mt-12">
-                <button onClick={() => setStep(0.5)} className="btn-secondary">
-                  Back
-                </button>
-                <button
-                  onClick={() => setStep(1.5)}
-                  className="btn-primary"
-                  disabled={!isStep1Valid()}
-                >
-                  Continue to Needs Ranking
-                </button>
-              </div>
-            </div>
-          </div>
+          </div></div>
         );
       };
 
@@ -1151,12 +1196,7 @@
         const rankedNeeds = [...needs].sort((a, b) => (a.rank || 999) - (b.rank || 999));
 
         return (
-          <div className="min-h-screen bg-white p-8 animate-in">
-            <div className="max-w-4xl mx-auto">
-              <ProgressIndicator currentStep={2} />
-              <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
-                STEP 2 OF 6
-              </div>
+          <div><div className="animate-in">
               <div className="numbered-section mb-8">02</div>
 
               {/* Fast Track Insight */}
@@ -1243,28 +1283,7 @@
               <div className="warning-box mt-8">
                 <strong>Important:</strong> Make sure each category has a unique rank (1-5) and all categories are described.
               </div>
-
-              <div className="flex gap-4 mt-12">
-                <button onClick={() => setStep(1)} className="btn-secondary">
-                  Back
-                </button>
-                <button
-                  onClick={() => {
-                    // Auto-fill primary need from rank 1
-                    const topNeed = needs.find(n => n.rank === 1);
-                    if (topNeed && !(data.evp || {}).primaryNeed) {
-                      updateNested('evp', 'primaryNeed', topNeed.category);
-                    }
-                    setStep(2.5);
-                  }}
-                  className="btn-primary"
-                  disabled={!isStep2Valid()}
-                >
-                  Continue to EVP Formulation
-                </button>
-              </div>
-            </div>
-          </div>
+          </div></div>
         );
       };
 
@@ -1273,12 +1292,7 @@
         const topNeed = (data.needsRanking || []).find(n => n.rank === 1);
 
         return (
-          <div className="min-h-screen bg-white p-8 animate-in">
-            <div className="max-w-4xl mx-auto">
-              <ProgressIndicator currentStep={3} />
-              <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
-                STEP 3 OF 6
-              </div>
+          <div><div className="animate-in">
               <div className="numbered-section mb-8">03</div>
 
               {/* Fast Track Insight */}
@@ -1408,21 +1422,7 @@
                   "At [Company Name], you don't just work a job - you master your craft. With industry-leading equipment, paid certification programs, and a team of mentors, we're where skilled technicians come to grow, stay, and thrive."
                 </p>
               </div>
-
-              <div className="flex gap-4 mt-12">
-                <button onClick={() => setStep(2)} className="btn-secondary">
-                  Back
-                </button>
-                <button
-                  onClick={() => setStep(3.5)}
-                  className="btn-primary"
-                  disabled={!isStep3Valid()}
-                >
-                  Continue to EVP Testing
-                </button>
-              </div>
-            </div>
-          </div>
+          </div></div>
         );
       };
 
@@ -1432,12 +1432,7 @@
         const antiStatements = testing.antiEVP || [];
 
         return (
-          <div className="min-h-screen bg-white p-8 animate-in">
-            <div className="max-w-4xl mx-auto">
-              <ProgressIndicator currentStep={4} />
-              <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
-                STEP 4 OF 6
-              </div>
+          <div><div className="animate-in">
               <div className="numbered-section mb-8">04</div>
 
               {/* Fast Track Insight */}
@@ -1588,21 +1583,7 @@
                   <li>• We are NOT a place for people who want to switch roles every year</li>
                 </ul>
               </div>
-
-              <div className="flex gap-4 mt-12">
-                <button onClick={() => setStep(3)} className="btn-secondary">
-                  Back
-                </button>
-                <button
-                  onClick={() => setStep(4.5)}
-                  className="btn-primary"
-                  disabled={!isStep4Valid()}
-                >
-                  Continue to Campaign Planning
-                </button>
-              </div>
-            </div>
-          </div>
+          </div></div>
         );
       };
 
@@ -1614,12 +1595,7 @@
         const messages = camp.keyMessages || [];
 
         return (
-          <div className="min-h-screen bg-white p-8 animate-in">
-            <div className="max-w-4xl mx-auto">
-              <ProgressIndicator currentStep={5} />
-              <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
-                STEP 5 OF 6
-              </div>
+          <div><div className="animate-in">
               <div className="numbered-section mb-8">05</div>
 
               <h2 className="plaak text-5xl mb-6">
@@ -1893,20 +1869,7 @@
                 </div>
               </div>
 
-              <div className="flex gap-4 mt-12">
-                <button onClick={() => setStep(4)} className="btn-secondary">
-                  Back
-                </button>
-                <button
-                  onClick={() => setStep(6)}
-                  className="btn-primary"
-                  disabled={!isStep5Valid()}
-                >
-                  View Canvas
-                </button>
-              </div>
-            </div>
-          </div>
+          </div></div>
         );
       };
 
@@ -2274,19 +2237,31 @@
           {step === 0 && renderCoverPage()}
           {step === 0.5 && renderIntroduction()}
           {renderTransitionScreen(step, CONFIG, totalSteps, setStep)}
-          {step === 1 && <><DependencyContext deps={deps} />{renderStep1()}</>}
-          {step === 2 && renderStep2()}
-          {step === 3 && renderStep3()}
-          {step === 4 && renderStep4()}
-          {step === 5 && renderStep5()}
+          {step >= 1 && step <= 5 && (() => {
+            const stepLabels = ['Segment Target', 'Needs Ranking', 'EVP Formulation', 'EVP Testing', 'Campaign & Recruitment'];
+            const nextLabels = { 1: 'NEXT: NEEDS RANKING →', 2: 'NEXT: EVP FORMULATION →', 3: 'NEXT: EVP TESTING →', 4: 'NEXT: CAMPAIGN PLANNING →', 5: 'VIEW CANVAS →' };
+            return (
+              <div className="wizard-layout">
+                <div className="wizard-main">
+                  <div className="wizard-content animate-in">
+                    {step === 1 && <><DependencyContext deps={deps} />{renderStep1()}</>}
+                    {step === 2 && renderStep2()}
+                    {step === 3 && renderStep3()}
+                    {step === 4 && renderStep4()}
+                    {step === 5 && renderStep5()}
+                  </div>
+                  <div className="wizard-footer">
+                    <button className="btn-wiz-back" onClick={goBack}>← BACK</button>
+                    <button className="btn-wiz-next" disabled={!canProceed()} onClick={goNext}>
+                      {nextLabels[step] || 'NEXT →'}
+                    </button>
+                  </div>
+                </div>
+                <WizardSidebar currentStep={step} stepLabels={stepLabels} totalSteps={5} />
+              </div>
+            );
+          })()}
           {step === 6 && renderStep6()}
-
-          {step >= 1 && step <= 5 && (
-            <button className="help-button" onClick={() => setShowHelp(true)}>
-              ?
-            </button>
-          )}
-
           {showHelp && renderHelpModal()}
         </div>
 

@@ -20,6 +20,7 @@
   <script src="../../shared/js/tool-db.js"></script>
   <script src="../../shared/js/ai-challenge.js"></script>
   <script src="../../shared/js/dependency-injection.js"></script>
+  <script src="../../shared/js/transition-screen.js"></script>
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
     <script src="../../shared/js/cognitive-load.js"></script>
     <script src="../../js/tool-access-control.js"></script>
@@ -559,6 +560,18 @@
       flex: 1;
       padding-top: 8px;
     }
+
+    /* Wizard Layout */
+    .wizard-layout { display: flex; min-height: 100vh; }
+    .wizard-main { flex: 1; overflow-y: auto; }
+    .wizard-content { padding: 48px 64px; max-width: 860px; }
+    .wizard-footer { display: flex; justify-content: space-between; align-items: center; padding: 24px 64px; border-top: 2px solid #e5e7eb; background: #fff; position: sticky; bottom: 0; }
+    .btn-wiz-back { font-family: 'Monument', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; background: transparent; border: 2px solid #000; padding: 14px 28px; cursor: pointer; }
+    .btn-wiz-back:hover { background: #f5f5f5; }
+    .btn-wiz-next { font-family: 'Monument', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; background: #000; color: #fff; border: 2px solid #000; padding: 14px 28px; cursor: pointer; }
+    .btn-wiz-next:hover:not(:disabled) { background: #333; }
+    .btn-wiz-next:disabled { opacity: 0.4; cursor: not-allowed; }
+    .wizard-sidebar { width: 280px; min-width: 280px; background: #1a1a1a; color: #fff; padding: 48px 32px; position: sticky; top: 0; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; }
   </style>
 </head>
 <body>
@@ -584,7 +597,17 @@
             3: {
                 brutalTruth: 'Governance without experimentation is how companies fall behind. A policy that requires 3 approval layers before testing a new AI tool will ensure you are always running last year\'s technology.',
                 peerProof: '"A €40M financial services firm created a \'test and learn\' budget of €5k/month for AI experiments. In 18 months, 4 experiments failed and 2 succeeded. The 2 successes saved €180k/year in manual processing. Total investment: €90k."'
+            },
+            4: {
+                brutalTruth: 'APIs are the nervous system of the digital business. Companies that expose their data via well-designed APIs can partner, scale, and automate in weeks — not years.',
+                peerProof: '"A property management firm opened their data to 3 API integrations — accounting, tenancy, maintenance. Admin time dropped 60%. Their platform became the integration hub for the entire stack."'
             }
+        },
+        CLOSING_MESSAGES: {
+            1: { title: 'DECISIONS MAPPED', text: 'You have identified the critical decisions to digitalize. Next: map your data sources.' },
+            2: { title: 'DATA SOURCES MAPPED', text: 'Every decision now has a data foundation. Next: design the technology layer.' },
+            3: { title: 'TECHNOLOGY DESIGNED', text: 'Your tech stack is planned. Next: define the APIs and data access layer.' },
+            4: { title: 'APIs DEFINED', text: 'Your Digital Heart architecture is complete. View the full canvas.' }
         }
     };
 
@@ -656,14 +679,45 @@
       );
     }
 
+    function WizardSidebar({ currentStep, stepLabels, totalSteps }) {
+      return (
+        <div className="wizard-sidebar">
+          <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, letterSpacing: '0.12em', color: '#888', textTransform: 'uppercase', marginBottom: 32 }}>
+            SPRINT 29 / DIGITAL HEART
+          </div>
+          <div style={{ flex: 1 }}>
+            {stepLabels.map((label, i) => {
+              const stepNum = i + 1;
+              const isDone = currentStep > stepNum;
+              const isActive = Math.floor(currentStep) === stepNum;
+              return (
+                <div key={stepNum} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+                  <div style={{
+                    width: 28, height: 28, borderRadius: '50%', border: `2px solid ${isDone ? '#FFF469' : isActive ? '#fff' : '#444'}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                    background: isDone ? '#FFF469' : 'transparent', color: isDone ? '#000' : isActive ? '#fff' : '#444',
+                    fontSize: 13, fontWeight: 'bold'
+                  }}>
+                    {isDone ? '✓' : stepNum}
+                  </div>
+                  <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', color: isDone ? '#FFF469' : isActive ? '#fff' : '#555' }}>
+                    {label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#444', letterSpacing: '0.06em' }}>
+            STEP {Math.floor(currentStep)} OF {totalSteps}
+          </div>
+        </div>
+      );
+    }
+
     // Main App Component
     function DigitalHeartApp() {
             const [deps, setDeps] = useState([]);
       const [step, setStep] = useState(0);
-      const [showTransition, setShowTransition] = useState(false);
-      const [transitionMessage, setTransitionMessage] = useState('');
-      const [transitionProgress, setTransitionProgress] = useState(0);
-      const [transitionStep, setTransitionStep] = useState(null);
       const [aiReviewing, setAiReviewing] = useState(false);
 
       const [data, setData] = useState({
@@ -796,8 +850,8 @@
       };
 
       const nextStep = async () => {
-        if (step === 0) setStep(0.5);
-        else if (step === 0.5) {
+        if (step === 0) { setStep(0.5); return; }
+        if (step === 0.5) {
           setStep(1);
           const decisions = data.decisions || [];
           if ((data.dataSources || []).length === 0) {
@@ -813,27 +867,19 @@
               }))
             }));
           }
+          return;
         }
-        else if (step >= 1 && step <= 4) {
+        if (step >= 1 && step <= 4) {
           const userId = localStorage.getItem('ft_user_id');
           if (userId) {
             setAiReviewing(true);
             try {
               let stepAnswers = {};
               let stepName = '';
-              if (step === 1) {
-                stepName = 'Core Decisions';
-                stepAnswers = { decisions: data.decisions };
-              } else if (step === 2) {
-                stepName = 'Data Sources';
-                stepAnswers = { dataSources: data.dataSources };
-              } else if (step === 3) {
-                stepName = 'Technology Platform';
-                stepAnswers = { technology: data.technology };
-              } else if (step === 4) {
-                stepName = 'APIs & Access';
-                stepAnswers = { apis: data.apis };
-              }
+              if (step === 1) { stepName = 'Core Decisions'; stepAnswers = { decisions: data.decisions }; }
+              else if (step === 2) { stepName = 'Data Sources'; stepAnswers = { dataSources: data.dataSources }; }
+              else if (step === 3) { stepName = 'Technology Platform'; stepAnswers = { technology: data.technology }; }
+              else if (step === 4) { stepName = 'APIs & Access'; stepAnswers = { apis: data.apis }; }
               const proceed = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, stepName);
               if (!proceed) { setAiReviewing(false); return; }
             } catch (err) {
@@ -843,85 +889,47 @@
             }
           }
 
+          // Data initializations before transition
           if (step === 1) {
-            const messages = ['25% COMPLETE', '50% COMPLETE', '75% COMPLETE', '100% COMPLETE'];
-            const progressValues = [25, 50, 75, 100];
-            setTransitionMessage(messages[step - 1]);
-            setTransitionProgress(progressValues[step - 1]);
-            setTransitionStep(step);
-            setShowTransition(true);
-            setTimeout(() => {
-              setShowTransition(false);
-              setStep(2);
-              const decisions = data.decisions || [];
-              if ((data.technology || []).length === 0) {
-                setData(prev => ({
-                  ...prev,
-                  technology: decisions.map(d => ({
-                    decisionId: d.id,
-                    decisionName: d.decisionName,
-                    collectionMethod: '',
-                    storageSystem: '',
-                    algorithms: [{ id: 1, algorithm: '', purpose: '', complexity: '' }],
-                    processingFrequency: '',
-                    dataIntegration: '',
-                    securityRequirements: ''
-                  }))
-                }));
-              }
-            }, 5000);
+            const decisions = data.decisions || [];
+            if ((data.technology || []).length === 0) {
+              setData(prev => ({
+                ...prev,
+                technology: decisions.map(d => ({
+                  decisionId: d.id,
+                  decisionName: d.decisionName,
+                  collectionMethod: '',
+                  storageSystem: '',
+                  algorithms: [{ id: 1, algorithm: '', purpose: '', complexity: '' }],
+                  processingFrequency: '',
+                  dataIntegration: '',
+                  securityRequirements: ''
+                }))
+              }));
+            }
+          } else if (step === 2) {
+            const decisions = data.decisions || [];
+            if ((data.apis || []).length === 0) {
+              setData(prev => ({
+                ...prev,
+                apis: decisions.map(d => ({
+                  decisionId: d.id,
+                  decisionName: d.decisionName,
+                  apiEndpoints: [{ id: 1, endpoint: '', purpose: '', users: '' }],
+                  accessMethod: '',
+                  userInterface: '',
+                  updateFrequency: '',
+                  userTraining: '',
+                  accessControls: ''
+                }))
+              }));
+            }
           }
-          else if (step === 2) {
-            const messages = ['25% COMPLETE', '50% COMPLETE', '75% COMPLETE', '100% COMPLETE'];
-            const progressValues = [25, 50, 75, 100];
-            setTransitionMessage(messages[step - 1]);
-            setTransitionProgress(progressValues[step - 1]);
-            setTransitionStep(step);
-            setShowTransition(true);
-            setTimeout(() => {
-              setShowTransition(false);
-              setStep(3);
-              const decisions = data.decisions || [];
-              if ((data.apis || []).length === 0) {
-                setData(prev => ({
-                  ...prev,
-                  apis: decisions.map(d => ({
-                    decisionId: d.id,
-                    decisionName: d.decisionName,
-                    apiEndpoints: [{ id: 1, endpoint: '', purpose: '', users: '' }],
-                    accessMethod: '',
-                    userInterface: '',
-                    updateFrequency: '',
-                    userTraining: '',
-                    accessControls: ''
-                  }))
-                }));
-              }
-            }, 5000);
-          }
-          else if (step === 3) {
-            const messages = ['25% COMPLETE', '50% COMPLETE', '75% COMPLETE', '100% COMPLETE'];
-            const progressValues = [25, 50, 75, 100];
-            setTransitionMessage(messages[step - 1]);
-            setTransitionProgress(progressValues[step - 1]);
-            setTransitionStep(step);
-            setShowTransition(true);
-            setTimeout(() => {
-              setShowTransition(false);
-              setStep(4);
-            }, 5000);
-          }
-          else if (step === 4) {
-            const messages = ['25% COMPLETE', '50% COMPLETE', '75% COMPLETE', '100% COMPLETE'];
-            const progressValues = [25, 50, 75, 100];
-            setTransitionMessage(messages[step - 1]);
-            setTransitionProgress(progressValues[step - 1]);
-            setTransitionStep(step);
-            setShowTransition(true);
-            setTimeout(() => {
-              setShowTransition(false);
-              setStep(5);
-            }, 5000);
+
+          if (step < 4) {
+            setStep(step + 0.5);
+          } else {
+            setStep(5);
           }
         }
       };
@@ -932,56 +940,39 @@
         else if (step === 1) setStep(0.5);
       };
 
-      if (showTransition) {
-        return <TransitionScreen message={transitionMessage} progress={transitionProgress} stepNum={transitionStep} />;
-      }
-
       return (
-        <div className="min-h-screen bg-white">
-          {step > 0 && step < 5 && (
-            <button
-              className="help-button"
-              onClick={() => setShowHelp(true)}
-            >
-              ?
-            </button>
-          )}
-
+        <div>
           {step === 0 && <CoverPage onStart={nextStep} />}
           {step === 0.5 && <IntroductionPage onNext={nextStep} onBack={prevStep} />}
-          {step === 1 && <><DependencyContext deps={deps} /><Step1Decisions data={data} setData={setData} onNext={nextStep} onBack={prevStep} /></>}
-          {step === 2 && <Step2DataSources data={data} setData={setData} onNext={nextStep} onBack={prevStep} />}
-          {step === 3 && <Step3Technology data={data} setData={setData} onNext={nextStep} onBack={prevStep} />}
-          {step === 4 && <Step4APIs data={data} setData={setData} onNext={nextStep} onBack={prevStep} />}
+          {(() => {
+            const transitionRender = window.renderTransitionScreen(step, CONFIG, 4, setStep);
+            if (transitionRender) return transitionRender;
+            return null;
+          })()}
+          {step >= 1 && step <= 4 && (() => {
+            const stepLabels = ['Core Decisions', 'Data Sources', 'Technology', 'APIs & Access'];
+            const nextLabels = { 1: 'NEXT: DATA SOURCES →', 2: 'NEXT: TECHNOLOGY →', 3: 'NEXT: APIS & ACCESS →', 4: 'VIEW CANVAS →' };
+            return (
+              <div className="wizard-layout">
+                <div className="wizard-main">
+                  <div className="wizard-content animate-in">
+                    {step === 1 && <><DependencyContext deps={deps} /><Step1Decisions data={data} setData={setData} /></>}
+                    {step === 2 && <Step2DataSources data={data} setData={setData} />}
+                    {step === 3 && <Step3Technology data={data} setData={setData} />}
+                    {step === 4 && <Step4APIs data={data} setData={setData} />}
+                  </div>
+                  <div className="wizard-footer">
+                    <button className="btn-wiz-back" onClick={prevStep}>← BACK</button>
+                    <button className="btn-wiz-next" disabled={aiReviewing || !canProceed()} onClick={nextStep}>
+                      {aiReviewing ? 'AI COACH REVIEWING...' : (nextLabels[step] || 'NEXT →')}
+                    </button>
+                  </div>
+                </div>
+                <WizardSidebar currentStep={step} stepLabels={stepLabels} totalSteps={4} />
+              </div>
+            );
+          })()}
           {step === 5 && <Step5Canvas data={data} onBack={prevStep} />}
-
-
-          {step > 0 && step < 5 && (
-            <div style={{
-              position: 'fixed',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              background: '#FFFFFF',
-              borderTop: '2px solid #000000',
-              padding: '24px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              zIndex: 30
-            }}>
-              <button className="btn-secondary" onClick={prevStep}>
-                Back
-              </button>
-              <button
-                className="btn-primary"
-                onClick={nextStep}
-                disabled={aiReviewing || !canProceed()}
-              >
-                {aiReviewing ? 'AI Coach Reviewing...' : 'Continue'}
-              </button>
-            </div>
-          )}
         </div>
       );
     }
@@ -1166,7 +1157,7 @@
     }
 
     // Step 1: Core Decisions to Digitalize
-    function Step1Decisions({ data, setData, onNext, onBack }) {
+    function Step1Decisions({ data, setData }) {
       const decisions = data.decisions || [];
 
       const addDecision = () => {
@@ -1206,10 +1197,7 @@
       const sortedDecisions = [...decisions].sort((a, b) => b.priority - a.priority);
 
       return (
-        <div className="min-h-screen bg-white p-8 md:p-16 animate-in" style={{ paddingBottom: '120px' }}>
-          <div className="max-w-5xl mx-auto">
-            <ProgressIndicator currentStep={1} />
-
+        <div>
             <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
               STEP 1 OF 5
             </div>
@@ -1381,13 +1369,12 @@
                 </div>
               </div>
             )}
-          </div>
         </div>
       );
     }
 
     // Step 2: Data Sources
-    function Step2DataSources({ data, setData, onNext, onBack }) {
+    function Step2DataSources({ data, setData }) {
       const decisions = data.decisions || [];
       const dataSources = data.dataSources || [];
 
@@ -1505,10 +1492,7 @@
       };
 
       return (
-        <div className="min-h-screen bg-white p-8 md:p-16 animate-in" style={{ paddingBottom: '120px' }}>
-          <div className="max-w-5xl mx-auto">
-            <ProgressIndicator currentStep={2} />
-
+        <div>
             <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
               STEP 2 OF 5
             </div>
@@ -1701,13 +1685,12 @@
                 </div>
               ))}
             </div>
-          </div>
         </div>
       );
     }
 
     // Step 3: Technology Platform & Algorithms
-    function Step3Technology({ data, setData, onNext, onBack }) {
+    function Step3Technology({ data, setData }) {
       const decisions = data.decisions || [];
       const technology = data.technology || [];
 
@@ -1773,10 +1756,7 @@
       };
 
       return (
-        <div className="min-h-screen bg-white p-8 md:p-16 animate-in" style={{ paddingBottom: '120px' }}>
-          <div className="max-w-5xl mx-auto">
-            <ProgressIndicator currentStep={3} />
-
+        <div>
             <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
               STEP 3 OF 5
             </div>
@@ -1979,13 +1959,12 @@
                 </div>
               ))}
             </div>
-          </div>
         </div>
       );
     }
 
     // Step 4: APIs & Access
-    function Step4APIs({ data, setData, onNext, onBack }) {
+    function Step4APIs({ data, setData }) {
       const decisions = data.decisions || [];
       const apis = data.apis || [];
 
@@ -2074,10 +2053,7 @@
       };
 
       return (
-        <div className="min-h-screen bg-white p-8 md:p-16 animate-in" style={{ paddingBottom: '120px' }}>
-          <div className="max-w-5xl mx-auto">
-            <ProgressIndicator currentStep={4} />
-
+        <div>
             <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
               STEP 4 OF 5
             </div>
@@ -2328,7 +2304,6 @@
                 </div>
               </div>
             </div>
-          </div>
         </div>
       );
     }
