@@ -260,10 +260,18 @@ const ToolDB = (function() {
         return questionCache;
     }
 
+    // Backward-compat alias: some tools incorrectly call saveResponses(userId, slug, mappings).
+    // The slug arg is ignored (already set via init). Delegates to save(userId, mappings).
+    async function saveResponses(userId, _slugIgnored, mappings) {
+        console.warn('[ToolDB] saveResponses() is deprecated — use save(userId, mappings) instead');
+        return save(userId, mappings);
+    }
+
     return {
         init,
         whenReady,
         save,
+        saveResponses,
         load,
         getDependency,
         ensureUser,
