@@ -20,6 +20,7 @@
   <script src="../../shared/js/tool-db.js"></script>
   <script src="../../shared/js/ai-challenge.js"></script>
   <script src="../../shared/js/dependency-injection.js"></script>
+  <script src="../../shared/js/transition-screen.js"></script>
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
     <script src="../../shared/js/cognitive-load.js"></script>
     <script src="../../js/tool-access-control.js"></script>
@@ -327,23 +328,15 @@
       background: #EF4444;
       color: #FFFFFF;
     }
-    /* Dark theme inputs */
-    input[type="text"], input[type="number"], input[type="email"], textarea, select {
-        background: #1a1a1a !important;
-        color: #fff !important;
-        border-color: #444 !important;
-    }
-    input::placeholder, textarea::placeholder { color: #666 !important; }
-    input:focus, textarea:focus, select:focus {
-        outline: 2px solid #FFF469 !important;
-        border-color: #FFF469 !important;
-    }
-    select option { background: #1a1a1a; color: #fff; }
-    /* Fix bg-yellow-50 cards on dark bg */
-    .bg-yellow-50 { background: #2a2500 !important; }
-    /* Fix canvas content (keep white for PDF) */
-    #canvas-content { background: #fff !important; color: #000 !important; }
-    #canvas-content input, #canvas-content textarea { background: #fff !important; color: #000 !important; }
+    /* Wizard Layout */
+    .wizard-layout { display: flex; min-height: 100vh; }
+    .wizard-main { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+    .wizard-content { flex: 1; padding: 48px 64px; max-width: 860px; }
+    .wizard-sidebar { width: 280px; background: #1a1a1a; color: #fff; padding: 40px 32px; position: sticky; top: 0; height: 100vh; overflow-y: auto; flex-shrink: 0; display: flex; flex-direction: column; }
+    .wizard-footer { padding: 24px 64px; border-top: 1px solid #E0E0E0; display: flex; gap: 16px; background: #fff; }
+    .btn-wiz-back { background: #fff; color: #000; padding: 14px 24px; border: 2px solid #000; font-family: 'Riforma', sans-serif; font-size: 14px; cursor: pointer; letter-spacing: 0.05em; text-transform: uppercase; }
+    .btn-wiz-next { flex: 1; background: #000; color: #fff; padding: 14px 24px; border: 2px solid #000; font-family: 'Riforma', sans-serif; font-size: 14px; cursor: pointer; letter-spacing: 0.05em; text-transform: uppercase; }
+    .btn-wiz-next:disabled { background: #E0E0E0; border-color: #E0E0E0; cursor: not-allowed; color: #999; }
 
   </style>
 </head>
@@ -370,7 +363,17 @@
             3: {
                 brutalTruth: 'Talent density — not headcount — is the true performance lever. One A-player in a key role consistently outperforms three B-players. The question is not how many people you have, but how aligned each one is to where value is created.',
                 peerProof: '"After implementing ABC analysis company-wide, a €50M firm reduced headcount by 8% while revenue grew 22%. They stopped backfilling B-player exits and rebuilt roles around A-player strengths instead."'
+            },
+            4: {
+                brutalTruth: 'Action plans without deadlines are wishes. B and C players do not improve without specific commitments, clear timelines, and named consequences. Vague coaching conversations are the most expensive HR activity in your company.',
+                peerProof: '"A tech firm built 90-day development plans for every B-player. Within one quarter, 4 of 6 improved to A-player performance. The other 2 self-selected out. Net result: the team performed at 40% higher output with the same headcount."'
             }
+        },
+        CLOSING_MESSAGES: {
+            1: { title: 'TEAM MAPPED', text: 'Your team is visible. Now score each person on energy, skills, values, and impact.' },
+            2: { title: 'FIT SCORED', text: 'The scores are in. Now classify each person as A, B, or C — and defend it.' },
+            3: { title: 'ABC CLASSIFIED', text: 'Classification complete. Now build the action plans that change the outcomes.' },
+            4: { title: 'PLANS COMPLETE', text: 'Your talent strategy is built. Review the canvas and submit.' }
         }
     };
 
@@ -416,10 +419,6 @@
     function FitAbcApp() {
             const [deps, setDeps] = useState([]);
       const [step, setStep] = useState(0);
-      const [showTransition, setShowTransition] = useState(false);
-      const [transitionMessage, setTransitionMessage] = useState('');
-      const [transitionProgress, setTransitionProgress] = useState(0);
-      const [transitionStep, setTransitionStep] = useState(null);
       const [aiReviewing, setAiReviewing] = useState(false);
 
       const [data, setData] = useState({
@@ -572,20 +571,7 @@
             }
           }
 
-          if (step >= 1 && step < 4) {
-            const messages = ['25% COMPLETE', '50% COMPLETE', '75% COMPLETE', '100% COMPLETE'];
-            const progressValues = [25, 50, 75, 100];
-            setTransitionMessage(messages[step - 1]);
-            setTransitionProgress(progressValues[step - 1]);
-            setTransitionStep(step);
-            setShowTransition(true);
-            setTimeout(() => {
-              setShowTransition(false);
-              setStep(step + 1);
-            }, 5000);
-          } else if (step === 4) {
-            setStep(5);
-          }
+          setStep(step + 0.5);
         } else if (step === 0) {
           setStep(0.5);
         }
@@ -727,8 +713,8 @@
       };
 
       // Render different pages based on step
-      if (showTransition) {
-        return <TransitionScreen message={transitionMessage} progress={transitionProgress} stepNum={transitionStep} />;
+      if ([1.5, 2.5, 3.5, 4.5].includes(step)) {
+        return window.renderTransitionScreen(step, CONFIG, 4, setStep);
       }
 
       if (step === 0) {
@@ -739,61 +725,31 @@
         return <IntroPage onNext={goNext} />;
       }
 
-      if (step === 1) {
+      // Steps 1-4: Wizard layout
+      if (step >= 1 && step <= 4) {
+        const stepLabels = ['Team Members', 'FIT Analysis', 'ABC Classification', 'Action Plans'];
+        const isValid = step === 1 ? isStep1Valid() : step === 2 ? isStep2Valid() : step === 3 ? isStep3Valid() : isStep4Valid();
+        const canProceed = !aiReviewing && isValid;
+        const nextLabels = { 1: 'NEXT: FIT ANALYSIS →', 2: 'NEXT: ABC CLASSIFICATION →', 3: 'NEXT: ACTION PLANS →', 4: 'VIEW CANVAS →' };
         return (
-          <><DependencyContext deps={deps} /><Step1Page
-            data={data}
-            updateTeamMember={updateTeamMember}
-            addTeamMember={addTeamMember}
-            removeTeamMember={removeTeamMember}
-            onNext={goNext}
-            onBack={goBack}
-            canProceed={!aiReviewing && isStep1Valid()}
-            setShowHelp={setShowHelp}
-            aiReviewing={aiReviewing}
-          /></>
-        );
-      }
-
-      if (step === 2) {
-        return (
-          <Step2Page
-            data={data}
-            updateTeamMember={updateTeamMember}
-            onNext={goNext}
-            onBack={goBack}
-            canProceed={!aiReviewing && isStep2Valid()}
-            setShowHelp={setShowHelp}
-            aiReviewing={aiReviewing}
-          />
-        );
-      }
-
-      if (step === 3) {
-        return (
-          <Step3Page
-            data={data}
-            updateTeamMember={updateTeamMember}
-            onNext={goNext}
-            onBack={goBack}
-            canProceed={!aiReviewing && isStep3Valid()}
-            setShowHelp={setShowHelp}
-            aiReviewing={aiReviewing}
-          />
-        );
-      }
-
-      if (step === 4) {
-        return (
-          <Step4Page
-            data={data}
-            updateTeamMember={updateTeamMember}
-            onNext={goNext}
-            onBack={goBack}
-            canProceed={!aiReviewing && isStep4Valid()}
-            setShowHelp={setShowHelp}
-            aiReviewing={aiReviewing}
-          />
+          <div className="wizard-layout">
+            <div className="wizard-main">
+              <div className="wizard-content animate-in">
+                <DependencyContext deps={deps} />
+                {step === 1 && <Step1Page data={data} updateTeamMember={updateTeamMember} addTeamMember={addTeamMember} removeTeamMember={removeTeamMember} />}
+                {step === 2 && <Step2Page data={data} updateTeamMember={updateTeamMember} />}
+                {step === 3 && <Step3Page data={data} updateTeamMember={updateTeamMember} />}
+                {step === 4 && <Step4Page data={data} updateTeamMember={updateTeamMember} />}
+              </div>
+              <div className="wizard-footer">
+                <button className="btn-wiz-back" onClick={goBack}>← BACK</button>
+                <button className="btn-wiz-next" disabled={!canProceed} onClick={goNext}>
+                  {aiReviewing ? 'AI COACH REVIEWING...' : (nextLabels[step] || 'NEXT →')}
+                </button>
+              </div>
+            </div>
+            <WizardSidebar currentStep={step} stepLabels={stepLabels} totalSteps={4} />
+          </div>
         );
       }
 
@@ -967,32 +923,32 @@
       );
     }
 
-    // Transition Screen Component
-    function TransitionScreen({ message, progress, stepNum }) {
-      const t = stepNum && CONFIG.TRANSITION_CONTENT && CONFIG.TRANSITION_CONTENT[stepNum];
+    // Wizard Sidebar Component
+    function WizardSidebar({ currentStep, stepLabels, totalSteps }) {
       return (
-        <div style={{ position: 'fixed', inset: 0, background: '#000', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '48px 32px' }}>
-          <div style={{ maxWidth: 640, width: '100%', textAlign: 'center' }} className="animate-in">
-            <h1 className="plaak" style={{ fontSize: 64, marginBottom: 24, textTransform: 'uppercase', lineHeight: 1.1 }}>STEP COMPLETE</h1>
-            <div style={{ marginBottom: 32 }}>
-              <div style={{ height: 4, background: '#333', marginBottom: 8 }}>
-                <div style={{ height: '100%', background: '#FFF469', width: progress + '%', transition: 'width 1s ease' }} />
-              </div>
-              <p style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: '#ccc', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{message}</p>
-            </div>
-            {t && t.brutalTruth && (
-              <div style={{ background: '#111', border: '1px solid #333', borderLeft: '4px solid #FFF469', padding: '20px 24px', marginBottom: 20, textAlign: 'left' }}>
-                <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#FFF469', display: 'block', marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>BRUTAL TRUTH</span>
-                <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7, margin: 0 }}>{t.brutalTruth}</p>
-              </div>
-            )}
-            {t && t.peerProof && (
-              <div style={{ background: '#111', border: '1px solid #333', borderLeft: '4px solid #666', padding: '20px 24px', textAlign: 'left' }}>
-                <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#999', display: 'block', marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>PEER PROOF</span>
-                <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7, fontStyle: 'italic', margin: 0 }}>{t.peerProof}</p>
-              </div>
-            )}
+        <div className="wizard-sidebar">
+          <div style={{ marginBottom: 48 }}>
+            <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#666', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>SPRINT 24</div>
+            <div style={{ fontFamily: "'Monument', monospace", fontSize: 13, color: '#fff', letterSpacing: '0.06em', textTransform: 'uppercase', lineHeight: 1.4 }}>FIT & ABC ANALYSIS</div>
           </div>
+          <div style={{ flex: 1 }}>
+            {stepLabels.map((label, i) => {
+              const stepNum = i + 1;
+              const isDone = stepNum < currentStep;
+              const isActive = stepNum === Math.floor(currentStep);
+              return (
+                <div key={stepNum} style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 28 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: '50%', border: `2px solid ${isDone ? '#FFF469' : isActive ? '#fff' : '#444'}`, background: isDone ? '#FFF469' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2 }}>
+                    {isDone ? <span style={{ color: '#000', fontSize: 13, fontWeight: 700 }}>✓</span> : <span style={{ color: isActive ? '#fff' : '#555', fontSize: 12, fontFamily: "'Monument', monospace" }}>{stepNum}</span>}
+                  </div>
+                  <div>
+                    <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: isDone ? '#FFF469' : isActive ? '#fff' : '#555', letterSpacing: '0.08em', textTransform: 'uppercase', lineHeight: 1.5 }}>{label}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#444', letterSpacing: '0.08em', textTransform: 'uppercase' }}>STEP {Math.floor(currentStep)} OF {totalSteps}</div>
         </div>
       );
     }
@@ -1073,16 +1029,9 @@
     }
 
     // Step 1: Team Member List
-    function Step1Page({ data, updateTeamMember, addTeamMember, removeTeamMember, onNext, onBack, canProceed, setShowHelp, aiReviewing }) {
+    function Step1Page({ data, updateTeamMember, addTeamMember, removeTeamMember }) {
       return (
-        <div className="bg-black text-white min-h-screen p-16 pb-32">
-          
-          <div className="max-w-5xl mx-auto">
-            <ProgressIndicator currentStep={1} />
-
-            <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
-              STEP 1 OF 4
-            </div>
+        <div>
             <div className="numbered-section mb-8 animate-in">01. TEAM MEMBERS</div>
 
             {/* Fast Track Insight */}
@@ -1109,7 +1058,7 @@
 
             <div className="space-y-6 mb-12">
               {(data.teamMembers || []).map((member, index) => (
-                <div key={member.id} className="border-4 border-gray-700 p-6 animate-in" style={{animationDelay: `${0.15 + index * 0.05}s`}}>
+                <div key={member.id} className="border-4 border-gray-200 p-6 animate-in" style={{animationDelay: `${0.15 + index * 0.05}s`}}>
                   <div className="flex justify-between items-start mb-6">
                     <h4 className="riforma-bold text-3xl">Team Member {index + 1}</h4>
                     {(data.teamMembers || []).length > 1 && (
@@ -1176,26 +1125,12 @@
               </button>
             </div>
 
-            {/* Navigation */}
-            <div className="flex gap-6">
-              <button onClick={onBack} className="btn-secondary flex-1">
-                ← BACK
-              </button>
-              <button
-                onClick={onNext}
-                disabled={!canProceed}
-                className="btn-primary flex-1"
-              >
-                {aiReviewing ? 'AI Coach Reviewing...' : 'NEXT: FIT ANALYSIS →'}
-              </button>
-            </div>
-          </div>
         </div>
       );
     }
 
     // Step 2: FIT Analysis
-    function Step2Page({ data, updateTeamMember, onNext, onBack, canProceed, setShowHelp, aiReviewing }) {
+    function Step2Page({ data, updateTeamMember }) {
       const [expandedMember, setExpandedMember] = useState(0);
 
       const RatingScale = ({ value, onChange, label }) => {
@@ -1223,14 +1158,7 @@
       };
 
       return (
-        <div className="bg-black text-white min-h-screen p-16 pb-32">
-          
-          <div className="max-w-5xl mx-auto">
-            <ProgressIndicator currentStep={2} />
-
-            <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
-              STEP 2 OF 4
-            </div>
+        <div>
             <div className="numbered-section mb-8 animate-in">02. FIT ANALYSIS</div>
 
             {/* Fast Track Insight */}
@@ -1282,13 +1210,13 @@
 
                   {/* Accordion Content */}
                   {expandedMember === index && (
-                    <div className="border-4 border-gray-700 border-t-0 p-6">
+                    <div className="border-4 border-gray-200 border-t-0 p-6">
                       <h4 className="riforma-bold text-2xl mb-6">
                         {(member.name || 'Team Member').substring(0, 50)} - {(member.role || 'Role').substring(0, 50)}
                       </h4>
 
                       {/* Energy */}
-                      <div className="border-2 border-gray-700 p-6 mb-6" style={{background:"#1a1a1a"}}>
+                      <div className="border-2 border-gray-200 p-6 mb-6">
                         <RatingScale
                           label="ENERGY: Does this role energize them or drain them?"
                           value={member.energyScore || 0}
@@ -1305,7 +1233,7 @@
                       </div>
 
                       {/* Skill */}
-                      <div className="border-2 border-gray-700 p-6 mb-6" style={{background:"#1a1a1a"}}>
+                      <div className="border-2 border-gray-200 p-6 mb-6">
                         <RatingScale
                           label="SKILL: Do they have natural talents and learned skills for this role?"
                           value={member.skillScore || 0}
@@ -1360,35 +1288,14 @@
               ))}
             </div>
 
-            {/* Navigation */}
-            <div className="flex gap-6">
-              <button onClick={onBack} className="btn-secondary flex-1">
-                ← BACK
-              </button>
-              <button
-                onClick={onNext}
-                disabled={!canProceed}
-                className="btn-primary flex-1"
-              >
-                {aiReviewing ? 'AI Coach Reviewing...' : 'NEXT: ABC CLASSIFICATION →'}
-              </button>
-            </div>
-          </div>
         </div>
       );
     }
 
     // Step 3: ABC Classification
-    function Step3Page({ data, updateTeamMember, onNext, onBack, canProceed, setShowHelp, aiReviewing }) {
+    function Step3Page({ data, updateTeamMember }) {
       return (
-        <div className="bg-black text-white min-h-screen p-16 pb-32">
-          
-          <div className="max-w-5xl mx-auto">
-            <ProgressIndicator currentStep={3} />
-
-            <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
-              STEP 3 OF 4
-            </div>
+        <div>
             <div className="numbered-section mb-8 animate-in">03. ABC CLASSIFICATION</div>
 
             {/* Fast Track Insight */}
@@ -1407,7 +1314,7 @@
               </p>
             </div>
 
-            <div className="bg-neutral-900 border-2 border-gray-300 p-6 mb-8">
+            <div className="bg-gray-50 border-2 border-gray-200 p-6 mb-8">
               <h4 className="riforma-bold text-2xl mb-4">ABC DEFINITIONS</h4>
               <div className="grid grid-cols-3 gap-4 text-base">
                 <div className="border-l-4 border-black pl-4">
@@ -1427,13 +1334,13 @@
 
             <div className="space-y-8 mb-12">
               {(data.teamMembers || []).map((member, index) => (
-                <div key={member.id} className="border-4 border-gray-700 p-6 animate-in" style={{animationDelay: `${0.15 + index * 0.05}s`}}>
+                <div key={member.id} className="border-4 border-gray-200 p-6 animate-in" style={{animationDelay: `${0.15 + index * 0.05}s`}}>
                   <h4 className="riforma-bold text-3xl mb-6">
                     {(member.name || 'Team Member').substring(0, 50)} - {(member.role || 'Role').substring(0, 50)}
                   </h4>
 
                   <div className="mb-6">
-                    <p className="text-lg mb-2 text-gray-400">
+                    <p className="text-lg mb-2 text-gray-500">
                       FIT Scores: Energy {member.energyScore || 0} | Skill {member.skillScore || 0} | Values {member.valuesScore || 0} | Impact {member.impactScore || 0}
                     </p>
                   </div>
@@ -1467,9 +1374,9 @@
                   </div>
 
                   {/* Reasoning */}
-                  <div className="bg-neutral-900 border-2 border-gray-300 p-6 mb-4">
+                  <div className="bg-gray-50 border-2 border-gray-200 p-6 mb-4">
                     <label className="monument text-sm block mb-2">ABC REASONING <span className="text-red-500">*</span></label>
-                    <p className="text-sm text-gray-400 mb-2">Why did you classify them this way? Be specific about performance, culture fit, and potential.</p>
+                    <p className="text-sm text-gray-500 mb-2">Why did you classify them this way? Be specific about performance, culture fit, and potential.</p>
                     <textarea
                       value={member.abcReasoning || ''}
                       onChange={(e) => updateTeamMember(member.id, 'abcReasoning', e.target.value)}
@@ -1520,35 +1427,14 @@
               ))}
             </div>
 
-            {/* Navigation */}
-            <div className="flex gap-6">
-              <button onClick={onBack} className="btn-secondary flex-1">
-                ← BACK
-              </button>
-              <button
-                onClick={onNext}
-                disabled={!canProceed}
-                className="btn-primary flex-1"
-              >
-                {aiReviewing ? 'AI Coach Reviewing...' : 'NEXT: ACTION PLANS →'}
-              </button>
-            </div>
-          </div>
         </div>
       );
     }
 
     // Step 4: Action Plans
-    function Step4Page({ data, updateTeamMember, onNext, onBack, canProceed, setShowHelp, aiReviewing }) {
+    function Step4Page({ data, updateTeamMember }) {
       return (
-        <div className="bg-black text-white min-h-screen p-16 pb-32">
-          
-          <div className="max-w-5xl mx-auto">
-            <ProgressIndicator currentStep={4} />
-
-            <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
-              STEP 4 OF 4
-            </div>
+        <div>
             <div className="numbered-section mb-8 animate-in">04. ACTION PLANS</div>
 
             {/* Fast Track Insight */}
@@ -1573,7 +1459,7 @@
 
             <div className="space-y-8 mb-12">
               {(data.teamMembers || []).map((member, index) => (
-                <div key={member.id} className="border-4 border-gray-700 p-6 animate-in" style={{animationDelay: `${0.15 + index * 0.05}s`}}>
+                <div key={member.id} className="border-4 border-gray-200 p-6 animate-in" style={{animationDelay: `${0.15 + index * 0.05}s`}}>
                   <div className="flex justify-between items-start mb-6">
                     <div>
                       <h4 className="riforma-bold text-3xl">
@@ -1593,7 +1479,7 @@
 
                   <div className="space-y-4">
                     {/* Development Needs */}
-                    <div className="border-2 border-gray-700 p-4" style={{background:"#1a1a1a"}}>
+                    <div className="border-2 border-gray-200 p-4">
                       <label className="monument text-sm block mb-2">DEVELOPMENT NEEDS</label>
                       <textarea
                         value={member.developmentNeeds || ''}
@@ -1606,7 +1492,7 @@
                     </div>
 
                     {/* Coaching Plan */}
-                    <div className="border-2 border-gray-700 p-4" style={{background:"#1a1a1a"}}>
+                    <div className="border-2 border-gray-200 p-4">
                       <label className="monument text-sm block mb-2">COACHING PLAN</label>
                       <textarea
                         value={member.coachingPlan || ''}
@@ -1663,20 +1549,6 @@
               ))}
             </div>
 
-            {/* Navigation */}
-            <div className="flex gap-6">
-              <button onClick={onBack} className="btn-secondary flex-1">
-                ← BACK
-              </button>
-              <button
-                onClick={onNext}
-                disabled={!canProceed}
-                className="btn-primary flex-1"
-              >
-                {aiReviewing ? 'AI Coach Reviewing...' : 'VIEW CANVAS →'}
-              </button>
-            </div>
-          </div>
         </div>
       );
     }

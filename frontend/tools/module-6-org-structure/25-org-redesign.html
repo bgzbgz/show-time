@@ -20,6 +20,7 @@
   <script src="../../shared/js/tool-db.js"></script>
   <script src="../../shared/js/ai-challenge.js"></script>
   <script src="../../shared/js/dependency-injection.js"></script>
+  <script src="../../shared/js/transition-screen.js"></script>
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
     <script src="../../shared/js/cognitive-load.js"></script>
     <script src="../../js/tool-access-control.js"></script>
@@ -443,6 +444,18 @@
       padding-left: 16px;
       margin-bottom: 16px;
     }
+
+    /* Wizard Layout */
+    .wizard-layout { display: flex; min-height: 100vh; }
+    .wizard-main { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+    .wizard-content { flex: 1; padding: 48px 64px; max-width: 860px; }
+    .wizard-footer { padding: 24px 64px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; background: #fff; }
+    .wizard-sidebar { width: 280px; background: #1a1a1a; min-height: 100vh; padding: 48px 32px; display: flex; flex-direction: column; position: sticky; top: 0; align-self: flex-start; height: 100vh; overflow-y: auto; }
+    .btn-wiz-back { background: transparent; border: 2px solid #d1d5db; color: #6b7280; padding: 14px 28px; font-family: 'Monument', monospace; font-size: 12px; letter-spacing: 0.06em; cursor: pointer; transition: all 0.2s; }
+    .btn-wiz-back:hover { border-color: #000; color: #000; }
+    .btn-wiz-next { background: #000; color: #fff; border: 2px solid #000; padding: 14px 32px; font-family: 'Monument', monospace; font-size: 12px; letter-spacing: 0.06em; cursor: pointer; transition: all 0.2s; }
+    .btn-wiz-next:hover:not(:disabled) { background: #222; }
+    .btn-wiz-next:disabled { background: #e5e7eb; border-color: #e5e7eb; color: #9ca3af; cursor: not-allowed; }
   </style>
 </head>
 <body>
@@ -472,7 +485,18 @@
             4: {
                 brutalTruth: 'Personal development plans that sit in a folder do not develop people. PDPs only work when they are tied to real business needs, reviewed quarterly, and connected to visible career progression. Otherwise they are performance review theatre.',
                 peerProof: '"One company tied PDPs to a role-advancement framework visible to all employees. Voluntary turnover dropped 35% in 18 months. The highest performers cited \'clarity about the path forward\' as the primary reason they stayed."'
+            },
+            5: {
+                brutalTruth: 'An org chart without a 90-day execution plan is just a slide deck. Structural redesigns that lack a clear activation timeline revert to old patterns within 60 days because informal authority fills the vacuum.',
+                peerProof: '"A €20M logistics company completed their redesign canvas and committed to a hard 90-day activation window with weekly leadership check-ins. Six months later, every key role was filled, every PDP had a sponsor, and net revenue per head was up 22%."'
             }
+        },
+        CLOSING_MESSAGES: {
+            1: { title: 'TEAM ASSESSED', text: 'You now have a clear picture of where each person stands. This data drives everything that follows.' },
+            2: { title: 'ROLES DEFINED', text: 'Your new structure is taking shape. Now you match people to those roles with precision.' },
+            3: { title: 'MATRIX COMPLETE', text: 'The data doesn\'t lie. You can now see exactly where the fits are strong and where gaps exist.' },
+            4: { title: 'ACTION PLAN SET', text: 'Every person has a clear path forward. Now develop the ones who need it.' },
+            5: { title: 'REDESIGN COMPLETE', text: 'You have a full people strategy: placements, development plans, and a 90-day execution roadmap.' }
         }
     };
 
@@ -518,10 +542,6 @@
     function OrganizationalRedesignApp() {
             const [deps, setDeps] = useState([]);
       const [step, setStep] = useState(0);
-      const [showTransition, setShowTransition] = useState(false);
-      const [transitionMessage, setTransitionMessage] = useState('');
-      const [transitionProgress, setTransitionProgress] = useState(0);
-      const [transitionStep, setTransitionStep] = useState(null);
       const [aiReviewing, setAiReviewing] = useState(false);
 
       const [data, setData] = useState({
@@ -915,35 +935,18 @@
           }
 
           if (step === 1) {
-            setTransitionMessage('STEP 1 COMPLETE - 20%');
-            setTransitionProgress(20);
-            setTransitionStep(1);
-            setShowTransition(true);
-            setTimeout(() => { setShowTransition(false); setStep(2); }, 5000);
+            setStep(1.5);
           } else if (step === 2) {
-            setTransitionMessage('STEP 2 COMPLETE - 40%');
-            setTransitionProgress(40);
-            setTransitionStep(2);
-            setShowTransition(true);
-            setTimeout(() => { setShowTransition(false); initializeMatrix(); setStep(3); }, 5000);
+            initializeMatrix();
+            setStep(2.5);
           } else if (step === 3) {
-            setTransitionMessage('STEP 3 COMPLETE - 60%');
-            setTransitionProgress(60);
-            setTransitionStep(3);
-            setShowTransition(true);
-            setTimeout(() => { setShowTransition(false); categorizeActionPlan(); setStep(4); }, 5000);
+            categorizeActionPlan();
+            setStep(3.5);
           } else if (step === 4) {
-            setTransitionMessage('STEP 4 COMPLETE - 80%');
-            setTransitionProgress(80);
-            setTransitionStep(4);
-            setShowTransition(true);
-            setTimeout(() => { setShowTransition(false); initializePDPs(); setStep(5); }, 5000);
+            initializePDPs();
+            setStep(4.5);
           } else if (step === 5) {
-            setTransitionMessage('STEP 5 COMPLETE - 100%');
-            setTransitionProgress(100);
-            setTransitionStep(5);
-            setShowTransition(true);
-            setTimeout(() => { setShowTransition(false); setStep(6); }, 5000);
+            setStep(5.5);
           }
         } else if (step === 0) {
           setStep(0.5);
@@ -1089,8 +1092,8 @@
       };
 
       // Render different pages based on step
-      if (showTransition) {
-        return <TransitionScreen message={transitionMessage} progress={transitionProgress} stepNum={transitionStep} />;
+      if ([1.5, 2.5, 3.5, 4.5, 5.5].includes(step)) {
+        return window.renderTransitionScreen(step, CONFIG, 5, setStep);
       }
 
       if (step === 0) {
@@ -1101,83 +1104,32 @@
         return <IntroPage onNext={goNext} />;
       }
 
-      if (step === 1) {
+      // Steps 1-5: Wizard layout
+      if (step >= 1 && step <= 5) {
+        const stepLabels = ['Team Assessment', 'Define New Roles', 'Decision Matrix', 'Action Plan', 'Dev Plans'];
+        const isValid = step === 1 ? isStep1Valid() : step === 2 ? isStep2Valid() : step === 3 ? isStep3Valid() : step === 4 ? isStep4Valid() : isStep5Valid();
+        const canProceed = !aiReviewing && isValid;
+        const nextLabels = { 1: 'NEXT: DEFINE NEW ROLES →', 2: 'NEXT: DECISION MATRIX →', 3: 'NEXT: ACTION PLAN →', 4: 'NEXT: DEV PLANS →', 5: 'VIEW CANVAS →' };
         return (
-          <><DependencyContext deps={deps} /><Step1Page
-            data={data}
-            updateTeamMember={updateTeamMember}
-            addTeamMember={addTeamMember}
-            removeTeamMember={removeTeamMember}
-            onNext={goNext}
-            onBack={goBack}
-            canProceed={!aiReviewing && isStep1Valid()}
-            setShowHelp={setShowHelp}
-            aiReviewing={aiReviewing}
-          /></>
-        );
-      }
-
-      if (step === 2) {
-        return (
-          <Step2Page
-            data={data}
-            updateRole={updateRole}
-            addRole={addRole}
-            removeRole={removeRole}
-            addSkill={addSkill}
-            removeSkill={removeSkill}
-            updateSkill={updateSkill}
-            onNext={goNext}
-            onBack={goBack}
-            canProceed={!aiReviewing && isStep2Valid()}
-            setShowHelp={setShowHelp}
-            aiReviewing={aiReviewing}
-          />
-        );
-      }
-
-      if (step === 3) {
-        return (
-          <Step3Page
-            data={data}
-            updateMatrixScore={updateMatrixScore}
-            onNext={goNext}
-            onBack={goBack}
-            canProceed={!aiReviewing && isStep3Valid()}
-            setShowHelp={setShowHelp}
-            aiReviewing={aiReviewing}
-          />
-        );
-      }
-
-      if (step === 4) {
-        return (
-          <Step4Page
-            data={data}
-            updateActionPlanItem={updateActionPlanItem}
-            onNext={goNext}
-            onBack={goBack}
-            canProceed={!aiReviewing && isStep4Valid()}
-            setShowHelp={setShowHelp}
-            aiReviewing={aiReviewing}
-          />
-        );
-      }
-
-      if (step === 5) {
-        return (
-          <Step5Page
-            data={data}
-            updatePDP={updatePDP}
-            addCapability={addCapability}
-            removeCapability={removeCapability}
-            updateCapability={updateCapability}
-            onNext={goNext}
-            onBack={goBack}
-            canProceed={!aiReviewing && isStep5Valid()}
-            setShowHelp={setShowHelp}
-            aiReviewing={aiReviewing}
-          />
+          <div className="wizard-layout">
+            <div className="wizard-main">
+              <div className="wizard-content animate-in">
+                <DependencyContext deps={deps} />
+                {step === 1 && <Step1Page data={data} updateTeamMember={updateTeamMember} addTeamMember={addTeamMember} removeTeamMember={removeTeamMember} />}
+                {step === 2 && <Step2Page data={data} updateRole={updateRole} addRole={addRole} removeRole={removeRole} addSkill={addSkill} removeSkill={removeSkill} updateSkill={updateSkill} />}
+                {step === 3 && <Step3Page data={data} updateMatrixScore={updateMatrixScore} />}
+                {step === 4 && <Step4Page data={data} updateActionPlanItem={updateActionPlanItem} />}
+                {step === 5 && <Step5Page data={data} updatePDP={updatePDP} addCapability={addCapability} removeCapability={removeCapability} updateCapability={updateCapability} />}
+              </div>
+              <div className="wizard-footer">
+                <button className="btn-wiz-back" onClick={goBack}>← BACK</button>
+                <button className="btn-wiz-next" disabled={!canProceed} onClick={goNext}>
+                  {aiReviewing ? 'AI COACH REVIEWING...' : (nextLabels[step] || 'NEXT →')}
+                </button>
+              </div>
+            </div>
+            <WizardSidebar currentStep={step} stepLabels={stepLabels} totalSteps={5} />
+          </div>
         );
       }
 
@@ -1392,32 +1344,32 @@
       );
     }
 
-    // Transition Screen Component
-    function TransitionScreen({ message, progress, stepNum }) {
-      const t = stepNum && CONFIG.TRANSITION_CONTENT && CONFIG.TRANSITION_CONTENT[stepNum];
+    // Wizard Sidebar Component
+    function WizardSidebar({ currentStep, stepLabels, totalSteps }) {
       return (
-        <div style={{ position: 'fixed', inset: 0, background: '#000', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '48px 32px' }}>
-          <div style={{ maxWidth: 640, width: '100%', textAlign: 'center' }} className="animate-in">
-            <h1 className="plaak" style={{ fontSize: 64, marginBottom: 24, textTransform: 'uppercase', lineHeight: 1.1 }}>STEP COMPLETE</h1>
-            <div style={{ marginBottom: 32 }}>
-              <div style={{ height: 4, background: '#333', marginBottom: 8 }}>
-                <div style={{ height: '100%', background: '#FFF469', width: progress + '%', transition: 'width 1s ease' }} />
-              </div>
-              <p style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: '#ccc', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{message}</p>
-            </div>
-            {t && t.brutalTruth && (
-              <div style={{ background: '#111', border: '1px solid #333', borderLeft: '4px solid #FFF469', padding: '20px 24px', marginBottom: 20, textAlign: 'left' }}>
-                <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#FFF469', display: 'block', marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>BRUTAL TRUTH</span>
-                <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7, margin: 0 }}>{t.brutalTruth}</p>
-              </div>
-            )}
-            {t && t.peerProof && (
-              <div style={{ background: '#111', border: '1px solid #333', borderLeft: '4px solid #666', padding: '20px 24px', textAlign: 'left' }}>
-                <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#999', display: 'block', marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>PEER PROOF</span>
-                <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7, fontStyle: 'italic', margin: 0 }}>{t.peerProof}</p>
-              </div>
-            )}
+        <div className="wizard-sidebar">
+          <div style={{ marginBottom: 48 }}>
+            <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#666', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>SPRINT 25</div>
+            <div style={{ fontFamily: "'Monument', monospace", fontSize: 13, color: '#fff', letterSpacing: '0.06em', textTransform: 'uppercase', lineHeight: 1.4 }}>ORG REDESIGN</div>
           </div>
+          <div style={{ flex: 1 }}>
+            {stepLabels.map((label, i) => {
+              const stepNum = i + 1;
+              const isDone = stepNum < currentStep;
+              const isActive = stepNum === Math.floor(currentStep);
+              return (
+                <div key={stepNum} style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 28 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: '50%', border: `2px solid ${isDone ? '#FFF469' : isActive ? '#fff' : '#444'}`, background: isDone ? '#FFF469' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2 }}>
+                    {isDone ? <span style={{ color: '#000', fontSize: 13, fontWeight: 700 }}>✓</span> : <span style={{ color: isActive ? '#fff' : '#555', fontSize: 12, fontFamily: "'Monument', monospace" }}>{stepNum}</span>}
+                  </div>
+                  <div>
+                    <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: isDone ? '#FFF469' : isActive ? '#fff' : '#555', letterSpacing: '0.08em', textTransform: 'uppercase', lineHeight: 1.5 }}>{label}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#444', letterSpacing: '0.08em', textTransform: 'uppercase' }}>STEP {Math.floor(currentStep)} OF {totalSteps}</div>
         </div>
       );
     }
@@ -1447,17 +1399,10 @@
     }
 
     // Step 1: Current Team Assessment Component
-    function Step1Page({ data, updateTeamMember, addTeamMember, removeTeamMember, onNext, onBack, canProceed, setShowHelp, aiReviewing }) {
-      const [helpOpen, setHelpOpen] = useState(false);
-
+    function Step1Page({ data, updateTeamMember, addTeamMember, removeTeamMember }) {
       return (
-        <div className="min-h-screen bg-white p-8">
-          <div className="max-w-7xl mx-auto">
-            {/* Header */}
+        <div>
             <div className="mb-8 animate-in">
-              <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
-                STEP 1 OF 5
-              </div>
               <div className="numbered-section mb-4">STEP 01</div>
 
               {/* Fast Track Insight */}
@@ -1477,63 +1422,6 @@
                 <p className="text-lg"><strong>Remember:</strong> Use 0-1 scale (e.g., 0.85, 0.70, 0.45). Total FIT = (Company + Job + Boss + Team) / 4</p>
               </div>
             </div>
-
-            {/* Help Button */}
-            <button
-              className="help-button"
-              onClick={() => setHelpOpen(!helpOpen)}
-            >
-              ?
-            </button>
-
-            {/* Help Modal */}
-            {helpOpen && (
-              <div className="modal-overlay" onClick={() => setHelpOpen(false)}>
-                <div className="modal-content p-8" onClick={(e) => e.stopPropagation()}>
-                  <h2 className="plaak text-4xl mb-6">HOW TO USE SPRINT 24 FIT SCORES</h2>
-
-                  <div className="space-y-6 text-lg">
-                    <div>
-                      <h3 className="riforma-bold text-2xl mb-2">FIT Score Scale (0-1)</h3>
-                      <ul className="space-y-2 ml-4">
-                        <li><strong>0.8-1.0:</strong> Excellent fit (A-player in right seat)</li>
-                        <li><strong>0.6-0.79:</strong> Good fit with development potential (B+ player)</li>
-                        <li><strong>0.4-0.59:</strong> Moderate fit, needs significant development</li>
-                        <li><strong>Below 0.4:</strong> Poor fit, likely wrong seat or wrong bus</li>
-                      </ul>
-                    </div>
-
-                    <div>
-                      <h3 className="riforma-bold text-2xl mb-2">Four FIT Dimensions</h3>
-                      <ul className="space-y-2 ml-4">
-                        <li><strong>Company Fit:</strong> Alignment with values and culture</li>
-                        <li><strong>Job Fit:</strong> Skills match for current role</li>
-                        <li><strong>Boss Fit:</strong> Relationship with direct manager</li>
-                        <li><strong>Team Fit:</strong> Collaboration with peers</li>
-                      </ul>
-                    </div>
-
-                    <div>
-                      <h3 className="riforma-bold text-2xl mb-2">Total FIT Calculation</h3>
-                      <p>Total FIT = AVERAGE of all 4 dimensions. This auto-calculates as you enter scores.</p>
-                    </div>
-
-                    <div className="bg-gray-100 p-4">
-                      <p className="riforma-bold mb-2">Example:</p>
-                      <p>Company Fit: 0.8, Job Fit: 0.7, Boss Fit: 0.9, Team Fit: 0.8</p>
-                      <p className="font-bold mt-2">Total FIT = (0.8 + 0.7 + 0.9 + 0.8) / 4 = 0.8 (Excellent Fit)</p>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => setHelpOpen(false)}
-                    className="btn-primary w-full mt-6"
-                  >
-                    GOT IT
-                  </button>
-                </div>
-              </div>
-            )}
 
             {/* Team Members */}
             <div className="space-y-6 mb-8">
@@ -1669,42 +1557,15 @@
               + ADD TEAM MEMBER
             </button>
 
-            {/* Navigation */}
-            <div className="flex justify-between items-center">
-              <button onClick={onBack} className="btn-secondary">
-                ← BACK
-              </button>
-              <button
-                onClick={onNext}
-                disabled={!canProceed}
-                className="btn-primary"
-              >
-                {aiReviewing ? 'AI Coach Reviewing...' : 'NEXT: DEFINE NEW ROLES →'}
-              </button>
-            </div>
-
-            {!canProceed && (
-              <p className="text-red-600 text-center mt-4">
-                Please complete all fields with valid FIT scores (0-1 scale) before proceeding.
-              </p>
-            )}
-          </div>
         </div>
       );
     }
 
     // Step 2: Define New Roles Component
-    function Step2Page({ data, updateRole, addRole, removeRole, addSkill, removeSkill, updateSkill, onNext, onBack, canProceed, setShowHelp, aiReviewing }) {
-      const [helpOpen, setHelpOpen] = useState(false);
-
+    function Step2Page({ data, updateRole, addRole, removeRole, addSkill, removeSkill, updateSkill }) {
       return (
-        <div className="min-h-screen bg-white p-8">
-          <div className="max-w-7xl mx-auto">
-            {/* Header */}
+        <div>
             <div className="mb-8 animate-in">
-              <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
-                STEP 2 OF 5
-              </div>
               <div className="numbered-section mb-4">STEP 02</div>
 
               {/* Fast Track Insight */}
@@ -1722,76 +1583,6 @@
                 <p className="text-lg"><strong>Criticality Scale:</strong> 10 = Mission-Critical, 7-9 = Highly Important, 4-6 = Important, 1-3 = Nice to Have</p>
               </div>
             </div>
-
-            {/* Help Button */}
-            <button
-              className="help-button"
-              onClick={() => setHelpOpen(!helpOpen)}
-            >
-              ?
-            </button>
-
-            {/* Help Modal */}
-            {helpOpen && (
-              <div className="modal-overlay" onClick={() => setHelpOpen(false)}>
-                <div className="modal-content p-8" onClick={(e) => e.stopPropagation()}>
-                  <h2 className="plaak text-4xl mb-6">ROLE CRITICALITY GUIDE</h2>
-
-                  <div className="space-y-6 text-lg">
-                    <div>
-                      <h3 className="riforma-bold text-2xl mb-2">10 = MISSION-CRITICAL</h3>
-                      <ul className="space-y-1 ml-4">
-                        <li>Revenue generation directly depends on this role</li>
-                        <li>Customer relationships owned by this person</li>
-                        <li>Failure creates immediate business crisis</li>
-                        <li>Example: Head of Sales in B2B company</li>
-                      </ul>
-                    </div>
-
-                    <div>
-                      <h3 className="riforma-bold text-2xl mb-2">7-9 = HIGHLY IMPORTANT</h3>
-                      <ul className="space-y-1 ml-4">
-                        <li>Supports core activities directly</li>
-                        <li>Performance significantly impacts results</li>
-                        <li>Hard to replace quickly</li>
-                        <li>Example: CFO, Head of Operations</li>
-                      </ul>
-                    </div>
-
-                    <div>
-                      <h3 className="riforma-bold text-2xl mb-2">4-6 = IMPORTANT</h3>
-                      <ul className="space-y-1 ml-4">
-                        <li>Supporting functions</li>
-                        <li>Performance matters but not make-or-break</li>
-                        <li>Can be hired/trained relatively easily</li>
-                        <li>Example: Marketing Coordinator, HR Manager</li>
-                      </ul>
-                    </div>
-
-                    <div>
-                      <h3 className="riforma-bold text-2xl mb-2">1-3 = NICE TO HAVE</h3>
-                      <ul className="space-y-1 ml-4">
-                        <li>Administrative or low-impact roles</li>
-                        <li>Can be outsourced or delayed</li>
-                        <li>Example: Office Manager, Junior roles</li>
-                      </ul>
-                    </div>
-
-                    <div className="bg-gray-100 p-4">
-                      <p className="riforma-bold mb-2">How to Define Skills from Sprint 23:</p>
-                      <p>Review your Sprint 23 capability analysis. List 3-7 key skills that map to the capabilities needed for this role's core activities.</p>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => setHelpOpen(false)}
-                    className="btn-primary w-full mt-6"
-                  >
-                    GOT IT
-                  </button>
-                </div>
-              </div>
-            )}
 
             {/* Roles */}
             <div className="space-y-6 mb-8">
@@ -1890,42 +1681,15 @@
               + ADD ROLE
             </button>
 
-            {/* Navigation */}
-            <div className="flex justify-between items-center">
-              <button onClick={onBack} className="btn-secondary">
-                ← BACK
-              </button>
-              <button
-                onClick={onNext}
-                disabled={!canProceed}
-                className="btn-primary"
-              >
-                {aiReviewing ? 'AI Coach Reviewing...' : 'NEXT: DECISION MATRIX →'}
-              </button>
-            </div>
-
-            {!canProceed && (
-              <p className="text-red-600 text-center mt-4">
-                Please complete all role titles, set criticality (1-10), and define at least 3 skills per role.
-              </p>
-            )}
-          </div>
         </div>
       );
     }
 
     // Step 3: Decision Matrix Component
-    function Step3Page({ data, updateMatrixScore, onNext, onBack, canProceed, setShowHelp, aiReviewing }) {
-      const [helpOpen, setHelpOpen] = useState(false);
-
+    function Step3Page({ data, updateMatrixScore }) {
       return (
-        <div className="min-h-screen bg-white p-8">
-          <div className="max-w-7xl mx-auto">
-            {/* Header */}
+        <div>
             <div className="mb-8 animate-in">
-              <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
-                STEP 3 OF 5
-              </div>
               <div className="numbered-section mb-4">STEP 03</div>
 
               {/* Fast Track Insight */}
@@ -1943,64 +1707,6 @@
                 <p className="text-lg"><strong>Scoring:</strong> 0.8+ (Excellent), 0.6-0.79 (Good), 0.4-0.59 (Moderate), Below 0.4 (Poor)</p>
               </div>
             </div>
-
-            {/* Help Button */}
-            <button
-              className="help-button"
-              onClick={() => setHelpOpen(!helpOpen)}
-            >
-              ?
-            </button>
-
-            {/* Help Modal */}
-            {helpOpen && (
-              <div className="modal-overlay" onClick={() => setHelpOpen(false)}>
-                <div className="modal-content p-8" onClick={(e) => e.stopPropagation()}>
-                  <h2 className="plaak text-4xl mb-6">PERSON-ROLE FIT SCORING</h2>
-
-                  <div className="space-y-6 text-lg">
-                    <div>
-                      <h3 className="riforma-bold text-2xl mb-2">Scoring Methodology</h3>
-                      <p className="mb-4">For each person-role combination, assess fit based on:</p>
-                      <ul className="space-y-2 ml-4">
-                        <li><strong>Skill Alignment (40%):</strong> Does person have required technical skills?</li>
-                        <li><strong>Company Fit (20%):</strong> Cultural alignment from Step 1</li>
-                        <li><strong>Job Interest (20%):</strong> Does person want this role?</li>
-                        <li><strong>Leadership Assessment (20%):</strong> Team's view of capability</li>
-                      </ul>
-                    </div>
-
-                    <div>
-                      <h3 className="riforma-bold text-2xl mb-2">Decision Rules</h3>
-                      <ul className="space-y-2 ml-4">
-                        <li><strong>0.8-1.0:</strong> Excellent match, immediate placement</li>
-                        <li><strong>0.6-0.79:</strong> Good match with 1-3 months development</li>
-                        <li><strong>0.4-0.59:</strong> Moderate match, needs 3-6 months significant development</li>
-                        <li><strong>0.2-0.39:</strong> Poor match, not recommended</li>
-                        <li><strong>0-0.19:</strong> Completely wrong fit, do not place</li>
-                      </ul>
-                    </div>
-
-                    <div className="bg-gray-100 p-4">
-                      <p className="riforma-bold mb-2">Key Insights to Extract:</p>
-                      <ul className="space-y-1 ml-4">
-                        <li><strong>Gaps:</strong> Roles with no 0.6+ candidates need external hire</li>
-                        <li><strong>Conflicts:</strong> Multiple people fit one role - choose best</li>
-                        <li><strong>Mismatches:</strong> Person with no scores above 0.6 = wrong bus</li>
-                        <li><strong>Stars:</strong> Person with multiple high scores = retention risk</li>
-                      </ul>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => setHelpOpen(false)}
-                    className="btn-primary w-full mt-6"
-                  >
-                    GOT IT
-                  </button>
-                </div>
-              </div>
-            )}
 
             {/* Matrix Table */}
             <div className="overflow-x-auto mb-8 animate-in" style={{animationDelay: '0.1s'}}>
@@ -2073,42 +1779,15 @@
               </div>
             </div>
 
-            {/* Navigation */}
-            <div className="flex justify-between items-center">
-              <button onClick={onBack} className="btn-secondary">
-                ← BACK
-              </button>
-              <button
-                onClick={onNext}
-                disabled={!canProceed}
-                className="btn-primary"
-              >
-                {aiReviewing ? 'AI Coach Reviewing...' : 'NEXT: ACTION PLAN →'}
-              </button>
-            </div>
-
-            {!canProceed && (
-              <p className="text-red-600 text-center mt-4">
-                Please score all person-role combinations before proceeding.
-              </p>
-            )}
-          </div>
         </div>
       );
     }
 
     // Step 4: Action Plan Component
-    function Step4Page({ data, updateActionPlanItem, onNext, onBack, canProceed, setShowHelp, aiReviewing }) {
-      const [helpOpen, setHelpOpen] = useState(false);
-
+    function Step4Page({ data, updateActionPlanItem }) {
       return (
-        <div className="min-h-screen bg-white p-8">
-          <div className="max-w-7xl mx-auto">
-            {/* Header */}
+        <div>
             <div className="mb-8 animate-in">
-              <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
-                STEP 4 OF 5
-              </div>
               <div className="numbered-section mb-4">STEP 04</div>
 
               {/* Fast Track Insight */}
@@ -2126,73 +1805,6 @@
                 <p className="text-lg"><strong>Categories:</strong> Immediate (0.8+), Development (0.6-0.79), Transition (below 0.6)</p>
               </div>
             </div>
-
-            {/* Help Button */}
-            <button
-              className="help-button"
-              onClick={() => setHelpOpen(!helpOpen)}
-            >
-              ?
-            </button>
-
-            {/* Help Modal */}
-            {helpOpen && (
-              <div className="modal-overlay" onClick={() => setHelpOpen(false)}>
-                <div className="modal-content p-8" onClick={(e) => e.stopPropagation()}>
-                  <h2 className="plaak text-4xl mb-6">ACTION PLAN CATEGORIES</h2>
-
-                  <div className="space-y-6 text-lg">
-                    <div>
-                      <h3 className="riforma-bold text-2xl mb-2">IMMEDIATE PLACEMENT (0.8+ FIT)</h3>
-                      <p className="mb-2"><strong>Action Required:</strong></p>
-                      <ul className="space-y-1 ml-4">
-                        <li>Announce placement decision</li>
-                        <li>Define success metrics for first 90 days</li>
-                        <li>Set start date</li>
-                        <li>Communicate to organization</li>
-                      </ul>
-                      <p className="mt-2"><strong>Timeline:</strong> Within 2 weeks of sprint completion</p>
-                    </div>
-
-                    <div>
-                      <h3 className="riforma-bold text-2xl mb-2">DEVELOPMENT REQUIRED (0.6-0.79 FIT)</h3>
-                      <p className="mb-2"><strong>Action Required:</strong></p>
-                      <ul className="space-y-1 ml-4">
-                        <li>Complete Personal Development Plan (Step 5)</li>
-                        <li>Assign mentor/coach</li>
-                        <li>Set 30-60-90 day milestones</li>
-                        <li>Define success criteria for role transition</li>
-                        <li>Provide resources (training, courses, shadowing)</li>
-                      </ul>
-                      <p className="mt-2"><strong>Timeline:</strong> PDP created within 4 weeks, development 1-6 months</p>
-                    </div>
-
-                    <div>
-                      <h3 className="riforma-bold text-2xl mb-2">TRANSITION (Below 0.6 FIT)</h3>
-                      <p className="mb-2"><strong>Action Types:</strong></p>
-                      <ul className="space-y-1 ml-4">
-                        <li><strong>Reassignment:</strong> Find different role in company</li>
-                        <li><strong>Exit:</strong> Performance improvement plan then exit</li>
-                        <li><strong>Role Elimination:</strong> If old role no longer exists</li>
-                      </ul>
-                      <p className="mt-2"><strong>Timeline:</strong> Decision communication within 1 week, execution 30-90 days</p>
-                    </div>
-
-                    <div className="bg-gray-100 p-4">
-                      <p className="riforma-bold mb-2">Communication Tips:</p>
-                      <p>Handle with brutal honesty but human compassion. Wrong seat does not equal bad person. Frame as finding right fit for everyone's success.</p>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => setHelpOpen(false)}
-                    className="btn-primary w-full mt-6"
-                  >
-                    GOT IT
-                  </button>
-                </div>
-              </div>
-            )}
 
             {/* Immediate Placement */}
             <div className="mb-8 animate-in" style={{animationDelay: '0.05s'}}>
@@ -2353,37 +1965,17 @@
               )}
             </div>
 
-            {/* Navigation */}
-            <div className="flex justify-between items-center">
-              <button onClick={onBack} className="btn-secondary">
-                ← BACK
-              </button>
-              <button
-                onClick={onNext}
-                disabled={!canProceed}
-                className="btn-primary"
-              >
-                {aiReviewing ? 'AI Coach Reviewing...' : 'NEXT: PERSONAL DEVELOPMENT PLANS →'}
-              </button>
-            </div>
-          </div>
         </div>
       );
     }
 
     // Step 5: Personal Development Plans Component
-    function Step5Page({ data, updatePDP, addCapability, removeCapability, updateCapability, onNext, onBack, canProceed, setShowHelp, aiReviewing }) {
-      const [helpOpen, setHelpOpen] = useState(false);
+    function Step5Page({ data, updatePDP, addCapability, removeCapability, updateCapability }) {
       const [currentPdpIndex, setCurrentPdpIndex] = useState(0);
 
       return (
-        <div className="min-h-screen bg-white p-8">
-          <div className="max-w-7xl mx-auto">
-            {/* Header */}
+        <div>
             <div className="mb-8 animate-in">
-              <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
-                STEP 5 OF 5
-              </div>
               <div className="numbered-section mb-4">STEP 05</div>
 
               {/* Fast Track Insight */}
@@ -2401,80 +1993,6 @@
                 <p className="text-lg"><strong>Structure:</strong> Core activity → Capabilities → Gap analysis → What/When/ByWhom → 30-60-90 checkpoints</p>
               </div>
             </div>
-
-            {/* Help Button */}
-            <button
-              className="help-button"
-              onClick={() => setHelpOpen(!helpOpen)}
-            >
-              ?
-            </button>
-
-            {/* Help Modal */}
-            {helpOpen && (
-              <div className="modal-overlay" onClick={() => setHelpOpen(false)}>
-                <div className="modal-content p-8" onClick={(e) => e.stopPropagation()}>
-                  <h2 className="plaak text-4xl mb-6">PDP STRUCTURE GUIDE</h2>
-
-                  <div className="space-y-6 text-lg">
-                    <div>
-                      <h3 className="riforma-bold text-2xl mb-2">PDP Components</h3>
-                      <ul className="space-y-2 ml-4">
-                        <li><strong>Core Activity:</strong> From Sprint 22, what does this role support?</li>
-                        <li><strong>Capabilities:</strong> From Sprint 23, what skills are needed?</li>
-                        <li><strong>Current Fulfillment:</strong> 0-100% - where is person now?</li>
-                        <li><strong>Gap:</strong> Auto-calculated (100% - Current)</li>
-                        <li><strong>What:</strong> Specific action (training, mentorship, project)</li>
-                        <li><strong>When:</strong> Deadline or milestone date</li>
-                        <li><strong>By Whom:</strong> Owner (manager, HR, external trainer)</li>
-                      </ul>
-                    </div>
-
-                    <div>
-                      <h3 className="riforma-bold text-2xl mb-2">Development Timeframes</h3>
-                      <ul className="space-y-2 ml-4">
-                        <li><strong>30-60 days:</strong> 0.7-0.79 FIT → 0.8+ (minor skill gaps)</li>
-                        <li><strong>3-6 months:</strong> 0.6-0.69 FIT → 0.8+ (moderate gaps)</li>
-                        <li><strong>6-12 months:</strong> Below 0.6 FIT (high risk, consider external hire)</li>
-                      </ul>
-                    </div>
-
-                    <div>
-                      <h3 className="riforma-bold text-2xl mb-2">30-60-90 Day Checkpoints</h3>
-                      <p className="mb-2"><strong>After 30 Days:</strong></p>
-                      <ul className="space-y-1 ml-4">
-                        <li>Initial training started</li>
-                        <li>Mentor assigned and first sessions completed</li>
-                        <li>Baseline skill assessment documented</li>
-                      </ul>
-                      <p className="mt-3 mb-2"><strong>After 60 Days:</strong></p>
-                      <ul className="space-y-1 ml-4">
-                        <li>50% of development activities completed</li>
-                        <li>Demonstrable skill improvement</li>
-                        <li>First project milestone achieved</li>
-                      </ul>
-                      <p className="mt-3 mb-2"><strong>After 90 Days:</strong></p>
-                      <ul className="space-y-1 ml-4">
-                        <li>Ready for role transition OR</li>
-                        <li>Clear decision made: promote, continue development, or exit</li>
-                      </ul>
-                    </div>
-
-                    <div className="bg-gray-100 p-4">
-                      <p className="riforma-bold mb-2">Success Criteria:</p>
-                      <p>Person must show consistent progress across all capability gaps. No progress after 30 days = reconsider placement. Resistance to development = capability or willingness issue.</p>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => setHelpOpen(false)}
-                    className="btn-primary w-full mt-6"
-                  >
-                    GOT IT
-                  </button>
-                </div>
-              </div>
-            )}
 
             {/* PDPs */}
             {(data.pdps || []).length === 0 ? (
@@ -2663,26 +2181,6 @@
               </div>
             )}
 
-            {/* Navigation */}
-            <div className="flex justify-between items-center">
-              <button onClick={onBack} className="btn-secondary">
-                ← BACK
-              </button>
-              <button
-                onClick={onNext}
-                disabled={!canProceed}
-                className="btn-primary"
-              >
-                {aiReviewing ? 'AI Coach Reviewing...' : 'NEXT: CANVAS SUMMARY →'}
-              </button>
-            </div>
-
-            {!canProceed && (
-              <p className="text-red-600 text-center mt-4">
-                Please complete core activity and at least one capability with fulfillment % for each PDP.
-              </p>
-            )}
-          </div>
         </div>
       );
     }
