@@ -1451,9 +1451,21 @@
            STEP 4: DREAM BOARD
            ============================================================ */
         function Step4DreamBoard({ data, updateData }) {
+            const [customHashtag, setCustomHashtag] = useState('');
+
             const addWord = (word) => {
                 if (data.moodBoard.words.length < 10 && !data.moodBoard.words.includes(word)) {
                     updateData('moodBoard.words', [...data.moodBoard.words, word]);
+                }
+            };
+
+            const addCustomHashtag = () => {
+                if (customHashtag.trim() && data.moodBoard.words.length < 10) {
+                    const tag = customHashtag.trim().replace(/^#/, '');
+                    if (tag && !data.moodBoard.words.includes(tag)) {
+                        updateData('moodBoard.words', [...data.moodBoard.words, tag]);
+                    }
+                    setCustomHashtag('');
                 }
             };
 
@@ -1474,17 +1486,34 @@
                             <label className="ft-label">
                                 7-10 Words that capture your Dream <span className="ft-required">*</span>
                             </label>
-                            <input
-                                type="text"
-                                className="ft-input"
-                                placeholder="Type a word and press Enter"
-                                onKeyPress={(e) => {
-                                    if (e.key === 'Enter' && e.target.value && data.moodBoard.words.length < 10) {
-                                        addWord(e.target.value);
-                                        e.target.value = '';
-                                    }
-                                }}
-                            />
+                            <div style={{ display: 'flex', gap: 8 }}>
+                                <input
+                                    type="text"
+                                    className="ft-input"
+                                    style={{ flex: 1 }}
+                                    placeholder="Type a custom hashtag and press Enter or click Add"
+                                    value={customHashtag}
+                                    onChange={(e) => setCustomHashtag(e.target.value)}
+                                    onKeyPress={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            addCustomHashtag();
+                                        }
+                                    }}
+                                    disabled={data.moodBoard.words.length >= 10}
+                                />
+                                <button
+                                    onClick={addCustomHashtag}
+                                    disabled={!customHashtag.trim() || data.moodBoard.words.length >= 10}
+                                    style={{
+                                        padding: '10px 20px', background: '#000', color: '#fff', border: '2px solid #000',
+                                        cursor: customHashtag.trim() && data.moodBoard.words.length < 10 ? 'pointer' : 'default',
+                                        opacity: customHashtag.trim() && data.moodBoard.words.length < 10 ? 1 : 0.4,
+                                        fontFamily: "'Monument', monospace", fontSize: 12, letterSpacing: '0.05em',
+                                        whiteSpace: 'nowrap', minHeight: 44
+                                    }}
+                                >ADD #</button>
+                            </div>
                         </div>
 
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 16 }}>
