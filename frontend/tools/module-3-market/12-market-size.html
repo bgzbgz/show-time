@@ -596,7 +596,7 @@
             const [step, setStep] = useState(0);
             const [step1Phase, setStep1Phase] = useState(1);
             const [step2Phase, setStep2Phase] = useState('list');
-            const [userEmail, setUserEmail] = useState('');
+            // userEmail removed — no longer collected
             const [aiReviewing, setAiReviewing] = useState(false);
 
             const [marketData, setMarketData] = useState({
@@ -715,10 +715,10 @@
                 loadDeps();
             }, []);
 
-            // Auto-save functionality
+            // Auto-save functionality (no email required)
             useEffect(() => {
-                if (userEmail && step > 0) {
-                    const autoSaveData = { userEmail, lastSaved: new Date().toISOString(), currentStep: step, marketData, drivingForces, impactData };
+                if (step > 0) {
+                    const autoSaveData = { lastSaved: new Date().toISOString(), currentStep: step, marketData, drivingForces, impactData };
                     localStorage.setItem('marketSizeTool_autosave', JSON.stringify(autoSaveData));
                 }
             }, [marketData, drivingForces, impactData, step]);
@@ -729,8 +729,7 @@
                 if (savedData && !marketData.totalCustomers) {
                     try {
                         const parsed = JSON.parse(savedData);
-                        if (parsed.userEmail && confirm('Would you like to restore your previous session?')) {
-                            setUserEmail(parsed.userEmail);
+                        if (parsed.marketData && confirm('Would you like to restore your previous session?')) {
                             setMarketData(parsed.marketData || marketData);
                             setDrivingForces(parsed.drivingForces || drivingForces);
                             setImpactData(parsed.impactData || {});
@@ -835,7 +834,7 @@
                                     <div className={step === 3 ? "wizard-content-wide animate-in" : "wizard-content animate-in"}>
                                         {step === 1 && <><DependencyContext deps={deps} /><Step1Content marketData={marketData} setMarketData={setMarketData} marketSize={marketSize} profitPool={profitPool} currentYear={currentYear} phase={step1Phase} setPhase={setStep1Phase} canProceedPhase1={canProceedStep1Phase1} canProceed={canProceedStep1} /></>}
                                         {step === 2 && <Step2Content drivingForces={drivingForces} setDrivingForces={setDrivingForces} rankedForces={rankedForces} topForces={topForces} phase={step2Phase} setPhase={setStep2Phase} canProceed={canProceedStep2} />}
-                                        {step === 3 && <Step3Content topForces={topForces} impactData={impactData} setImpactData={setImpactData} marketData={marketData} marketSize={marketSize} profitPool={profitPool} future={future} currentYear={currentYear} futureYear={futureYear} userEmail={userEmail} drivingForces={drivingForces} />}
+                                        {step === 3 && <Step3Content topForces={topForces} impactData={impactData} setImpactData={setImpactData} marketData={marketData} marketSize={marketSize} profitPool={profitPool} future={future} currentYear={currentYear} futureYear={futureYear} drivingForces={drivingForces} />}
                                     </div>
 
                                     <ButtonFooter
@@ -1023,10 +1022,10 @@
 
                     {/* Phase 2: Market Size Result */}
                     {phase === 2 && (
-                        <div style={{ background: '#000', color: '#fff', border: '4px solid #000', padding: 32, textAlign: 'center', marginBottom: 24 }}>
-                            <div className="monument" style={{ fontSize: 12, color: '#FFF469', marginBottom: 12 }}>MARKET SIZE CALCULATED</div>
-                            <div className="plaak" style={{ fontSize: 48 }}>{formatCurrency(marketSize)}</div>
-                            <div style={{ fontSize: 14, color: '#999', marginTop: 8 }}>{currentYear}</div>
+                        <div style={{ background: '#000', color: '#fff', border: '4px solid #000', padding: 48, textAlign: 'center', marginBottom: 24 }}>
+                            <div className="monument" style={{ fontSize: 12, color: '#FFF469', marginBottom: 16, letterSpacing: '0.1em' }}>MARKET SIZE CALCULATED</div>
+                            <div style={{ fontSize: '64px', fontWeight: '900', fontFamily: "'Plaak', sans-serif", textAlign: 'center', lineHeight: 1 }}>{formatCurrency(marketSize)}</div>
+                            <div style={{ fontSize: 14, color: '#999', marginTop: 12 }}>{currentYear}</div>
                         </div>
                     )}
 
@@ -1046,16 +1045,16 @@
 
                     {/* Phase 4: Complete Results */}
                     {phase === 4 && (
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
-                            <div className="result-card">
-                                <div style={{ fontSize: 13, color: '#6B7280', marginBottom: 4 }}>Market Size</div>
-                                <div style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 4 }}>{currentYear}</div>
-                                <div className="plaak" style={{ fontSize: 32 }}>{formatCurrency(marketSize)}</div>
+                        <div style={{ marginBottom: 24 }}>
+                            <div style={{ background: '#000', color: '#fff', border: '4px solid #000', padding: 48, textAlign: 'center', marginBottom: 16 }}>
+                                <div className="monument" style={{ fontSize: 11, color: '#FFF469', marginBottom: 12, letterSpacing: '0.1em' }}>MARKET SIZE</div>
+                                <div style={{ fontSize: '64px', fontWeight: '900', fontFamily: "'Plaak', sans-serif", textAlign: 'center', lineHeight: 1 }}>{formatCurrency(marketSize)}</div>
+                                <div style={{ fontSize: 13, color: '#999', marginTop: 10 }}>{currentYear}</div>
                             </div>
-                            <div className="result-card" style={{ borderWidth: 4 }}>
-                                <div style={{ fontSize: 13, color: '#6B7280', marginBottom: 4 }}>Profit Pool</div>
-                                <div style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 4 }}>{currentYear}</div>
-                                <div className="plaak" style={{ fontSize: 32 }}>{formatCurrency(profitPool)}</div>
+                            <div style={{ background: '#111', color: '#fff', border: '4px solid #FFF469', padding: 48, textAlign: 'center' }}>
+                                <div className="monument" style={{ fontSize: 11, color: '#FFF469', marginBottom: 12, letterSpacing: '0.1em' }}>PROFIT POOL</div>
+                                <div style={{ fontSize: '64px', fontWeight: '900', fontFamily: "'Plaak', sans-serif", textAlign: 'center', lineHeight: 1 }}>{formatCurrency(profitPool)}</div>
+                                <div style={{ fontSize: 13, color: '#999', marginTop: 10 }}>{currentYear}</div>
                             </div>
                         </div>
                     )}
@@ -1180,7 +1179,7 @@
         /* ============================================================
            STEP 3: FUTURE IMPACT
            ============================================================ */
-        function Step3Content({ topForces, impactData, setImpactData, marketData, marketSize, profitPool, future, currentYear, futureYear, userEmail, drivingForces }) {
+        function Step3Content({ topForces, impactData, setImpactData, marketData, marketSize, profitPool, future, currentYear, futureYear, drivingForces }) {
             const updateImpact = (forceId, field, value) => {
                 setImpactData({
                     ...impactData,
@@ -1199,7 +1198,7 @@
 
             const handleSubmitToSupabase = async () => {
                 const submissionData = {
-                    userEmail, completedAt: new Date().toISOString(),
+                    completedAt: new Date().toISOString(),
                     marketData: { totalCustomers: marketData.totalCustomers, avgSpending: marketData.avgSpending, purchasesPerYear: marketData.purchasesPerYear, grossMargin: marketData.grossMargin, marketSize, profitPool },
                     drivingForces: drivingForces.filter(f => f.name.trim()).map(f => ({ name: f.name, impact: f.impact, probability: f.probability, score: (2 * f.impact) + f.probability })),
                     topForces: topForces.map(f => ({ name: f.name, impact: f.impact, probability: f.probability, score: f.score })),
