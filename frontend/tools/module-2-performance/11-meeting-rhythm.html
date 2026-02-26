@@ -669,11 +669,40 @@
         const [individualSubmitted, setIndividualSubmitted] = useState(false);
         const [submitStatus, setSubmitStatus] = useState(null);
         const [submitMessage, setSubmitMessage] = useState('');
+        const [aiReviewing, setAiReviewing] = useState(false);
         const autosaveRef = useRef(null);
 
         const u = (field, value) => setData(prev => ({ ...prev, [field]: value }));
         const ut = (field, value) => setTeamData(prev => ({ ...prev, [field]: value }));
         const goToStep = (s) => { window.scrollTo({ top: 0, behavior: 'smooth' }); setStep(s); };
+
+        // AI-gated step navigation
+        const handleNext = async (fromStep) => {
+            const nextStep = fromStep <= 3 ? fromStep + 0.5 : fromStep + 1;
+            const userId = localStorage.getItem('ft_user_id');
+            if (!userId || !window.AIChallenge) {
+                goToStep(nextStep);
+                return;
+            }
+            setAiReviewing(true);
+            try {
+                let stepAnswers = {};
+                let stepName = '';
+                if (fromStep === 1) { stepName = 'Priorities Breakdown'; stepAnswers = { priorities: data.priorities }; }
+                else if (fromStep === 2) { stepName = 'Meeting Readiness'; stepAnswers = { agendaItems: data.agendaItems }; }
+                else if (fromStep === 3) { stepName = 'Meeting Evaluation'; stepAnswers = { effectiveness: data.effectiveness }; }
+                else if (fromStep === 4) { stepName = 'Big Rock Discussion'; stepAnswers = { bigRock: data.bigRock }; }
+                const canProceed = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, stepName);
+                if (canProceed) {
+                    goToStep(nextStep);
+                }
+            } catch (err) {
+                console.warn('[AIChallenge] Error, allowing passage:', err);
+                goToStep(nextStep);
+            } finally {
+                setAiReviewing(false);
+            }
+        };
 
         // Autosave
         useEffect(() => {
@@ -817,7 +846,7 @@
                                 {step === 3 && <Step3 d={data} u={u} />}
                                 {step === 4 && <Step4 d={data} u={u} />}
                             </div>
-                            <ButtonFooter onBack={() => step === 1 ? goToStep(0.5) : goToStep(step - 1)} onNext={() => step < 4 ? goToStep(step + 0.5) : goToStep(5)} nextLabel={step === 4 ? 'Review' : 'Next'} />
+                            <ButtonFooter onBack={() => step === 1 ? goToStep(0.5) : goToStep(step - 1)} onNext={() => handleNext(step)} nextLabel={step === 4 ? 'Review' : aiReviewing ? 'Reviewing...' : 'Next'} disabled={aiReviewing} />
                         </div>
                         <WizardSidebar step={step} teamUnlocked={teamToolUnlocked} onNavigate={goToStep} />
                     </div>

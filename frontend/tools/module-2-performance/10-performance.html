@@ -588,12 +588,43 @@
         const [individualSubmitted, setIndividualSubmitted] = useState(false);
         const [submitStatus, setSubmitStatus] = useState(null);
         const [submitMessage, setSubmitMessage] = useState('');
+        const [aiReviewing, setAiReviewing] = useState(false);
         const autosaveRef = useRef(null);
 
         const u = (field, value) => setData(prev => ({ ...prev, [field]: value }));
         const ut = (field, value) => setTeamData(prev => ({ ...prev, [field]: value }));
 
         const goToStep = (s) => { window.scrollTo({ top: 0, behavior: 'smooth' }); setStep(s); };
+
+        // AI-gated step navigation
+        const handleNext = async (fromStep) => {
+            const nextStep = fromStep < 5 ? fromStep + 0.5 : fromStep + 1;
+            const userId = localStorage.getItem('ft_user_id');
+            if (!userId || !window.AIChallenge) {
+                goToStep(nextStep);
+                return;
+            }
+            setAiReviewing(true);
+            try {
+                let stepAnswers = {};
+                let stepName = '';
+                if (fromStep === 1) { stepName = 'Goal Setting & Monitoring'; stepAnswers = { goals: data.goals }; }
+                else if (fromStep === 2) { stepName = 'Performance Measurement'; stepAnswers = { tasks: data.tasks }; }
+                else if (fromStep === 3) { stepName = '5 Whys Root Cause'; stepAnswers = { five_why: data.fiveWhys }; }
+                else if (fromStep === 4) { stepName = '80/20 Principle'; stepAnswers = { eighty20: data.eighty20 }; }
+                else if (fromStep === 5) { stepName = 'Theory of Constraints'; stepAnswers = { constraints: data.constraints }; }
+                else if (fromStep === 6) { stepName = 'Accountability System'; stepAnswers = { accountability: data.accountability }; }
+                const canProceed = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, stepName);
+                if (canProceed) {
+                    goToStep(nextStep);
+                }
+            } catch (err) {
+                console.warn('[AIChallenge] Error, allowing passage:', err);
+                goToStep(nextStep);
+            } finally {
+                setAiReviewing(false);
+            }
+        };
 
         // Autosave
         useEffect(() => {
@@ -736,7 +767,7 @@
                                 {step === 5 && <Step5 d={data} u={u} />}
                                 {step === 6 && <Step6 d={data} u={u} />}
                             </div>
-                            <ButtonFooter onBack={() => step === 1 ? goToStep(0.5) : goToStep(step - 1)} onNext={() => step < 5 ? goToStep(step + 0.5) : goToStep(step + 1)} nextLabel={step === 6 ? 'Review' : 'Next'} />
+                            <ButtonFooter onBack={() => step === 1 ? goToStep(0.5) : goToStep(step - 1)} onNext={() => step < 6 ? handleNext(step) : goToStep(step + 1)} nextLabel={step === 6 ? 'Review' : aiReviewing ? 'Reviewing...' : 'Next'} disabled={aiReviewing} />
                         </div>
                         <WizardSidebar step={step} teamUnlocked={teamToolUnlocked} onNavigate={goToStep} />
                     </div>
