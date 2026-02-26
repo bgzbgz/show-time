@@ -272,6 +272,33 @@
     #canvas-content { background: #fff !important; color: #000 !important; }
     #canvas-content input, #canvas-content textarea { background: #fff !important; color: #000 !important; }
 
+    /* === WIZARD LAYOUT === */
+    .wizard-layout { display: flex; min-height: 100vh; }
+    .wizard-main { flex: 1; display: flex; flex-direction: column; min-height: 100vh; background: #fff; }
+    .wizard-content { max-width: 720px; width: 100%; margin: 0 auto; padding: 48px 32px; flex: 1; }
+    .wizard-sidebar { width: 280px; background: #000; border-left: 1px solid #000; flex-shrink: 0; position: sticky; top: 0; height: 100vh; overflow: hidden; }
+    .wizard-sidebar-inner { padding: 32px 24px; height: 100%; overflow-y: auto; }
+    .sidebar-step-item { padding: 12px; margin-bottom: 8px; border-left: 3px solid transparent; transition: all 0.2s ease; cursor: default; }
+    .sidebar-step-item.active { border-left-color: #FFF469; background: #222; }
+    .sidebar-step-item.completed { background: #fff; color: #000; border-left-color: #fff; cursor: pointer; }
+    .sidebar-step-item.completed:hover { background: #E0E0E0; }
+    .sidebar-step-item.locked { opacity: 0.5; }
+    .wizard-footer { border-top: 1px solid #e0e0e0; padding: 20px 32px; display: flex; gap: 16px; justify-content: space-between; background: #fff; }
+    .btn-wiz-back { background: #fff; color: #000; border: 1px solid #000; padding: 14px 28px; font-family: 'Monument', monospace; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; }
+    .btn-wiz-back:hover { background: #f3f3f3; }
+    .btn-wiz-next { background: #000; color: #fff; border: none; padding: 14px 40px; font-family: 'Monument', monospace; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; flex: 1; }
+    .btn-wiz-next:hover { background: #222; }
+    .btn-wiz-next:disabled { background: #ccc; cursor: default; }
+    /* Override dark inputs for wizard content */
+    .wizard-main input[type="text"], .wizard-main input[type="number"], .wizard-main textarea, .wizard-main select {
+        background: #f9f9f9 !important; color: #000 !important; border-color: #ccc !important;
+    }
+    .wizard-main input::placeholder, .wizard-main textarea::placeholder { color: #999 !important; }
+    .wizard-main input:focus, .wizard-main textarea:focus, .wizard-main select:focus {
+        outline: 2px solid #000 !important; border-color: #000 !important;
+    }
+    @media (max-width: 768px) { .wizard-sidebar { display: none; } .wizard-content { padding: 24px 16px; } }
+
   </style>
 </head>
 <body>
@@ -298,6 +325,11 @@
                 brutalTruth: 'Improving a broken process makes it break faster. Before you optimize, verify the process is actually necessary. 30% of documented processes in growing companies no longer serve the business that now exists.',
                 peerProof: '"A €6M logistics firm mapped their quoting process and found 7 approval steps for orders under €500. Removing 5 of them cut quote turnaround from 4 days to 4 hours. Revenue increased 18% from faster response alone."'
             }
+        },
+        CLOSING_MESSAGES: {
+            1: { title: 'DECISIONS MAPPED.', text: 'You\'ve identified the key decisions that drive each core activity. Now let\'s add the data and metrics.' },
+            2: { title: 'DATA & KPIS SET.', text: 'Your decision engine has feedback loops. Now let\'s define the capabilities you need to win.' },
+            3: { title: 'CAPABILITIES DEFINED.', text: 'You know what it takes to execute. Now let\'s close the gap between where you are and where you need to be.' }
         }
     };
 
@@ -343,10 +375,6 @@
     function CoreDecisionsApp() {
             const [deps, setDeps] = useState([]);
       const [step, setStep] = useState(0);
-      const [showTransition, setShowTransition] = useState(false);
-      const [transitionMessage, setTransitionMessage] = useState('');
-      const [transitionProgress, setTransitionProgress] = useState(0);
-      const [transitionStep, setTransitionStep] = useState(null);
       const [aiReviewing, setAiReviewing] = useState(false);
 
       const [data, setData] = useState({
@@ -580,19 +608,8 @@
             }
           }
 
-          if (step >= 1 && step < 4) {
-            const messages = ['25% COMPLETE', '50% COMPLETE', '75% COMPLETE', '100% COMPLETE'];
-            const progressValues = [25, 50, 75, 100];
-            setTransitionMessage(messages[step - 1]);
-            setTransitionProgress(progressValues[step - 1]);
-            setTransitionStep(step);
-            setShowTransition(true);
-            setTimeout(() => {
-              setShowTransition(false);
-              setStep(step + 1);
-            }, 5000);
-          } else if (step === 4) {
-            setStep(5);
+          if (step >= 1 && step <= 4) {
+            setStep(step + 0.5);
           }
         } else if (step === 0) {
           setStep(0.5);
@@ -738,94 +755,75 @@
         }
       };
 
-      // Render different pages based on step
-      if (showTransition) {
-        return <TransitionScreen message={transitionMessage} progress={transitionProgress} stepNum={transitionStep} />;
+      // Transition screens (half-step values)
+      if ([1.5, 2.5, 3.5].includes(step)) {
+        return window.renderTransitionScreen(step, CONFIG, 4, setStep);
       }
 
-      if (step === 0) {
-        return <CoverPage onStart={goNext} />;
+      if (step === 0) return <CoverPage onStart={goNext} />;
+      if (step === 0.5) return <IntroPage onNext={goNext} />;
+
+      if (step === 4.5 || step === 5) {
+        return <CanvasPage data={data} onExport={exportPDF} onSubmit={handleSubmit} />;
       }
 
-      if (step === 0.5) {
-        return <IntroPage onNext={goNext} />;
-      }
+      const canProceed = !aiReviewing && (
+        step === 1 ? isStep1Valid() :
+        step === 2 ? isStep2Valid() :
+        step === 3 ? isStep3Valid() :
+        step === 4 ? isStep4Valid() : false
+      );
 
-      if (step === 1) {
-        return (
-          <><DependencyContext deps={deps} /><Step1Page
-            data={data}
-            updateActivity={updateActivity}
-            addActivity={addActivity}
-            removeActivity={removeActivity}
-            addDecision={addDecision}
-            removeDecision={removeDecision}
-            updateDecision={updateDecision}
-            onNext={goNext}
-            onBack={goBack}
-            canProceed={!aiReviewing && isStep1Valid()}
-            setShowHelp={setShowHelp}
-            aiReviewing={aiReviewing}
-          /></>
-        );
-      }
+      const stepLabels = ['', 'Core Decisions', 'Data & KPIs', 'Capabilities', 'Gap Analysis'];
 
-      if (step === 2) {
-        return (
-          <Step2Page
-            data={data}
-            updateActivity={updateActivity}
-            addKpi={addKpi}
-            removeKpi={removeKpi}
-            updateKpi={updateKpi}
-            onNext={goNext}
-            onBack={goBack}
-            canProceed={!aiReviewing && isStep2Valid()}
-            setShowHelp={setShowHelp}
-            aiReviewing={aiReviewing}
-          />
-        );
-      }
+      return (
+        <div className="wizard-layout">
+          <div className="wizard-main">
+            <div className="wizard-content animate-in">
+              <DependencyContext deps={deps} />
+              {step === 1 && <Step1Page data={data} updateActivity={updateActivity} addActivity={addActivity} removeActivity={removeActivity} addDecision={addDecision} removeDecision={removeDecision} updateDecision={updateDecision} aiReviewing={aiReviewing} />}
+              {step === 2 && <Step2Page data={data} updateActivity={updateActivity} addKpi={addKpi} removeKpi={removeKpi} updateKpi={updateKpi} aiReviewing={aiReviewing} />}
+              {step === 3 && <Step3Page data={data} updateActivity={updateActivity} aiReviewing={aiReviewing} />}
+              {step === 4 && <Step4Page data={data} updateActivity={updateActivity} aiReviewing={aiReviewing} />}
+            </div>
+            <div className="wizard-footer">
+              <button className="btn-wiz-back" onClick={goBack}>← BACK</button>
+              <button className="btn-wiz-next" disabled={!canProceed} onClick={goNext}>
+                {aiReviewing ? 'AI COACH REVIEWING...' : step === 4 ? 'VIEW CANVAS →' : 'NEXT →'}
+              </button>
+            </div>
+          </div>
+          <WizardSidebar currentStep={step} stepLabels={stepLabels} totalSteps={4} />
+        </div>
+      );
+    }
 
-      if (step === 3) {
-        return (
-          <Step3Page
-            data={data}
-            updateActivity={updateActivity}
-            onNext={goNext}
-            onBack={goBack}
-            canProceed={!aiReviewing && isStep3Valid()}
-            setShowHelp={setShowHelp}
-            aiReviewing={aiReviewing}
-          />
-        );
-      }
-
-      if (step === 4) {
-        return (
-          <Step4Page
-            data={data}
-            updateActivity={updateActivity}
-            onNext={goNext}
-            onBack={goBack}
-            canProceed={!aiReviewing && isStep4Valid()}
-            setShowHelp={setShowHelp}
-            aiReviewing={aiReviewing}
-          />
-        );
-      }
-
-      if (step === 5) {
-        return (
-          <CanvasPage
-            data={data}
-            onExport={exportPDF}
-            onSubmit={handleSubmit}
-          />
-        );
-      }
-
-      return null;
+    function WizardSidebar({ currentStep, stepLabels, totalSteps }) {
+      return (
+        <div className="wizard-sidebar">
+          <div className="wizard-sidebar-inner">
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontFamily: "'Monument', monospace", fontSize: 12, textTransform: 'uppercase', color: '#fff', marginBottom: 4 }}>SPRINT 23</div>
+              <div style={{ fontSize: 13, color: '#999' }}>Core Decisions & Capabilities</div>
+            </div>
+            <div style={{ marginBottom: 16, fontFamily: "'Monument', monospace", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#999' }}>Your journey</div>
+            {Array.from({ length: totalSteps }, (_, i) => i + 1).map(n => {
+              const effectiveStep = Math.ceil(currentStep);
+              const isCompleted = effectiveStep > n, isActive = effectiveStep === n, isLocked = effectiveStep < n;
+              return (
+                <div key={n} className={`sidebar-step-item ${isCompleted ? 'completed' : ''} ${isActive ? 'active' : ''} ${isLocked ? 'locked' : ''}`}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    {isCompleted
+                      ? <span style={{ color: '#000', fontWeight: 700 }}>✓</span>
+                      : <span style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: isActive ? '#FFF469' : '#666' }}>{String(n).padStart(2, '0')}</span>}
+                    <span style={{ fontSize: 14, color: isLocked ? '#555' : isCompleted ? '#000' : '#fff' }}>{stepLabels[n]}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
     }
 
     // Cover Page Component
@@ -972,35 +970,6 @@
     }
 
     // Transition Screen Component
-    function TransitionScreen({ message, progress, stepNum }) {
-      const t = stepNum && CONFIG.TRANSITION_CONTENT && CONFIG.TRANSITION_CONTENT[stepNum];
-      return (
-        <div style={{ position: 'fixed', inset: 0, background: '#000', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '48px 32px' }}>
-          <div style={{ maxWidth: 640, width: '100%', textAlign: 'center' }} className="animate-in">
-            <h1 className="plaak" style={{ fontSize: 64, marginBottom: 24, textTransform: 'uppercase', lineHeight: 1.1 }}>STEP COMPLETE</h1>
-            <div style={{ marginBottom: 32 }}>
-              <div style={{ height: 4, background: '#333', marginBottom: 8 }}>
-                <div style={{ height: '100%', background: '#FFF469', width: progress + '%', transition: 'width 1s ease' }} />
-              </div>
-              <p style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: '#ccc', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{message}</p>
-            </div>
-            {t && t.brutalTruth && (
-              <div style={{ background: '#111', border: '1px solid #333', borderLeft: '4px solid #FFF469', padding: '20px 24px', marginBottom: 20, textAlign: 'left' }}>
-                <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#FFF469', display: 'block', marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>BRUTAL TRUTH</span>
-                <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7, margin: 0 }}>{t.brutalTruth}</p>
-              </div>
-            )}
-            {t && t.peerProof && (
-              <div style={{ background: '#111', border: '1px solid #333', borderLeft: '4px solid #666', padding: '20px 24px', textAlign: 'left' }}>
-                <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#999', display: 'block', marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>PEER PROOF</span>
-                <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7, fontStyle: 'italic', margin: 0 }}>{t.peerProof}</p>
-              </div>
-            )}
-          </div>
-        </div>
-      );
-    }
-
     // Help Modal Component
     function HelpModal({ step, onClose }) {
       const helpContent = {
@@ -1079,10 +1048,7 @@
     // Step 1: Core Decisions
     function Step1Page({ data, updateActivity, addActivity, removeActivity, addDecision, removeDecision, updateDecision, onNext, onBack, canProceed, setShowHelp, aiReviewing }) {
       return (
-        <div className="bg-black text-white min-h-screen p-16 pb-32">
-          
-          <div className="max-w-5xl mx-auto">
-            <ProgressIndicator currentStep={1} />
+        <div>
 
             <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
               STEP 1 OF 4
@@ -1128,9 +1094,7 @@
 
                   <div className="mb-6">
                     <label className="monument text-sm block mb-2">ACTIVITY NAME <span className="text-red-500">*</span></label>
-                    <ScienceBookmarkIcon>
-                        Naming activates the "labeling effect" in cognitive psychology. Research by Lieberman et al. (UCLA, 2007) shows that putting a precise name on a concept reduces amygdala reactivity and increases prefrontal cortex engagement -- meaning clearer, calmer thinking downstream.
-                    </ScienceBookmarkIcon>
+                    
                     <input
                       type="text"
                       value={activity.name || ''}
@@ -1160,9 +1124,7 @@
                         <div className="space-y-3">
                           <div>
                             <label className="monument text-xs block mb-1">DECISION DESCRIPTION <span className="text-red-500">*</span></label>
-                            <ScienceBookmarkIcon>
-                                Writing decisions as specific questions increases decision quality by 26% (Milkman, Chugh & Bazerman, Harvard Business School). Framing decisions as questions forces precision and prevents vague "we need to decide about marketing" statements.
-                            </ScienceBookmarkIcon>
+                            
                             <textarea
                               value={decision.decision || ''}
                               onChange={(e) => updateDecision(activity.id, decision.id, 'decision', e.target.value)}
@@ -1176,9 +1138,7 @@
                           <div className="grid grid-cols-2 gap-3">
                             <div>
                               <label className="monument text-xs block mb-1">FREQUENCY <span className="text-red-500">*</span></label>
-                              <ScienceBookmarkIcon>
-                                  Decision frequency determines decision architecture. McKinsey research shows high-frequency decisions (daily/weekly) should be delegated to frontline teams, while low-frequency, high-stakes decisions benefit from structured governance. Matching cadence to authority is a hallmark of fast-executing organizations.
-                              </ScienceBookmarkIcon>
+                              
                               <input
                                 type="text"
                                 value={decision.frequency || ''}
@@ -1217,21 +1177,6 @@
                 + ADD CORE ACTIVITY
               </button>
             </div>
-
-            {/* Navigation */}
-            <div className="flex gap-6">
-              <button onClick={onBack} className="btn-secondary flex-1">
-                ← BACK
-              </button>
-              <button
-                onClick={onNext}
-                disabled={!canProceed}
-                className="btn-primary flex-1"
-              >
-                {aiReviewing ? 'AI Coach Reviewing...' : 'NEXT: DATA & KPIs →'}
-              </button>
-            </div>
-          </div>
         </div>
       );
     }
@@ -1239,10 +1184,7 @@
     // Step 2: Decision Data & KPIs
     function Step2Page({ data, updateActivity, addKpi, removeKpi, updateKpi, onNext, onBack, canProceed, setShowHelp, aiReviewing }) {
       return (
-        <div className="bg-black text-white min-h-screen p-16 pb-32">
-          
-          <div className="max-w-5xl mx-auto">
-            <ProgressIndicator currentStep={2} />
+        <div>
 
             <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
               STEP 2 OF 4
@@ -1342,21 +1284,6 @@
                 </div>
               ))}
             </div>
-
-            {/* Navigation */}
-            <div className="flex gap-6">
-              <button onClick={onBack} className="btn-secondary flex-1">
-                ← BACK
-              </button>
-              <button
-                onClick={onNext}
-                disabled={!canProceed}
-                className="btn-primary flex-1"
-              >
-                {aiReviewing ? 'AI Coach Reviewing...' : 'NEXT: CAPABILITIES →'}
-              </button>
-            </div>
-          </div>
         </div>
       );
     }
@@ -1364,10 +1291,7 @@
     // Step 3: Required Capabilities
     function Step3Page({ data, updateActivity, onNext, onBack, canProceed, setShowHelp, aiReviewing }) {
       return (
-        <div className="bg-black text-white min-h-screen p-16 pb-32">
-          
-          <div className="max-w-5xl mx-auto">
-            <ProgressIndicator currentStep={3} />
+        <div>
 
             <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
               STEP 3 OF 4
@@ -1416,21 +1340,6 @@
                 </div>
               ))}
             </div>
-
-            {/* Navigation */}
-            <div className="flex gap-6">
-              <button onClick={onBack} className="btn-secondary flex-1">
-                ← BACK
-              </button>
-              <button
-                onClick={onNext}
-                disabled={!canProceed}
-                className="btn-primary flex-1"
-              >
-                {aiReviewing ? 'AI Coach Reviewing...' : 'NEXT: GAP ANALYSIS →'}
-              </button>
-            </div>
-          </div>
         </div>
       );
     }
@@ -1438,10 +1347,7 @@
     // Step 4: Gap Analysis
     function Step4Page({ data, updateActivity, onNext, onBack, canProceed, setShowHelp, aiReviewing }) {
       return (
-        <div className="bg-black text-white min-h-screen p-16 pb-32">
-          
-          <div className="max-w-5xl mx-auto">
-            <ProgressIndicator currentStep={4} />
+        <div>
 
             <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
               STEP 4 OF 4
@@ -1518,21 +1424,6 @@
                 </div>
               ))}
             </div>
-
-            {/* Navigation */}
-            <div className="flex gap-6">
-              <button onClick={onBack} className="btn-secondary flex-1">
-                ← BACK
-              </button>
-              <button
-                onClick={onNext}
-                disabled={!canProceed}
-                className="btn-primary flex-1"
-              >
-                {aiReviewing ? 'AI Coach Reviewing...' : 'VIEW CANVAS →'}
-              </button>
-            </div>
-          </div>
         </div>
       );
     }
