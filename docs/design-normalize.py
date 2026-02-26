@@ -328,7 +328,7 @@ def normalize_cognitive_load_css():
     #     Match the entire ft-reveal block including .ft-reveal-label, .ft-reveal-text, @keyframes
     ft_reveal_pattern = re.compile(
         r'/\* Fast Track Insight Reveal.*?'
-        r'@keyframes ftRevealIn \{.*?\}',
+        r'@keyframes ftRevealIn \{(?:[^{}]|\{[^{}]*\})*\}',
         re.DOTALL
     )
     if ft_reveal_pattern.search(out):
