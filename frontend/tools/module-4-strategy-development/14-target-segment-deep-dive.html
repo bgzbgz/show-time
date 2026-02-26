@@ -542,7 +542,7 @@
             const canProceedStep3 = data.painsPriority.length >= 1 && data.painsPriority.every(p => p.pain && p.severity && p.frequency && p.impact)
                 && data.needsPriority.length >= 1 && data.needsPriority.every(n => n.need && n.severity && n.frequency && n.impact)
                 && data.gainsPriority.length >= 1 && data.gainsPriority.every(g => g.gain && g.severity && g.frequency && g.impact);
-            const canProceedStep4 = data.topPains.length >= 10 && data.topNeeds.length >= 10 && data.topGains.length >= 10 && data.keyInsights.length >= 10;
+            const canProceedStep4 = data.keyInsights.length >= 10 && data.strategicImplications.length >= 10;
 
             /* ── AI-gated step navigation ── */
             const handleNext = async () => {
@@ -582,7 +582,7 @@
                 if (n === 1 && data.targetSegment) return '"' + data.targetSegment.substring(0, 50) + (data.targetSegment.length > 50 ? '...' : '') + '"';
                 if (n === 2) { const count = data.interviews.filter(i => i.customerName).length; return count + ' interview' + (count !== 1 ? 's' : '') + ' recorded'; }
                 if (n === 3) return data.painsPriority.length + ' pains, ' + data.needsPriority.length + ' needs, ' + data.gainsPriority.length + ' gains';
-                if (n === 4 && data.topPains) return 'Summary complete';
+                if (n === 4 && data.keyInsights) return 'Summary complete';
                 return null;
             };
 
@@ -788,28 +788,10 @@
                                 <div style={{ position: 'relative', textAlign: 'center', color: '#fff', padding: '0 32px' }} className="animate-in">
                                     <h1 className="plaak" style={{ fontSize: 80, marginBottom: 16 }}>{CONFIG.TOOL_TITLE}</h1>
                                     <p style={{ fontSize: 18, color: '#ccc', marginBottom: 48 }}>Uncover what your target customers truly need</p>
-                                    <button onClick={() => setStep(0.5)} style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 48px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                                    <button onClick={() => setStep(1)} style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 48px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s ease' }}
                                         onMouseOver={e => { e.target.style.background = '#FFF469'; }}
                                         onMouseOut={e => { e.target.style.background = '#fff'; }}
                                     >START</button>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* ── STEP 0.5: Setup ── */}
-                        {step === 0.5 && (
-                            <div style={{ minHeight: '100vh', background: '#fff', display: 'flex', flexDirection: 'column', padding: '0 48px' }}>
-                                <div className="step-content animate-in" style={{ maxWidth: 560, margin: '0 auto' }}>
-                                    <p className="step-indicator">SETUP</p>
-                                    <div className="opening-box">
-                                        <h1 className="step-heading">Before We Start</h1>
-                                        <p className="step-hint">This tool guides you through customer interviews and prioritization to build a deep understanding of your target segment's pains, needs, and gains.</p>
-                                    </div>
-
-                                </div>
-                                <div className="btn-footer no-print">
-                                    <button className="btn-back" onClick={() => setStep(0)}>&larr; Back</button>
-                                    <button className="btn-next" onClick={() => setStep(1)}>Let's Start &rarr;</button>
                                 </div>
                             </div>
                         )}
@@ -1127,24 +1109,6 @@
                                                 </div>
 
                                                 <div className="field-group">
-                                                    <label className="field-label">Top 3 Pains</label>
-                                                    <textarea className="field-textarea" value={data.topPains} onChange={e => updateData('topPains', e.target.value)} placeholder="1. &#10;2. &#10;3. " maxLength={500} />
-                                                    <p className="field-help">{data.topPains.length}/500 (min 10)</p>
-                                                </div>
-
-                                                <div className="field-group">
-                                                    <label className="field-label">Top 3 Needs</label>
-                                                    <textarea className="field-textarea" value={data.topNeeds} onChange={e => updateData('topNeeds', e.target.value)} placeholder="1. &#10;2. &#10;3. " maxLength={500} />
-                                                    <p className="field-help">{data.topNeeds.length}/500 (min 10)</p>
-                                                </div>
-
-                                                <div className="field-group">
-                                                    <label className="field-label">Top 3 Gains</label>
-                                                    <textarea className="field-textarea" value={data.topGains} onChange={e => updateData('topGains', e.target.value)} placeholder="1. &#10;2. &#10;3. " maxLength={500} />
-                                                    <p className="field-help">{data.topGains.length}/500 (min 10)</p>
-                                                </div>
-
-                                                <div className="field-group">
                                                     <label className="field-label">
                                                         Key Insights
                                                         <HelpAccordion id="keyInsights" activeHelp={questionHelp} setActiveHelp={setQuestionHelp}>
@@ -1177,7 +1141,7 @@
                                     )}
 
                                     <ButtonFooter
-                                        onBack={() => setStep(step === 1 ? 0.5 : step - 1)}
+                                        onBack={() => setStep(step === 1 ? 0 : step - 1)}
                                         onNext={handleNext}
                                         canProceed={!aiReviewing && (step === 1 ? canProceedStep1 : step === 2 ? canProceedStep2 : step === 3 ? canProceedStep3 : canProceedStep4)}
                                         nextLabel={aiReviewing ? 'AI Coach Reviewing...' : step === totalSteps ? 'View Your Canvas' : 'Next'}
@@ -1287,20 +1251,6 @@
                                                     <p>{data.coreCustomer}</p>
                                                 </div>
                                             )}
-                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 12 }}>
-                                                <div className="canvas-section-box" style={{ borderLeftColor: '#DC2626' }}>
-                                                    <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 4, color: '#DC2626' }}>TOP 3 PAINS</p>
-                                                    <p style={{ fontSize: 14, whiteSpace: 'pre-line' }}>{data.topPains}</p>
-                                                </div>
-                                                <div className="canvas-section-box" style={{ borderLeftColor: '#2563EB' }}>
-                                                    <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 4, color: '#2563EB' }}>TOP 3 NEEDS</p>
-                                                    <p style={{ fontSize: 14, whiteSpace: 'pre-line' }}>{data.topNeeds}</p>
-                                                </div>
-                                                <div className="canvas-section-box" style={{ borderLeftColor: '#16A34A' }}>
-                                                    <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 4, color: '#16A34A' }}>TOP 3 GAINS</p>
-                                                    <p style={{ fontSize: 14, whiteSpace: 'pre-line' }}>{data.topGains}</p>
-                                                </div>
-                                            </div>
                                             {data.keyInsights && (
                                                 <div className="canvas-section-box" style={{ marginBottom: 12 }}>
                                                     <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 4, color: '#666' }}>KEY INSIGHTS</p>
@@ -1380,8 +1330,8 @@
                                 <select className="field-select" style={{ padding: '8px 4px', fontSize: 14 }} value={item.impact} onChange={e => onUpdate(idx, 'impact', e.target.value)}>
                                     {scoreOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                                 </select>
-                                <div style={{ textAlign: 'center', fontWeight: 600, fontSize: 16, color: score >= 24 ? '#16A34A' : score >= 18 ? '#000' : '#999' }}>
-                                    {score > 0 ? score : '—'}
+                                <div style={{ textAlign: 'center', fontWeight: 600, fontSize: 22, color: score >= 24 ? '#16A34A' : score >= 18 ? '#000' : '#999' }}>
+                                    {score > 0 ? <strong>{score}</strong> : '—'}
                                 </div>
                                 {items.length > 1 ? (
                                     <button onClick={() => onRemove(idx)} style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: '#999' }}>&times;</button>
