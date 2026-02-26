@@ -584,6 +584,7 @@
             const [step, setStep] = useState(0);
             const [userEmail, setUserEmail] = useState('');
             const [aiReviewing, setAiReviewing] = useState(false);
+            const [aiMessage, setAiMessage] = useState('');
             const [formData, setFormData] = useState({
                 // Section 1: Company Values
                 behaviors: Array(10).fill(''),
@@ -717,6 +718,7 @@
             const handleStepNext = async (nextStepValue, stepAnswers, stepName) => {
                 const userId = localStorage.getItem('ft_user_id');
                 if (!userId) {
+                    setAiMessage('');
                     setStep(nextStepValue);
                     return;
                 }
@@ -724,10 +726,14 @@
                 try {
                     const canGo = await window.AIChallenge.reviewStep(userId, 'values', stepAnswers, stepName);
                     if (canGo) {
+                        setAiMessage('');
                         setStep(nextStepValue);
+                    } else {
+                        setAiMessage(window.AIChallenge?.getLastFeedback?.()?.suggestion || 'Please expand your answer before continuing.');
                     }
                 } catch (err) {
                     console.warn('AI review error, allowing passage:', err);
+                    setAiMessage('');
                     setStep(nextStepValue);
                 } finally {
                     setAiReviewing(false);
@@ -1021,6 +1027,7 @@
                                 nextLabel={aiReviewing ? 'AI Coach Reviewing...' : step === 6 ? 'View Results' : 'Next'}
                                 showBack={true}
                             />
+                            {aiMessage && <div style={{color:'#dc2626', fontSize:'13px', marginTop:'8px', padding:'8px 12px 8px 32px', background:'#fef2f2', borderRadius:'6px', borderTop:'none'}}>{aiMessage}</div>}
                         </div>
                         <WizardSidebar currentStep={step} formData={formData} onNavigate={setStep} />
                     </div>

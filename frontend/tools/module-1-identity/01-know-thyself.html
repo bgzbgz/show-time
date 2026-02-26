@@ -591,6 +591,7 @@
 
             const [validationErrors, setValidationErrors] = useState({});
             const [aiReviewing, setAiReviewing] = useState(false);
+            const [aiMessage, setAiMessage] = useState('');
             const autosaveTimer = useRef(null);
 
             useEffect(() => {
@@ -759,10 +760,16 @@
                 window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, getSectionAnswers(sectionNum), SECTION_NAMES[sectionNum])
                     .then(function (canProceed) {
                         setAiReviewing(false);
-                        if (canProceed) advance();
+                        if (canProceed) {
+                            setAiMessage('');
+                            advance();
+                        } else {
+                            setAiMessage(window.AIChallenge?.getLastFeedback?.()?.suggestion || 'Please expand your answer before continuing.');
+                        }
                     })
                     .catch(function () {
                         setAiReviewing(false);
+                        setAiMessage('');
                         advance();
                     });
             };
@@ -1055,6 +1062,8 @@
                                     subStep={subStep}
                                     nextSubStep={nextSubStep}
                                     prevSubStep={prevSubStep}
+                                    aiReviewing={aiReviewing}
+                                    aiMessage={aiMessage}
                                 /></>}
 
                                 {step === 2 && <Step2
@@ -1064,6 +1073,8 @@
                                     subStep={subStep}
                                     nextSubStep={nextSubStep}
                                     prevSubStep={prevSubStep}
+                                    aiReviewing={aiReviewing}
+                                    aiMessage={aiMessage}
                                 />}
 
                                 {step === 3 && <Step3
@@ -1072,6 +1083,8 @@
                                     subStep={subStep}
                                     nextSubStep={nextSubStep}
                                     prevSubStep={prevSubStep}
+                                    aiReviewing={aiReviewing}
+                                    aiMessage={aiMessage}
                                 />}
 
                                 {step === 4 && <Step4
@@ -1080,6 +1093,8 @@
                                     subStep={subStep}
                                     nextSubStep={nextSubStep}
                                     prevSubStep={prevSubStep}
+                                    aiReviewing={aiReviewing}
+                                    aiMessage={aiMessage}
                                 />}
                             </div>
 
@@ -1100,7 +1115,7 @@
         }
 
         // SECTION 1: Dream Launcher - TYPEFORM STYLE
-        function Step1({ formData, updateFormData, validationErrors, subStep, nextSubStep, prevSubStep }) {
+        function Step1({ formData, updateFormData, validationErrors, subStep, nextSubStep, prevSubStep, aiReviewing, aiMessage }) {
             
             // Define all questions for Dream Launcher
             const questions = [
@@ -1226,8 +1241,10 @@
                                 className="ft-input"
                                 value={formData[currentQ.field] || ''}
                                 onChange={(e) => updateFormData(currentQ.field, e.target.value)}
+                                onInput={(e) => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
                                 placeholder={currentQ.placeholder}
                                 rows={currentQ.rows}
+                                style={{ resize: 'none', overflow: 'hidden' }}
                                 autoFocus
                             />
                             
@@ -1246,23 +1263,24 @@
                         
                         {/* Navigation */}
                         <div className="flex justify-between items-center">
-                            <button 
+                            <button
                                 className="btn-secondary py-3 px-6"
                                 onClick={prevSubStep}
                                 disabled={subStep === 0}
                             >
                                 ← Back
                             </button>
-                            
-                            <button 
+
+                            <button
                                 className="btn-primary py-4 px-8 text-lg"
                                 onClick={nextSubStep}
-                                disabled={!canAdvance}
+                                disabled={!canAdvance || aiReviewing}
                             >
-                                {isLastSubStep ? 'Complete Dream Launcher →' : 'Next'}
+                                {aiReviewing ? 'Reviewing...' : (isLastSubStep ? 'Complete Dream Launcher →' : 'Next')}
                             </button>
                         </div>
-                        
+                        {aiMessage && <div style={{color:'#dc2626', fontSize:'13px', marginTop:'8px', padding:'8px 12px', background:'#fef2f2', borderRadius:'6px'}}>{aiMessage}</div>}
+
                         {/* Duplicate char min message removed — 3B EK feedback */}
                     </div>
                 </main>
@@ -1311,8 +1329,10 @@
                                 className={`ft-input ${validationErrors.birthdayStory ? 'error' : ''}`}
                                 value={formData.birthdayStory}
                                 onChange={(e) => updateFormData('birthdayStory', e.target.value)}
+                                onInput={(e) => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
                                 placeholder="Write your 80th birthday vision here... Be vivid. Be specific. Let yourself dream. This is the emotional anchor for everything that follows."
                                 rows="8"
+                                style={{ resize: 'none', overflow: 'hidden' }}
                             />
                             {validationErrors.birthdayStory && (
                                 <p className="text-red-600 text-sm mt-2 font-bold">{validationErrors.birthdayStory}</p>
@@ -1356,7 +1376,9 @@
                                             className="ft-input"
                                             value={formData.whatLove}
                                             onChange={(e) => updateFormData('whatLove', e.target.value)}
+                                            onInput={(e) => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
                                             rows="2"
+                                            style={{ resize: 'none', overflow: 'hidden' }}
                                             placeholder="What activities, people, or experiences bring you joy?"
                                         />
                                     </div>
@@ -1370,7 +1392,9 @@
                                             className="ft-input"
                                             value={formData.whatGoodAt}
                                             onChange={(e) => updateFormData('whatGoodAt', e.target.value)}
+                                            onInput={(e) => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
                                             rows="2"
+                                            style={{ resize: 'none', overflow: 'hidden' }}
                                             placeholder="What natural talents and skills do you possess?"
                                         />
                                     </div>
@@ -1384,7 +1408,9 @@
                                             className="ft-input"
                                             value={formData.giveToWorld}
                                             onChange={(e) => updateFormData('giveToWorld', e.target.value)}
+                                            onInput={(e) => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
                                             rows="2"
+                                            style={{ resize: 'none', overflow: 'hidden' }}
                                             placeholder="What unique value or contribution can you offer?"
                                         />
                                     </div>
@@ -1395,7 +1421,9 @@
                                             className="ft-input"
                                             value={formData.paidFor}
                                             onChange={(e) => updateFormData('paidFor', e.target.value)}
+                                            onInput={(e) => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
                                             rows="2"
+                                            style={{ resize: 'none', overflow: 'hidden' }}
                                             placeholder="What skills or services have economic value?"
                                         />
                                     </div>
@@ -1406,7 +1434,9 @@
                                             className="ft-input"
                                             value={formData.inspired}
                                             onChange={(e) => updateFormData('inspired', e.target.value)}
+                                            onInput={(e) => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
                                             rows="2"
+                                            style={{ resize: 'none', overflow: 'hidden' }}
                                             placeholder="Who or what moves you? What qualities do you admire?"
                                         />
                                     </div>
@@ -1417,7 +1447,9 @@
                                             className="ft-input"
                                             value={formData.feltBest}
                                             onChange={(e) => updateFormData('feltBest', e.target.value)}
+                                            onInput={(e) => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
                                             rows="2"
+                                            style={{ resize: 'none', overflow: 'hidden' }}
                                             placeholder="Describe a time when you felt completely engaged and energized"
                                         />
                                     </div>
@@ -1428,7 +1460,9 @@
                                             className="ft-input"
                                             value={formData.likeAboutSelf}
                                             onChange={(e) => updateFormData('likeAboutSelf', e.target.value)}
+                                            onInput={(e) => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
                                             rows="2"
+                                            style={{ resize: 'none', overflow: 'hidden' }}
                                             placeholder="What personal qualities or characteristics do you value in yourself?"
                                         />
                                     </div>
@@ -1439,7 +1473,9 @@
                                             className="ft-input"
                                             value={formData.hardships}
                                             onChange={(e) => updateFormData('hardships', e.target.value)}
+                                            onInput={(e) => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
                                             rows="2"
+                                            style={{ resize: 'none', overflow: 'hidden' }}
                                             placeholder="Reflect on challenges that shaped you and lessons learned"
                                         />
                                     </div>
@@ -1454,8 +1490,10 @@
                                     className={`ft-input ${validationErrors.dream ? 'error' : ''}`}
                                     value={formData.dream}
                                     onChange={(e) => updateFormData('dream', e.target.value)}
+                                    onInput={(e) => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
                                     placeholder="Synthesize your answers above into a clear, compelling dream that drives you every day. This is your North Star."
                                     rows="5"
+                                    style={{ resize: 'none', overflow: 'hidden' }}
                                 />
                                 {validationErrors.dream && (
                                     <p className="text-red-600 text-sm mt-2">{validationErrors.dream}</p>
@@ -1501,7 +1539,7 @@
         }
 
         // SECTION 2: Strengths Amplifier - TYPEFORM STYLE
-        function Step2({ formData, updateFormData, updateObjectInArray, subStep, nextSubStep, prevSubStep }) {
+        function Step2({ formData, updateFormData, updateObjectInArray, subStep, nextSubStep, prevSubStep, aiReviewing, aiMessage }) {
             
             const screens = ["activities", "strengths", "actions"];
             const currentScreen = screens[subStep];
@@ -1642,7 +1680,9 @@
                                             className="ft-input"
                                             value={formData.doMore}
                                             onChange={(e) => updateFormData('doMore', e.target.value)}
+                                            onInput={(e) => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
                                             rows="3"
+                                            style={{ resize: 'none', overflow: 'hidden' }}
                                             placeholder="Activities to increase (based on + energizers)"
                                             autoFocus
                                         />
@@ -1654,7 +1694,9 @@
                                             className="ft-input"
                                             value={formData.doLess}
                                             onChange={(e) => updateFormData('doLess', e.target.value)}
+                                            onInput={(e) => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
                                             rows="3"
+                                            style={{ resize: 'none', overflow: 'hidden' }}
                                             placeholder="Activities to decrease or delegate (based on - drainers)"
                                         />
                                     </div>
@@ -1665,7 +1707,9 @@
                                             className="ft-input"
                                             value={formData.startTo}
                                             onChange={(e) => updateFormData('startTo', e.target.value)}
+                                            onInput={(e) => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
                                             rows="3"
+                                            style={{ resize: 'none', overflow: 'hidden' }}
                                             placeholder="New activities to begin (leverage your strengths)"
                                         />
                                     </div>
@@ -1675,22 +1719,23 @@
                         
                         {/* Navigation */}
                         <div className="flex justify-between items-center">
-                            <button 
+                            <button
                                 className="btn-secondary py-3 px-6"
                                 onClick={prevSubStep}
                             >
                                 ← Back
                             </button>
-                            
-                            <button 
+
+                            <button
                                 className="btn-primary py-4 px-8 text-lg"
                                 onClick={nextSubStep}
-                                disabled={!canAdvance()}
+                                disabled={!canAdvance() || aiReviewing}
                             >
-                                {subStep === 2 ? 'Complete Strengths →' : 'Next'}
+                                {aiReviewing ? 'Reviewing...' : (subStep === 2 ? 'Complete Strengths →' : 'Next')}
                             </button>
                         </div>
-                        
+                        {aiMessage && <div style={{color:'#dc2626', fontSize:'13px', marginTop:'8px', padding:'8px 12px', background:'#fef2f2', borderRadius:'6px'}}>{aiMessage}</div>}
+
                         {!canAdvance() && (
                             <p className="text-center text-gray-600 mt-4 text-sm">
                                 {subStep === 0 && `Please add at least 3 activities (${filledActivities.length}/3)`}
@@ -1917,7 +1962,7 @@
         }
 
         // SECTION 3: Values Compass - TYPEFORM STYLE
-        function Step3({ formData, updateObjectInArray, subStep, nextSubStep, prevSubStep }) {
+        function Step3({ formData, updateObjectInArray, subStep, nextSubStep, prevSubStep, aiReviewing, aiMessage }) {
             
             const currentValue = formData.values[subStep];
             const canAdvance = currentValue.value && currentValue.value.trim().length > 0;
@@ -1997,22 +2042,23 @@
                         
                         {/* Navigation */}
                         <div className="flex justify-between items-center">
-                            <button 
+                            <button
                                 className="btn-secondary py-3 px-6"
                                 onClick={prevSubStep}
                             >
                                 ← Back
                             </button>
-                            
-                            <button 
+
+                            <button
                                 className="btn-primary py-4 px-8 text-lg"
                                 onClick={nextSubStep}
-                                disabled={!canAdvance}
+                                disabled={!canAdvance || aiReviewing}
                             >
-                                {subStep === 4 ? 'Complete Values →' : 'Next Value'}
+                                {aiReviewing ? 'Reviewing...' : (subStep === 4 ? 'Complete Values →' : 'Next Value')}
                             </button>
                         </div>
-                        
+                        {aiMessage && <div style={{color:'#dc2626', fontSize:'13px', marginTop:'8px', padding:'8px 12px', background:'#fef2f2', borderRadius:'6px'}}>{aiMessage}</div>}
+
                         {!canAdvance && (
                             <p className="text-center text-gray-600 mt-4 text-sm">
                                 Please enter a value to continue
@@ -2168,7 +2214,7 @@
         }
 
         // SECTION 4: Personal Growth Blueprint - TYPEFORM STYLE
-        function Step4({ formData, updateObjectInArray, subStep, nextSubStep, prevSubStep }) {
+        function Step4({ formData, updateObjectInArray, subStep, nextSubStep, prevSubStep, aiReviewing, aiMessage }) {
             
             const currentGoal = formData.goals[subStep];
             const canAdvance = currentGoal.goal && currentGoal.goal.trim().length > 0;
@@ -2201,7 +2247,9 @@
                                         className="ft-input text-lg"
                                         value={currentGoal.goal}
                                         onChange={(e) => updateObjectInArray('goals', subStep, 'goal', e.target.value)}
+                                        onInput={(e) => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
                                         rows="3"
+                                        style={{ resize: 'none', overflow: 'hidden' }}
                                         placeholder="e.g., Improve leadership presence, Build a high-performing team"
                                         autoFocus
                                     />
@@ -2213,7 +2261,9 @@
                                         className="ft-input"
                                         value={currentGoal.action}
                                         onChange={(e) => updateObjectInArray('goals', subStep, 'action', e.target.value)}
+                                        onInput={(e) => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
                                         rows="4"
+                                        style={{ resize: 'none', overflow: 'hidden' }}
                                         placeholder="e.g., Join Toastmasters, deliver 2 presentations monthly, hire executive coach"
                                     />
                                 </div>
@@ -2233,22 +2283,23 @@
                         
                         {/* Navigation */}
                         <div className="flex justify-between items-center">
-                            <button 
+                            <button
                                 className="btn-secondary py-3 px-6"
                                 onClick={prevSubStep}
                             >
                                 ← Back
                             </button>
-                            
-                            <button 
+
+                            <button
                                 className="btn-primary py-4 px-8 text-lg"
                                 onClick={nextSubStep}
-                                disabled={!canAdvance}
+                                disabled={!canAdvance || aiReviewing}
                             >
-                                {subStep === 2 ? 'Complete Blueprint →' : 'Next Goal'}
+                                {aiReviewing ? 'Reviewing...' : (subStep === 2 ? 'Complete Blueprint →' : 'Next Goal')}
                             </button>
                         </div>
-                        
+                        {aiMessage && <div style={{color:'#dc2626', fontSize:'13px', marginTop:'8px', padding:'8px 12px', background:'#fef2f2', borderRadius:'6px'}}>{aiMessage}</div>}
+
                         {!canAdvance && (
                             <p className="text-center text-gray-600 mt-4 text-sm">
                                 Please enter a goal to continue
