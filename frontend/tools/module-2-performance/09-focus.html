@@ -790,6 +790,8 @@
             const [submitMessage, setSubmitMessage] = useState('');
             const [teamToolUnlocked, setTeamToolUnlocked] = useState(true); // always unlocked
             const [checkingTeamUnlock, setCheckingTeamUnlock] = useState(false);
+            const [aiReviewing, setAiReviewing] = useState(false);
+            const [aiMessage, setAiMessage] = useState('');
             const STORAGE_KEY = CONFIG.STORAGE_KEY;
 
             // Load saved data
@@ -846,6 +848,49 @@
             const goToStep = (s) => { setStep(s); window.scrollTo(0, 0); };
             const updateField = (key, val) => setFormData(prev => ({ ...prev, [key]: val }));
             const updateTeamField = (key, val) => setTeamData(prev => ({ ...prev, [key]: val }));
+
+            // AI-gated step navigation — only for steps with meaningful free-text
+            const handleNext = async (currentStep, nextStep) => {
+                const uid = userId || localStorage.getItem('ft_user_id');
+                const stepsWithText = [1, 2, 5, 7, 8]; // brain dump, daily plan, distractions, routines builder, flow state
+                if (!window.AIChallenge || !uid || !stepsWithText.includes(currentStep)) {
+                    goToStep(nextStep);
+                    return;
+                }
+                setAiReviewing(true);
+                try {
+                    let stepAnswers = {};
+                    let stepLabel = '';
+                    if (currentStep === 1) {
+                        stepLabel = 'Empty Your Brain';
+                        stepAnswers = { brain_dump: formData.brainDump, priorities: [formData.priority1, formData.priority2, formData.priority3].filter(Boolean) };
+                    } else if (currentStep === 2) {
+                        stepLabel = 'Daily Plan';
+                        stepAnswers = { daily_plan: formData.dailyPlan, gold_hour: formData.goldHour };
+                    } else if (currentStep === 5) {
+                        stepLabel = 'Distractions';
+                        stepAnswers = { if_thens: (formData.ifThens || []).filter(it => it.distraction || it.ifThen) };
+                    } else if (currentStep === 7) {
+                        stepLabel = 'Routines Builder';
+                        stepAnswers = { builders: (formData.builders || []).filter(b => b.name) };
+                    } else if (currentStep === 8) {
+                        stepLabel = 'Flow State';
+                        stepAnswers = { flows: (formData.flows || []).filter(f => f.activity), flow_routine: formData.flowRoutine };
+                    }
+                    const canProceed = await window.AIChallenge.reviewStep(uid, CONFIG.TOOL_SLUG, stepAnswers, stepLabel);
+                    if (canProceed) {
+                        setAiMessage('');
+                        goToStep(nextStep);
+                    } else {
+                        setAiMessage(window.AIChallenge?.getLastFeedback?.()?.suggestion || 'Please expand your answer before continuing.');
+                    }
+                } catch (e) {
+                    // allow on error
+                    goToStep(nextStep);
+                } finally {
+                    setAiReviewing(false);
+                }
+            };
 
             const handleIndividualSubmit = async () => {
                 setSubmitStatus('submitting');
@@ -958,12 +1003,16 @@
                                         {step === 11 && <TeamStep11 td={teamData} ut={updateTeamField} onSubmit={handleTeamSubmit} submitStatus={submitStatus}/>}
                                     </div>
                                     {mode === 'individual' && step >= 1 && step <= 8 && (
-                                        <ButtonFooter
-                                            showBack={step > 1}
-                                            onBack={() => goToStep(step === 1 ? 0.5 : step - 1)}
-                                            onNext={() => goToStep([1, 2, 3].includes(Math.floor(step)) ? step + 0.5 : step + 1)}
-                                            nextLabel={step === 8 ? 'Review' : 'Next'}
-                                        />
+                                        <>
+                                            {aiMessage && <div style={{color:'#dc2626',fontSize:'13px',marginTop:'8px',padding:'8px 12px',background:'#fef2f2',borderRadius:'6px'}}>{aiMessage}</div>}
+                                            <ButtonFooter
+                                                showBack={step > 1}
+                                                onBack={() => { setAiMessage(''); goToStep(step === 1 ? 0.5 : step - 1); }}
+                                                onNext={() => handleNext(step, [1, 2, 3].includes(Math.floor(step)) ? step + 0.5 : step + 1)}
+                                                disabled={aiReviewing}
+                                                nextLabel={aiReviewing ? 'Reviewing...' : (step === 8 ? 'Review' : 'Next')}
+                                            />
+                                        </>
                                     )}
                                     {step === 9 && <ButtonFooter showBack onBack={() => goToStep(8)} onNext={handleIndividualSubmit} nextLabel="Submit" disabled={submitStatus==='submitting'}/>}
                                     {step === 10 && <ButtonFooter showBack={false} onNext={() => goToStep(11)} nextLabel="Conclusions"/>}

@@ -543,6 +543,7 @@
             const [deps, setDeps] = useState([]);
       const [step, setStep] = useState(0);
       const [aiReviewing, setAiReviewing] = useState(false);
+      const [aiMessage, setAiMessage] = useState('');
       const [submitted, setSubmitted] = useState(false);
 
       const [data, setData] = useState({
@@ -926,7 +927,12 @@
                   stepAnswers = { pdps: data.pdps || [] };
                 }
                 const canProceed = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, stepName);
-                if (!canProceed) { setAiReviewing(false); return; }
+                if (!canProceed) {
+                  setAiMessage(window.AIChallenge?.getLastFeedback?.()?.suggestion || 'Please expand your answer before continuing.');
+                  setAiReviewing(false);
+                  return;
+                }
+                setAiMessage('');
               } catch (err) {
                 console.warn('[AIChallenge] Error, allowing passage:', err);
               } finally {
@@ -1137,11 +1143,14 @@
                 {step === 5 && <Step5Page data={data} updatePDP={updatePDP} addCapability={addCapability} removeCapability={removeCapability} updateCapability={updateCapability} />}
               </div>
               {step !== 1 && (
-                <div className="wizard-footer">
-                  <button className="btn-wiz-back" onClick={goBack}>← BACK</button>
-                  <button className="btn-wiz-next" disabled={!canProceed} onClick={goNext}>
-                    {aiReviewing ? 'AI COACH REVIEWING...' : (nextLabels[step] || 'NEXT →')}
-                  </button>
+                <div className="wizard-footer" style={{flexDirection:'column',alignItems:'stretch',gap:'0'}}>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                    <button className="btn-wiz-back" onClick={goBack}>← BACK</button>
+                    <button className="btn-wiz-next" disabled={!canProceed} onClick={goNext}>
+                      {aiReviewing ? 'AI COACH REVIEWING...' : (nextLabels[step] || 'NEXT →')}
+                    </button>
+                  </div>
+                  {aiMessage && <div style={{color:'#dc2626',fontSize:'13px',marginTop:'8px',padding:'8px 12px',background:'#fef2f2',borderRadius:'6px'}}>{aiMessage}</div>}
                 </div>
               )}
               {step === 1 && (

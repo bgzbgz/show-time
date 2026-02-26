@@ -560,6 +560,8 @@
             const [deps, setDeps] = useState([]);
       const [step, setStep] = useState(0);
       const [showHelp, setShowHelp] = useState(false);
+      const [aiReviewing, setAiReviewing] = useState(false);
+      const [aiMessage, setAiMessage] = useState('');
       const totalSteps = 5;
 
       const [data, setData] = useState({
@@ -861,7 +863,40 @@
         }
       };
 
-      const goNext = () => {
+      const goNext = async () => {
+        const userId = localStorage.getItem('ft_user_id');
+        // AI review for steps with meaningful free-text answers (skip step 2: ranking only)
+        if (window.AIChallenge && userId && [1, 3, 4, 5].includes(step)) {
+          let stepAnswers = {};
+          let stepName = '';
+          if (step === 1) {
+            stepName = 'Target Segment';
+            stepAnswers = { targetSegment: data.targetSegment };
+          } else if (step === 3) {
+            stepName = 'EVP Formulation';
+            stepAnswers = { evp: data.evp };
+          } else if (step === 4) {
+            stepName = 'EVP Testing';
+            stepAnswers = { evpTesting: data.evpTesting };
+          } else if (step === 5) {
+            stepName = 'Campaign & Recruitment';
+            stepAnswers = { campaign: data.campaign };
+          }
+          setAiReviewing(true);
+          try {
+            const canProceed = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, stepName);
+            if (!canProceed) {
+              setAiMessage(window.AIChallenge?.getLastFeedback?.()?.suggestion || 'Please expand your answer before continuing.');
+              setAiReviewing(false);
+              return;
+            }
+            setAiMessage('');
+          } catch (err) {
+            console.warn('[AIChallenge] Error, allowing passage:', err);
+          } finally {
+            setAiReviewing(false);
+          }
+        }
         if (step === 1) { setStep(1.5); }
         else if (step === 2) {
           const topNeed = (data.needsRanking || []).find(n => n.rank === 1);
@@ -2256,11 +2291,14 @@
                     {step === 4 && renderStep4()}
                     {step === 5 && renderStep5()}
                   </div>
-                  <div className="wizard-footer">
-                    <button className="btn-wiz-back" onClick={goBack}>← BACK</button>
-                    <button className="btn-wiz-next" disabled={!canProceed()} onClick={goNext}>
-                      {nextLabels[step] || 'NEXT →'}
-                    </button>
+                  <div className="wizard-footer" style={{flexDirection:'column',alignItems:'stretch',gap:'0'}}>
+                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                      <button className="btn-wiz-back" onClick={goBack}>← BACK</button>
+                      <button className="btn-wiz-next" disabled={aiReviewing || !canProceed()} onClick={goNext}>
+                        {aiReviewing ? 'AI COACH REVIEWING...' : (nextLabels[step] || 'NEXT →')}
+                      </button>
+                    </div>
+                    {aiMessage && <div style={{color:'#dc2626',fontSize:'13px',marginTop:'8px',padding:'8px 12px',background:'#fef2f2',borderRadius:'6px'}}>{aiMessage}</div>}
                   </div>
                 </div>
                 <WizardSidebar currentStep={step} stepLabels={stepLabels} totalSteps={5} />

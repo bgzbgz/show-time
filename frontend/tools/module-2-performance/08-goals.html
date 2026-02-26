@@ -813,6 +813,8 @@
         const GoalsPrioritiesPlanning = () => {
             const [deps, setDeps] = useState([]);
             const [step, setStep] = useState(0);
+            const [aiReviewing, setAiReviewing] = useState(false);
+            const [aiMessage, setAiMessage] = useState('');
             const [formData, setFormData] = useState({
                 ideas: Array(20).fill(null).map(() => ({
                     idea: '',
@@ -1015,6 +1017,46 @@
             const goToStep = (s) => {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 setStep(s);
+            };
+
+            // AI-gated step navigation — only for steps with meaningful free-text
+            const handleNext = async (currentStep, nextStep) => {
+                const userId = localStorage.getItem('ft_user_id');
+                const stepsWithText = [1, 3, 4, 5]; // ideas, elephant actions, accountability/alignment actions
+                if (!window.AIChallenge || !userId || !stepsWithText.includes(currentStep)) {
+                    goToStep(nextStep);
+                    return;
+                }
+                setAiReviewing(true);
+                try {
+                    let stepAnswers = {};
+                    let stepLabel = '';
+                    if (currentStep === 1) {
+                        stepLabel = 'Brainstorm & Rate';
+                        stepAnswers = { ideas: formData.ideas.filter(i => i.idea.trim()).map(i => ({ idea: i.idea, impact: i.impact, easy: i.easy })) };
+                    } else if (currentStep === 3) {
+                        stepLabel = 'Cut the Elephant';
+                        stepAnswers = { elephant_breakdowns: formData.elephants.map(el => ({ priority: el.idea, steps: el.steps.filter(s => s.action.trim()).map(s => ({ action: s.action, deadline: s.deadline })) })) };
+                    } else if (currentStep === 4) {
+                        stepLabel = 'Accountability Check';
+                        stepAnswers = { accountability_action: formData.accountabilityAction };
+                    } else if (currentStep === 5) {
+                        stepLabel = 'Alignment Check';
+                        stepAnswers = { alignment_action: formData.alignmentAction };
+                    }
+                    const canProceed = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, stepLabel);
+                    if (canProceed) {
+                        setAiMessage('');
+                        goToStep(nextStep);
+                    } else {
+                        setAiMessage(window.AIChallenge?.getLastFeedback?.()?.suggestion || 'Please expand your answer before continuing.');
+                    }
+                } catch (e) {
+                    // allow on error
+                    goToStep(nextStep);
+                } finally {
+                    setAiReviewing(false);
+                }
             };
 
             /* ============================================================
@@ -1702,13 +1744,16 @@
                 switch (intStep) {
                     case 1:
                         return (
-                            <ButtonFooter
-                                onBack={() => goToStep(0.5)}
-                                onNext={() => goToStep(1.5)}
-                                disabled={!validateStep1()}
-                                nextLabel="View Priorities"
-                                showBack={true}
-                            />
+                            <>
+                                {aiMessage && <div style={{color:'#dc2626',fontSize:'13px',marginTop:'8px',padding:'8px 12px',background:'#fef2f2',borderRadius:'6px'}}>{aiMessage}</div>}
+                                <ButtonFooter
+                                    onBack={() => goToStep(0.5)}
+                                    onNext={() => handleNext(1, 1.5)}
+                                    disabled={!validateStep1() || aiReviewing}
+                                    nextLabel={aiReviewing ? 'Reviewing...' : 'View Priorities'}
+                                    showBack={true}
+                                />
+                            </>
                         );
                     case 2:
                         return (
@@ -1721,33 +1766,42 @@
                         );
                     case 3:
                         return (
-                            <ButtonFooter
-                                onBack={() => goToStep(2)}
-                                onNext={() => goToStep(3.5)}
-                                disabled={!validateStep3()}
-                                nextLabel="Accountability Check"
-                                showBack={true}
-                            />
+                            <>
+                                {aiMessage && <div style={{color:'#dc2626',fontSize:'13px',marginTop:'8px',padding:'8px 12px',background:'#fef2f2',borderRadius:'6px'}}>{aiMessage}</div>}
+                                <ButtonFooter
+                                    onBack={() => goToStep(2)}
+                                    onNext={() => handleNext(3, 3.5)}
+                                    disabled={!validateStep3() || aiReviewing}
+                                    nextLabel={aiReviewing ? 'Reviewing...' : 'Accountability Check'}
+                                    showBack={true}
+                                />
+                            </>
                         );
                     case 4:
                         return (
-                            <ButtonFooter
-                                onBack={() => goToStep(3)}
-                                onNext={() => goToStep(4.5)}
-                                disabled={!validateStep4()}
-                                nextLabel="Alignment Check"
-                                showBack={true}
-                            />
+                            <>
+                                {aiMessage && <div style={{color:'#dc2626',fontSize:'13px',marginTop:'8px',padding:'8px 12px',background:'#fef2f2',borderRadius:'6px'}}>{aiMessage}</div>}
+                                <ButtonFooter
+                                    onBack={() => goToStep(3)}
+                                    onNext={() => handleNext(4, 4.5)}
+                                    disabled={!validateStep4() || aiReviewing}
+                                    nextLabel={aiReviewing ? 'Reviewing...' : 'Alignment Check'}
+                                    showBack={true}
+                                />
+                            </>
                         );
                     case 5:
                         return (
-                            <ButtonFooter
-                                onBack={() => goToStep(4)}
-                                onNext={() => goToStep(6)}
-                                disabled={!validateStep5()}
-                                nextLabel="Review & Submit"
-                                showBack={true}
-                            />
+                            <>
+                                {aiMessage && <div style={{color:'#dc2626',fontSize:'13px',marginTop:'8px',padding:'8px 12px',background:'#fef2f2',borderRadius:'6px'}}>{aiMessage}</div>}
+                                <ButtonFooter
+                                    onBack={() => goToStep(4)}
+                                    onNext={() => handleNext(5, 6)}
+                                    disabled={!validateStep5() || aiReviewing}
+                                    nextLabel={aiReviewing ? 'Reviewing...' : 'Review & Submit'}
+                                    showBack={true}
+                                />
+                            </>
                         );
                     case 6:
                         return (

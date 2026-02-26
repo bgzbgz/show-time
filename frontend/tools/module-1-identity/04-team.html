@@ -1399,6 +1399,8 @@
             const [submitted, setSubmitted] = useState(false);
             const [teamToolUnlocked, setTeamToolUnlocked] = useState(true); // always unlocked
             const [checkingTeamUnlock, setCheckingTeamUnlock] = useState(false);
+            const [aiReviewing, setAiReviewing] = useState(false);
+            const [aiMessage, setAiMessage] = useState('');
 
             const myScores = allRated(ratings) ? calculateMyScores(ratings) : null;
 
@@ -1592,43 +1594,32 @@
                 }
             };
 
-            // AI review on step transitions
-            const reviewStep = async (stepNum) => {
-                if (!window.AIChallenge || !window.AIChallenge.reviewStep) return;
-                const userId = localStorage.getItem('ft_user_id');
-                if (!userId) return;
-
-                let answers = [];
-                if (stepNum === 1) {
-                    answers = STATEMENTS.map(s => ({
-                        question_key: `statement_${s.id}`,
-                        question_text: s.text,
-                        answer: ratings[s.id] ? String(ratings[s.id]) : ''
-                    }));
-                } else if (stepNum === 3) {
-                    answers = teamData.teamMembers.map(m => ({
-                        question_key: `member_${m.name}`,
-                        question_text: `Scores for ${m.name}`,
-                        answer: JSON.stringify(m.scores)
-                    }));
-                } else if (stepNum === 5) {
-                    answers = teamData.improvementPlan.map(p => ({
-                        question_key: `plan_${p.dysfunction}`,
-                        question_text: `Improvement plan for ${DYSFUNCTION_MAP[p.dysfunction]?.name || p.dysfunction}`,
-                        answer: `Who: ${p.who}, What: ${p.what}, When: ${p.when}`
-                    }));
-                }
-
-                try {
-                    await window.AIChallenge.reviewStep(userId, 'team', answers);
-                } catch (e) {
-                    console.warn('[Team] AI review failed:', e);
-                }
-            };
-
-            // Handle next step with transitions
+            // Handle next step with transitions and AI gating on free-text steps
             const handleNext = async (fromStep) => {
-                await reviewStep(fromStep);
+                // Only apply AI review to step 5 (Improvement Plan — free-text who/what/when)
+                if (fromStep === 5 && window.AIChallenge && window.AIChallenge.reviewStep) {
+                    const userId = localStorage.getItem('ft_user_id');
+                    if (userId) {
+                        const answers = teamData.improvementPlan.map(p => ({
+                            question_key: `plan_${p.dysfunction}`,
+                            question_text: `Improvement plan for ${DYSFUNCTION_MAP[p.dysfunction]?.name || p.dysfunction}`,
+                            answer: `Who: ${p.who}, What: ${p.what}, When: ${p.when}`
+                        }));
+                        setAiReviewing(true);
+                        try {
+                            const canProceed = await window.AIChallenge.reviewStep(userId, 'team', answers, 'Improvement Plan');
+                            if (!canProceed) {
+                                setAiMessage(window.AIChallenge?.getLastFeedback?.()?.suggestion || 'Please expand your improvement plan before continuing.');
+                                return;
+                            }
+                            setAiMessage('');
+                        } catch (e) {
+                            console.warn('[Team] AI review failed, allowing passage:', e);
+                        } finally {
+                            setAiReviewing(false);
+                        }
+                    }
+                }
 
                 if (fromStep === 1) setStep(1.5);
                 else if (fromStep === 2) setStep(2.5);
@@ -1970,9 +1961,10 @@
                                 showBack={showBack}
                                 onBack={() => handleBack(step)}
                                 onNext={() => handleNext(step)}
-                                nextLabel={getNextLabel()}
-                                disabled={!canNext()}
+                                nextLabel={aiReviewing ? 'Reviewing...' : getNextLabel()}
+                                disabled={!canNext() || aiReviewing}
                             />
+                            {aiMessage && <div style={{color:'#dc2626',fontSize:'13px',marginTop:'8px',padding:'8px 12px',background:'#fef2f2',borderRadius:'6px',margin:'8px 24px 0'}}>{aiMessage}</div>}
                         </div>
 
                         <WizardSidebar
@@ -2016,9 +2008,10 @@
                                 showBack={showBack}
                                 onBack={() => handleBack(step)}
                                 onNext={() => handleNext(step)}
-                                nextLabel={getNextLabel()}
-                                disabled={!canNext() || submitting || submitted}
+                                nextLabel={aiReviewing ? 'Reviewing...' : getNextLabel()}
+                                disabled={!canNext() || submitting || submitted || aiReviewing}
                             />
+                            {aiMessage && <div style={{color:'#dc2626',fontSize:'13px',marginTop:'8px',padding:'8px 12px',background:'#fef2f2',borderRadius:'6px',margin:'8px 24px 0'}}>{aiMessage}</div>}
                         </div>
 
                         <WizardSidebar

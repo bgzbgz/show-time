@@ -526,6 +526,7 @@
             const [deps, setDeps] = useState([]);
       const [step, setStep] = useState(0);
       const [aiReviewing, setAiReviewing] = useState(false);
+      const [aiMessage, setAiMessage] = useState('');
 
       const [data, setData] = useState({
         toolType: '', // 'individual' or 'team'
@@ -889,7 +890,12 @@
                   stepAnswers = { implementation: data.individual.implementation };
                 }
                 const canProceed = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, stepName);
-                if (!canProceed) { setAiReviewing(false); return; }
+                if (!canProceed) {
+                  setAiMessage(window.AIChallenge?.getLastFeedback?.()?.suggestion || 'Please expand your answer before continuing.');
+                  setAiReviewing(false);
+                  return;
+                }
+                setAiMessage('');
               } catch (err) {
                 console.warn('[AIChallenge] Error, allowing passage:', err);
               } finally {
@@ -924,7 +930,12 @@
                   stepAnswers = { implementationPlan: data.team.implementationPlan };
                 }
                 const canProceed = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, stepName);
-                if (!canProceed) { setAiReviewing(false); return; }
+                if (!canProceed) {
+                  setAiMessage(window.AIChallenge?.getLastFeedback?.()?.suggestion || 'Please expand your answer before continuing.');
+                  setAiReviewing(false);
+                  return;
+                }
+                setAiMessage('');
               } catch (err) {
                 console.warn('[AIChallenge] Error, allowing passage:', err);
               } finally {
@@ -1135,11 +1146,14 @@
                 {step === 2 && <IndividualStep2 data={data} updateProcess={updateProcess} addProcess={addProcess} removeProcess={removeProcess} />}
                 {step === 3 && <IndividualStep3 data={data} setData={setData} updateAITool={updateAITool} addAITool={addAITool} removeAITool={removeAITool} />}
               </div>
-              <div className="wizard-footer">
-                <button className="btn-wiz-back" onClick={goBack}>← BACK</button>
-                <button className="btn-wiz-next" disabled={aiReviewing || !isValid} onClick={goNext}>
-                  {aiReviewing ? 'AI COACH REVIEWING...' : (nextLabels[step] || 'NEXT →')}
-                </button>
+              <div className="wizard-footer" style={{flexDirection:'column',alignItems:'stretch',gap:'0'}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                  <button className="btn-wiz-back" onClick={goBack}>← BACK</button>
+                  <button className="btn-wiz-next" disabled={aiReviewing || !isValid} onClick={goNext}>
+                    {aiReviewing ? 'AI COACH REVIEWING...' : (nextLabels[step] || 'NEXT →')}
+                  </button>
+                </div>
+                {aiMessage && <div style={{color:'#dc2626',fontSize:'13px',marginTop:'8px',padding:'8px 12px',background:'#fef2f2',borderRadius:'6px'}}>{aiMessage}</div>}
               </div>
             </div>
             <WizardSidebar currentStep={step} stepLabels={stepLabels} totalSteps={3} />
@@ -1162,11 +1176,14 @@
                 {step === 3 && <TeamStep3 data={data} setData={setData} />}
                 {step === 4 && <TeamStep4 data={data} setData={setData} updateActionOwner={updateActionOwner} addActionOwner={addActionOwner} removeActionOwner={removeActionOwner} />}
               </div>
-              <div className="wizard-footer">
-                <button className="btn-wiz-back" onClick={goBack}>← BACK</button>
-                <button className="btn-wiz-next" disabled={aiReviewing || !isValid} onClick={goNext}>
-                  {aiReviewing ? 'AI COACH REVIEWING...' : (nextLabels[step] || 'NEXT →')}
-                </button>
+              <div className="wizard-footer" style={{flexDirection:'column',alignItems:'stretch',gap:'0'}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                  <button className="btn-wiz-back" onClick={goBack}>← BACK</button>
+                  <button className="btn-wiz-next" disabled={aiReviewing || !isValid} onClick={goNext}>
+                    {aiReviewing ? 'AI COACH REVIEWING...' : (nextLabels[step] || 'NEXT →')}
+                  </button>
+                </div>
+                {aiMessage && <div style={{color:'#dc2626',fontSize:'13px',marginTop:'8px',padding:'8px 12px',background:'#fef2f2',borderRadius:'6px'}}>{aiMessage}</div>}
               </div>
             </div>
             <WizardSidebar currentStep={step} stepLabels={stepLabels} totalSteps={4} />

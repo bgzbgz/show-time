@@ -331,6 +331,7 @@
       const [deps, setDeps] = useState([]);
       const [step, setStep] = useState(0); // 0=cover, 0.5=intro, 1-4=steps, 5=canvas
       const [aiReviewing, setAiReviewing] = useState(false);
+      const [aiMessage, setAiMessage] = useState('');
       const [openAttractivenessIdx, setOpenAttractivenessIdx] = useState(0);
       const [openGoalIdx, setOpenGoalIdx] = useState(0);
 
@@ -575,7 +576,10 @@
             }
             const canProceed = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, stepName);
             if (canProceed) {
+              setAiMessage('');
               doTransition(step === 4 ? 5 : step + 1);
+            } else {
+              setAiMessage(window.AIChallenge?.getLastFeedback?.()?.suggestion || 'Please expand your answer before continuing.');
             }
           } catch (err) {
             console.warn('[AIChallenge] Error, allowing passage:', err);
@@ -703,8 +707,9 @@
                 {step === 3 && <Step3Page data={data} updateData={updateData} addAttractiveness={addAttractiveness} removeAttractiveness={removeAttractiveness} updateAttractiveness={updateAttractiveness} />}
                 {step === 4 && <Step4Page data={data} updateData={updateData} addMarketShareGoal={addMarketShareGoal} removeMarketShareGoal={removeMarketShareGoal} updateMarketShareGoal={updateMarketShareGoal} />}
               </div>
+              {aiMessage && <div style={{color:'#dc2626',fontSize:'13px',marginTop:'8px',padding:'8px 12px',background:'#fef2f2',borderRadius:'6px'}}>{aiMessage}</div>}
               <div className="wizard-footer">
-                <button className="btn-wiz-back" onClick={goBack}>← BACK</button>
+                <button className="btn-wiz-back" onClick={() => { setAiMessage(''); goBack(); }}>← BACK</button>
                 <button className="btn-wiz-next" disabled={!canProceed} onClick={goNext}>
                   {aiReviewing ? 'AI COACH REVIEWING...' : (nextLabels[step] || 'NEXT →')}
                 </button>

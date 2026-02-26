@@ -598,6 +598,7 @@
             const [step2Phase, setStep2Phase] = useState('list');
             // userEmail removed — no longer collected
             const [aiReviewing, setAiReviewing] = useState(false);
+            const [aiMessage, setAiMessage] = useState('');
 
             const [marketData, setMarketData] = useState({
                 totalCustomers: '',
@@ -682,7 +683,12 @@
                         stepAnswers = { driving_forces: drivingForces.filter(f => f.name.trim()).map(f => ({ name: f.name, impact: f.impact, probability: f.probability, score: (2 * f.impact) + f.probability })) };
                     }
                     const canProceed = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, stepName);
-                    if (canProceed) setStep(transitionStep);
+                    if (canProceed) {
+                        setAiMessage('');
+                        setStep(transitionStep);
+                    } else {
+                        setAiMessage(window.AIChallenge?.getLastFeedback?.()?.suggestion || 'Please expand your answer before continuing.');
+                    }
                 } catch (err) {
                     console.warn('[AIChallenge] Error, allowing passage:', err);
                     setStep(transitionStep);
@@ -837,8 +843,10 @@
                                         {step === 3 && <Step3Content topForces={topForces} impactData={impactData} setImpactData={setImpactData} marketData={marketData} marketSize={marketSize} profitPool={profitPool} future={future} currentYear={currentYear} futureYear={futureYear} drivingForces={drivingForces} />}
                                     </div>
 
+                                    {aiMessage && <div style={{color:'#dc2626',fontSize:'13px',marginTop:'8px',padding:'8px 12px',background:'#fef2f2',borderRadius:'6px'}}>{aiMessage}</div>}
                                     <ButtonFooter
                                         onBack={() => {
+                                            setAiMessage('');
                                             if (step === 1) setStep(0.5);
                                             else if (step === 2) { setStep(1); setStep1Phase(4); }
                                             else if (step === 3) { setStep(2); setStep2Phase('rank'); }

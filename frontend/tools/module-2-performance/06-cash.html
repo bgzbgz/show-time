@@ -608,6 +608,7 @@
             const [actions, setActions] = useState([{ what: '', who: '', when: '' }, { what: '', who: '', when: '' }, { what: '', who: '', when: '' }]);
 
             const [aiReviewing, setAiReviewing] = useState(false);
+            const [aiMessage, setAiMessage] = useState('');
             const autosaveTimer = useRef(null);
 
             // Calculated values
@@ -682,45 +683,24 @@
                 const userId = localStorage.getItem('ft_user_id');
                 const nextStepNum = fromStep === 2 ? fromStep + 0.5 : (fromStep === 4 ? 999 : fromStep + 1);
                 if (!userId) { setStep(nextStepNum); return; }
-                setAiReviewing(true);
-                try {
-                    let stepAnswers = {};
-                    let stepName = '';
-                    if (fromStep === 1) {
-                        stepName = 'Year 1 Data';
-                        stepAnswers = {
-                            story_report_y1: { revenue: year1PL.revenue, cogs: year1PL.cogs, directLabor: year1PL.directLabor, managementLabor: year1PL.managementLabor, overheads: year1PL.overheads, interest: year1PL.interest, tax: year1PL.tax },
-                            year1_bs: year1BS,
-                            year1_wc: year1WC
-                        };
-                    } else if (fromStep === 2) {
-                        stepName = 'Year 2 Data';
-                        stepAnswers = {
-                            story_report_y2: { revenue: year2PL.revenue, cogs: year2PL.cogs, directLabor: year2PL.directLabor, managementLabor: year2PL.managementLabor, overheads: year2PL.overheads, interest: year2PL.interest, tax: year2PL.tax },
-                            year2_bs: year2BS,
-                            year2_wc: year2WC
-                        };
-                    } else if (fromStep === 3) {
-                        stepName = 'Power of One';
-                        stepAnswers = {
-                            power_of_one: powerOfOne.map(l => ({ lever: l.lever, cashImpact: l.cash, ebitImpact: l.ebit }))
-                        };
-                    } else if (fromStep === 4) {
-                        stepName = 'Action Plan';
-                        stepAnswers = {
-                            action_sheets: actions.filter(a => a.what.trim())
-                        };
+                // Only apply AI review to step 4 (Action Plan — free-text what/who/when)
+                if (fromStep === 4 && window.AIChallenge && window.AIChallenge.reviewStep) {
+                    setAiReviewing(true);
+                    try {
+                        const stepAnswers = { action_sheets: actions.filter(a => a.what.trim()) };
+                        const canProceed = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, 'Action Plan');
+                        if (!canProceed) {
+                            setAiMessage(window.AIChallenge?.getLastFeedback?.()?.suggestion || 'Please expand your action plan before continuing.');
+                            return;
+                        }
+                        setAiMessage('');
+                    } catch (err) {
+                        console.warn('[AIChallenge] Error, allowing passage:', err);
+                    } finally {
+                        setAiReviewing(false);
                     }
-                    const canProceed = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, stepName);
-                    if (canProceed) {
-                        setStep(nextStepNum);
-                    }
-                } catch (err) {
-                    console.warn('[AIChallenge] Error, allowing passage:', err);
-                    setStep(nextStepNum);
-                } finally {
-                    setAiReviewing(false);
                 }
+                setStep(nextStepNum);
             };
 
             return (
@@ -821,8 +801,9 @@
                                         onBack={() => setStep(step === 1 ? 0.5 : step - 1)}
                                         onNext={() => handleNext(step)}
                                         canProceed={!aiReviewing && (step === 1 ? canStep1 : step === 2 ? canStep2 : step === 3 ? canStep3 : canStep4)}
-                                        nextLabel={aiReviewing ? 'AI Coach Reviewing...' : step === 4 ? 'View Your Canvas' : 'Next'}
+                                        nextLabel={aiReviewing ? 'Reviewing...' : step === 4 ? 'View Your Canvas' : 'Next'}
                                     />
+                                    {aiMessage && <div style={{color:'#dc2626',fontSize:'13px',marginTop:'8px',padding:'8px 12px',background:'#fef2f2',borderRadius:'6px',margin:'8px 24px 0'}}>{aiMessage}</div>}
                                 </div>
                                 <WizardSidebar currentStep={step} year1PL={year1PL} year2PL={year2PL} year2WC={year2WC} powerOfOne={powerOfOne} actionsCount={actions.filter(a => a.what.trim()).length} onNavigate={setStep} />
                             </div>

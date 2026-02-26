@@ -691,6 +691,8 @@
       const totalSteps = 3;
 
       const [showHelp, setShowHelp] = useState(false);
+      const [aiReviewing, setAiReviewing] = useState(false);
+      const [aiMessage, setAiMessage] = useState('');
       const [activeCharterIndex, setActiveCharterIndex] = useState(0);
       const [activeTab, setActiveTab] = useState('goal');
 
@@ -1011,7 +1013,36 @@
       };
 
       // Wizard Navigation
-      const goNext = () => {
+      const goNext = async () => {
+        const userId = localStorage.getItem('ft_user_id');
+        if (window.AIChallenge && userId) {
+          let stepAnswers = {};
+          let stepName = '';
+          if (step === 1) {
+            stepName = 'Agile Opportunities';
+            stepAnswers = { items: data.items };
+          } else if (step === 2) {
+            stepName = 'Team Charters';
+            stepAnswers = { charters: data.charters };
+          } else if (step === 3) {
+            stepName = 'Sprint Planning';
+            stepAnswers = { charters: data.charters };
+          }
+          setAiReviewing(true);
+          try {
+            const canProceed = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, stepName);
+            if (!canProceed) {
+              setAiMessage(window.AIChallenge?.getLastFeedback?.()?.suggestion || 'Please expand your answer before continuing.');
+              setAiReviewing(false);
+              return;
+            }
+            setAiMessage('');
+          } catch (err) {
+            console.warn('[AIChallenge] Error, allowing passage:', err);
+          } finally {
+            setAiReviewing(false);
+          }
+        }
         if (step === 1) { setStep(1.5); }
         else if (step === 2) { initializeCharters(); setStep(2.5); }
         else if (step === 3) { setStep(3.5); }
@@ -2198,11 +2229,14 @@
                     {step === 2 && renderStep2()}
                     {step === 3 && renderStep3()}
                   </div>
-                  <div className="wizard-footer">
-                    <button className="btn-wiz-back" onClick={goBack}>← BACK</button>
-                    <button className="btn-wiz-next" disabled={!canProceed()} onClick={goNext}>
-                      {nextLabels[step] || 'NEXT →'}
-                    </button>
+                  <div className="wizard-footer" style={{flexDirection:'column',alignItems:'stretch',gap:'0'}}>
+                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                      <button className="btn-wiz-back" onClick={goBack}>← BACK</button>
+                      <button className="btn-wiz-next" disabled={aiReviewing || !canProceed()} onClick={goNext}>
+                        {aiReviewing ? 'AI COACH REVIEWING...' : (nextLabels[step] || 'NEXT →')}
+                      </button>
+                    </div>
+                    {aiMessage && <div style={{color:'#dc2626',fontSize:'13px',marginTop:'8px',padding:'8px 12px',background:'#fef2f2',borderRadius:'6px'}}>{aiMessage}</div>}
                   </div>
                 </div>
                 <WizardSidebar currentStep={step} stepLabels={stepLabels} totalSteps={3} />

@@ -749,6 +749,7 @@
             const [step, setStep] = useState(0);
             const [submissionStatus, setSubmissionStatus] = useState(null);
             const [aiReviewing, setAiReviewing] = useState(false);
+            const [aiMessage, setAiMessage] = useState('');
 
             const [data, setData] = useState({
                 userEmail: '',
@@ -860,18 +861,22 @@
                     setStep(nextStepValue);
                     return;
                 }
-                setAiReviewing(true);
-                try {
-                    const canProceed = await window.AIChallenge.reviewStep(userId, 'dream', stepAnswers, stepName);
-                    if (canProceed) {
-                        setStep(nextStepValue);
+                if (window.AIChallenge) {
+                    setAiReviewing(true);
+                    try {
+                        const canProceed = await window.AIChallenge.reviewStep(userId, 'dream', stepAnswers, stepName);
+                        if (!canProceed) {
+                            setAiMessage(window.AIChallenge?.getLastFeedback?.()?.suggestion || 'Please expand your answer before continuing.');
+                            return;
+                        }
+                        setAiMessage('');
+                    } catch (err) {
+                        console.warn('AI review error, allowing passage:', err);
+                    } finally {
+                        setAiReviewing(false);
                     }
-                } catch (err) {
-                    console.warn('AI review error, allowing passage:', err);
-                    setStep(nextStepValue);
-                } finally {
-                    setAiReviewing(false);
                 }
+                setStep(nextStepValue);
             };
 
             /* PRESERVED: Webhook Submission Function — do not modify */
@@ -985,6 +990,7 @@
 
                                     {/* Step 2 uses typeform internal nav — hide footer Next for step 2 */}
                                     {step !== 2 && (
+                                        <>
                                         <ButtonFooter
                                             onBack={() => setStep(step === 1 ? 0.5 : step - 1)}
                                             onNext={() => {
@@ -1005,6 +1011,8 @@
                                             nextLabel={aiReviewing ? 'AI Coach Reviewing...' : step === 4 ? 'View Canvas' : 'Next'}
                                             showBack={true}
                                         />
+                                        {aiMessage && <div style={{color:'#dc2626',fontSize:'13px',marginTop:'8px',padding:'8px 12px',background:'#fef2f2',borderRadius:'6px',margin:'8px 24px 0'}}>{aiMessage}</div>}
+                                        </>
                                     )}
                                     {/* Step 2: show only Back in footer */}
                                     {step === 2 && (

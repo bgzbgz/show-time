@@ -1609,6 +1609,7 @@
             const [mode, setMode] = useState(null); // 'individual' | 'abc' | 'team'
             const [deps, setDeps] = useState([]);
             const [aiReviewing, setAiReviewing] = useState(false);
+            const [aiMessage, setAiMessage] = useState('');
             const [submitStatus, setSubmitStatus] = useState(null);
             const [submitMessage, setSubmitMessage] = useState('');
             const [individualSubmitted, setIndividualSubmitted] = useState(false);
@@ -1766,18 +1767,22 @@
                     setStep(nextStepValue);
                     return;
                 }
-                setAiReviewing(true);
-                try {
-                    const canGo = await window.AIChallenge.reviewStep(userId, 'fit', stepAnswers, stepName);
-                    if (canGo) {
-                        setStep(nextStepValue);
+                if (window.AIChallenge) {
+                    setAiReviewing(true);
+                    try {
+                        const canGo = await window.AIChallenge.reviewStep(userId, 'fit', stepAnswers, stepName);
+                        if (!canGo) {
+                            setAiMessage(window.AIChallenge?.getLastFeedback?.()?.suggestion || 'Please expand your answer before continuing.');
+                            return;
+                        }
+                        setAiMessage('');
+                    } catch (err) {
+                        console.warn('AI review error, allowing passage:', err);
+                    } finally {
+                        setAiReviewing(false);
                     }
-                } catch (err) {
-                    console.warn('AI review error, allowing passage:', err);
-                    setStep(nextStepValue);
-                } finally {
-                    setAiReviewing(false);
                 }
+                setStep(nextStepValue);
             };
 
             // Submit individual phase
@@ -2329,10 +2334,11 @@
                                             handleStepNext(4.5, answers, dim.title);
                                         }
                                     }}
-                                    nextLabel={getIndividualNextLabel()}
+                                    nextLabel={aiReviewing ? 'Reviewing...' : getIndividualNextLabel()}
                                     showBack={true}
                                     disabled={!canProceedIndividual(step) || aiReviewing}
                                 />
+                                {aiMessage && <div style={{color:'#dc2626',fontSize:'13px',marginTop:'8px',padding:'8px 12px',background:'#fef2f2',borderRadius:'6px',margin:'8px 24px 0'}}>{aiMessage}</div>}
                             </div>
                             <WizardSidebar
                                 currentStep={step}
@@ -2379,13 +2385,14 @@
                                             handleABCSubmit();
                                         }
                                     }}
-                                    nextLabel={step === 5 ? 'Review' : 'Submit ABC'}
+                                    nextLabel={aiReviewing ? 'Reviewing...' : (step === 5 ? 'Review' : 'Submit ABC')}
                                     showBack={true}
                                     disabled={
                                         (step === 5 && !canProceedABC(5)) ||
                                         aiReviewing
                                     }
                                 />
+                                {aiMessage && <div style={{color:'#dc2626',fontSize:'13px',marginTop:'8px',padding:'8px 12px',background:'#fef2f2',borderRadius:'6px',margin:'8px 24px 0'}}>{aiMessage}</div>}
                             </div>
                             <WizardSidebar
                                 currentStep={step}
@@ -2435,13 +2442,14 @@
                                             handleTeamSubmit();
                                         }
                                     }}
-                                    nextLabel={step === 7 ? 'Meeting Agenda' : 'Submit Team Meeting'}
+                                    nextLabel={aiReviewing ? 'Reviewing...' : (step === 7 ? 'Meeting Agenda' : 'Submit Team Meeting')}
                                     showBack={true}
                                     disabled={
                                         (step === 7 && !canProceedTeam(7)) ||
                                         aiReviewing
                                     }
                                 />
+                                {aiMessage && <div style={{color:'#dc2626',fontSize:'13px',marginTop:'8px',padding:'8px 12px',background:'#fef2f2',borderRadius:'6px',margin:'8px 24px 0'}}>{aiMessage}</div>}
                             </div>
                             <WizardSidebar
                                 currentStep={step}

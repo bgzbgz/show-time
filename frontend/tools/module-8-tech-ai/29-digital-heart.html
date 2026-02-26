@@ -719,6 +719,7 @@
             const [deps, setDeps] = useState([]);
       const [step, setStep] = useState(0);
       const [aiReviewing, setAiReviewing] = useState(false);
+      const [aiMessage, setAiMessage] = useState('');
 
       const [data, setData] = useState({
         decisions: [
@@ -881,7 +882,12 @@
               else if (step === 3) { stepName = 'Technology Platform'; stepAnswers = { technology: data.technology }; }
               else if (step === 4) { stepName = 'APIs & Access'; stepAnswers = { apis: data.apis }; }
               const proceed = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, stepName);
-              if (!proceed) { setAiReviewing(false); return; }
+              if (!proceed) {
+                setAiMessage(window.AIChallenge?.getLastFeedback?.()?.suggestion || 'Please expand your answer before continuing.');
+                setAiReviewing(false);
+                return;
+              }
+              setAiMessage('');
             } catch (err) {
               console.warn('[AIChallenge] Error, allowing passage:', err);
             } finally {
@@ -961,11 +967,14 @@
                     {step === 3 && <Step3Technology data={data} setData={setData} />}
                     {step === 4 && <Step4APIs data={data} setData={setData} />}
                   </div>
-                  <div className="wizard-footer">
-                    <button className="btn-wiz-back" onClick={prevStep}>← BACK</button>
-                    <button className="btn-wiz-next" disabled={aiReviewing || !canProceed()} onClick={nextStep}>
-                      {aiReviewing ? 'AI COACH REVIEWING...' : (nextLabels[step] || 'NEXT →')}
-                    </button>
+                  <div className="wizard-footer" style={{flexDirection:'column',alignItems:'stretch',gap:'0'}}>
+                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                      <button className="btn-wiz-back" onClick={prevStep}>← BACK</button>
+                      <button className="btn-wiz-next" disabled={aiReviewing || !canProceed()} onClick={nextStep}>
+                        {aiReviewing ? 'AI COACH REVIEWING...' : (nextLabels[step] || 'NEXT →')}
+                      </button>
+                    </div>
+                    {aiMessage && <div style={{color:'#dc2626',fontSize:'13px',marginTop:'8px',padding:'8px 12px',background:'#fef2f2',borderRadius:'6px'}}>{aiMessage}</div>}
                   </div>
                 </div>
                 <WizardSidebar currentStep={step} stepLabels={stepLabels} totalSteps={4} />
