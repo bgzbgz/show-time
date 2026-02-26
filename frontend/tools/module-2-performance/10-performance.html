@@ -583,7 +583,7 @@
         const [step, setStep] = useState(0);
         const [data, setData] = useState({});
         const [teamData, setTeamData] = useState({});
-        const [teamToolUnlocked, setTeamToolUnlocked] = useState(false);
+        const [teamToolUnlocked, setTeamToolUnlocked] = useState(true); // always unlocked
         const [checkingTeamUnlock, setCheckingTeamUnlock] = useState(false);
         const [individualSubmitted, setIndividualSubmitted] = useState(false);
         const [submitStatus, setSubmitStatus] = useState(null);
@@ -649,12 +649,10 @@
                 execution_dashboard: { goals: data.goals, tasks: data.tasks, eighty20: data.eighty20, constraints: data.constraints, reviewCadence: data.reviewCadence },
                 consequences_table: data.accountability
             };
-            await window.AIChallenge.submitWithChallenge(userId, 'performance-individual', questionMappings, {
-                onReviewStart: () => { setSubmitStatus('saving'); setSubmitMessage('AI coach is reviewing...'); },
-                onRevise: () => { setSubmitStatus(null); setSubmitMessage(''); goToStep(6); },
-                onSubmitAnyway: () => { setSubmitStatus('success'); setSubmitMessage('Individual assessment submitted!'); setIndividualSubmitted(true); },
-                onError: (err) => { setSubmitStatus('error'); setSubmitMessage('Failed: ' + err.message); }
-            });
+            await ToolDB.saveResponses(userId, 'performance-individual', questionMappings);
+            setSubmitStatus('success');
+            setSubmitMessage('Individual assessment submitted!');
+            setIndividualSubmitted(true);
         };
 
         // Team submit
@@ -664,12 +662,9 @@
             const teamMappings = {
                 execution_dashboard: { teamTakeaways: teamData.teamTakeaways, teamStrategies: teamData.teamStrategies, www: teamData.www }
             };
-            await window.AIChallenge.submitWithChallenge(userId, 'performance-team', teamMappings, {
-                onReviewStart: () => { setSubmitStatus('saving'); setSubmitMessage('AI coach is reviewing team work...'); },
-                onRevise: () => { setSubmitStatus(null); setSubmitMessage(''); goToStep(9); },
-                onSubmitAnyway: () => { setSubmitStatus('success'); setSubmitMessage('Team meeting submitted successfully!'); },
-                onError: (err) => { setSubmitStatus('error'); setSubmitMessage('Failed: ' + err.message); }
-            });
+            await ToolDB.saveResponses(userId, 'performance-team', teamMappings);
+            setSubmitStatus('success');
+            setSubmitMessage('Team meeting submitted successfully!');
         };
 
         return (
@@ -680,7 +675,6 @@
                     <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
                         <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url("https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1920&q=80")', backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.3 }} />
                         <div style={{ position: 'relative', textAlign: 'center', color: '#fff', padding: '0 32px' }} className="animate-in">
-                            <div className="monument" style={{ fontSize: 14, color: '#FFF469', letterSpacing: '0.15em', marginBottom: 24 }}>SPRINT 10</div>
                             <h1 className="plaak" style={{ fontSize: 64, marginBottom: 16, textTransform: 'uppercase', lineHeight: 1.1 }}>PERFORMANCE<br/>ANALYSIS</h1>
                             <p style={{ fontSize: 18, color: '#ccc', marginBottom: 48 }}>Measure what matters. Fix what's broken. Own the outcome.</p>
                             <button onClick={() => goToStep(0.5)} style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 48px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s ease' }} onMouseOver={e => e.target.style.background = '#FFF469'} onMouseOut={e => e.target.style.background = '#fff'}>START</button>
