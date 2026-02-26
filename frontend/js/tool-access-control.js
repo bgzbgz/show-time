@@ -153,10 +153,42 @@ var ToolAccessControl = (function () {
     /**
      * Initialize access control for a tool
      */
+    /**
+     * Activate preview mode: bypass all locks, generate stable anon ID, show badge
+     */
+    function activatePreviewMode() {
+        // Generate a stable anon ID persisted across tools in this browser
+        if (!localStorage.getItem('ft_user_id')) {
+            var anonId = 'preview-' + Math.random().toString(36).slice(2, 10);
+            localStorage.setItem('ft_user_id', anonId);
+        }
+        // Persist preview flag so it survives navigation between tools
+        sessionStorage.setItem('ft_preview_mode', '1');
+
+        // Show a small badge in the corner
+        var badge = document.createElement('div');
+        badge.id = 'preview-badge';
+        badge.style.cssText = 'position:fixed;bottom:16px;right:16px;z-index:99999;background:#FFF469;color:#000;font-family:Monument,monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;padding:6px 12px;border-radius:20px;pointer-events:none;';
+        badge.textContent = 'PREVIEW MODE';
+        document.addEventListener('DOMContentLoaded', function () {
+            if (!document.getElementById('preview-badge')) document.body.appendChild(badge);
+        });
+        if (document.body && !document.getElementById('preview-badge')) document.body.appendChild(badge);
+    }
+
     function init(toolSlug) {
+        var params = new URLSearchParams(window.location.search);
+
         // Dev mode: ?dev in URL bypasses all access control
-        if (new URLSearchParams(window.location.search).has('dev')) {
+        if (params.has('dev')) {
             console.log('[ToolAccessControl] DEV MODE — all tools unlocked');
+            return Promise.resolve();
+        }
+
+        // Preview mode: ?preview in URL OR sessionStorage flag (persists across tool navigation)
+        if (params.has('preview') || sessionStorage.getItem('ft_preview_mode') === '1') {
+            activatePreviewMode();
+            console.log('[ToolAccessControl] PREVIEW MODE — all tools unlocked');
             return Promise.resolve();
         }
 
