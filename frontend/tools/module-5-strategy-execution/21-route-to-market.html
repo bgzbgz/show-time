@@ -401,6 +401,11 @@
       const [submitStatus, setSubmitStatus] = useState(null);
       const [submitMessage, setSubmitMessage] = useState('');
 
+      // Typeform indices — track which item is active within Steps 1, 3, 5
+      const [rtmIndex, setRtmIndex] = useState(0);
+      const [scenarioIndex, setScenarioIndex] = useState(0);
+      const [actionIndex, setActionIndex] = useState(0);
+
       const [data, setData] = useState({
         // Business Type
         businessType: '', // 'products' or 'services'
@@ -438,7 +443,11 @@
         teamOwnership: '',
         firstCheckpoint: '',
         successMetrics: '',
-        dealBreakers: ''
+        dealBreakers: '',
+        // Typeform action items for 30-day plan
+        actions: [
+          { id: 1, action: '', owner: '', deadline: '', successMetric: '' }
+        ]
       });
 
             useEffect(() => {
@@ -522,6 +531,22 @@
         updateData('scenarios', updated);
       };
 
+      const addAction = () => {
+        const newAction = { id: Date.now(), action: '', owner: '', deadline: '', successMetric: '' };
+        updateData('actions', [...(data.actions || []), newAction]);
+      };
+
+      const updateAction = (id, field, value) => {
+        const updated = (data.actions || []).map(a => a.id === id ? { ...a, [field]: value } : a);
+        updateData('actions', updated);
+      };
+
+      const removeAction = (id) => {
+        if ((data.actions || []).length > 1) {
+          updateData('actions', (data.actions || []).filter(a => a.id !== id));
+        }
+      };
+
       const advanceStep = (fromStep) => {
         if (fromStep >= 1 && fromStep <= 5) {
           setStep(fromStep + 0.5);
@@ -535,6 +560,22 @@
           setStep(1);
         } else if (step === 0) {
           setStep(-0.5);
+        }
+      };
+
+      // Per-item AI review for typeform steps (1, 3, 5)
+      const handleItemNext = async (fromStep, item, itemLabel, onPass) => {
+        const userId = localStorage.getItem('ft_user_id');
+        if (!userId) { alert('User not authenticated.'); return; }
+        setAiReviewing(true);
+        try {
+          const canProceed = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, item, itemLabel);
+          if (canProceed) onPass();
+        } catch (err) {
+          console.warn('[AIChallenge] Error, allowing passage:', err);
+          onPass();
+        } finally {
+          setAiReviewing(false);
         }
       };
 
@@ -559,7 +600,7 @@
             stepAnswers = { primaryRTM: data.primaryRTM, primaryRTMWhy: data.primaryRTMWhy, primaryRTMSuccess: data.primaryRTMSuccess, secondaryRTM: data.secondaryRTM, rejectedRTMs: data.rejectedRTMs, rejectedWhy: data.rejectedWhy };
           } else if (fromStep === 5) {
             stepName = 'Execution Plan';
-            stepAnswers = { next30Days: data.next30Days, resourcesNeeded: data.resourcesNeeded, teamOwnership: data.teamOwnership, firstCheckpoint: data.firstCheckpoint, successMetrics: data.successMetrics, dealBreakers: data.dealBreakers };
+            stepAnswers = { actions: data.actions, resourcesNeeded: data.resourcesNeeded, teamOwnership: data.teamOwnership, firstCheckpoint: data.firstCheckpoint, successMetrics: data.successMetrics, dealBreakers: data.dealBreakers };
           }
           const canProceed = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, stepName);
           if (canProceed) {
@@ -587,6 +628,7 @@
 
       // Validation functions
       const isStep1Valid = () => {
+        // All existing options must be filled, and at least 3 must exist
         return data.rtmOptions?.length >= 3 &&
                data.rtmOptions.every(o =>
                  o.name?.trim().length >= 5 &&
@@ -629,7 +671,15 @@
       };
 
       const isStep5Valid = () => {
-        return (data.next30Days?.length || 0) >= 100 &&
+        // At least 3 action items must be complete
+        const acts = data.actions || [];
+        return acts.length >= 3 &&
+               acts.every(a =>
+                 a.action?.trim().length >= 10 &&
+                 a.owner?.trim().length >= 3 &&
+                 a.deadline?.trim().length >= 3 &&
+                 a.successMetric?.trim().length >= 10
+               ) &&
                (data.resourcesNeeded?.length || 0) >= 50 &&
                (data.teamOwnership?.length || 0) >= 30 &&
                (data.firstCheckpoint?.length || 0) >= 20 &&
@@ -700,7 +750,8 @@
               rejectedWhy: data.rejectedWhy
             },
             rtm_roadmap: {
-              next30Days: data.next30Days,
+              actions: data.actions,
+              next30Days: (data.actions || []).map((a, i) => `${i+1}. ${a.action} (Owner: ${a.owner}, Deadline: ${a.deadline}, Metric: ${a.successMetric})`).join('\n'),
               resourcesNeeded: data.resourcesNeeded,
               teamOwnership: data.teamOwnership,
               firstCheckpoint: data.firstCheckpoint,
@@ -743,11 +794,11 @@
           <div className="wizard-layout">
             <div className="wizard-main">
               <div className="wizard-content animate-in">
-                {step === 1 && <><DependencyContext deps={deps} /><Step1Page data={data} updateData={updateData} updateRTMOption={updateRTMOption} addRTMOption={addRTMOption} removeRTMOption={removeRTMOption} /></>}
+                {step === 1 && <><DependencyContext deps={deps} /><Step1Page data={data} updateData={updateData} updateRTMOption={updateRTMOption} addRTMOption={addRTMOption} removeRTMOption={removeRTMOption} currentIndex={rtmIndex} setCurrentIndex={setRtmIndex} aiReviewing={aiReviewing} onItemNext={handleItemNext} /></>}
                 {step === 2 && <Step2Page data={data} updateData={updateData} />}
-                {step === 3 && <Step3Page data={data} updateData={updateData} updateScenario={updateScenario} addScenario={addScenario} removeScenario={removeScenario} />}
+                {step === 3 && <Step3Page data={data} updateData={updateData} updateScenario={updateScenario} addScenario={addScenario} removeScenario={removeScenario} currentIndex={scenarioIndex} setCurrentIndex={setScenarioIndex} aiReviewing={aiReviewing} onItemNext={handleItemNext} />}
                 {step === 4 && <Step4Page data={data} updateData={updateData} />}
-                {step === 5 && <Step5Page data={data} updateData={updateData} />}
+                {step === 5 && <Step5Page data={data} updateData={updateData} updateAction={updateAction} addAction={addAction} removeAction={removeAction} currentIndex={actionIndex} setCurrentIndex={setActionIndex} aiReviewing={aiReviewing} onItemNext={handleItemNext} />}
               </div>
               <div className="wizard-footer">
                 <button className="btn-wiz-back" onClick={goBack}>← BACK</button>
@@ -1024,138 +1075,212 @@
       );
     }
 
-    // Step 1: RTM Options Analysis
-    function Step1Page({ data, updateData, updateRTMOption, addRTMOption, removeRTMOption }) {
+    // Step 1: RTM Options Analysis — typeform one-at-a-time
+    function Step1Page({ data, updateData, updateRTMOption, addRTMOption, removeRTMOption, currentIndex, setCurrentIndex, aiReviewing, onItemNext }) {
+      const options = data.rtmOptions || [];
+      const option = options[currentIndex] || options[0];
+      const total = options.length;
+      const isLast = currentIndex === total - 1;
+      const allDone = options.length >= 3 && options.every(o =>
+        o.name?.trim().length >= 5 &&
+        o.customerReach?.trim().length >= 20 &&
+        o.marginImpact?.trim().length >= 20 &&
+        o.controlLevel?.trim().length >= 20 &&
+        o.brandFit?.trim().length >= 20 &&
+        o.operationalLoad?.trim().length >= 20
+      );
+
+      const currentValid = option &&
+        option.name?.trim().length >= 5 &&
+        option.customerReach?.trim().length >= 20 &&
+        option.marginImpact?.trim().length >= 20 &&
+        option.controlLevel?.trim().length >= 20 &&
+        option.brandFit?.trim().length >= 20 &&
+        option.operationalLoad?.trim().length >= 20;
+
+      const handleOptionNext = () => {
+        onItemNext(1, { rtmOption: option, optionIndex: currentIndex + 1 }, `RTM Option ${currentIndex + 1}: ${option.name}`, () => {
+          if (isLast) {
+            // Done reviewing current item; user can add more or finish
+            // Nothing — the wizard-level NEXT button handles advancing step
+          } else {
+            setCurrentIndex(currentIndex + 1);
+          }
+        });
+      };
+
+      const handleAddAnother = () => {
+        addRTMOption();
+        setCurrentIndex(total); // new item index
+      };
+
+      if (!option) return null;
+
       return (
-        <div>
+        <div className="animate-in">
+          <div className="numbered-section mb-6">01. RTM OPTIONS ANALYSIS</div>
 
-          <div className="animate-in">
-            <div className="numbered-section mb-8 animate-in">01. RTM OPTIONS ANALYSIS</div>
+          {/* Progress */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+            <span style={{ fontFamily: "'Monument', monospace", fontSize: 11, letterSpacing: '0.08em', color: '#888', textTransform: 'uppercase' }}>
+              Option {currentIndex + 1} of {total}
+            </span>
+            <div style={{ flex: 1, height: 3, background: '#e5e7eb', borderRadius: 2 }}>
+              <div style={{ height: '100%', background: '#000', width: `${((currentIndex + 1) / Math.max(total, 1)) * 100}%`, transition: 'width 0.4s ease', borderRadius: 2 }} />
+            </div>
+            {options.map((_, i) => (
+              <button key={i} onClick={() => setCurrentIndex(i)} style={{ width: 10, height: 10, borderRadius: '50%', border: 'none', background: i === currentIndex ? '#000' : i < currentIndex ? '#555' : '#d1d5db', cursor: 'pointer', padding: 0, flexShrink: 0 }} />
+            ))}
+          </div>
 
-            {/* Fast Track Insight */}
+          <h3 className="riforma-bold mb-6" style={{ fontSize: 36, lineHeight: 1.2 }}>
+            Analyze your route to market options across key dimensions
+          </h3>
 
-            {/* The Science */}
-            
+          <div className="border-l-4 border-yellow-400 pl-6 mb-8">
+            <p className="text-xl italic text-gray-400">
+              &quot;Tesla bypassed dealerships and went direct. Nike uses wholesale + DTC. Your RTM choice determines who owns your customer and controls your margin.&quot;
+            </p>
+          </div>
 
-            {/* Common Mistake */}
+          <div className="bg-neutral-900 border-2 border-gray-700 p-6 animate-in">
+            <div className="space-y-5">
+              <div>
+                <label className="monument text-xs block mb-2 text-gray-300">CHANNEL / ROUTE NAME <span className="text-red-500">*</span></label>
+                <ScienceBookmarkIcon>
+                  Coughlan &amp; Jap: Group channels as Direct, Retail, Partner, or Hybrid first. Each category implies fundamentally different trade-offs in cost, control, and brand coherence.
+                </ScienceBookmarkIcon>
+                <input
+                  type="text"
+                  value={option.name}
+                  onChange={(e) => updateRTMOption(option.id, 'name', e.target.value)}
+                  placeholder="Direct-to-Consumer / Channel Partners / Marketplace / Field Sales / Inside Sales"
+                  className="w-full"
+                  autoFocus
+                />
+                <div className="char-counter">{(option.name || '').length}/100 (min 5)</div>
+              </div>
 
+              <div>
+                <label className="monument text-xs block mb-2 text-gray-300">CUSTOMER REACH <span className="text-red-500">*</span></label>
+                <ScienceBookmarkIcon>
+                  Voje's GTM research: Match channel to actual buyer habits. Where does your target segment expect to find you? Lower CAC and higher conversion come from channel-segment alignment, not maximum distribution.
+                </ScienceBookmarkIcon>
+                <textarea
+                  value={option.customerReach}
+                  onChange={(e) => updateRTMOption(option.id, 'customerReach', e.target.value)}
+                  placeholder="How many customers can we realistically reach? What geographic/segment coverage?"
+                  className="w-full"
+                  rows={2}
+                />
+                <div className="char-counter">{(option.customerReach || '').length}/500 (min 20)</div>
+              </div>
 
-            <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
-              Analyze your route to market options across key dimensions
-            </h3>
+              <div>
+                <label className="monument text-xs block mb-2 text-gray-300">MARGIN IMPACT <span className="text-red-500">*</span></label>
+                <ScienceBookmarkIcon>
+                  Margin leakage is the silent killer. Distributors, retailers, and marketplaces each take 15–50%. Calculate your true gross margin after all channel costs before committing.
+                </ScienceBookmarkIcon>
+                <textarea
+                  value={option.marginImpact}
+                  onChange={(e) => updateRTMOption(option.id, 'marginImpact', e.target.value)}
+                  placeholder="What margin do we keep? What do partners take? What are the economics?"
+                  className="w-full"
+                  rows={2}
+                />
+                <div className="char-counter">{(option.marginImpact || '').length}/500 (min 20)</div>
+              </div>
 
-            <div className="border-l-4 border-yellow-400 pl-6 mb-12 animate-in" style={{animationDelay: '0.1s'}}>
-              <p className="text-2xl italic">
-                &quot;Tesla bypassed dealerships and went direct. Nike uses wholesale + DTC. Your RTM choice determines who owns your customer and controls your margin.&quot;
-              </p>
+              <div>
+                <label className="monument text-xs block mb-2 text-gray-300">CONTROL LEVEL <span className="text-red-500">*</span></label>
+                <textarea
+                  value={option.controlLevel}
+                  onChange={(e) => updateRTMOption(option.id, 'controlLevel', e.target.value)}
+                  placeholder="Who owns the customer relationship? How much control over experience, pricing, data?"
+                  className="w-full"
+                  rows={2}
+                />
+                <div className="char-counter">{(option.controlLevel || '').length}/500 (min 20)</div>
+              </div>
+
+              <div>
+                <label className="monument text-xs block mb-2 text-gray-300">BRAND FIT <span className="text-red-500">*</span></label>
+                <textarea
+                  value={option.brandFit}
+                  onChange={(e) => updateRTMOption(option.id, 'brandFit', e.target.value)}
+                  placeholder="Does this channel align with our brand promise and positioning? Premium/discount fit?"
+                  className="w-full"
+                  rows={2}
+                />
+                <div className="char-counter">{(option.brandFit || '').length}/500 (min 20)</div>
+              </div>
+
+              <div>
+                <label className="monument text-xs block mb-2 text-gray-300">OPERATIONAL LOAD <span className="text-red-500">*</span></label>
+                <textarea
+                  value={option.operationalLoad}
+                  onChange={(e) => updateRTMOption(option.id, 'operationalLoad', e.target.value)}
+                  placeholder="What does execution require? Team size, systems, processes, investment, complexity?"
+                  className="w-full"
+                  rows={2}
+                />
+                <div className="char-counter">{(option.operationalLoad || '').length}/500 (min 20)</div>
+              </div>
             </div>
 
-            <p className="text-xl mb-8 text-gray-300">
-              List 3-5 realistic RTM options. For each, assess customer reach, margin impact, control level, brand fit, and operational load. Be honest about trade-offs.
-            </p>
-
-            <div className="space-y-8 mb-12">
-              {(data.rtmOptions || []).map((option, index) => (
-                <div key={option.id} className="bg-neutral-900 border-2 border-gray-700 p-6 animate-in" style={{animationDelay: `${0.15 + index * 0.05}s`}}>
-                  <div className="flex justify-between items-start mb-4">
-                    <h5 className="riforma-bold text-2xl">RTM Option {index + 1}</h5>
-                    {(data.rtmOptions || []).length > 1 && (
-                      <button
-                        onClick={() => removeRTMOption(option.id)}
-                        className="text-red-600 hover:text-red-800 text-sm"
-                      >
-                        REMOVE
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="space-y-4">
-                    <div>
-                      <label className="monument text-sm block mb-2">RTM NAME <span className="text-red-500">*</span></label>
-                      <ScienceBookmarkIcon>
-                          Coughlan &amp; Jap: Group channels as Direct, Retail, Partner, or Hybrid first. Each category implies fundamentally different trade-offs in cost, control, and brand coherence.
-                      </ScienceBookmarkIcon>
-                      <input
-                        type="text"
-                        value={option.name}
-                        onChange={(e) => updateRTMOption(option.id, 'name', e.target.value)}
-                        placeholder="Direct-to-Consumer / Channel Partners / Marketplace / Field Sales / Inside Sales"
-                        className="w-full"
-                      />
-                      <div className="char-counter">{(option.name || '').length}/100 (min 5)</div>
-                    </div>
-
-                    <div>
-                      <label className="monument text-sm block mb-2">CUSTOMER REACH <span className="text-red-500">*</span></label>
-                      <ScienceBookmarkIcon>
-                          Voje's GTM research: Match channel to actual buyer habits. Where does your target segment expect to find you? Lower CAC and higher conversion come from channel-segment alignment, not maximum distribution.
-                      </ScienceBookmarkIcon>
-                      <textarea
-                        value={option.customerReach}
-                        onChange={(e) => updateRTMOption(option.id, 'customerReach', e.target.value)}
-                        placeholder="How many customers can we realistically reach through this channel? What geographic/segment coverage?"
-                        className="w-full"
-                        rows={2}
-                      />
-                      <div className="char-counter">{(option.customerReach || '').length}/500 (min 20)</div>
-                    </div>
-
-                    <div>
-                      <label className="monument text-sm block mb-2">MARGIN IMPACT <span className="text-red-500">*</span></label>
-                      <ScienceBookmarkIcon>
-                          Margin leakage is the silent killer. Distributors, retailers, and marketplaces each take 15-50%. Calculate your true gross margin after all channel costs before committing (Coughlan &amp; Jap, Channel Strategy).
-                      </ScienceBookmarkIcon>
-                      <textarea
-                        value={option.marginImpact}
-                        onChange={(e) => updateRTMOption(option.id, 'marginImpact', e.target.value)}
-                        placeholder="What margin do we keep? What do partners take? What are the economics?"
-                        className="w-full"
-                        rows={2}
-                      />
-                      <div className="char-counter">{(option.marginImpact || '').length}/500 (min 20)</div>
-                    </div>
-
-                    <div>
-                      <label className="monument text-sm block mb-2">CONTROL LEVEL <span className="text-red-500">*</span></label>
-                      <textarea
-                        value={option.controlLevel}
-                        onChange={(e) => updateRTMOption(option.id, 'controlLevel', e.target.value)}
-                        placeholder="Who owns the customer relationship? How much control do we have over experience, pricing, data?"
-                        className="w-full"
-                        rows={2}
-                      />
-                      <div className="char-counter">{(option.controlLevel || '').length}/500 (min 20)</div>
-                    </div>
-
-                    <div>
-                      <label className="monument text-sm block mb-2">BRAND FIT <span className="text-red-500">*</span></label>
-                      <textarea
-                        value={option.brandFit}
-                        onChange={(e) => updateRTMOption(option.id, 'brandFit', e.target.value)}
-                        placeholder="Does this channel align with our brand promise and positioning? Premium/discount fit?"
-                        className="w-full"
-                        rows={2}
-                      />
-                      <div className="char-counter">{(option.brandFit || '').length}/500 (min 20)</div>
-                    </div>
-
-                    <div>
-                      <label className="monument text-sm block mb-2">OPERATIONAL LOAD <span className="text-red-500">*</span></label>
-                      <textarea
-                        value={option.operationalLoad}
-                        onChange={(e) => updateRTMOption(option.id, 'operationalLoad', e.target.value)}
-                        placeholder="What does execution require? Team size, systems, processes, investment, complexity?"
-                        className="w-full"
-                        rows={2}
-                      />
-                      <div className="char-counter">{(option.operationalLoad || '').length}/500 (min 20)</div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              <button onClick={addRTMOption} className="btn-secondary text-sm w-full">+ ADD RTM OPTION</button>
+            {/* Item-level navigation */}
+            <div style={{ display: 'flex', gap: 12, marginTop: 24, alignItems: 'center' }}>
+              {currentIndex > 0 && (
+                <button onClick={() => setCurrentIndex(currentIndex - 1)} style={{ fontFamily: "'Monument', monospace", fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', background: 'transparent', border: '2px solid #555', color: '#ccc', padding: '10px 20px', cursor: 'pointer' }}>
+                  ← PREV
+                </button>
+              )}
+              {!isLast ? (
+                <button
+                  onClick={handleOptionNext}
+                  disabled={!currentValid || aiReviewing}
+                  style={{ fontFamily: "'Monument', monospace", fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', background: currentValid && !aiReviewing ? '#FFF469' : '#333', color: currentValid && !aiReviewing ? '#000' : '#666', border: '2px solid transparent', padding: '10px 24px', cursor: currentValid && !aiReviewing ? 'pointer' : 'not-allowed' }}
+                >
+                  {aiReviewing ? 'AI REVIEWING...' : 'NEXT OPTION →'}
+                </button>
+              ) : (
+                <button
+                  onClick={handleOptionNext}
+                  disabled={!currentValid || aiReviewing}
+                  style={{ fontFamily: "'Monument', monospace", fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', background: currentValid && !aiReviewing ? '#FFF469' : '#333', color: currentValid && !aiReviewing ? '#000' : '#666', border: '2px solid transparent', padding: '10px 24px', cursor: currentValid && !aiReviewing ? 'pointer' : 'not-allowed' }}
+                >
+                  {aiReviewing ? 'AI REVIEWING...' : 'REVIEW THIS OPTION →'}
+                </button>
+              )}
+              <button
+                onClick={handleAddAnother}
+                style={{ fontFamily: "'Monument', monospace", fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', background: 'transparent', border: '2px solid #555', color: '#ccc', padding: '10px 20px', cursor: 'pointer', marginLeft: 'auto' }}
+              >
+                + ADD ANOTHER OPTION
+              </button>
             </div>
           </div>
+
+          {/* Summary of completed options */}
+          {options.length > 1 && (
+            <div style={{ marginTop: 24 }}>
+              <p style={{ fontFamily: "'Monument', monospace", fontSize: 10, letterSpacing: '0.08em', color: '#888', textTransform: 'uppercase', marginBottom: 10 }}>ALL OPTIONS ({total})</p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {options.map((o, i) => (
+                  <button key={o.id} onClick={() => setCurrentIndex(i)} style={{ background: i === currentIndex ? '#FFF469' : '#1a1a1a', color: i === currentIndex ? '#000' : '#ccc', border: `1px solid ${i === currentIndex ? '#FFF469' : '#444'}`, padding: '6px 14px', fontFamily: "'Monument', monospace", fontSize: 10, letterSpacing: '0.05em', cursor: 'pointer', textTransform: 'uppercase' }}>
+                    {o.name?.trim().slice(0, 20) || `Option ${i + 1}`}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Requirement note */}
+          {!allDone && (
+            <p style={{ marginTop: 16, fontFamily: "'Monument', monospace", fontSize: 10, color: '#888', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              {options.length < 3 ? `ADD ${3 - options.length} MORE OPTION(S) TO CONTINUE` : 'FILL ALL OPTIONS TO CONTINUE'}
+            </p>
+          )}
         </div>
       );
     }
@@ -1263,140 +1388,211 @@
       );
     }
 
-    // Step 3: Scenario Testing
-    function Step3Page({ data, updateData, updateScenario, addScenario, removeScenario }) {
+    // Step 3: Scenario Testing — typeform one-at-a-time
+    function Step3Page({ data, updateData, updateScenario, addScenario, removeScenario, currentIndex, setCurrentIndex, aiReviewing, onItemNext }) {
+      const scenarios = data.scenarios || [];
+      const scenario = scenarios[currentIndex] || scenarios[0];
+      const total = scenarios.length;
+      const isLast = currentIndex === total - 1;
+      const allDone = scenarios.length >= 2 && scenarios.every(s =>
+        s.rtmName?.trim().length >= 5 &&
+        s.capabilitiesNeeded?.trim().length >= 30 &&
+        s.peopleRequired?.trim().length >= 20 &&
+        s.toolsAndSystems?.trim().length >= 20 &&
+        s.investmentRequired?.trim().length >= 20 &&
+        s.timeline?.trim().length >= 20 &&
+        s.riskFactors?.trim().length >= 30
+      );
+
+      const currentValid = scenario &&
+        scenario.rtmName?.trim().length >= 5 &&
+        scenario.capabilitiesNeeded?.trim().length >= 30 &&
+        scenario.peopleRequired?.trim().length >= 20 &&
+        scenario.toolsAndSystems?.trim().length >= 20 &&
+        scenario.investmentRequired?.trim().length >= 20 &&
+        scenario.timeline?.trim().length >= 20 &&
+        scenario.riskFactors?.trim().length >= 30;
+
+      const handleScenarioNext = () => {
+        onItemNext(3, { scenario, scenarioIndex: currentIndex + 1 }, `Scenario ${currentIndex + 1}: ${scenario.rtmName}`, () => {
+          if (!isLast) setCurrentIndex(currentIndex + 1);
+        });
+      };
+
+      const handleAddAnother = () => {
+        addScenario();
+        setCurrentIndex(total);
+      };
+
+      if (!scenario) return null;
+
       return (
-        <div>
+        <div className="animate-in">
+          <div className="numbered-section mb-6">03. SCENARIO TESTING</div>
 
-          <div className="animate-in">
-            <div className="numbered-section mb-8 animate-in">03. SCENARIO TESTING</div>
-
-            {/* Fast Track Insight */}
-
-            {/* The Science */}
-            
-
-
-            <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
-              Map operational reality for your top RTM candidates
-            </h3>
-
-            <div className="border-l-4 border-yellow-400 pl-6 mb-12 animate-in" style={{animationDelay: '0.1s'}}>
-              <p className="text-2xl italic">
-                &quot;Most RTM strategies die in execution, not strategy. Test what you can actually build, staff, and afford before you commit.&quot;
-              </p>
+          {/* Progress */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+            <span style={{ fontFamily: "'Monument', monospace", fontSize: 11, letterSpacing: '0.08em', color: '#888', textTransform: 'uppercase' }}>
+              Scenario {currentIndex + 1} of {total}
+            </span>
+            <div style={{ flex: 1, height: 3, background: '#e5e7eb', borderRadius: 2 }}>
+              <div style={{ height: '100%', background: '#000', width: `${((currentIndex + 1) / Math.max(total, 1)) * 100}%`, transition: 'width 0.4s ease', borderRadius: 2 }} />
             </div>
-
-            <p className="text-xl mb-8 text-gray-300">
-              For your top 2-3 RTM options, map the full execution picture: capabilities, people, systems, investment, timeline, and risks.
-            </p>
-
-            <div className="space-y-8 mb-12">
-              {(data.scenarios || []).map((scenario, index) => (
-                <div key={scenario.id} className="bg-neutral-900 border-2 border-gray-700 p-6 animate-in" style={{animationDelay: `${0.15 + index * 0.05}s`}}>
-                  <div className="flex justify-between items-start mb-4">
-                    <h5 className="riforma-bold text-2xl">Scenario {index + 1}</h5>
-                    {(data.scenarios || []).length > 1 && (
-                      <button
-                        onClick={() => removeScenario(scenario.id)}
-                        className="text-red-600 hover:text-red-800 text-sm"
-                      >
-                        REMOVE
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="space-y-4">
-                    <div>
-                      <label className="monument text-sm block mb-2">RTM NAME <span className="text-red-500">*</span></label>
-                      <input
-                        type="text"
-                        value={scenario.rtmName}
-                        onChange={(e) => updateScenario(scenario.id, 'rtmName', e.target.value)}
-                        placeholder="Direct-to-Consumer / Channel Partners / Inside Sales"
-                        className="w-full"
-                      />
-                      <div className="char-counter">{(scenario.rtmName || '').length}/100 (min 5)</div>
-                    </div>
-
-                    <div>
-                      <label className="monument text-sm block mb-2">CAPABILITIES NEEDED <span className="text-red-500">*</span></label>
-                      <textarea
-                        value={scenario.capabilitiesNeeded}
-                        onChange={(e) => updateScenario(scenario.id, 'capabilitiesNeeded', e.target.value)}
-                        placeholder="What skills, expertise, or organizational capabilities must we build or acquire?"
-                        className="w-full"
-                        rows={2}
-                      />
-                      <div className="char-counter">{(scenario.capabilitiesNeeded || '').length}/500 (min 30)</div>
-                    </div>
-
-                    <div>
-                      <label className="monument text-sm block mb-2">PEOPLE REQUIRED <span className="text-red-500">*</span></label>
-                      <textarea
-                        value={scenario.peopleRequired}
-                        onChange={(e) => updateScenario(scenario.id, 'peopleRequired', e.target.value)}
-                        placeholder="Who do we need to hire or reassign? What roles, how many, what expertise?"
-                        className="w-full"
-                        rows={2}
-                      />
-                      <div className="char-counter">{(scenario.peopleRequired || '').length}/500 (min 20)</div>
-                    </div>
-
-                    <div>
-                      <label className="monument text-sm block mb-2">TOOLS AND SYSTEMS <span className="text-red-500">*</span></label>
-                      <textarea
-                        value={scenario.toolsAndSystems}
-                        onChange={(e) => updateScenario(scenario.id, 'toolsAndSystems', e.target.value)}
-                        placeholder="What technology, platforms, or infrastructure do we need? CRM, marketplace integration, logistics?"
-                        className="w-full"
-                        rows={2}
-                      />
-                      <div className="char-counter">{(scenario.toolsAndSystems || '').length}/500 (min 20)</div>
-                    </div>
-
-                    <div>
-                      <label className="monument text-sm block mb-2">INVESTMENT REQUIRED <span className="text-red-500">*</span></label>
-                      <textarea
-                        value={scenario.investmentRequired}
-                        onChange={(e) => updateScenario(scenario.id, 'investmentRequired', e.target.value)}
-                        placeholder="What is the total cost to launch and run for 12 months? People, systems, marketing, operations?"
-                        className="w-full"
-                        rows={2}
-                      />
-                      <div className="char-counter">{(scenario.investmentRequired || '').length}/500 (min 20)</div>
-                    </div>
-
-                    <div>
-                      <label className="monument text-sm block mb-2">TIMELINE <span className="text-red-500">*</span></label>
-                      <textarea
-                        value={scenario.timeline}
-                        onChange={(e) => updateScenario(scenario.id, 'timeline', e.target.value)}
-                        placeholder="How long to launch? When do we see first revenue? When does it break even?"
-                        className="w-full"
-                        rows={2}
-                      />
-                      <div className="char-counter">{(scenario.timeline || '').length}/500 (min 20)</div>
-                    </div>
-
-                    <div>
-                      <label className="monument text-sm block mb-2">RISK FACTORS <span className="text-red-500">*</span></label>
-                      <textarea
-                        value={scenario.riskFactors}
-                        onChange={(e) => updateScenario(scenario.id, 'riskFactors', e.target.value)}
-                        placeholder="What could kill this? Market shifts, competitor response, execution failures, capability gaps?"
-                        className="w-full"
-                        rows={2}
-                      />
-                      <div className="char-counter">{(scenario.riskFactors || '').length}/1000 (min 30)</div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              <button onClick={addScenario} className="btn-secondary text-sm w-full">+ ADD SCENARIO</button>
-            </div>
-
+            {scenarios.map((_, i) => (
+              <button key={i} onClick={() => setCurrentIndex(i)} style={{ width: 10, height: 10, borderRadius: '50%', border: 'none', background: i === currentIndex ? '#000' : i < currentIndex ? '#555' : '#d1d5db', cursor: 'pointer', padding: 0, flexShrink: 0 }} />
+            ))}
           </div>
+
+          <h3 className="riforma-bold mb-6" style={{ fontSize: 36, lineHeight: 1.2 }}>
+            Map operational reality for your top RTM candidates
+          </h3>
+
+          <div className="border-l-4 border-yellow-400 pl-6 mb-8">
+            <p className="text-xl italic text-gray-400">
+              &quot;Most RTM strategies die in execution, not strategy. Test what you can actually build, staff, and afford before you commit.&quot;
+            </p>
+          </div>
+
+          <div className="bg-neutral-900 border-2 border-gray-700 p-6 animate-in">
+            <div className="space-y-5">
+              <div>
+                <label className="monument text-xs block mb-2 text-gray-300">SCENARIO NAME (RTM ROUTE) <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  value={scenario.rtmName}
+                  onChange={(e) => updateScenario(scenario.id, 'rtmName', e.target.value)}
+                  placeholder="Direct-to-Consumer / Channel Partners / Inside Sales"
+                  className="w-full"
+                  autoFocus
+                />
+                <div className="char-counter">{(scenario.rtmName || '').length}/100 (min 5)</div>
+              </div>
+
+              <div>
+                <label className="monument text-xs block mb-2 text-gray-300">CAPABILITIES NEEDED <span className="text-red-500">*</span></label>
+                <textarea
+                  value={scenario.capabilitiesNeeded}
+                  onChange={(e) => updateScenario(scenario.id, 'capabilitiesNeeded', e.target.value)}
+                  placeholder="What skills, expertise, or organizational capabilities must we build or acquire?"
+                  className="w-full"
+                  rows={2}
+                />
+                <div className="char-counter">{(scenario.capabilitiesNeeded || '').length}/500 (min 30)</div>
+              </div>
+
+              <div>
+                <label className="monument text-xs block mb-2 text-gray-300">PEOPLE REQUIRED <span className="text-red-500">*</span></label>
+                <textarea
+                  value={scenario.peopleRequired}
+                  onChange={(e) => updateScenario(scenario.id, 'peopleRequired', e.target.value)}
+                  placeholder="Who do we need to hire or reassign? What roles, how many, what expertise?"
+                  className="w-full"
+                  rows={2}
+                />
+                <div className="char-counter">{(scenario.peopleRequired || '').length}/500 (min 20)</div>
+              </div>
+
+              <div>
+                <label className="monument text-xs block mb-2 text-gray-300">TOOLS AND SYSTEMS <span className="text-red-500">*</span></label>
+                <textarea
+                  value={scenario.toolsAndSystems}
+                  onChange={(e) => updateScenario(scenario.id, 'toolsAndSystems', e.target.value)}
+                  placeholder="What technology, platforms, or infrastructure do we need? CRM, marketplace integration, logistics?"
+                  className="w-full"
+                  rows={2}
+                />
+                <div className="char-counter">{(scenario.toolsAndSystems || '').length}/500 (min 20)</div>
+              </div>
+
+              <div>
+                <label className="monument text-xs block mb-2 text-gray-300">INVESTMENT REQUIRED <span className="text-red-500">*</span></label>
+                <textarea
+                  value={scenario.investmentRequired}
+                  onChange={(e) => updateScenario(scenario.id, 'investmentRequired', e.target.value)}
+                  placeholder="What is the total cost to launch and run for 12 months? People, systems, marketing, operations?"
+                  className="w-full"
+                  rows={2}
+                />
+                <div className="char-counter">{(scenario.investmentRequired || '').length}/500 (min 20)</div>
+              </div>
+
+              <div>
+                <label className="monument text-xs block mb-2 text-gray-300">TIMELINE <span className="text-red-500">*</span></label>
+                <textarea
+                  value={scenario.timeline}
+                  onChange={(e) => updateScenario(scenario.id, 'timeline', e.target.value)}
+                  placeholder="How long to launch? When do we see first revenue? When does it break even?"
+                  className="w-full"
+                  rows={2}
+                />
+                <div className="char-counter">{(scenario.timeline || '').length}/500 (min 20)</div>
+              </div>
+
+              <div>
+                <label className="monument text-xs block mb-2 text-gray-300">RISK FACTORS <span className="text-red-500">*</span></label>
+                <textarea
+                  value={scenario.riskFactors}
+                  onChange={(e) => updateScenario(scenario.id, 'riskFactors', e.target.value)}
+                  placeholder="What could kill this? Market shifts, competitor response, execution failures, capability gaps?"
+                  className="w-full"
+                  rows={2}
+                />
+                <div className="char-counter">{(scenario.riskFactors || '').length}/1000 (min 30)</div>
+              </div>
+            </div>
+
+            {/* Item-level navigation */}
+            <div style={{ display: 'flex', gap: 12, marginTop: 24, alignItems: 'center' }}>
+              {currentIndex > 0 && (
+                <button onClick={() => setCurrentIndex(currentIndex - 1)} style={{ fontFamily: "'Monument', monospace", fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', background: 'transparent', border: '2px solid #555', color: '#ccc', padding: '10px 20px', cursor: 'pointer' }}>
+                  ← PREV
+                </button>
+              )}
+              {!isLast ? (
+                <button
+                  onClick={handleScenarioNext}
+                  disabled={!currentValid || aiReviewing}
+                  style={{ fontFamily: "'Monument', monospace", fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', background: currentValid && !aiReviewing ? '#FFF469' : '#333', color: currentValid && !aiReviewing ? '#000' : '#666', border: '2px solid transparent', padding: '10px 24px', cursor: currentValid && !aiReviewing ? 'pointer' : 'not-allowed' }}
+                >
+                  {aiReviewing ? 'AI REVIEWING...' : 'NEXT SCENARIO →'}
+                </button>
+              ) : (
+                <button
+                  onClick={handleScenarioNext}
+                  disabled={!currentValid || aiReviewing}
+                  style={{ fontFamily: "'Monument', monospace", fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', background: currentValid && !aiReviewing ? '#FFF469' : '#333', color: currentValid && !aiReviewing ? '#000' : '#666', border: '2px solid transparent', padding: '10px 24px', cursor: currentValid && !aiReviewing ? 'pointer' : 'not-allowed' }}
+                >
+                  {aiReviewing ? 'AI REVIEWING...' : 'REVIEW THIS SCENARIO →'}
+                </button>
+              )}
+              <button
+                onClick={handleAddAnother}
+                style={{ fontFamily: "'Monument', monospace", fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', background: 'transparent', border: '2px solid #555', color: '#ccc', padding: '10px 20px', cursor: 'pointer', marginLeft: 'auto' }}
+              >
+                + ADD ANOTHER SCENARIO
+              </button>
+            </div>
+          </div>
+
+          {/* Summary tabs */}
+          {scenarios.length > 1 && (
+            <div style={{ marginTop: 24 }}>
+              <p style={{ fontFamily: "'Monument', monospace", fontSize: 10, letterSpacing: '0.08em', color: '#888', textTransform: 'uppercase', marginBottom: 10 }}>ALL SCENARIOS ({total})</p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {scenarios.map((s, i) => (
+                  <button key={s.id} onClick={() => setCurrentIndex(i)} style={{ background: i === currentIndex ? '#FFF469' : '#1a1a1a', color: i === currentIndex ? '#000' : '#ccc', border: `1px solid ${i === currentIndex ? '#FFF469' : '#444'}`, padding: '6px 14px', fontFamily: "'Monument', monospace", fontSize: 10, letterSpacing: '0.05em', cursor: 'pointer', textTransform: 'uppercase' }}>
+                    {s.rtmName?.trim().slice(0, 20) || `Scenario ${i + 1}`}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {!allDone && (
+            <p style={{ marginTop: 16, fontFamily: "'Monument', monospace", fontSize: 10, color: '#888', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              {scenarios.length < 2 ? `ADD ${2 - scenarios.length} MORE SCENARIO(S) TO CONTINUE` : 'FILL ALL SCENARIOS TO CONTINUE'}
+            </p>
+          )}
         </div>
       );
     }
@@ -1510,8 +1706,8 @@
       );
     }
 
-    // Step 5: Execution Plan
-    function Step5Page({ data, updateData }) {
+    // Step 5: Execution Plan — typeform for action items + static fields
+    function Step5Page({ data, updateData, updateAction, addAction, removeAction, currentIndex, setCurrentIndex, aiReviewing, onItemNext }) {
       useEffect(() => {
         const dep = window.ToolDB?.getDependency?.('value-proposition');
         if (dep && !data.valueProposition) {
@@ -1519,51 +1715,216 @@
         }
       }, []);
 
+      const actions = data.actions || [];
+      const action = actions[currentIndex] || actions[0];
+      const total = actions.length;
+      const isLast = currentIndex === total - 1;
+
+      const actionsAllDone = actions.length >= 3 && actions.every(a =>
+        a.action?.trim().length >= 10 &&
+        a.owner?.trim().length >= 3 &&
+        a.deadline?.trim().length >= 3 &&
+        a.successMetric?.trim().length >= 10
+      );
+
+      const currentActionValid = action &&
+        action.action?.trim().length >= 10 &&
+        action.owner?.trim().length >= 3 &&
+        action.deadline?.trim().length >= 3 &&
+        action.successMetric?.trim().length >= 10;
+
+      // Phase: 'actions' or 'details'
+      const [phase, setPhase] = useState('actions');
+
+      const handleActionNext = () => {
+        onItemNext(5, { action, actionIndex: currentIndex + 1 }, `30-Day Action ${currentIndex + 1}: ${action.action?.slice(0, 60)}`, () => {
+          if (!isLast) {
+            setCurrentIndex(currentIndex + 1);
+          }
+          // If last item, we stay — user can add more or move to details phase
+        });
+      };
+
+      const handleAddAnother = () => {
+        addAction();
+        setCurrentIndex(total);
+      };
+
+      const handleDoneWithActions = () => {
+        setPhase('details');
+      };
+
+      if (!action && phase === 'actions') return null;
+
       return (
-        <div>
+        <div className="animate-in">
+          <div className="numbered-section mb-6">05. EXECUTION PLAN</div>
 
-          <div className="animate-in">
-            <div className="numbered-section mb-8 animate-in">05. EXECUTION PLAN</div>
-
-            {data.valueProposition && (
-              <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-8 animate-in">
-                <p className="monument text-xs mb-2" style={{color:'#666'}}>YOUR VALUE PROPOSITION (from Sprint 15)</p>
-                <p className="text-base" style={{color:'#333'}}>{typeof data.valueProposition === 'object' ? JSON.stringify(data.valueProposition) : data.valueProposition}</p>
-              </div>
-            )}
-
-            {/* Fast Track Insight */}
-
-            {/* The Science */}
-
-
-
-            <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
-              Build your 30-day action plan to launch your RTM
-            </h3>
-
-            <div className="border-l-4 border-yellow-400 pl-6 mb-12 animate-in" style={{animationDelay: '0.1s'}}>
-              <p className="text-2xl italic">
-                &quot;Strategy without a 30-day execution plan is wishful thinking. Clarity breeds speed. Speed creates momentum.&quot;
-              </p>
+          {data.valueProposition && (
+            <div style={{ background: '#FFF9E0', border: '1px solid #F0E68C', borderLeft: '4px solid #DAA520', padding: '12px 16px', marginBottom: 24 }}>
+              <p style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#888', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>YOUR VALUE PROPOSITION (from Sprint 15)</p>
+              <p style={{ fontSize: 13, color: '#333' }}>{typeof data.valueProposition === 'object' ? JSON.stringify(data.valueProposition) : data.valueProposition}</p>
             </div>
+          )}
 
-            <div className="space-y-6 mb-12">
-              <div className="bg-neutral-900 border-2 border-gray-700 p-6 animate-in" style={{animationDelay: '0.15s'}}>
-                <label className="monument text-sm block mb-2">NEXT 30 DAYS <span className="text-red-500">*</span></label>
-                <p className="text-sm text-gray-400 mb-2">What specific actions will you take in the next 30 days?</p>
-                <textarea
-                  value={data.next30Days}
-                  onChange={(e) => updateData('next30Days', e.target.value)}
-                  placeholder="Week 1: Finalize platform selection, hire e-commerce manager. Week 2: Build MVP storefront, set up payment processing. Week 3: Create first 10 product listings, launch soft beta. Week 4: Run $5K paid test campaign, measure conversion, iterate."
-                  className="w-full"
-                  rows={5}
-                />
-                <div className="char-counter">{(data.next30Days || '').length}/2000 (min 100)</div>
+          <div className="border-l-4 border-yellow-400 pl-6 mb-8">
+            <p className="text-xl italic text-gray-400">
+              &quot;Strategy without a 30-day execution plan is wishful thinking. Clarity breeds speed. Speed creates momentum.&quot;
+            </p>
+          </div>
+
+          {/* Phase toggle */}
+          <div style={{ display: 'flex', gap: 8, marginBottom: 28 }}>
+            <button onClick={() => setPhase('actions')} style={{ fontFamily: "'Monument', monospace", fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '8px 18px', background: phase === 'actions' ? '#FFF469' : '#1a1a1a', color: phase === 'actions' ? '#000' : '#aaa', border: `2px solid ${phase === 'actions' ? '#FFF469' : '#444'}`, cursor: 'pointer' }}>
+              30-DAY ACTIONS
+            </button>
+            <button onClick={() => setPhase('details')} style={{ fontFamily: "'Monument', monospace", fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '8px 18px', background: phase === 'details' ? '#FFF469' : '#1a1a1a', color: phase === 'details' ? '#000' : '#aaa', border: `2px solid ${phase === 'details' ? '#FFF469' : '#444'}`, cursor: 'pointer' }}>
+              RESOURCES &amp; METRICS
+            </button>
+          </div>
+
+          {phase === 'actions' && (
+            <>
+              {/* Progress */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+                <span style={{ fontFamily: "'Monument', monospace", fontSize: 11, letterSpacing: '0.08em', color: '#888', textTransform: 'uppercase' }}>
+                  Action {currentIndex + 1} of {total}
+                </span>
+                <div style={{ flex: 1, height: 3, background: '#e5e7eb', borderRadius: 2 }}>
+                  <div style={{ height: '100%', background: '#000', width: `${((currentIndex + 1) / Math.max(total, 1)) * 100}%`, transition: 'width 0.4s ease', borderRadius: 2 }} />
+                </div>
+                {actions.map((_, i) => (
+                  <button key={i} onClick={() => setCurrentIndex(i)} style={{ width: 10, height: 10, borderRadius: '50%', border: 'none', background: i === currentIndex ? '#000' : i < currentIndex ? '#555' : '#d1d5db', cursor: 'pointer', padding: 0, flexShrink: 0 }} />
+                ))}
               </div>
 
-              <div className="bg-neutral-900 border-2 border-gray-700 p-6 animate-in" style={{animationDelay: '0.2s'}}>
-                <label className="monument text-sm block mb-2">RESOURCES NEEDED <span className="text-red-500">*</span></label>
+              <h3 className="riforma-bold mb-6" style={{ fontSize: 32, lineHeight: 1.2 }}>
+                Build your 30-day action plan — one action at a time
+              </h3>
+
+              <div className="bg-neutral-900 border-2 border-gray-700 p-6 animate-in">
+                <div className="space-y-5">
+                  <div>
+                    <label className="monument text-xs block mb-2 text-gray-300">ACTION DESCRIPTION <span className="text-red-500">*</span></label>
+                    <textarea
+                      value={action.action}
+                      onChange={(e) => updateAction(action.id, 'action', e.target.value)}
+                      placeholder="e.g. Finalize e-commerce platform selection and sign contract with Shopify"
+                      className="w-full"
+                      rows={2}
+                      autoFocus
+                    />
+                    <div className="char-counter">{(action.action || '').length}/500 (min 10)</div>
+                  </div>
+
+                  <div>
+                    <label className="monument text-xs block mb-2 text-gray-300">OWNER <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      value={action.owner}
+                      onChange={(e) => updateAction(action.id, 'owner', e.target.value)}
+                      placeholder="e.g. Sarah (E-commerce Manager)"
+                      className="w-full"
+                    />
+                    <div className="char-counter">{(action.owner || '').length}/200 (min 3)</div>
+                  </div>
+
+                  <div>
+                    <label className="monument text-xs block mb-2 text-gray-300">DEADLINE <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      value={action.deadline}
+                      onChange={(e) => updateAction(action.id, 'deadline', e.target.value)}
+                      placeholder="e.g. Week 1 / March 7 / Day 5"
+                      className="w-full"
+                    />
+                    <div className="char-counter">{(action.deadline || '').length}/100 (min 3)</div>
+                  </div>
+
+                  <div>
+                    <label className="monument text-xs block mb-2 text-gray-300">SUCCESS METRIC <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      value={action.successMetric}
+                      onChange={(e) => updateAction(action.id, 'successMetric', e.target.value)}
+                      placeholder="e.g. Contract signed and platform live with test product"
+                      className="w-full"
+                    />
+                    <div className="char-counter">{(action.successMetric || '').length}/300 (min 10)</div>
+                  </div>
+                </div>
+
+                {/* Item-level navigation */}
+                <div style={{ display: 'flex', gap: 12, marginTop: 24, alignItems: 'center' }}>
+                  {currentIndex > 0 && (
+                    <button onClick={() => setCurrentIndex(currentIndex - 1)} style={{ fontFamily: "'Monument', monospace", fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', background: 'transparent', border: '2px solid #555', color: '#ccc', padding: '10px 20px', cursor: 'pointer' }}>
+                      ← PREV
+                    </button>
+                  )}
+                  {!isLast ? (
+                    <button
+                      onClick={handleActionNext}
+                      disabled={!currentActionValid || aiReviewing}
+                      style={{ fontFamily: "'Monument', monospace", fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', background: currentActionValid && !aiReviewing ? '#FFF469' : '#333', color: currentActionValid && !aiReviewing ? '#000' : '#666', border: '2px solid transparent', padding: '10px 24px', cursor: currentActionValid && !aiReviewing ? 'pointer' : 'not-allowed' }}
+                    >
+                      {aiReviewing ? 'AI REVIEWING...' : 'NEXT ACTION →'}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleActionNext}
+                      disabled={!currentActionValid || aiReviewing}
+                      style={{ fontFamily: "'Monument', monospace", fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', background: currentActionValid && !aiReviewing ? '#FFF469' : '#333', color: currentActionValid && !aiReviewing ? '#000' : '#666', border: '2px solid transparent', padding: '10px 24px', cursor: currentActionValid && !aiReviewing ? 'pointer' : 'not-allowed' }}
+                    >
+                      {aiReviewing ? 'AI REVIEWING...' : 'REVIEW THIS ACTION →'}
+                    </button>
+                  )}
+                  <button
+                    onClick={handleAddAnother}
+                    style={{ fontFamily: "'Monument', monospace", fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', background: 'transparent', border: '2px solid #555', color: '#ccc', padding: '10px 20px', cursor: 'pointer' }}
+                  >
+                    + ADD ANOTHER ACTION
+                  </button>
+                  {actionsAllDone && (
+                    <button
+                      onClick={handleDoneWithActions}
+                      style={{ fontFamily: "'Monument', monospace", fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', background: '#000', color: '#FFF469', border: '2px solid #000', padding: '10px 20px', cursor: 'pointer', marginLeft: 'auto' }}
+                    >
+                      DONE → ADD RESOURCES
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Summary tabs */}
+              {actions.length > 1 && (
+                <div style={{ marginTop: 24 }}>
+                  <p style={{ fontFamily: "'Monument', monospace", fontSize: 10, letterSpacing: '0.08em', color: '#888', textTransform: 'uppercase', marginBottom: 10 }}>ALL ACTIONS ({total})</p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {actions.map((a, i) => (
+                      <button key={a.id} onClick={() => setCurrentIndex(i)} style={{ background: i === currentIndex ? '#FFF469' : '#1a1a1a', color: i === currentIndex ? '#000' : '#ccc', border: `1px solid ${i === currentIndex ? '#FFF469' : '#444'}`, padding: '6px 14px', fontFamily: "'Monument', monospace", fontSize: 10, letterSpacing: '0.05em', cursor: 'pointer', textTransform: 'uppercase' }}>
+                        {a.action?.trim().slice(0, 25) || `Action ${i + 1}`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {!actionsAllDone && (
+                <p style={{ marginTop: 16, fontFamily: "'Monument', monospace", fontSize: 10, color: '#888', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                  {actions.length < 3 ? `ADD ${3 - actions.length} MORE ACTION(S) TO CONTINUE` : 'FILL ALL ACTIONS TO CONTINUE'}
+                </p>
+              )}
+            </>
+          )}
+
+          {phase === 'details' && (
+            <div className="space-y-6 animate-in">
+              <h3 className="riforma-bold mb-4" style={{ fontSize: 32, lineHeight: 1.2 }}>
+                Resources, team ownership, and success criteria
+              </h3>
+
+              <div className="bg-neutral-900 border-2 border-gray-700 p-6">
+                <label className="monument text-xs block mb-2 text-gray-300">RESOURCES NEEDED <span className="text-red-500">*</span></label>
                 <p className="text-sm text-gray-400 mb-2">What resources do you need to execute? Budget, tools, people?</p>
                 <textarea
                   value={data.resourcesNeeded}
@@ -1575,8 +1936,8 @@
                 <div className="char-counter">{(data.resourcesNeeded || '').length}/1000 (min 50)</div>
               </div>
 
-              <div className="bg-neutral-900 border-2 border-gray-700 p-6 animate-in" style={{animationDelay: '0.25s'}}>
-                <label className="monument text-sm block mb-2">TEAM OWNERSHIP <span className="text-red-500">*</span></label>
+              <div className="bg-neutral-900 border-2 border-gray-700 p-6">
+                <label className="monument text-xs block mb-2 text-gray-300">TEAM OWNERSHIP <span className="text-red-500">*</span></label>
                 <p className="text-sm text-gray-400 mb-2">Who owns what? Clear accountability drives execution.</p>
                 <textarea
                   value={data.teamOwnership}
@@ -1588,8 +1949,8 @@
                 <div className="char-counter">{(data.teamOwnership || '').length}/1000 (min 30)</div>
               </div>
 
-              <div className="bg-neutral-900 border-2 border-gray-700 p-6 animate-in" style={{animationDelay: '0.3s'}}>
-                <label className="monument text-sm block mb-2">FIRST CHECKPOINT <span className="text-red-500">*</span></label>
+              <div className="bg-neutral-900 border-2 border-gray-700 p-6">
+                <label className="monument text-xs block mb-2 text-gray-300">FIRST CHECKPOINT <span className="text-red-500">*</span></label>
                 <p className="text-sm text-gray-400 mb-2">When is your first review? What will you assess?</p>
                 <textarea
                   value={data.firstCheckpoint}
@@ -1601,34 +1962,33 @@
                 <div className="char-counter">{(data.firstCheckpoint || '').length}/500 (min 20)</div>
               </div>
 
-              <div className="bg-neutral-900 border-2 border-gray-700 p-6 animate-in" style={{animationDelay: '0.35s'}}>
-                <label className="monument text-sm block mb-2">SUCCESS METRICS <span className="text-red-500">*</span></label>
+              <div className="bg-neutral-900 border-2 border-gray-700 p-6">
+                <label className="monument text-xs block mb-2 text-gray-300">SUCCESS METRICS <span className="text-red-500">*</span></label>
                 <p className="text-sm text-gray-400 mb-2">What metrics prove this RTM is working?</p>
                 <textarea
                   value={data.successMetrics}
                   onChange={(e) => updateData('successMetrics', e.target.value)}
-                  placeholder="Month 1: $20K revenue, <$150 CAC, 2% conversion rate. Month 3: $75K revenue, <$120 CAC, 3% conversion, 25% repeat rate. Month 6: $200K revenue, gross margin >60%, operational break-even."
+                  placeholder="Month 1: $20K revenue, &lt;$150 CAC, 2% conversion rate. Month 3: $75K revenue, &lt;$120 CAC, 3% conversion, 25% repeat rate. Month 6: $200K revenue, gross margin &gt;60%, operational break-even."
                   className="w-full"
                   rows={4}
                 />
                 <div className="char-counter">{(data.successMetrics || '').length}/2000 (min 100)</div>
               </div>
 
-              <div className="bg-neutral-900 border-2 border-gray-700 p-6 animate-in" style={{animationDelay: '0.4s'}}>
-                <label className="monument text-sm block mb-2">DEAL-BREAKERS (When to pivot) <span className="text-red-500">*</span></label>
+              <div className="bg-neutral-900 border-2 border-gray-700 p-6">
+                <label className="monument text-xs block mb-2 text-gray-300">DEAL-BREAKERS (When to pivot) <span className="text-red-500">*</span></label>
                 <p className="text-sm text-gray-400 mb-2">What would force you to kill or change this RTM?</p>
                 <textarea
                   value={data.dealBreakers}
                   onChange={(e) => updateData('dealBreakers', e.target.value)}
-                  placeholder="CAC >$200 after 90 days with no downward trend. Conversion rate <1% after optimization. Gross margin <50% due to unforeseen costs. Customer complaints about experience >20%. Competitor launches DTC with 10x our budget."
+                  placeholder="CAC &gt;$200 after 90 days with no downward trend. Conversion rate &lt;1% after optimization. Gross margin &lt;50% due to unforeseen costs."
                   className="w-full"
                   rows={4}
                 />
                 <div className="char-counter">{(data.dealBreakers || '').length}/1000 (min 50)</div>
               </div>
             </div>
-
-          </div>
+          )}
         </div>
       );
     }
@@ -1698,10 +2058,21 @@
 
               {/* Next 30 Days */}
               <div>
-                <h2 className="riforma-bold text-4xl mb-4">Next 30 Days</h2>
+                <h2 className="riforma-bold text-4xl mb-4">30-Day Action Plan</h2>
                 <div className="bg-yellow-50 p-6 border-l-4 border-yellow-400">
-                  <p className="text-base">{data.next30Days.length > 300 ? data.next30Days.substring(0, 300) + '...' : data.next30Days}</p>
-                  <p className="text-sm text-gray-300 mt-3"><strong>First Checkpoint:</strong> {data.firstCheckpoint}</p>
+                  {(data.actions || []).length > 0 ? (
+                    <div className="space-y-3">
+                      {(data.actions || []).slice(0, 8).map((a, i) => (
+                        <div key={a.id || i} style={{ borderBottom: '1px solid #e5e7eb', paddingBottom: 8 }}>
+                          <p style={{ fontWeight: 'bold', fontSize: 14 }}>{i + 1}. {a.action}</p>
+                          <p style={{ fontSize: 12, color: '#666' }}>Owner: {a.owner} &nbsp;|&nbsp; Deadline: {a.deadline} &nbsp;|&nbsp; Metric: {a.successMetric}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-base">{(data.next30Days || '').length > 300 ? data.next30Days.substring(0, 300) + '...' : data.next30Days}</p>
+                  )}
+                  <p className="text-sm text-gray-600 mt-3"><strong>First Checkpoint:</strong> {data.firstCheckpoint}</p>
                 </div>
               </div>
 
