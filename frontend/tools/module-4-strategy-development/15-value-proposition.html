@@ -726,7 +726,7 @@
                 } catch (e) { console.warn('Failed to restore auto-save:', e); }
             }, []);
 
-            /* ── Submit (with AI challenge) ── */
+            /* ── Submit ── */
             const handleSubmit = async () => {
                 try {
                     setSubmitStatus('saving'); setSubmitMessage('');
@@ -740,12 +740,9 @@
                         differentiators: { competitors: data.competitors, uniqueValue: data.uniqueValue, whySwitchToUs: data.whySwitchToUs }
                     };
 
-                    await window.AIChallenge.submitWithChallenge(userId, CONFIG.TOOL_SLUG, questionMappings, {
-                        onReviewStart: () => { setSubmitMessage('AI coach is reviewing...'); },
-                        onRevise: () => { setSubmitStatus(null); setSubmitMessage(''); setStep(totalSteps); },
-                        onSubmitAnyway: () => { setSubmitStatus('success'); setSubmitMessage('Submission saved successfully!'); },
-                        onError: (err) => { setSubmitStatus('error'); setSubmitMessage('Failed to save: ' + err.message); }
-                    });
+                    await ToolDB.saveResponses(userId, CONFIG.TOOL_SLUG, questionMappings);
+                    setSubmitStatus('success');
+                    setSubmitMessage('Submission saved successfully!');
                 } catch (error) {
                     setSubmitStatus('error'); setSubmitMessage('Failed to save: ' + error.message);
                 }

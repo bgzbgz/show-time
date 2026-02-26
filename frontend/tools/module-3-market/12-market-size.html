@@ -566,7 +566,7 @@
             return `${currency} ${Math.round(value).toLocaleString('en-US')}`;
         };
 
-        // Supabase Submission Function (uses AI challenge layer)
+        // Supabase Submission Function
         const submitToSupabase = async (submissionData) => {
             try {
                 const userId = localStorage.getItem('ft_user_id');
@@ -580,16 +580,8 @@
                     driving_forces: submissionData.drivingForces
                 };
 
-                const result = await new Promise((resolve, reject) => {
-                    window.AIChallenge.submitWithChallenge(userId, CONFIG.TOOL_SLUG, questionMappings, {
-                        onReviewStart: () => {},
-                        onRevise: () => { resolve({ success: false, revised: true }); },
-                        onSubmitAnyway: () => { resolve({ success: true }); },
-                        onError: (err) => { reject(err); }
-                    });
-                });
-
-                return result;
+                await ToolDB.saveResponses(userId, CONFIG.TOOL_SLUG, questionMappings);
+                return { success: true };
             } catch (error) {
                 console.error('Supabase submission error:', error);
                 return { success: false, error: error.message };
