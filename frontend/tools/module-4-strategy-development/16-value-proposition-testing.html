@@ -539,11 +539,11 @@
         ];
 
         const getSnippet = (n) => {
-            if (n === 1 && data.valuePropBeingTested) return '"' + data.valuePropBeingTested.substring(0, 50) + (data.valuePropBeingTested.length > 50 ? '...' : '') + '"';
-            if (n === 2 && data.round1Interviews.some(i => i.customerName)) return data.round1Interviews.filter(i => i.customerName).length + ' interviews documented';
-            if (n === 3 && data.refinedValueProp) return '"' + data.refinedValueProp.substring(0, 50) + (data.refinedValueProp.length > 50 ? '...' : '') + '"';
-            if (n === 4 && data.round2Interviews.some(i => i.customerName)) return data.round2Interviews.filter(i => i.customerName).length + ' interviews documented';
-            if (n === 5 && data.finalValueProp) return '"' + data.finalValueProp.substring(0, 50) + (data.finalValueProp.length > 50 ? '...' : '') + '"';
+            if (n === 1 && data.valuePropBeingTested) return '"' + (data.valuePropBeingTested || '').substring(0, 50) + ((data.valuePropBeingTested || '').length > 50 ? '...' : '') + '"';
+            if (n === 2 && (data.round1Interviews || []).some(i => i.customerName)) return (data.round1Interviews || []).filter(i => i.customerName).length + ' interviews documented';
+            if (n === 3 && data.refinedValueProp) return '"' + (data.refinedValueProp || '').substring(0, 50) + ((data.refinedValueProp || '').length > 50 ? '...' : '') + '"';
+            if (n === 4 && (data.round2Interviews || []).some(i => i.customerName)) return (data.round2Interviews || []).filter(i => i.customerName).length + ' interviews documented';
+            if (n === 5 && data.finalValueProp) return '"' + (data.finalValueProp || '').substring(0, 50) + ((data.finalValueProp || '').length > 50 ? '...' : '') + '"';
             return null;
         };
 
@@ -658,8 +658,19 @@
 
       useEffect(() => {
           async function loadDeps() {
-              const userId = localStorage.getItem('ft_user_id');
-              if (!userId || !window.ToolDB || !window.DependencyInjection) return;
+              let userId = localStorage.getItem('ft_user_id');
+              if (!userId) {
+                  userId = 'anon-' + Date.now();
+                  console.warn('[' + CONFIG.TOOL_SLUG + '] No ft_user_id found, using temp ID:', userId);
+              }
+              if (!window.ToolDB) {
+                  console.warn('[' + CONFIG.TOOL_SLUG + '] ToolDB not available, skipping dependency load');
+                  return;
+              }
+              if (!window.DependencyInjection) {
+                  console.warn('[' + CONFIG.TOOL_SLUG + '] DependencyInjection not available, skipping dependency load');
+                  return;
+              }
               try {
                   await ToolDB.whenReady();
                   const config = DependencyInjection.getDependenciesConfig();
@@ -722,7 +733,7 @@
       const addRound1Interview = () => {
         setData(prev => ({
           ...prev,
-          round1Interviews: [...prev.round1Interviews, {
+          round1Interviews: [...(prev.round1Interviews || []), {
             customerName: '',
             customerProfile: '',
             date: '',
@@ -738,10 +749,10 @@
       };
 
       const removeRound1Interview = (index) => {
-        if (data.round1Interviews.length > 1) {
+        if ((data.round1Interviews || []).length > 1) {
           setData(prev => ({
             ...prev,
-            round1Interviews: prev.round1Interviews.filter((_, i) => i !== index)
+            round1Interviews: (prev.round1Interviews || []).filter((_, i) => i !== index)
           }));
         }
       };
@@ -749,7 +760,7 @@
       const updateRound1Interview = (index, field, value) => {
         setData(prev => ({
           ...prev,
-          round1Interviews: prev.round1Interviews.map((interview, i) =>
+          round1Interviews: (prev.round1Interviews || []).map((interview, i) =>
             i === index ? { ...interview, [field]: value } : interview
           )
         }));
@@ -759,7 +770,7 @@
       const addRound2Interview = () => {
         setData(prev => ({
           ...prev,
-          round2Interviews: [...prev.round2Interviews, {
+          round2Interviews: [...(prev.round2Interviews || []), {
             customerName: '',
             customerProfile: '',
             date: '',
@@ -776,10 +787,10 @@
       };
 
       const removeRound2Interview = (index) => {
-        if (data.round2Interviews.length > 1) {
+        if ((data.round2Interviews || []).length > 1) {
           setData(prev => ({
             ...prev,
-            round2Interviews: prev.round2Interviews.filter((_, i) => i !== index)
+            round2Interviews: (prev.round2Interviews || []).filter((_, i) => i !== index)
           }));
         }
       };
@@ -787,7 +798,7 @@
       const updateRound2Interview = (index, field, value) => {
         setData(prev => ({
           ...prev,
-          round2Interviews: prev.round2Interviews.map((interview, i) =>
+          round2Interviews: (prev.round2Interviews || []).map((interview, i) =>
             i === index ? { ...interview, [field]: value } : interview
           )
         }));
@@ -825,8 +836,8 @@
       };
 
       const canProceedFromStep2 = () => {
-        return data.round1Interviews.every(i =>
-          i.customerName.length >= 3 && i.valueReaction.length >= 30 && i.whatWorked.length >= 20
+        return (data.round1Interviews || []).every(i =>
+          (i.customerName || '').length >= 3 && (i.valueReaction || '').length >= 30 && (i.whatWorked || '').length >= 20
         );
       };
 
@@ -837,15 +848,15 @@
       };
 
       const canProceedFromStep4 = () => {
-        return data.round2Interviews.every(i =>
-          i.customerName.length >= 3 && i.clarity.length > 0 && i.enthusiasm.length > 0
+        return (data.round2Interviews || []).every(i =>
+          (i.customerName || '').length >= 3 && (i.clarity || '').length > 0 && (i.enthusiasm || '').length > 0
         );
       };
 
       const canProceedFromStep5 = () => {
-        const validations = Object.values(data.validation);
+        const validations = Object.values(data.validation || {});
         return validations.filter(v => v === 'yes').length >= 5 &&
-               data.finalValueProp.length >= 30;
+               (data.finalValueProp || '').length >= 30;
       };
 
       const exportPDF = async () => {
@@ -1066,9 +1077,6 @@
               BEFORE WE START
             </h1>
 
-            {/* User Details */}
-            </div>
-
             {/* Sprint Info */}
             <div className="mb-12 animate-in" style={{animationDelay: '0.08s'}}>
               <h2 className="plaak text-6xl mb-6" style={{color: '#FFF469'}}>SPRINT INFO</h2>
@@ -1182,6 +1190,7 @@
             >
               LET&apos;S START →
             </button>
+          </div>
         </div>
       );
     }
@@ -1315,11 +1324,11 @@
               Conduct 3-5 interviews. Focus on identifying what works, what&apos;s unclear, and what concerns arise.
             </p>
 
-            {data.round1Interviews.map((interview, index) => (
+            {(data.round1Interviews || []).map((interview, index) => (
               <div key={index} className="bg-gray-50 border-4 border-gray-300 p-8 mb-8 animate-in" style={{animationDelay: `${0.15 + index * 0.05}s`}}>
                 <div className="flex justify-between items-start mb-6">
                   <h4 className="riforma-bold text-3xl">Interview {index + 1}</h4>
-                  {data.round1Interviews.length > 1 && (
+                  {(data.round1Interviews || []).length > 1 && (
                     <button
                       onClick={() => removeRound1Interview(index)}
                       className="text-red-600 hover:text-red-800"
@@ -1614,11 +1623,11 @@
               Test the refined message with customers. Focus on consistency - do they all react similarly?
             </p>
 
-            {data.round2Interviews.map((interview, index) => (
+            {(data.round2Interviews || []).map((interview, index) => (
               <div key={index} className="bg-gray-50 border-4 border-gray-300 p-8 mb-8 animate-in" style={{animationDelay: `${0.2 + index * 0.05}s`}}>
                 <div className="flex justify-between items-start mb-6">
                   <h4 className="riforma-bold text-3xl">Round 2 - Interview {index + 1}</h4>
-                  {data.round2Interviews.length > 1 && (
+                  {(data.round2Interviews || []).length > 1 && (
                     <button
                       onClick={() => removeRound2Interview(index)}
                       className="text-red-600 hover:text-red-800"
@@ -1790,11 +1799,14 @@
         { key: 'updatedAddressesFeedback', label: 'The initial value proposition has been updated and addresses interview feedback - it is solving the primary customer needs in a differentiated way' }
       ];
 
-      const yesCount = Object.values(data.validation).filter(v => v === 'yes').length;
+      const yesCount = Object.values(data.validation || {}).filter(v => v === 'yes').length;
 
       // Calculate average scores from Round 2
-      const avgClarity = data.round2Interviews.filter(i => i.clarity).reduce((sum, i) => sum + parseInt(i.clarity), 0) / data.round2Interviews.filter(i => i.clarity).length || 0;
-      const avgEnthusiasm = data.round2Interviews.filter(i => i.enthusiasm).reduce((sum, i) => sum + parseInt(i.enthusiasm), 0) / data.round2Interviews.filter(i => i.enthusiasm).length || 0;
+      const r2 = data.round2Interviews || [];
+      const r2WithClarity = r2.filter(i => i.clarity);
+      const r2WithEnthusiasm = r2.filter(i => i.enthusiasm);
+      const avgClarity = r2WithClarity.length > 0 ? r2WithClarity.reduce((sum, i) => sum + parseInt(i.clarity), 0) / r2WithClarity.length : 0;
+      const avgEnthusiasm = r2WithEnthusiasm.length > 0 ? r2WithEnthusiasm.reduce((sum, i) => sum + parseInt(i.enthusiasm), 0) / r2WithEnthusiasm.length : 0;
 
       return (
         <>
@@ -1880,7 +1892,7 @@
                           type="radio"
                           name={q.key}
                           value="yes"
-                          checked={data.validation[q.key] === 'yes'}
+                          checked={(data.validation || {})[q.key] === 'yes'}
                           onChange={(e) => updateValidation(q.key, e.target.value)}
                           className="mr-2 w-5 h-5"
                         />
@@ -1891,7 +1903,7 @@
                           type="radio"
                           name={q.key}
                           value="no"
-                          checked={data.validation[q.key] === 'no'}
+                          checked={(data.validation || {})[q.key] === 'no'}
                           onChange={(e) => updateValidation(q.key, e.target.value)}
                           className="mr-2 w-5 h-5"
                         />
@@ -1958,9 +1970,12 @@
 
     // Canvas Page Component
     function CanvasPage({ data, onBack, onExport, onSubmit }) {
-      const yesCount = Object.values(data.validation).filter(v => v === 'yes').length;
-      const avgClarity = data.round2Interviews.filter(i => i.clarity).reduce((sum, i) => sum + parseInt(i.clarity), 0) / data.round2Interviews.filter(i => i.clarity).length || 0;
-      const avgEnthusiasm = data.round2Interviews.filter(i => i.enthusiasm).reduce((sum, i) => sum + parseInt(i.enthusiasm), 0) / data.round2Interviews.filter(i => i.enthusiasm).length || 0;
+      const yesCount = Object.values(data.validation || {}).filter(v => v === 'yes').length;
+      const r2c = data.round2Interviews || [];
+      const r2WithClarity = r2c.filter(i => i.clarity);
+      const r2WithEnthusiasm = r2c.filter(i => i.enthusiasm);
+      const avgClarity = r2WithClarity.length > 0 ? r2WithClarity.reduce((sum, i) => sum + parseInt(i.clarity), 0) / r2WithClarity.length : 0;
+      const avgEnthusiasm = r2WithEnthusiasm.length > 0 ? r2WithEnthusiasm.reduce((sum, i) => sum + parseInt(i.enthusiasm), 0) / r2WithEnthusiasm.length : 0;
 
       return (
         <div className="bg-white min-h-screen p-16">
@@ -1989,11 +2004,11 @@
                 <h3 className="riforma-bold text-3xl mb-4 border-b-2 border-black pb-2">Testing Summary</h3>
                 <div className="grid grid-cols-3 gap-6">
                   <div className="text-center bg-gray-100 p-6">
-                    <div className="text-5xl font-bold mb-2">{data.round1Interviews.length}</div>
+                    <div className="text-5xl font-bold mb-2">{(data.round1Interviews || []).length}</div>
                     <p className="text-lg">Round 1 Interviews</p>
                   </div>
                   <div className="text-center bg-gray-100 p-6">
-                    <div className="text-5xl font-bold mb-2">{data.round2Interviews.length}</div>
+                    <div className="text-5xl font-bold mb-2">{(data.round2Interviews || []).length}</div>
                     <p className="text-lg">Round 2 Interviews</p>
                   </div>
                   <div className="text-center bg-gray-100 p-6">

@@ -195,57 +195,6 @@
       letter-spacing: -0.02em;
     }
 
-    /* Help Button */
-    .help-button {
-      position: fixed;
-      top: 24px;
-      right: 24px;
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
-      background: #000000;
-      color: #FFFFFF;
-      font-size: 28px;
-      border: none;
-      cursor: pointer;
-      z-index: 40;
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: 'Riforma', sans-serif;
-    }
-
-    .help-button:hover {
-      background: #FFF469;
-      color: #000000;
-      transform: scale(1.1);
-    }
-
-    /* Progress Indicator */
-    .progress-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: #E0E0E0;
-      transition: all 0.3s ease;
-    }
-
-    .progress-dot.active {
-      background: #000000;
-      transform: scale(1.3);
-    }
-
-    .progress-dot.completed {
-      background: #000000;
-    }
-
-    .progress-line {
-      height: 2px;
-      background: #E0E0E0;
-      flex: 1;
-    }
-
     /* Character Counter */
     .char-counter {
       font-size: 14px;
@@ -563,6 +512,7 @@
         const userId = localStorage.getItem('ft_user_id');
         if (!userId) { alert('User not authenticated.'); return; }
         setAiReviewing(true);
+        let canProceed = false;
         try {
           let stepAnswers = {};
           let stepName = '';
@@ -582,20 +532,24 @@
             stepName = 'Implementation Plan';
             stepAnswers = { marketingActions: data.marketingActions, successMetrics: data.successMetrics, consistencyChecklist: data.consistencyChecklist };
           }
-          const canProceed = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, stepName);
-          if (canProceed) {
-            advanceStep(fromStep);
-          }
+          canProceed = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, stepName);
         } catch (err) {
           console.warn('[AIChallenge] Error, allowing passage:', err);
-          advanceStep(fromStep);
+          canProceed = true;
         } finally {
           setAiReviewing(false);
+        }
+        if (canProceed) {
+          try {
+            advanceStep(fromStep);
+          } catch (advErr) {
+            console.error('[handleNext] advanceStep error:', advErr);
+          }
         }
       };
 
       const goBack = () => {
-        if (step === 6) {
+        if (step >= 6) {
           setStep(5);
         } else if (step > 1) {
           setStep(step - 1);
@@ -783,7 +737,7 @@
         );
       }
 
-      if (step === 6) {
+      if (step === 6 || step >= 6) {
         return (
           <CanvasPage
             data={data}
@@ -793,7 +747,14 @@
         );
       }
 
-      return null;
+      // Fallback: if step is in an unrecognised state, go to canvas rather than blank page
+      return (
+        <CanvasPage
+          data={data}
+          onExport={exportPDF}
+          onSubmit={handleSubmit}
+        />
+      );
     }
 
     // Cover Page Component
@@ -1737,40 +1698,6 @@
             <div className="monument" style={{ fontSize: '10px', color: '#555', letterSpacing: '0.05em' }}>STEP {Math.floor(Math.max(1, currentStep))} OF {totalSteps}</div>
           </div>
         </div>
-      );
-    }
-
-    // Progress Indicator
-    function ProgressIndicator({ currentStep }) {
-      const steps = [
-        { number: 1, label: 'Promise' },
-        { number: 2, label: 'Personality' },
-        { number: 3, label: 'Cult Model' },
-        { number: 4, label: 'Strategy' },
-        { number: 5, label: 'Implement' }
-      ];
-
-      return (
-        <div className="flex items-center justify-center gap-4 mb-12">
-          {steps.map((step, index) => (
-            <Fragment key={step.number}>
-              <div className="flex flex-col items-center">
-                <div className={`progress-dot ${step.number === currentStep ? 'active' : ''} ${step.number < currentStep ? 'completed' : ''}`}></div>
-                <div className="monument text-xs mt-2">{step.label}</div>
-              </div>
-              {index < steps.length - 1 && <div className="progress-line w-12"></div>}
-            </Fragment>
-          ))}
-        </div>
-      );
-    }
-
-    // Help Button
-    function HelpButton({ onClick }) {
-      return (
-        <button onClick={onClick} className="help-button">
-          ?
-        </button>
       );
     }
 
