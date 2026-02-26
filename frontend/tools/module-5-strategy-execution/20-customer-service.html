@@ -193,33 +193,6 @@
       letter-spacing: -0.02em;
     }
 
-    /* Help Button */
-    .help-button {
-      position: fixed;
-      top: 24px;
-      right: 24px;
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
-      background: #000000;
-      color: #FFFFFF;
-      font-size: 28px;
-      border: none;
-      cursor: pointer;
-      z-index: 40;
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: 'Riforma', sans-serif;
-    }
-
-    .help-button:hover {
-      background: #FFF469;
-      color: #000000;
-      transform: scale(1.1);
-    }
-
     /* Progress Indicator */
     .progress-dot {
       width: 12px;
@@ -671,12 +644,9 @@
             }
           };
 
-          await window.AIChallenge.submitWithChallenge(userId, CONFIG.TOOL_SLUG, questionMappings, {
-            onReviewStart: () => { setSubmitMessage('AI coach is reviewing...'); },
-            onRevise: () => { setSubmitStatus(null); setSubmitMessage(''); setStep(5); },
-            onSubmitAnyway: () => { setSubmitStatus('success'); setSubmitMessage('Submission saved successfully!'); },
-            onError: (err) => { setSubmitStatus('error'); setSubmitMessage('Failed to save: ' + err.message); }
-          });
+          await ToolDB.saveResponses(userId, CONFIG.TOOL_SLUG, questionMappings);
+          setSubmitStatus('success');
+          setSubmitMessage('Submission saved successfully!');
         } catch (error) {
           console.error('Submit error:', error);
           alert('Submission failed: ' + error.message);
@@ -886,15 +856,6 @@
       );
     }
 
-    // Help Button Component
-    function HelpButton({ onClick }) {
-      return (
-        <button className="help-button" onClick={onClick}>
-          ?
-        </button>
-      );
-    }
-
     // Wizard Sidebar
     function WizardSidebar({ currentStep, stepLabels, totalSteps }) {
       return (
@@ -942,78 +903,6 @@
               {index < steps.length - 1 && <div className="progress-line" style={{width: '40px'}}></div>}
             </Fragment>
           ))}
-        </div>
-      );
-    }
-
-    // Help Modal Component
-    function HelpModal({ step, onClose }) {
-      const helpContent = {
-        1: {
-          why: "The customer journey map is not about documenting process, it's about identifying where trust is built or broken. Every touchpoint is a moment where your value proposition is either reinforced or undermined. Without mapping the journey, you're guessing at where your service matters most.",
-          what: "You're mapping 5-8 critical stages in your customer's experience, from first awareness to post-sale. For each stage, you'll document what the customer is trying to accomplish, what they actually do, and what's going through their mind. This creates the foundation for strategic service design.",
-          how: "Start with your segment profile and value proposition. Then walk through the journey chronologically: Awareness, First Contact, Purchase/Onboarding, Usage/Support, Renewal/Exit. For each stage, write from the customer's perspective using their language, not internal jargon. Ask: What are they trying to achieve? What do they do? What are they thinking or feeling?"
-        },
-        2: {
-          why: "WOW moments create memory, word-of-mouth, and emotional loyalty. As Chip and Dan Heath show in The Power of Moments, customers remember peaks, pits, and transitions, not the average experience. Strategic WOW moments reinforce your positioning and turn customers into advocates.",
-          what: "You're identifying 3 touchpoints where you can exceed expectations in ways that align with your segment's values and your value proposition. Each WOW moment must be memorable, emotional, and share-worthy. Think Ritz-Carlton empowering staff to spend $2,000 to solve guest problems, or Zappos overnight shipping a free replacement with no questions asked.",
-          how: "Review your journey map and select 3 moments where trust, emotion, or memory are highest. For each, define: What would make this memorable? What emotional effect are we creating? What action is required? How will we measure success? Test each WOW moment: Does it reinforce our value proposition? Would our segment actually care? Is it share-worthy?"
-        },
-        3: {
-          why: "As Matthew Dixon proves in The Effortless Experience, reducing customer effort drives loyalty more than delight. Just Better improvements don't need to be flashy, they need to be consistently superior to the norm. These are the moments that build trust through reliability.",
-          what: "You're selecting 3 touchpoints where you'll outperform industry standards through speed, clarity, tone, simplicity, or consistency. These aren't dramatic transformations, they're strategic upgrades that make the experience smoother and more predictable than competitors.",
-          how: "Look for moments in your journey where friction, confusion, or delay are common. Choose 3 where improvement would matter most to your segment. For each, define: What needs to improve? How will we execute it? Who's responsible? What metric will track it? Focus on eliminating repeat contacts, reducing effort, and creating predictability."
-        },
-        4: {
-          why: "Service excellence requires accountability. Without clear ownership and metrics, even brilliant service design becomes vague aspiration. As Frances Frei teaches, operational excellence comes from repeatable systems, not heroics. Every touchpoint needs an owner and a measurement.",
-          what: "You're assigning responsibility for each of your 6 strategic touchpoints (3 WOW + 3 Just Better). Each must have a specific owner (team or person), a performance indicator (NPS, response time, sentiment, retention), and a deadline for implementation.",
-          how: "Go through each WOW touchpoint and Just Better improvement. Assign one owner per touchpoint, never split responsibility. Choose metrics that track customer-facing outcomes, not just internal efficiency. Set realistic deadlines: 30 days for Just Better improvements, 60-90 days for WOW moments. Make sure owners have authority to execute."
-        },
-        5: {
-          why: "Strategy without execution is fantasy. As Tony Hsieh showed at Zappos, service excellence requires cultural alignment: everyone must understand the promise, the touchpoints, and their role in delivery. Implementation planning ensures your service design actually reaches customers.",
-          what: "You're creating an execution roadmap: how you'll roll out improvements, communicate to frontline staff, track metrics, and review performance quarterly. This transforms your service strategy into operational reality.",
-          how: "Define your execution sequence: what gets implemented first, second, third. Write your communication plan for frontline teams: what do they need to know, how will you train them, how will you empower them to act? Set up metric tracking: dashboards, review cadence, escalation protocols. Schedule your quarterly review: one WOW upgrade and two Just Better fixes per quarter."
-        }
-      };
-
-      const content = helpContent[step] || helpContent[1];
-
-      return (
-        <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-8 fade-in" onClick={onClose}>
-          <div className="bg-white text-black max-w-4xl w-full p-12 relative animate-in" onClick={(e) => e.stopPropagation()}>
-            <button
-              onClick={onClose}
-              className="absolute top-4 right-4 text-4xl hover:text-gray-400 transition-colors"
-            >
-              ×
-            </button>
-
-            <h2 className="plaak mb-8" style={{fontSize: '60px'}}>INSTRUCTIONS</h2>
-
-            <div className="space-y-8">
-              <div>
-                <h3 className="riforma-bold text-3xl mb-3">Why This Matters</h3>
-                <p className="text-xl leading-relaxed">{content.why}</p>
-              </div>
-
-              <div>
-                <h3 className="riforma-bold text-3xl mb-3">What You're Doing</h3>
-                <p className="text-xl leading-relaxed">{content.what}</p>
-              </div>
-
-              <div>
-                <h3 className="riforma-bold text-3xl mb-3">How To Do It</h3>
-                <p className="text-xl leading-relaxed">{content.how}</p>
-              </div>
-            </div>
-
-            <button
-              onClick={onClose}
-              className="btn-primary w-full mt-8 text-xl"
-            >
-              GOT IT
-            </button>
-          </div>
         </div>
       );
     }

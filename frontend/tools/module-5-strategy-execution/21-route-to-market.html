@@ -193,33 +193,6 @@
       letter-spacing: -0.02em;
     }
 
-    /* Help Button */
-    .help-button {
-      position: fixed;
-      top: 24px;
-      right: 24px;
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
-      background: #000000;
-      color: #FFFFFF;
-      font-size: 28px;
-      border: none;
-      cursor: pointer;
-      z-index: 40;
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: 'Riforma', sans-serif;
-    }
-
-    .help-button:hover {
-      background: #FFF469;
-      color: #000000;
-      transform: scale(1.1);
-    }
-
     /* Progress Indicator */
     .progress-dot {
       width: 12px;
@@ -735,12 +708,9 @@
             }
           };
 
-          await window.AIChallenge.submitWithChallenge(userId, CONFIG.TOOL_SLUG, questionMappings, {
-            onReviewStart: () => { setSubmitMessage('AI coach is reviewing...'); },
-            onRevise: () => { setSubmitStatus(null); setSubmitMessage(''); setStep(5); },
-            onSubmitAnyway: () => { setSubmitStatus('success'); setSubmitMessage('Submission saved successfully!'); },
-            onError: (err) => { setSubmitStatus('error'); setSubmitMessage('Failed to save: ' + err.message); }
-          });
+          await ToolDB.saveResponses(userId, CONFIG.TOOL_SLUG, questionMappings);
+          setSubmitStatus('success');
+          setSubmitMessage('Submission saved successfully!');
         } catch (error) {
           console.error('Submit error:', error);
           alert('Submission failed: ' + error.message);
@@ -1046,86 +1016,6 @@
                 <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7, fontStyle: 'italic', margin: 0 }}>{t.peerProof}</p>
               </div>
             )}
-          </div>
-        </div>
-      );
-    }
-
-    // Help Modal Component
-    function HelpModal({ step, onClose }) {
-      const helpContent = {
-        1: {
-          why: "Every RTM option creates different trade-offs in customer reach, margin control, brand alignment, and operational load. Tesla chose direct-to-consumer to own the customer experience. Nike uses multi-channel to maximize reach while protecting brand. Your RTM choice determines who owns your growth.",
-          what: "Analyze 3-5 potential routes to market across six critical dimensions: customer reach, margin impact, control level, brand fit, and operational load. Be honest about what each channel requires and delivers.",
-          how: "List realistic RTM options for your business. For each, assess: How many customers can we reach? What margin do we keep? Who controls the customer? Does it match our brand? What does execution require? Rank brutal honesty over wishful thinking."
-        },
-        2: {
-          why: "Your value proposition must align with your route to market or one will kill the other. Premium products through discount channels destroy brand. Complex services through self-serve models create friction. This filter prevents misalignment disasters.",
-          what: "Answer 5 yes/no questions about value uniqueness, customer control needs, scale potential, margin health, and brand alignment. The tool auto-scores to highlight red flags and green lights.",
-          how: "Answer each question honestly based on your current business reality. Yes = 1 point, No = 0 points. Score of 4-5 = strong RTM fit. Score of 2-3 = proceed with caution. Score of 0-1 = wrong channel choice will kill you."
-        },
-        3: {
-          why: "Strategy without operational reality is fantasy. Most RTM failures happen in execution, not strategy. Gymshark scaled DTC because they had social media capability. Your scenarios must test what you can actually build and afford.",
-          what: "For your top 2-3 RTM candidates, map the full operational reality: capabilities needed, people required, tools and systems, investment required, timeline, and risk factors. This exposes execution gaps before you commit.",
-          how: "Pick your strongest RTM options. For each, ask: What capabilities must we build? Who runs this? What systems do we need? What does it cost? How long to launch? What kills us? Be specific, not vague."
-        },
-        4: {
-          why: "RTM decisions shape 5-10 years of business trajectory. Amazon committed to DTC marketplace and built backward. Your primary RTM gets 80% of resources. Your secondary is insurance. Rejected options clarify what you WON'T do.",
-          what: "Declare your primary route to market, explain why it wins, define success metrics. Choose a secondary RTM as backup. Document rejected options and why they failed your filter. This creates strategic clarity.",
-          how: "State primary RTM and why it aligns with your VP, capabilities, and market. Define what success looks like in 12 months. Choose secondary for diversification. List rejected options to prevent future distraction or second-guessing."
-        },
-        5: {
-          why: "The best strategy dies without a 30-day execution plan. This sprint forces you to move from decision to action: first steps, resource needs, ownership, checkpoints, success metrics, and deal-breakers that would force a pivot.",
-          what: "Document next 30 days of action, resources needed, who owns what, first checkpoint date, success metrics, and conditions that would trigger a channel pivot. Clarity breeds speed.",
-          how: "List specific actions in next 30 days. What resources do you need? Who is accountable? When is first review? What metrics prove this is working? What would make you kill this channel? Write it down."
-        }
-      };
-
-      const content = helpContent[step];
-
-      return (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-8"
-          onClick={onClose}
-        >
-          <div
-            className="bg-white text-black max-w-3xl w-full border-8 border-black p-12 relative"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={onClose}
-              className="absolute top-4 right-4 text-4xl hover:text-gray-400"
-            >
-              ×
-            </button>
-
-            <h2 className="plaak mb-8 text-black" style={{fontSize: '80px'}}>
-              INSTRUCTIONS
-            </h2>
-
-            <div className="space-y-8 text-lg">
-              <div>
-                <h3 className="riforma-bold mb-3" style={{fontSize: '40px'}}>Why This Matters</h3>
-                <p>{content.why}</p>
-              </div>
-
-              <div>
-                <h3 className="riforma-bold mb-3" style={{fontSize: '40px'}}>What You&apos;re Doing</h3>
-                <p>{content.what}</p>
-              </div>
-
-              <div>
-                <h3 className="riforma-bold mb-3" style={{fontSize: '40px'}}>How To Do It</h3>
-                <p>{content.how}</p>
-              </div>
-            </div>
-
-            <button
-              onClick={onClose}
-              className="btn-primary w-full mt-8 text-2xl py-4"
-            >
-              GOT IT
-            </button>
           </div>
         </div>
       );
@@ -1872,15 +1762,6 @@
             </Fragment>
           ))}
         </div>
-      );
-    }
-
-    // Help Button
-    function HelpButton({ onClick }) {
-      return (
-        <button onClick={onClick} className="help-button">
-          ?
-        </button>
       );
     }
 

@@ -193,33 +193,6 @@
       letter-spacing: -0.02em;
     }
 
-    /* Help Button */
-    .help-button {
-      position: fixed;
-      top: 24px;
-      right: 24px;
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
-      background: #000000;
-      color: #FFFFFF;
-      font-size: 28px;
-      border: none;
-      cursor: pointer;
-      z-index: 40;
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: 'Riforma', sans-serif;
-    }
-
-    .help-button:hover {
-      background: #FFF469;
-      color: #000000;
-      transform: scale(1.1);
-    }
-
     /* Progress Indicator */
     .progress-dot {
       width: 12px;
@@ -698,12 +671,8 @@
               timeline: m.timeline
             }))
           };
-          await window.AIChallenge.submitWithChallenge(userId, CONFIG.TOOL_SLUG, questionMappings, {
-            onReviewStart: () => {},
-            onRevise: () => { setStep(4); },
-            onSubmitAnyway: () => { alert('FIT & ABC Analysis submitted successfully!'); },
-            onError: (err) => { alert('Submission failed: ' + err.message); }
-          });
+          await ToolDB.saveResponses(userId, CONFIG.TOOL_SLUG, questionMappings);
+          alert('FIT & ABC Analysis submitted successfully!');
           return true;
         } catch (error) {
           console.error('Supabase submission error:', error);
@@ -949,81 +918,6 @@
             })}
           </div>
           <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#444', letterSpacing: '0.08em', textTransform: 'uppercase' }}>STEP {Math.floor(currentStep)} OF {totalSteps}</div>
-        </div>
-      );
-    }
-
-    // Help Modal Component
-    function HelpModal({ step, onClose }) {
-      const helpContent = {
-        1: {
-          why: "You can't build a championship team without knowing who's on your roster. This step creates clarity about who you're evaluating. The combination of name, role, and tenure gives context for FIT and ABC assessments. CEOs evaluate executives. Executives evaluate their direct reports.",
-          what: "Create a simple list of team members you need to assess. Include their name (for identification), current role (what they're responsible for), and tenure (how long they've been in this position or company). This becomes your evaluation roster.",
-          how: "List each person you directly manage or evaluate. Be specific about roles: not 'Manager' but 'Operations Manager responsible for supply chain and fulfillment.' Include tenure to understand if they're new (still learning) or established (should be performing). Add as many team members as needed."
-        },
-        2: {
-          why: "FIT Analysis reveals whether someone is naturally suited for their role. When all four dimensions score high, performance and engagement skyrocket. Misalignment in any area leads to frustration, turnover, or mediocrity. This tool forces honest assessment of role fit, not just performance.",
-          what: "Rate each person on four dimensions using a 1-5 scale. Energy: Does this role energize them or drain them? Skill: Do they have natural talents and learned skills? Values: Are their values aligned with company values? Impact: Are they making significant, measurable contribution? Add notes to explain ratings.",
-          how: "For each person, rate 1-5 on each dimension. Be honest, not kind. High scores (4-5): Clear strengths, natural fit, energized, aligned. Medium scores (3): Acceptable but not exceptional. Low scores (1-2): Clear weakness, misalignment, struggling. Use notes to capture specific examples and observations that justify each rating."
-        },
-        3: {
-          why: "ABC Classification cuts through complexity to reveal who's truly creating value. A-players drive results AND culture. B-players are good but not great, or performing without cultural fit. C-players are low performers or cultural misfits. This assessment becomes your talent management roadmap: who to invest in, who to develop, who to transition out.",
-          what: "Classify each person as A, B, or C based on performance, culture fit, and potential. A: Great performers + cultural fit + high potential. B: Good but not great, or performing but misaligned with values. C: Low performers or cultural misfits. Provide detailed reasoning for each classification including performance notes, culture alignment, and future potential.",
-          how: "For each person, select A, B, or C. Don't confuse personality with performance. Don't overrate B players out of fear or loyalty. Ground every decision in role fit, contribution, and future potential—not the past or personal relationships. Write specific reasoning: What makes them A/B/C? Include performance examples, cultural alignment (or misalignment), and assessment of growth potential."
-        },
-        4: {
-          why: "Assessment without action is wasted effort. This step converts ratings into development plans. A-players need stretch assignments and retention strategies. B-players need clear development paths or role changes. C-players need performance improvement plans or transition conversations. This is where leadership courage meets talent strategy.",
-          what: "Create action plans for each team member, especially B and C players. Define development needs (skills to build), coaching plans (support required), role changes (better fit positions), timeline (when actions happen), and tough decisions (performance conversations, transitions, exits).",
-          how: "For each person, especially B and C players, document: What development do they need? What coaching or support will you provide? Should their role change? What's the timeline for action? Do you need to have tough conversations about performance or fit? Be specific: 'John needs SQL training by Q2' or 'Sarah transitions to advisory role by Q3' or 'Performance improvement plan for 90 days starting Monday.'"
-        }
-      };
-
-      const content = helpContent[step];
-
-      return (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-8"
-          onClick={onClose}
-        >
-          <div
-            className="bg-white text-black max-w-2xl w-full border-4 border-black p-8 relative"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={onClose}
-              className="absolute top-4 right-4 text-3xl hover:text-gray-400"
-            >
-              ×
-            </button>
-
-            <h2 className="plaak mb-6 text-black" style={{fontSize: '48px'}}>
-              INSTRUCTIONS
-            </h2>
-
-            <div className="space-y-6 text-base">
-              <div>
-                <h3 className="riforma-bold mb-2" style={{fontSize: '24px'}}>Why This Matters</h3>
-                <p>{content.why}</p>
-              </div>
-
-              <div>
-                <h3 className="riforma-bold mb-2" style={{fontSize: '24px'}}>What You're Doing</h3>
-                <p>{content.what}</p>
-              </div>
-
-              <div>
-                <h3 className="riforma-bold mb-2" style={{fontSize: '24px'}}>How To Do It</h3>
-                <p>{content.how}</p>
-              </div>
-            </div>
-
-            <button
-              onClick={onClose}
-              className="btn-primary w-full mt-6 text-xl py-3"
-            >
-              GOT IT
-            </button>
-          </div>
         </div>
       );
     }
@@ -1740,15 +1634,6 @@
             </Fragment>
           ))}
         </div>
-      );
-    }
-
-    // Help Button
-    function HelpButton({ onClick }) {
-      return (
-        <button onClick={onClick} className="help-button">
-          ?
-        </button>
       );
     }
 

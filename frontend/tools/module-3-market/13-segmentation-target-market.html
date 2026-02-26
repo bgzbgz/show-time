@@ -195,33 +195,6 @@
       letter-spacing: -0.02em;
     }
 
-    /* Help Button */
-    .help-button {
-      position: fixed;
-      top: 24px;
-      right: 24px;
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
-      background: #000000;
-      color: #FFFFFF;
-      font-size: 28px;
-      border: none;
-      cursor: pointer;
-      z-index: 40;
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: 'Riforma', sans-serif;
-    }
-
-    .help-button:hover {
-      background: #FFF469;
-      color: #000000;
-      transform: scale(1.1);
-    }
-
     /* Progress Indicator */
     .progress-dot {
       width: 12px;
@@ -684,12 +657,10 @@
               primary_target: { targetSegments: data.targetSegments, marketShareGoals: data.marketShareGoals, endGame: data.endGame }
           };
 
-          await window.AIChallenge.submitWithChallenge(userId, CONFIG.TOOL_SLUG, questionMappings, {
-              onReviewStart: () => { setSubmitMessage('AI coach is reviewing...'); },
-              onRevise: () => { setSubmitStatus(null); setSubmitMessage(''); setStep(4); },
-              onSubmitAnyway: () => { setSubmitStatus('success'); setSubmitMessage('Submission saved successfully!'); alert('Segmentation & Target Market plan submitted successfully!'); },
-              onError: (err) => { setSubmitStatus('error'); setSubmitMessage('Failed to save: ' + err.message); alert('Submission failed: ' + err.message); }
-          });
+          await ToolDB.saveResponses(userId, CONFIG.TOOL_SLUG, questionMappings);
+          setSubmitStatus('success');
+          setSubmitMessage('Submission saved successfully!');
+          alert('Segmentation & Target Market plan submitted successfully!');
         } catch (error) {
           console.error('Submit error:', error);
           alert('Submission failed: ' + error.message + '\n\nYour data is still saved locally. Please try again or contact support.');
@@ -1800,105 +1771,6 @@
                 </React.Fragment>
               ))}
             </div>
-          </div>
-        </div>
-      );
-    }
-
-    // Help Button Component
-    function HelpButton({ onClick }) {
-      return (
-        <button className="help-button" onClick={onClick}>
-          ?
-        </button>
-      );
-    }
-
-    // Help Modal Component
-    function HelpModal({ onClose, stepNumber }) {
-      const helpContent = {
-        1: {
-          title: "DEFINE MARKET SEGMENTS",
-          why: "Behavior-based segmentation reveals unmet needs and opportunities that demographics miss. Segments based on how customers buy, what they value, and their decision criteria drive 30% higher retention than demographic segments.",
-          what: "Define 5-7 distinct customer segments based on behaviors, needs, and buying patterns. Segments must be mutually exclusive (no overlap) and collectively exhaustive (cover entire market).",
-          how: [
-            "List all customer behaviors you observe: price sensitivity, decision speed, loyalty patterns, usage frequency, buying triggers",
-            "Group customers with similar behaviors into clusters - look for patterns in how they buy, not just who they are",
-            "Refine clusters into 5-7 clear segments with descriptive names (e.g., 'Price-Conscious Comparers', 'Quality-First Adopters')",
-            "Write detailed descriptions: who they are, what they value, how they buy, typical deal size, decision timeline",
-            "Validate: no customer should fit in multiple segments, and every customer should fit in exactly one segment"
-          ]
-        },
-        2: {
-          title: "QUANTIFY SEGMENTS",
-          why: "Without sizing the prize, you can't prioritize. A segment might be attractive strategically but too small to matter financially. Quantification prevents wasting resources on low-value opportunities.",
-          what: "Calculate total market size, your accessible portion, average revenue per customer, and total segment value for each segment you defined.",
-          how: [
-            "Estimate total market: How many customers exist in this segment globally or in your target geography?",
-            "Calculate accessible market: Of that total, how many can you realistically reach with your current channels and resources?",
-            "Determine average revenue: What's the typical annual revenue per customer in this segment based on deal size and frequency?",
-            "Let the tool auto-calculate total segment value (accessible market × average revenue)",
-            "Compare segments: larger values indicate bigger revenue opportunities, but consider growth potential too"
-          ]
-        },
-        3: {
-          title: "ATTRACTIVENESS INDEX",
-          why: "Size alone doesn't determine priority. A smaller segment with high growth and profitability may be more attractive than a large, stagnant one. The attractiveness index uses weighted criteria to reveal true strategic value.",
-          what: "Score each segment on size, growth potential, profitability, and strategic fit. Assign weights to reflect what matters most to your strategy. Higher scores indicate where to focus resources.",
-          how: [
-            "Set criteria weights (must total 100%): Profitability typically 30-40%, Size 20-30%, Growth 20-30%, Fit 15-20%",
-            "Score each segment 1-10 on Size: How large is the accessible market relative to others?",
-            "Score Growth: Is the segment expanding, stable, or declining? (10 = rapid growth)",
-            "Score Profitability: Average margins, willingness to pay premium prices (10 = highly profitable)",
-            "Score Strategic Fit: Does it align with your capabilities, brand, and long-term vision? (10 = perfect fit)",
-            "Review total scores: segments ranking 7.5+ are typically worth pursuing, below 6.0 are usually not worth the effort"
-          ]
-        },
-        4: {
-          title: "TARGET MARKET & GOALS",
-          why: "Without clear targets and measurable goals, segmentation becomes academic exercise. Market share targets create accountability and focus. The end game defines what winning looks like in concrete terms.",
-          what: "Choose your top 2-3 segments based on attractiveness scores. Set specific market share goals with timelines and strategies. Define your end game vision for 3 years.",
-          how: [
-            "Select 2-3 segments: Choose those with highest attractiveness scores and best strategic fit",
-            "Set market share targets: Current share (%), target share (%), timeline (usually 12-36 months)",
-            "Define strategy to achieve: specific tactics like partnerships, product features, pricing, marketing channels",
-            "Write your end game: In 3 years, what market position do you hold? How much revenue? What's your reputation?",
-            "Be specific: Use numbers (% market share, customer count, revenue), names (competitors you've surpassed), and measurable outcomes"
-          ]
-        }
-      };
-
-      const content = helpContent[stepNumber] || helpContent[1];
-
-      return (
-        <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 fade-in" onClick={onClose}>
-          <div className="bg-white max-w-3xl p-12 border-8 border-black max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-start mb-6">
-              <h2 className="plaak text-5xl">{content.title}</h2>
-              <button onClick={onClose} className="text-4xl font-bold hover:text-gray-600">×</button>
-            </div>
-
-            {/* WHY Section */}
-            <h3 className="riforma-bold text-3xl mb-4">Why</h3>
-            <p className="mb-6 text-lg leading-relaxed">{content.why}</p>
-
-            {/* WHAT Section */}
-            <h3 className="riforma-bold text-3xl mb-4">What</h3>
-            <p className="mb-6 text-lg leading-relaxed">{content.what}</p>
-
-            {/* HOW Section */}
-            <h3 className="riforma-bold text-3xl mb-4">How</h3>
-            <ol className="text-lg space-y-3 mb-8">
-              {content.how.map((step, index) => (
-                <li key={index} className="leading-relaxed">
-                  <span className="riforma-bold">{index + 1}.</span> {step}
-                </li>
-              ))}
-            </ol>
-
-            <button onClick={onClose} className="btn-primary w-full text-xl py-4">
-              GOT IT
-            </button>
           </div>
         </div>
       );
