@@ -365,85 +365,80 @@
     }
 
     // ────────────────────────────────────────────────────────────
-    // STEP 1: Dream Launcher
+    // STEP 1: Dream Launcher — one question at a time
     // ────────────────────────────────────────────────────────────
-    function Step1({ data, updateData, aiMessage }) {
+    const STEP1_QUESTIONS = [
+        {
+            key: 'birthdayStory',
+            label: 'Your 80th Birthday Vision',
+            hint: 'Imagine your 80th birthday. The people who matter most are celebrating you. What do they say about the life you lived, the leader you were, the impact you made?',
+            ph: 'e.g. At my 80th birthday, my team said I was the leader who showed them that business could be built with integrity and purpose. My children said I was fully present. I had built a company that outlasted me, employed 500 people, and changed an industry…',
+            minHeight: 160,
+            insight: 'The 80th birthday exercise creates what psychologists call a "future self" anchor. Leaders who write vivid future visions make faster, more aligned decisions — because they have a destination to navigate toward. Vagueness is the enemy of leadership clarity.',
+            insightThreshold: 50,
+        },
+        { key: 'whatLove',      label: 'What do you love doing?',                          ph: 'e.g. Building things from scratch, solving complex problems…',              minHeight: 100 },
+        { key: 'whatGoodAt',    label: 'What are you naturally good at?',                   ph: 'e.g. Strategic thinking, connecting people, simplifying complexity…',       minHeight: 100 },
+        { key: 'giveToWorld',   label: 'What can you give to the world?',                   ph: 'e.g. A more efficient system, leadership that empowers others…',            minHeight: 100 },
+        { key: 'paidFor',       label: 'What can you be paid well for?',                    ph: 'e.g. Building high-performance teams, creating profitable businesses…',     minHeight: 100 },
+        { key: 'inspired',      label: 'What or who inspires you most?',                    ph: 'e.g. Entrepreneurs who built from nothing, leaders who serve others…',      minHeight: 100 },
+        { key: 'feltBest',      label: 'When did you feel most alive and at your best?',    ph: 'e.g. Leading a major turnaround, launching a new product…',                minHeight: 100 },
+        { key: 'likeAboutSelf', label: 'What do you like most about yourself as a leader?', ph: 'e.g. My honesty, my drive, my ability to stay calm under pressure…',      minHeight: 100 },
+        { key: 'hardships',     label: 'What hardships have shaped you most?',              ph: 'e.g. Losing a business taught me resilience and financial discipline…',     minHeight: 100 },
+        {
+            key: 'dream',
+            label: 'My Dream — Reason to Get Up Every Morning',
+            hint: 'Synthesize everything you\'ve written above into one clear statement. Not a company goal — a personal north star. Be concrete.',
+            ph: 'e.g. My dream is to build a €50M company that creates 300 jobs in my region and proves that integrity-based leadership outperforms in the long run.',
+            minHeight: 120,
+            isDream: true,
+        },
+    ];
+
+    function Step1({ data, updateData, aiMessage, subIdx }) {
         const update = (field, val) => updateData(field, val);
-
-        const GUIDING = [
-            { key: 'whatLove',      label: 'What do you love doing?',                         ph: 'e.g. Building things from scratch, solving complex problems…' },
-            { key: 'whatGoodAt',    label: 'What are you naturally good at?',                  ph: 'e.g. Strategic thinking, connecting people, simplifying complexity…' },
-            { key: 'giveToWorld',   label: 'What can you give to the world?',                  ph: 'e.g. A more efficient system, leadership that empowers others…' },
-            { key: 'paidFor',       label: 'What can you be paid well for?',                   ph: 'e.g. Building high-performance teams, creating profitable businesses…' },
-            { key: 'inspired',      label: 'What or who inspires you most?',                   ph: 'e.g. Entrepreneurs who built from nothing, leaders who serve others…' },
-            { key: 'feltBest',      label: 'When did you feel most alive and at your best?',   ph: 'e.g. Leading a major turnaround, launching a new product…' },
-            { key: 'likeAboutSelf', label: 'What do you like most about yourself as a leader?', ph: 'e.g. My honesty, my drive, my ability to stay calm under pressure…' },
-            { key: 'hardships',     label: 'What hardships have shaped you most?',             ph: 'e.g. Losing a business taught me resilience and financial discipline…' },
-        ];
-
-        const dreamFilled = (data.dream || '').length >= 20;
+        const q = STEP1_QUESTIONS[subIdx];
+        const val = data[q.key] || '';
+        const total = STEP1_QUESTIONS.length;
 
         return (
-            <div className="step-content animate-in">
-                <p className="step-indicator">STEP 1 OF {CONFIG.TOTAL_STEPS}</p>
+            <div className="step-content animate-in" key={subIdx}>
+                <p className="step-indicator">STEP 1 OF {CONFIG.TOTAL_STEPS} — QUESTION {subIdx + 1} OF {total}</p>
                 <div className="opening-box">
-                    <h1 className="step-heading">Dream Launcher</h1>
-                    <p className="step-hint">Reflect on the guiding questions, then crystallize your dream — your reason to get up in the morning. Be specific and vivid.</p>
+                    <h1 className="step-heading">{q.label}</h1>
+                    {q.hint && <p className="step-hint">{q.hint}</p>}
                 </div>
 
-                <div className="field-group">
-                    <label className="field-label">Your 80th Birthday Vision</label>
-                    <p className="field-help" style={{ marginBottom: 10 }}>Imagine your 80th birthday. The people who matter most are celebrating you. What do they say about the life you lived, the leader you were, the impact you made?</p>
-                    <AutoTextarea
-                        value={data.birthdayStory}
-                        onChange={e => update('birthdayStory', e.target.value)}
-                        placeholder="e.g. At my 80th birthday, my team said I was the leader who showed them that business could be built with integrity and purpose. My children said I was fully present. I had built a company that outlasted me, employed 500 people, and changed an industry…"
-                        minHeight={140}
-                    />
-                    {(data.birthdayStory || '').length >= 50 && (
-                        <div className="ft-reveal">
-                            <div className="ft-reveal-label">FAST TRACK INSIGHT</div>
-                            <p className="ft-reveal-text">The 80th birthday exercise creates what psychologists call a "future self" anchor. Leaders who write vivid future visions make faster, more aligned decisions — because they have a destination to navigate toward. Vagueness is the enemy of leadership clarity.</p>
-                        </div>
-                    )}
-                </div>
-
-                <div style={{ background: '#F5F5F5', borderLeft: '4px solid #000', padding: '14px 20px', marginBottom: 24 }}>
-                    <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#666', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>GUIDING QUESTIONS</div>
-                    <p style={{ fontSize: 13, color: '#555', lineHeight: 1.6 }}>Answer these to uncover the raw material for your dream. Your answers to each question feed into the final statement below.</p>
-                </div>
-
-                {GUIDING.map(q => (
-                    <div key={q.key} className="field-group">
-                        <label className="field-label" style={{ fontWeight: 'normal', fontSize: 14 }}>{q.label}</label>
+                {q.isDream ? (
+                    <div className="field-group" style={{ background: '#000', padding: '24px' }}>
                         <AutoTextarea
-                            value={data[q.key] || ''}
+                            value={val}
                             onChange={e => update(q.key, e.target.value)}
                             placeholder={q.ph}
-                            minHeight={60}
+                            minHeight={q.minHeight}
+                            style={{ background: '#111', color: '#fff', borderColor: '#333', fontSize: 16 }}
                         />
                     </div>
-                ))}
-
-                <div className="field-group" style={{ background: '#000', padding: '24px', marginTop: 8 }}>
-                    <label className="field-label" style={{ color: '#FFF469', fontFamily: "'Monument', monospace", fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-                        My Dream — Reason to Get Up Every Morning
-                    </label>
-                    <p style={{ fontSize: 13, color: '#888', marginBottom: 12, lineHeight: 1.6 }}>
-                        Synthesize everything above into one clear statement. Not a company goal — a personal north star. Be concrete.
-                    </p>
-                    <AutoTextarea
-                        value={data.dream}
-                        onChange={e => update('dream', e.target.value)}
-                        placeholder="e.g. My dream is to build a €50M company that creates 300 jobs in my region and proves that integrity-based leadership outperforms in the long run."
-                        minHeight={80}
-                        style={{ background: '#111', color: '#fff', borderColor: '#333', fontSize: 16 }}
-                    />
-                </div>
+                ) : (
+                    <div className="field-group">
+                        <AutoTextarea
+                            value={val}
+                            onChange={e => update(q.key, e.target.value)}
+                            placeholder={q.ph}
+                            minHeight={q.minHeight}
+                        />
+                        {q.insight && val.length >= (q.insightThreshold || 20) && (
+                            <div className="ft-reveal">
+                                <div className="ft-reveal-label">FAST TRACK INSIGHT</div>
+                                <p className="ft-reveal-text">{q.insight}</p>
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {aiMessage && <div className="ai-message">{aiMessage}</div>}
 
-                {dreamFilled && (
+                {subIdx === total - 1 && val.length >= 20 && (
                     <div className="closing-box animate-in" style={{ marginTop: 16 }}>
                         <p className="closing-title">{CONFIG.CLOSING_MESSAGES[1].title}</p>
                         <p>{CONFIG.CLOSING_MESSAGES[1].text}</p>
@@ -888,6 +883,7 @@
     // ────────────────────────────────────────────────────────────
     function App() {
         const [step, setStep] = useState(0);
+        const [step1SubIdx, setStep1SubIdx] = useState(0);
         const [userId, setUserId] = useState(null);
         const [data, setData] = useState(makeDefaultData());
         const [aiReviewing, setAiReviewing] = useState(false);
@@ -925,44 +921,67 @@
 
         const handleNext = async (currentStep) => {
             setAiMessage('');
+
+            // Step 1: advance through sub-questions first
+            if (currentStep === 1) {
+                if (step1SubIdx < STEP1_QUESTIONS.length - 1) {
+                    setStep1SubIdx(i => i + 1);
+                    return;
+                }
+                // Last sub-question (dream) — do AI review then advance step
+                const uid = userId || 'anon-' + Date.now();
+                const answers = { birthday_story: data.birthdayStory, dream: data.dream };
+                const hasText = Object.values(answers).some(v => v && v.length > 10);
+                if (!hasText) { setStep(currentStep + 0.5); return; }
+                setAiReviewing(true);
+                try {
+                    const ok = await window.AIChallenge.reviewStep(uid, CONFIG.TOOL_SLUG, answers, 'Dream Launcher');
+                    setAiReviewing(false);
+                    if (ok) { setAiMessage(''); setStep(currentStep + 0.5); }
+                    else { setAiMessage(window.AIChallenge?.getLastFeedback?.()?.suggestion || 'Please add more detail before continuing.'); }
+                } catch(e) { setAiReviewing(false); setStep(currentStep + 0.5); }
+                return;
+            }
+
             const uid = userId || 'anon-' + Date.now();
             const stepAnswers = {
-                1: { birthday_story: data.birthdayStory, dream: data.dream },
                 2: { strengths: data.strengthsList.filter(Boolean).join(', '), activities: data.activities.filter(a=>a.activity).map(a=>`${a.activity}(${a.energy})`).join(', ') },
                 3: { values: data.values.filter(v=>v.value).map(v=>`${v.value}(${v.alignment}%)`).join(', ') },
                 4: { goals: data.goals.filter(g=>g.goal).map(g=>g.goal).join(', ') },
             };
-            const stepNames = { 1: 'Dream Launcher', 2: 'Strengths Amplifier', 3: 'Values Compass', 4: 'Growth Blueprint' };
+            const stepNames = { 2: 'Strengths Amplifier', 3: 'Values Compass', 4: 'Growth Blueprint' };
             const answers = stepAnswers[currentStep];
             const hasText = answers && Object.values(answers).some(v => v && v.length > 10);
-            if (!hasText) {
-                setStep(currentStep + 0.5);
-                return;
-            }
+            if (!hasText) { setStep(currentStep + 0.5); return; }
             setAiReviewing(true);
             try {
                 const ok = await window.AIChallenge.reviewStep(uid, CONFIG.TOOL_SLUG, answers, stepNames[currentStep]);
                 setAiReviewing(false);
-                if (ok) {
-                    setAiMessage('');
-                    setStep(currentStep + 0.5);
-                } else {
-                    setAiMessage(window.AIChallenge?.getLastFeedback?.()?.suggestion || 'Please add more detail before continuing.');
-                }
-            } catch(e) {
-                setAiReviewing(false);
-                setStep(currentStep + 0.5);
-            }
+                if (ok) { setAiMessage(''); setStep(currentStep + 0.5); }
+                else { setAiMessage(window.AIChallenge?.getLastFeedback?.()?.suggestion || 'Please add more detail before continuing.'); }
+            } catch(e) { setAiReviewing(false); setStep(currentStep + 0.5); }
         };
 
         const handleBack = (currentStep) => {
             setAiMessage('');
-            if (currentStep === 1) setStep(0.5);
-            else setStep(currentStep - 1);
+            if (currentStep === 1) {
+                if (step1SubIdx > 0) { setStep1SubIdx(i => i - 1); return; }
+                setStep(0.5);
+            } else {
+                setStep(currentStep - 1);
+            }
+        };
+
+        const step1SubCanAdvance = () => {
+            const q = STEP1_QUESTIONS[step1SubIdx];
+            const val = data[q.key] || '';
+            if (q.key === 'dream') return val.length >= 20;
+            if (q.key === 'birthdayStory') return val.length >= 20;
+            return val.length >= 5;
         };
 
         const stepCanAdvance = {
-            1: (data.dream || '').length >= 20,
+            1: step1SubCanAdvance(),
             2: (data.strengthsList || []).filter(s => s && typeof s === 'string' && s.trim()).length >= 2,
             3: (data.values || []).filter(v => v && v.value && v.value.trim()).length >= 3,
             4: (data.goals || []).filter(g => g && g.goal && g.goal.trim()).length >= 2,
@@ -1007,7 +1026,7 @@
         // Wizard steps 1–4
         if (Number.isInteger(step) && step >= 1 && step <= CONFIG.TOTAL_STEPS) {
             const stepComponents = {
-                1: <Step1 data={data} updateData={updateData} aiMessage={aiMessage} />,
+                1: <Step1 data={data} updateData={updateData} aiMessage={aiMessage} subIdx={step1SubIdx} />,
                 2: <Step2 data={data} updateData={updateData} aiMessage={aiMessage} />,
                 3: <Step3 data={data} updateData={updateData} aiMessage={aiMessage} />,
                 4: <Step4 data={data} updateData={updateData} aiMessage={aiMessage} />,
@@ -1038,7 +1057,7 @@
                                     <button className="btn-wiz-next"
                                         disabled={!stepCanAdvance[step] || aiReviewing}
                                         onClick={() => handleNext(step)}>
-                                        NEXT →
+                                        {step === 1 && step1SubIdx < STEP1_QUESTIONS.length - 1 ? 'NEXT →' : step === 1 ? 'FINISH STEP →' : 'NEXT →'}
                                     </button>
                                 ) : (
                                     <button className="btn-wiz-next"
