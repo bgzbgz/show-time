@@ -348,7 +348,8 @@
       const [loading, setLoading] = useState(true);
       const [orgModal, setOrgModal] = useState(null); // null | { mode: 'new'|'edit', id?, name, tag }
       const [orgSaving, setOrgSaving] = useState(false);
-      const [cohortView, setCohortView] = useState({}); // orgId -> 'members' | 'progress'
+      const [cohortView, setCohortView] = useState({}); // orgId -> 'members' | 'progress' | 'gurus'
+      const [guruAssignments, setGuruAssignments] = useState([]);
 
       useEffect(() => { loadData(); }, []);
 
@@ -359,17 +360,20 @@
             { data: orgsData },
             { data: usersData },
             { data: compData },
-            { data: actData }
+            { data: actData },
+            { data: gaData }
           ] = await Promise.all([
             db.from('organizations').select('*').order('name'),
-            db.from('users').select('id, full_name, email, organization_id, last_login, created_at').order('full_name'),
+            db.from('users').select('id, full_name, email, organization_id, last_login, created_at, role').order('full_name'),
             db.from('tool_completions').select('user_id, tool_slug, completed_at'),
-            db.from('user_responses').select('user_id, updated_at').order('updated_at', { ascending: false })
+            db.from('user_responses').select('user_id, updated_at').order('updated_at', { ascending: false }),
+            db.from('guru_assignments').select('id, user_id, organization_id, tool_slug')
           ]);
 
           setOrgs(orgsData || []);
           setUsers(usersData || []);
           setCompletions(compData || []);
+          setGuruAssignments(gaData || []);
 
           const la = {};
           (actData || []).forEach(r => {
@@ -400,6 +404,47 @@
         await db.from('organizations').delete().eq('id', orgId);
         setOrgs(prev => prev.filter(o => o.id !== orgId));
         setExpanded(null);
+      }
+
+      async function assignGuru(orgId, toolSlug, newUserId) {
+        try {
+          const oldAssignment = guruAssignments.find(g => g.organization_id === orgId && g.tool_slug === toolSlug);
+          const oldUserId = oldAssignment?.user_id;
+
+          if (!newUserId) {
+            if (oldAssignment) {
+              await db.from('guru_assignments').delete().eq('id', oldAssignment.id);
+              const remaining = guruAssignments.filter(g => g.user_id === oldUserId && g.id !== oldAssignment.id);
+              if (remaining.length === 0) {
+                await db.from('users').update({ role: 'participant' }).eq('id', oldUserId);
+                setUsers(prev => prev.map(u => u.id === oldUserId ? { ...u, role: 'participant' } : u));
+              }
+              setGuruAssignments(prev => prev.filter(g => g.id !== oldAssignment.id));
+            }
+          } else {
+            const { data: upserted } = await db.from('guru_assignments')
+              .upsert({ organization_id: orgId, tool_slug: toolSlug, user_id: newUserId }, { onConflict: 'organization_id,tool_slug' })
+              .select().single();
+            await db.from('users').update({ role: 'guru' }).eq('id', newUserId);
+            setUsers(prev => prev.map(u => u.id === newUserId ? { ...u, role: 'guru' } : u));
+            if (oldUserId && oldUserId !== newUserId) {
+              const otherRemaining = guruAssignments.filter(g => g.user_id === oldUserId && !(g.organization_id === orgId && g.tool_slug === toolSlug));
+              if (otherRemaining.length === 0) {
+                await db.from('users').update({ role: 'participant' }).eq('id', oldUserId);
+                setUsers(prev => prev.map(u => u.id === oldUserId ? { ...u, role: 'participant' } : u));
+              }
+            }
+            if (upserted) {
+              setGuruAssignments(prev => {
+                const without = prev.filter(g => !(g.organization_id === orgId && g.tool_slug === toolSlug));
+                return [...without, upserted];
+              });
+            }
+          }
+        } catch (err) {
+          console.error('Assign guru error:', err);
+          alert('Failed to assign guru: ' + err.message);
+        }
       }
 
       if (loading) return <LoadingState />;
@@ -466,7 +511,7 @@
                     <div style={{ borderTop: '1px solid #1a1a1a' }}>
                       {/* View toggle */}
                       <div style={{ display: 'flex', borderBottom: '1px solid #1a1a1a' }}>
-                        {['members', 'progress'].map(v => (
+                        {['members', 'progress', 'gurus'].map(v => (
                           <button key={v} onClick={() => setCohortView(prev => ({ ...prev, [org.id]: v }))}
                             style={{
                               padding: '8px 16px', background: 'none', border: 'none',
@@ -517,6 +562,44 @@
                               })}
                             </tbody>
                           </table>
+                        </div>
+                      ) : (cohortView[org.id] === 'gurus') ? (
+                        <div style={{ overflowX: 'auto', padding: '8px 0' }}>
+                          {members.length === 0 ? (
+                            <div style={{ color: '#444', fontSize: 13, textAlign: 'center', padding: 16 }}>Add members first to assign gurus</div>
+                          ) : (
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                              <thead>
+                                <tr style={{ background: '#0d0d0d' }}>
+                                  <th style={{ ...S.th, width: '50%' }}>TOOL</th>
+                                  <th style={{ ...S.th, width: '50%' }}>ASSIGNED GURU</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {ALL_TOOLS.map(slug => {
+                                  const assignment = guruAssignments.find(g => g.organization_id === org.id && g.tool_slug === slug);
+                                  const displayName = slug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                                  return (
+                                    <tr key={slug} style={{ borderTop: '1px solid #1a1a1a' }}>
+                                      <td style={{ ...S.td, fontSize: 12 }}>{displayName}</td>
+                                      <td style={{ ...S.td, padding: '4px 12px' }}>
+                                        <select
+                                          value={assignment?.user_id || ''}
+                                          onChange={e => assignGuru(org.id, slug, e.target.value || null)}
+                                          style={{ background: '#111', color: '#fff', border: '1px solid #2a2a2a', padding: '4px 8px', fontSize: 11, width: '100%', fontFamily: 'Riforma, sans-serif' }}
+                                        >
+                                          <option value="">— None —</option>
+                                          {members.map(m => (
+                                            <option key={m.id} value={m.id}>{m.full_name || m.email}</option>
+                                          ))}
+                                        </select>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          )}
                         </div>
                       ) : (
                         <div style={{ overflowX: 'auto', padding: '12px 16px' }}>

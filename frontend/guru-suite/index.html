@@ -1252,11 +1252,102 @@
             );
         }
 
+        // ── Tool Selector (when guru has multiple assignments) ──
+        function ToolSelector({ assignments, guruUser, onSelect }) {
+            return (
+                <div className="code-entry">
+                    <div className="code-entry__card" style={{ maxWidth: 520 }}>
+                        <h1 className="code-entry__title">Guru Suite</h1>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: 15, marginBottom: 24, fontFamily: 'Riforma, sans-serif' }}>
+                            Welcome, <span style={{ color: 'var(--accent-yellow)' }}>{guruUser.full_name || guruUser.email}</span>. Select a tool:
+                        </p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            {assignments.map(a => (
+                                <button
+                                    key={a.id}
+                                    onClick={() => onSelect(a)}
+                                    style={{
+                                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                        padding: '14px 20px', background: 'var(--bg-secondary)', border: '1px solid var(--border)',
+                                        color: '#fff', cursor: 'pointer', fontFamily: 'Riforma, sans-serif', fontSize: 14,
+                                        transition: 'border-color 0.15s',
+                                    }}
+                                    onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--accent-yellow)'}
+                                    onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
+                                >
+                                    <span style={{ fontWeight: 600 }}>{TOOL_NAMES[a.tool_slug] || a.tool_slug}</span>
+                                    <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{a.organizations?.name || ''}</span>
+                                </button>
+                            ))}
+                        </div>
+                        <div style={{ marginTop: 24, borderTop: '1px solid var(--border)', paddingTop: 16 }}>
+                            <p style={{ color: 'var(--text-secondary)', fontSize: 12, fontFamily: 'Riforma, sans-serif' }}>
+                                Or <a href="#" onClick={e => { e.preventDefault(); onSelect(null); }} style={{ color: 'var(--accent-yellow)' }}>enter an access code</a> instead.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
         // ── Main App Component ──
         function App() {
             const [session, setSession] = useState(null);
+            const [assignmentsList, setAssignmentsList] = useState(null);
+            const [guruUser, setGuruUser] = useState(null);
+            const [showCodeEntry, setShowCodeEntry] = useState(false);
+
+            async function loadAssignments(userId) {
+                try {
+                    const [{ data: assignments }, { data: userData }] = await Promise.all([
+                        sb.from('guru_assignments').select('id, user_id, organization_id, tool_slug, organizations(id, name, slug)').eq('user_id', userId),
+                        sb.from('users').select('id, full_name, email').eq('id', userId).single()
+                    ]);
+
+                    if (!assignments || assignments.length === 0) {
+                        // No assignments — fall through to code entry
+                        setShowCodeEntry(true);
+                        return;
+                    }
+
+                    const user = userData || { id: userId, full_name: '', email: '' };
+
+                    if (assignments.length === 1) {
+                        // Single assignment — auto-login directly
+                        const a = assignments[0];
+                        const sessionData = {
+                            toolSlug: a.tool_slug,
+                            toolName: TOOL_NAMES[a.tool_slug] || a.tool_slug,
+                            guruName: user.full_name || user.email,
+                            guruEmail: user.email,
+                            orgId: a.organizations?.id || a.organization_id,
+                            orgName: a.organizations?.name || '',
+                            orgSlug: a.organizations?.slug || ''
+                        };
+                        sessionStorage.setItem('guru_session', JSON.stringify(sessionData));
+                        setSession(sessionData);
+                    } else {
+                        // Multiple assignments — show selector
+                        setGuruUser(user);
+                        setAssignmentsList(assignments);
+                    }
+                } catch (err) {
+                    console.error('loadAssignments error:', err);
+                    setShowCodeEntry(true);
+                }
+            }
 
             useEffect(() => {
+                // Check URL params first (from dashboard navigation)
+                const params = new URLSearchParams(window.location.search);
+                const ftUserId = params.get('ft_user_id');
+                if (ftUserId) {
+                    // Clean URL
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                    loadAssignments(ftUserId);
+                    return;
+                }
+
                 // Restore session from sessionStorage
                 const savedSession = sessionStorage.getItem('guru_session');
                 if (savedSession) {
@@ -1273,17 +1364,41 @@
                 setSession(sessionData);
             };
 
+            const handleToolSelect = (assignment) => {
+                if (!assignment) {
+                    // User chose "enter code instead"
+                    setAssignmentsList(null);
+                    setGuruUser(null);
+                    setShowCodeEntry(true);
+                    return;
+                }
+                const user = guruUser;
+                const sessionData = {
+                    toolSlug: assignment.tool_slug,
+                    toolName: TOOL_NAMES[assignment.tool_slug] || assignment.tool_slug,
+                    guruName: user.full_name || user.email,
+                    guruEmail: user.email,
+                    orgId: assignment.organizations?.id || assignment.organization_id,
+                    orgName: assignment.organizations?.name || '',
+                    orgSlug: assignment.organizations?.slug || ''
+                };
+                sessionStorage.setItem('guru_session', JSON.stringify(sessionData));
+                setSession(sessionData);
+                setAssignmentsList(null);
+            };
+
             const handleExit = () => {
                 sessionStorage.removeItem('guru_code');
                 sessionStorage.removeItem('guru_session');
                 setSession(null);
+                setAssignmentsList(null);
+                setGuruUser(null);
+                setShowCodeEntry(false);
             };
 
-            return session ? (
-                <Dashboard session={session} onExit={handleExit} />
-            ) : (
-                <CodeEntry onAuthenticated={handleAuthenticated} />
-            );
+            if (session) return <Dashboard session={session} onExit={handleExit} />;
+            if (assignmentsList && !showCodeEntry) return <ToolSelector assignments={assignmentsList} guruUser={guruUser} onSelect={handleToolSelect} />;
+            return <CodeEntry onAuthenticated={handleAuthenticated} />;
         }
 
         // Render App
