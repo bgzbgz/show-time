@@ -174,8 +174,18 @@
         }
     };
 
+    const needScore = (n) => (n.impact * 2) + n.ease;
+
+    const normaliseNeeds = (raw) => {
+        if (!Array.isArray(raw)) return makeDefaultData().needs;
+        return raw.map(item => {
+            if (typeof item === 'string') return { name: item, impact: 0, ease: 0 };
+            return { name: item.name || '', impact: item.impact || 0, ease: item.ease || 0 };
+        });
+    };
+
     const makeDefaultData = () => ({
-        needs:    Array(8).fill(''),
+        needs:    Array(8).fill(null).map(() => ({ name: '', impact: 0, ease: 0 })),
         clusters: Array(5).fill(''),
         segments: Array(7).fill(''),
         quantification: Array(7).fill(null).map(() => ({ customers: '', marketValue: '', profit: '' })),
@@ -347,21 +357,39 @@
     }
 
     function Step1({ data, updateData, deps, aiMessage }) {
-        const namedSegs = data.segments.filter(s => s.trim().length >= 3);
-        const meceOk = namedSegs.length >= 5;
+        const [phase, setPhase] = useState(0);
 
-        const updateNeed = (idx, val) => {
-            const next = data.needs.slice();
-            next[idx] = val;
+        const needs = data.needs;
+        const filledNeeds = needs.filter(n => n.name.trim()).length;
+
+        const IMPACT_OPTS = [
+            { label: 'Low',  val: 1, color: '#94a3b8' },
+            { label: 'Med',  val: 2, color: '#f59e0b' },
+            { label: 'High', val: 3, color: '#22c55e' },
+        ];
+        const EASE_OPTS = [
+            { label: 'Hard', val: 1, color: '#DC2626' },
+            { label: 'Med',  val: 2, color: '#f59e0b' },
+            { label: 'Easy', val: 3, color: '#22c55e' },
+        ];
+
+        const updateNeed = (idx, field, val) => {
+            const next = needs.map((n, i) => i === idx ? Object.assign({}, n, { [field]: val }) : n);
             updateData('needs', next);
         };
         const addNeed = () => {
-            if (data.needs.length < 15) updateData('needs', data.needs.concat(''));
+            if (needs.length < 15) updateData('needs', needs.concat([{ name: '', impact: 0, ease: 0 }]));
         };
         const removeNeed = (idx) => {
-            if (data.needs.length <= 5) return;
-            updateData('needs', data.needs.filter((_, i) => i !== idx));
+            if (needs.length <= 5) return;
+            updateData('needs', needs.filter((_, i) => i !== idx));
         };
+
+        const scoredNeeds = needs
+            .map((n, i) => Object.assign({}, n, { idx: i, score: needScore(n) }))
+            .filter(n => n.name.trim())
+            .sort((a, b) => b.score - a.score);
+
         const updateCluster = (idx, val) => {
             const next = data.clusters.slice();
             next[idx] = val;
@@ -372,6 +400,9 @@
             next[idx] = val;
             updateData('segments', next);
         };
+
+        const namedSegs = data.segments.filter(s => s.trim().length >= 3);
+        const meceOk = namedSegs.length >= 5;
 
         const needPlaceholders = [
             'e.g. Price-sensitive buyers',
@@ -400,96 +431,212 @@
             'e.g. Premium Brand Seekers',
         ];
 
+        const PHASES = ['01 NEEDS', '02 CLUSTERS', '03 SEGMENTS'];
+
         return (
             <div className="step-content animate-in">
                 <DependencyContext deps={deps} />
                 <p className="step-indicator">STEP 1 OF {CONFIG.TOTAL_STEPS}</p>
                 <div className="opening-box">
                     <h1 className="step-heading">Segment Brainstorm</h1>
-                    <p className="step-hint">Map your market in three stages: brainstorm customer needs, cluster them, then define 5-7 MECE segments. These segment names flow into all subsequent steps.</p>
+                    <p className="step-hint">Map your market in three stages: brainstorm and rate customer needs, cluster them, then define 5-7 MECE segments.</p>
                 </div>
                 <LearnMore>
-                    MECE stands for Mutually Exclusive, Collectively Exhaustive. Every customer belongs in exactly one segment (mutually exclusive), and together the segments cover your entire market (collectively exhaustive). The goal is not to describe demographics — it is to capture distinct behavioural needs. Start with what customers need, then cluster those needs into coherent groups, then name each group precisely.
+                    MECE stands for Mutually Exclusive, Collectively Exhaustive. Every customer belongs in exactly one segment, and together the segments cover your entire market. Start with what customers need, rate each need by strategic importance (Impact) and how well you can serve it (Ease), then cluster those needs into coherent groups, then name each group precisely.
                 </LearnMore>
 
-                <div style={{ background: '#000', color: '#FFF469', padding: '8px 16px', marginBottom: 20, fontFamily: "'Monument', monospace", fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-                    STEP 1 OF 3 — NEEDS BRAINSTORM
-                </div>
-
-                <div style={{ marginBottom: 32 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                        <label className="field-label" style={{ margin: 0 }}>What different needs do your customers have?</label>
-                        <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#999' }}>{data.needs.filter(n => n.trim()).length} / {data.needs.length}</span>
-                    </div>
-                    {data.needs.map((need, idx) => (
-                        <div key={idx} className="activity-row">
-                            <span className="activity-row-num">{String(idx+1).padStart(2,'0')}</span>
-                            <input type="text" className="field-input" style={{ padding: '8px 12px', fontSize: 14, flex: 1 }}
-                                value={need}
-                                onChange={e => updateNeed(idx, e.target.value)}
-                                placeholder={needPlaceholders[idx] || 'Add a customer need…'}
-                            />
-                            <button className="btn-remove" onClick={() => removeNeed(idx)} disabled={data.needs.length <= 5} style={{ opacity: data.needs.length <= 5 ? 0.2 : 1 }}>×</button>
-                        </div>
-                    ))}
-                    {data.needs.length < 15 && (
-                        <button className="btn-add" onClick={addNeed}>+ Add Need</button>
-                    )}
-                </div>
-
-                <div style={{ background: '#000', color: '#FFF469', padding: '8px 16px', marginBottom: 20, fontFamily: "'Monument', monospace", fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-                    STEP 2 OF 3 — NEED CLUSTERS
-                </div>
-
-                <div style={{ marginBottom: 32 }}>
-                    <p className="field-help" style={{ marginBottom: 12 }}>Group the needs above into 5 clusters of similar themes.</p>
-                    {data.clusters.map((cluster, idx) => (
-                        <div key={idx} className="activity-row">
-                            <span className="activity-row-num">{String(idx+1).padStart(2,'0')}</span>
-                            <input type="text" className="field-input" style={{ padding: '8px 12px', fontSize: 14, flex: 1 }}
-                                value={cluster}
-                                onChange={e => updateCluster(idx, e.target.value)}
-                                placeholder={clusterPlaceholders[idx] || 'Cluster name…'}
-                            />
-                        </div>
+                <div style={{ display: 'flex', gap: 6, marginBottom: 24 }}>
+                    {PHASES.map((label, idx) => (
+                        <button key={idx} onClick={() => setPhase(idx)} style={{
+                            padding: '7px 14px',
+                            background: phase === idx ? '#000' : '#F5F5F5',
+                            color: phase === idx ? '#FFF469' : (idx < phase ? '#22c55e' : '#999'),
+                            border: '2px solid ' + (phase === idx ? '#000' : idx < phase ? '#22c55e' : '#E0E0E0'),
+                            fontFamily: "'Monument', monospace",
+                            fontSize: 10,
+                            letterSpacing: '0.06em',
+                            cursor: 'pointer',
+                            textTransform: 'uppercase',
+                            transition: 'all 0.2s',
+                        }}>{label}</button>
                     ))}
                 </div>
 
-                <div style={{ background: '#000', color: '#FFF469', padding: '8px 16px', marginBottom: 20, fontFamily: "'Monument', monospace", fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-                    STEP 3 OF 3 — CORE SEGMENTS (MECE)
-                </div>
-
-                <div style={{ marginBottom: 24 }}>
-                    <div style={{ background: '#FFFDE7', border: '1px solid #FFF469', borderLeft: '4px solid #FFF469', padding: '12px 16px', marginBottom: 16, fontSize: 13, color: '#333', lineHeight: 1.6 }}>
-                        These names flow into all subsequent steps. Be specific and distinct. Each customer must belong to exactly one segment.
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                        <label className="field-label" style={{ margin: 0 }}>Final MECE Segment Names (5-7 required)</label>
-                        {meceOk && (
-                            <span style={{ background: '#22c55e', color: '#fff', fontFamily: "'Monument', monospace", fontSize: 9, letterSpacing: '0.1em', padding: '4px 10px', textTransform: 'uppercase' }}>
-                                {namedSegs.length}+ SEGMENTS DEFINED ✓
-                            </span>
+                {phase === 0 && (
+                    <div className="animate-in">
+                        <div style={{ background: '#000', color: '#FFF469', padding: '8px 16px', marginBottom: 14, fontFamily: "'Monument', monospace", fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                            CUSTOMER NEEDS — RATE BY IMPACT &amp; EASE
+                        </div>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8, padding: '0 0 8px', borderBottom: '2px solid #000' }}>
+                            <span style={{ minWidth: 28 }}></span>
+                            <span style={{ flex: 1, fontFamily: "'Monument', monospace", fontSize: 10, color: '#666', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Customer Need</span>
+                            <div style={{ minWidth: 145, textAlign: 'center' }}>
+                                <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#22c55e', textTransform: 'uppercase', letterSpacing: '0.08em' }}>IMPACT</span>
+                            </div>
+                            <div style={{ width: 1, height: 14, background: '#E0E0E0', flexShrink: 0 }}></div>
+                            <div style={{ minWidth: 145, textAlign: 'center' }}>
+                                <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.08em' }}>EASE</span>
+                            </div>
+                            <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#666', textTransform: 'uppercase', letterSpacing: '0.08em', minWidth: 44, textAlign: 'center' }}>Score</span>
+                            <span style={{ minWidth: 28 }}></span>
+                        </div>
+                        {needs.map((n, idx) => {
+                            const score = needScore(n);
+                            const isTop5 = n.name.trim() && scoredNeeds.findIndex(s => s.idx === idx) < 5;
+                            const scoreColor = score >= 7 ? '#22c55e' : score >= 5 ? '#f59e0b' : score > 0 ? '#94a3b8' : '#ddd';
+                            const isLast = idx === needs.length - 1;
+                            return (
+                                <div key={idx} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8, padding: '7px 6px', background: isTop5 ? '#FFFDE7' : '#fff', border: '1px solid ' + (isTop5 ? '#FFF469' : '#E0E0E0'), transition: 'all 0.2s' }}>
+                                    <span style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: isTop5 ? '#000' : '#bbb', minWidth: 28 }}>{String(idx+1).padStart(2,'0')}</span>
+                                    <input type="text" className="field-input"
+                                        style={{ padding: '7px 10px', fontSize: 13, flex: 1 }}
+                                        value={n.name}
+                                        onChange={e => updateNeed(idx, 'name', e.target.value)}
+                                        onKeyDown={isLast ? (e => { if (e.key === 'Enter') { e.preventDefault(); setPhase(1); } }) : undefined}
+                                        placeholder={needPlaceholders[idx] || 'Add a customer need…'}
+                                    />
+                                    <div style={{ display: 'flex', gap: 3, minWidth: 145, justifyContent: 'center' }}>
+                                        {IMPACT_OPTS.map(o => (
+                                            <RatingBtn key={o.val} label={o.label} selected={n.impact === o.val} color={o.color}
+                                                onClick={() => updateNeed(idx, 'impact', o.val)} />
+                                        ))}
+                                    </div>
+                                    <div style={{ width: 1, height: 28, background: '#E0E0E0', flexShrink: 0 }}></div>
+                                    <div style={{ display: 'flex', gap: 3, minWidth: 145, justifyContent: 'center' }}>
+                                        {EASE_OPTS.map(o => (
+                                            <RatingBtn key={o.val} label={o.label} selected={n.ease === o.val} color={o.color}
+                                                onClick={() => updateNeed(idx, 'ease', o.val)} />
+                                        ))}
+                                    </div>
+                                    <div style={{ textAlign: 'center', fontFamily: "'Monument', monospace", fontSize: score >= 7 ? 16 : 13, fontWeight: score >= 7 ? 'bold' : 'normal', color: scoreColor, minWidth: 44, transition: 'all 0.2s' }}>
+                                        {score > 0 ? score : '—'}
+                                    </div>
+                                    <button className="btn-remove" onClick={() => removeNeed(idx)} disabled={needs.length <= 5} style={{ opacity: needs.length <= 5 ? 0.2 : 1, minWidth: 28 }}>×</button>
+                                </div>
+                            );
+                        })}
+                        {needs.length < 15 && (
+                            <button className="btn-add" onClick={addNeed} style={{ marginTop: 4 }}>+ Add Need</button>
                         )}
-                    </div>
-                    {data.segments.map((seg, idx) => (
-                        <div key={idx} className="activity-row">
-                            <span className="activity-row-num">{String(idx+1).padStart(2,'0')}</span>
-                            <input type="text" className="field-input" style={{ padding: '8px 12px', fontSize: 14, flex: 1, borderColor: seg.trim().length >= 3 ? '#000' : '#E0E0E0' }}
-                                value={seg}
-                                onChange={e => updateSegment(idx, e.target.value)}
-                                placeholder={segPlaceholders[idx] || 'Segment name…'}
-                            />
+                        <p className="field-help" style={{ marginTop: 10 }}>
+                            {filledNeeds} needs added (min 5). Highlighted rows = Top 5 by score — these guide your segment naming.
+                        </p>
+                        {scoredNeeds.length >= 3 && (
+                            <div style={{ marginTop: 18, border: '1px solid #E0E0E0', padding: 14 }}>
+                                <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#666', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>TOP 5 NEEDS BY SCORE</div>
+                                {scoredNeeds.slice(0, 5).map((n, rank) => (
+                                    <div key={rank} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '5px 0', borderBottom: rank < 4 ? '1px solid #F0F0F0' : 'none' }}>
+                                        <span style={{ fontFamily: "'Plaak', sans-serif", fontSize: 18, color: '#FFF469', background: '#000', padding: '1px 6px', minWidth: 32, textAlign: 'center' }}>{rank+1}</span>
+                                        <span style={{ fontSize: 13, flex: 1 }}>{n.name}</span>
+                                        <span style={{ fontFamily: "'Monument', monospace", fontSize: 11, fontWeight: 'bold', color: '#DC2626' }}>{n.score}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        {filledNeeds >= 5 && (
+                            <p style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#22c55e', letterSpacing: '0.06em', marginTop: 12 }}>
+                                ↵ PRESS ENTER ON THE LAST NEED TO GO TO CLUSTERS
+                            </p>
+                        )}
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
+                            <button onClick={() => setPhase(1)} className="btn-wiz-next" style={{ padding: '10px 28px', fontSize: 11 }}>NEXT: CLUSTERS →</button>
                         </div>
-                    ))}
-                    <p className="field-help" style={{ marginTop: 8 }}>
-                        {namedSegs.length} of 7 slots filled. Minimum 5 required.
-                    </p>
-                </div>
+                    </div>
+                )}
 
-                {aiMessage && <div className="ai-message">{aiMessage}</div>}
+                {phase === 1 && (
+                    <div className="animate-in">
+                        <div style={{ background: '#000', color: '#FFF469', padding: '8px 16px', marginBottom: 14, fontFamily: "'Monument', monospace", fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                            NEED CLUSTERS — GROUP SIMILAR NEEDS
+                        </div>
+                        {scoredNeeds.length > 0 && (
+                            <div style={{ background: '#F5F5F5', border: '1px solid #E0E0E0', padding: '12px 16px', marginBottom: 14 }}>
+                                <div style={{ fontFamily: "'Monument', monospace", fontSize: 9, color: '#999', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>YOUR TOP NEEDS (for reference)</div>
+                                {scoredNeeds.slice(0, 7).map((n, i) => (
+                                    <div key={i} style={{ padding: '3px 0', borderBottom: '1px solid #eee', display: 'flex', gap: 8, alignItems: 'center' }}>
+                                        <span style={{ fontFamily: "'Monument', monospace", fontSize: 9, color: '#FFF469', background: '#000', padding: '1px 4px', flexShrink: 0 }}>{String(i+1).padStart(2,'0')}</span>
+                                        <span style={{ fontSize: 13 }}>{n.name}</span>
+                                        {n.score > 0 && <span style={{ marginLeft: 'auto', fontFamily: "'Monument', monospace", fontSize: 10, color: '#DC2626' }}>{n.score}</span>}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        <p className="field-help" style={{ marginBottom: 12 }}>Group the needs above into 5 clusters of similar themes.</p>
+                        {data.clusters.map((cluster, idx) => (
+                            <div key={idx} className="activity-row">
+                                <span className="activity-row-num">{String(idx+1).padStart(2,'0')}</span>
+                                <input type="text" className="field-input"
+                                    style={{ padding: '8px 12px', fontSize: 14, flex: 1 }}
+                                    value={cluster}
+                                    onChange={e => updateCluster(idx, e.target.value)}
+                                    onKeyDown={idx === 4 ? (e => { if (e.key === 'Enter') { e.preventDefault(); setPhase(2); } }) : undefined}
+                                    placeholder={clusterPlaceholders[idx] || 'Cluster name…'}
+                                />
+                            </div>
+                        ))}
+                        {data.clusters.some(c => c.trim()) && (
+                            <p style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#22c55e', letterSpacing: '0.06em', marginTop: 10 }}>
+                                ↵ PRESS ENTER ON THE LAST CLUSTER TO GO TO SEGMENTS
+                            </p>
+                        )}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 20 }}>
+                            <button onClick={() => setPhase(0)} className="btn-wiz-back" style={{ padding: '10px 20px', fontSize: 11 }}>← BACK</button>
+                            <button onClick={() => setPhase(2)} className="btn-wiz-next" style={{ padding: '10px 28px', fontSize: 11 }}>NEXT: SEGMENTS →</button>
+                        </div>
+                    </div>
+                )}
 
-                {meceOk && (
-                    <div className="closing-box animate-in">
+                {phase === 2 && (
+                    <div className="animate-in">
+                        <div style={{ background: '#000', color: '#FFF469', padding: '8px 16px', marginBottom: 14, fontFamily: "'Monument', monospace", fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                            CORE SEGMENTS — MECE (5–7 REQUIRED)
+                        </div>
+                        {data.clusters.some(c => c.trim()) && (
+                            <div style={{ background: '#F5F5F5', border: '1px solid #E0E0E0', padding: '12px 16px', marginBottom: 14 }}>
+                                <div style={{ fontFamily: "'Monument', monospace", fontSize: 9, color: '#999', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>YOUR CLUSTERS (for reference)</div>
+                                {data.clusters.filter(c => c.trim()).map((c, i) => (
+                                    <div key={i} style={{ fontSize: 13, color: '#555', padding: '3px 0', display: 'flex', gap: 8 }}>
+                                        <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#999' }}>•</span>
+                                        <span>{c}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        <div style={{ background: '#FFFDE7', border: '1px solid #FFF469', borderLeft: '4px solid #FFF469', padding: '12px 16px', marginBottom: 14, fontSize: 13, color: '#333', lineHeight: 1.6 }}>
+                            These names flow into all subsequent steps. Each customer must belong to exactly one segment.
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                            <label className="field-label" style={{ margin: 0 }}>Final MECE Segment Names</label>
+                            {meceOk && (
+                                <span style={{ background: '#22c55e', color: '#fff', fontFamily: "'Monument', monospace", fontSize: 9, letterSpacing: '0.1em', padding: '4px 10px', textTransform: 'uppercase' }}>
+                                    {namedSegs.length}+ SEGMENTS ✓
+                                </span>
+                            )}
+                        </div>
+                        {data.segments.map((seg, idx) => (
+                            <div key={idx} className="activity-row">
+                                <span className="activity-row-num">{String(idx+1).padStart(2,'0')}</span>
+                                <input type="text" className="field-input"
+                                    style={{ padding: '8px 12px', fontSize: 14, flex: 1, borderColor: seg.trim().length >= 3 ? '#000' : '#E0E0E0' }}
+                                    value={seg}
+                                    onChange={e => updateSegment(idx, e.target.value)}
+                                    placeholder={segPlaceholders[idx] || 'Segment name…'}
+                                />
+                            </div>
+                        ))}
+                        <p className="field-help" style={{ marginTop: 8 }}>
+                            {namedSegs.length} of 7 slots filled. Minimum 5 required.
+                        </p>
+                        <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: 16 }}>
+                            <button onClick={() => setPhase(1)} className="btn-wiz-back" style={{ padding: '10px 20px', fontSize: 11 }}>← BACK</button>
+                        </div>
+                    </div>
+                )}
+
+                {aiMessage && <div className="ai-message" style={{ marginTop: 16 }}>{aiMessage}</div>}
+
+                {meceOk && phase === 2 && (
+                    <div className="closing-box animate-in" style={{ marginTop: 16 }}>
                         <p className="closing-title">{CONFIG.CLOSING_MESSAGES[1].title}</p>
                         <p>{CONFIG.CLOSING_MESSAGES[1].text}</p>
                     </div>
@@ -1250,7 +1397,7 @@
                                 ? saved.segments_list.concat(Array(Math.max(0, 7 - saved.segments_list.length)).fill(''))
                                 : prev.segments;
                             return Object.assign({}, prev, {
-                                needs:    saved.brainstorm_data ? (saved.brainstorm_data.needs    || prev.needs)    : prev.needs,
+                                needs:    saved.brainstorm_data ? normaliseNeeds(saved.brainstorm_data.needs || prev.needs) : prev.needs,
                                 clusters: saved.brainstorm_data ? (saved.brainstorm_data.clusters || prev.clusters) : prev.clusters,
                                 segments: segsFromDB,
                                 quantification: saved.segment_quantification || prev.quantification,
