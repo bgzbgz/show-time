@@ -1,1656 +1,1179 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Core Decisions & Capabilities | Fast Track Program</title>
-
-  <!-- React & ReactDOM from CDN -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-
-  <!-- Babel Standalone for JSX -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Supabase -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="../../shared/js/tool-db.js"></script>
-  <script src="../../shared/js/ai-challenge.js"></script>
-  <script src="../../shared/js/dependency-injection.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Core Processes & Decisions | Fast Track Program</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../../shared/js/tool-db.js"></script>
+    <script src="../../shared/js/ai-challenge.js"></script>
+    <script src="../../shared/js/dependency-injection.js"></script>
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
     <script src="../../shared/js/cognitive-load.js"></script>
-    <script src="../../shared/js/transition-screen.js"></script>
     <script src="../../js/tool-access-control.js"></script>
 
-  <!-- jsPDF + html2canvas for PDF export -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        @font-face { font-family: 'Plaak';    src: url('Plaak3Trial-43-Bold.woff2') format('woff2'); font-weight: bold; }
+        @font-face { font-family: 'Riforma';  src: url('RiformaLL-Regular.woff2')   format('woff2'); font-weight: normal; }
+        @font-face { font-family: 'Riforma';  src: url('RiformaLL-Regular.woff2')   format('woff2'); font-weight: 600; }
+        @font-face { font-family: 'Monument'; src: url('MonumentGrotesk-Mono.woff2') format('woff2'); }
 
-  <style>
-    /* Font Face Declarations */
-    @font-face {
-      font-family: 'Plaak';
-      src: url('Plaak3Trial-43-Bold.woff2') format('woff2');
-      font-weight: bold;
-      font-style: normal;
-    }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Riforma', -apple-system, sans-serif; font-size: 16px; color: #000; background: #000; -webkit-font-smoothing: antialiased; }
 
-    @font-face {
-      font-family: 'Riforma';
-      src: url('RiformaLL-Regular.woff2') format('woff2');
-      font-weight: normal;
-      font-style: normal;
-    }
+        .plaak   { font-family: 'Plaak', sans-serif; font-weight: bold; letter-spacing: -0.01em; line-height: 1.2; }
+        .monument { font-family: 'Monument', monospace; letter-spacing: 0.05em; }
 
-    @font-face {
-      font-family: 'Monument';
-      src: url('MonumentGrotesk-Mono.woff2') format('woff2');
-      font-weight: normal;
-      font-style: normal;
-    }
+        .tool-frame { background: #fff; min-height: 100vh; }
+        .tool-inner { background: #fff; min-height: 100vh; }
 
-    /* Global Styles */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+        /* ── Wizard layout ── */
+        .wizard-layout { display: flex; min-height: 100vh; }
+        .wizard-main { flex: 1; display: flex; flex-direction: column; min-height: 100vh; background: #fff; padding: 0 48px; }
+        .wizard-sidebar { width: 280px; background: #1a1a1a; min-height: 100vh; padding: 48px 32px; display: flex; flex-direction: column; position: sticky; top: 0; align-self: flex-start; height: 100vh; overflow-y: auto; }
 
-    body {
-      font-family: 'Riforma', sans-serif;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-    }
+        /* ── Step content ── */
+        .step-content { max-width: 100%; padding: 40px 0; flex: 1; }
+        .step-indicator { font-family: 'Monument', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #666; margin-bottom: 8px; }
+        .opening-box { margin-bottom: 32px; }
+        .opening-box .step-heading { font-family: 'Plaak', sans-serif; font-weight: bold; font-size: 32px; letter-spacing: -0.01em; line-height: 1.2; color: #000; margin-bottom: 6px; }
+        .opening-box .step-hint { font-size: 14px; color: #666; line-height: 1.5; margin: 0; }
 
-    .plaak {
-      font-family: 'Plaak', sans-serif;
-      text-transform: uppercase;
-      font-weight: bold;
-      letter-spacing: -0.02em;
-    }
+        /* ── Fields ── */
+        .field-group { margin-bottom: 40px; }
+        .field-group:last-child { margin-bottom: 0; }
+        .field-label { font-weight: 600; font-size: 16px; color: #000; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+        .field-input { border: 1px solid #E0E0E0; padding: 12px 16px; font-family: 'Riforma', sans-serif; font-size: 16px; width: 100%; color: #000; background: #fff; transition: border-color 0.2s; }
+        .field-input:focus { outline: none; border-color: #000; }
+        .field-textarea { border: 1px solid #E0E0E0; padding: 12px 16px; font-family: 'Riforma', sans-serif; font-size: 16px; width: 100%; min-height: 80px; resize: none !important; color: #000; background: #fff; transition: border-color 0.2s; }
+        .field-textarea:focus { outline: none; border-color: #000; }
+        .field-help  { font-size: 13px; color: #666; margin-top: 4px; }
+        .field-error { font-size: 13px; color: #DC2626; margin-top: 4px; }
 
-    .riforma-bold {
-      font-family: 'Riforma', sans-serif;
-      font-weight: bold;
-    }
+        /* ── Closing box ── */
+        .closing-box { border-top: 1px solid #E0E0E0; padding: 20px 0 0 0; margin-top: 8px; text-align: center; }
+        .closing-box p { font-size: 14px; color: #666; }
+        .closing-box .closing-title { font-family: 'Monument', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #000; margin-bottom: 6px; }
 
-    .monument {
-      font-family: 'Monument', monospace;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
+        /* ── Wizard footer / buttons ── */
+        .wizard-footer { display: flex; justify-content: space-between; align-items: center; padding: 24px 48px; border-top: 1px solid #e5e7eb; background: #fff; }
+        .btn-wiz-back { background: transparent; border: 2px solid #d1d5db; color: #6b7280; padding: 12px 28px; font-family: 'Monument', monospace; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
+        .btn-wiz-back:hover { border-color: #000; color: #000; }
+        .btn-wiz-next { background: #000; color: #fff; border: 2px solid #000; padding: 12px 36px; font-family: 'Monument', monospace; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
+        .btn-wiz-next:hover:not(:disabled) { background: #FFF469; color: #000; border-color: #FFF469; }
+        .btn-wiz-next:disabled { background: #E0E0E0; color: #9CA3AF; border-color: #E0E0E0; cursor: not-allowed; }
 
-    /* Animations */
-    @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
+        /* ── Learn more ── */
+        .learn-more-toggle { font-family: 'Monument', monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: #000; background: #F5F5F5; border: 1px solid #E0E0E0; cursor: pointer; padding: 10px 14px; display: flex; align-items: center; gap: 8px; margin-bottom: 24px; width: 100%; }
+        .learn-more-content { background: #F5F5F5; border: 1px solid #E0E0E0; border-top: none; padding: 16px; font-size: 14px; color: #333; line-height: 1.7; margin-bottom: 24px; }
 
-    .animate-in {
-      animation: slideIn 0.3s ease-out;
-    }
+        /* ── Activity tab navigator ── */
+        .activity-tabs { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+        .activity-tab { padding: 8px 18px; border: 2px solid #E0E0E0; background: #fff; font-family: 'Monument', monospace; font-size: 10px; letter-spacing: 0.06em; cursor: pointer; transition: all 0.2s; text-transform: uppercase; }
+        .activity-tab.active { background: #000; color: #FFF469; border-color: #000; }
+        .activity-tab.done { border-color: #000; color: #000; }
 
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
+        /* ── Activity header banner ── */
+        .activity-banner { background: #000; color: #fff; padding: '16px 20px'; margin-bottom: 28px; display: flex; align-items: center; gap: 16px; }
 
-    .fade-in {
-      animation: fadeIn 0.4s ease-out;
-    }
+        /* ── Sub-section card ── */
+        .subsection-card { border: 1px solid #E0E0E0; margin-bottom: 20px; }
+        .subsection-card-header { background: #F5F5F5; padding: 10px 16px; border-bottom: 1px solid #E0E0E0; }
+        .subsection-card-label { font-family: 'Monument', monospace; font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: 0.1em; }
+        .subsection-card-body { padding: 16px 20px; }
 
-    .transition-animate-in {
-      animation: slideIn 0.6s ease-out;
-    }
+        /* ── Row list ── */
+        .row-list-item { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+        .row-list-num { font-family: 'Monument', monospace; font-size: 11px; color: #999; min-width: 20px; }
 
-    /* Button Styles */
-    .btn-primary {
-      background: #000000;
-      color: #FFFFFF;
-      padding: 16px 32px;
-      border: 2px solid #000000;
-      font-size: 18px;
-      font-family: 'Riforma', sans-serif;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      font-weight: normal;
-    }
+        /* ── Context pill ── */
+        .activity-context-pill { display: flex; align-items: center; gap: 12px; padding: '10px 16px'; background: #FFFDE7; border: 1px solid #FFF469; margin-bottom: 28px; }
 
-    .btn-primary:hover:not(:disabled) {
-      transform: scale(1.02);
-    }
+        /* ── Capability grid ── */
+        .capability-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+        @media (max-width: 768px) { .capability-grid { grid-template-columns: 1fr; } }
 
-    .btn-primary:disabled {
-      background: #E0E0E0;
-      border-color: #E0E0E0;
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
+        /* ── Sidebar ── */
+        .sidebar-tool-num { font-family: 'Monument', monospace; font-size: 10px; color: #555; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 8px; }
+        .sidebar-tool-title { font-family: 'Plaak', sans-serif; font-size: 22px; color: #fff; margin-bottom: 32px; line-height: 1.1; }
+        .sidebar-step { padding: 8px 0; border-bottom: 1px solid #2a2a2a; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: opacity 0.2s; }
+        .sidebar-step:last-child { border-bottom: none; }
+        .sidebar-step-dot { width: 6px; height: 6px; border-radius: 50%; background: #555; flex-shrink: 0; transition: background 0.2s; }
+        .sidebar-step-dot.active { background: #FFF469; }
+        .sidebar-step-dot.done   { background: #4ade80; }
+        .sidebar-step-label { font-family: 'Monument', monospace; font-size: 10px; letter-spacing: 0.08em; color: #555; text-transform: uppercase; transition: color 0.2s; }
+        .sidebar-step-label.active { color: #FFF469; }
+        .sidebar-step-label.done   { color: #4ade80; }
+        .sidebar-activity-list { margin-top: 24px; border-top: 1px solid #2a2a2a; padding-top: 16px; }
+        .sidebar-activity-item { font-size: 12px; color: #555; padding: 4px 0; line-height: 1.4; display: flex; gap: 8px; }
+        .sidebar-activity-item.filled { color: #ccc; }
+        .sidebar-activity-idx { font-family: 'Monument', monospace; font-size: 10px; color: #FFF469; flex-shrink: 0; }
 
-    .btn-secondary {
-      background: #FFFFFF;
-      color: #000000;
-      padding: 12px 24px;
-      border: 2px solid #000000;
-      font-size: 16px;
-      font-family: 'Riforma', sans-serif;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
+        /* ── Mobile step bar ── */
+        .mobile-step-bar { display: none; }
+        @media (max-width: 768px) {
+            .wizard-sidebar { display: none; }
+            .wizard-main { padding: 0 24px; }
+            .mobile-step-bar { display: flex; align-items: center; gap: 8px; padding: 16px 24px; background: #1a1a1a; }
+            .mobile-step-dot { width: 8px; height: 8px; border-radius: 50%; background: #333; transition: background 0.2s; }
+            .mobile-step-dot.active { background: #FFF469; }
+            .mobile-step-dot.done   { background: #4ade80; }
+            .mobile-step-text { font-family: 'Monument', monospace; font-size: 11px; color: #fff; letter-spacing: 0.06em; }
+            .wizard-footer { padding: 16px 24px; }
+        }
 
-    .btn-secondary:hover {
-      background: #F8F8F8;
-    }
+        /* ── Transitions / cover ── */
+        .animate-in { animation: fadeSlideIn 0.4s ease both; }
+        @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* Form Styles */
-    input[type="text"],
-    input[type="number"],
-    input[type="email"],
-    textarea,
-    select {
-      border: 1px solid #E0E0E0;
-      padding: 12px 16px;
-      font-size: 18px;
-      font-family: 'Riforma', sans-serif;
-      width: 100%;
-      transition: border-color 0.2s ease;
-    }
+        /* ── AI message ── */
+        .ai-message { background: #FFF9C4; border: 1px solid #FFF469; border-left: 4px solid #FFF469; padding: 12px 16px; font-size: 14px; color: #333; margin-bottom: 16px; line-height: 1.6; }
 
-    input:focus,
-    textarea:focus,
-    select:focus {
-      outline: none;
-      border-color: #000000;
-    }
-
-    textarea {
-      min-height: 120px;
-      resize: none !important;
-    }
-
-    textarea::placeholder {
-      white-space: pre-line;
-    }
-
-    /* Numbered Section Badge */
-    .numbered-section {
-      background: #000000;
-      color: #FFFFFF;
-      padding: 10px 16px;
-      font-family: 'Plaak', sans-serif;
-      font-size: 26px;
-      display: inline-block;
-      text-transform: uppercase;
-      letter-spacing: -0.02em;
-    }
-
-    /* Progress Indicator */
-    .progress-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: #E0E0E0;
-      transition: all 0.3s ease;
-    }
-
-    .progress-dot.active {
-      background: #000000;
-      transform: scale(1.3);
-    }
-
-    .progress-dot.completed {
-      background: #000000;
-    }
-
-    .progress-line {
-      height: 2px;
-      background: #E0E0E0;
-      flex: 1;
-    }
-
-    /* Character Counter */
-    .char-counter {
-      font-size: 14px;
-      color: #666;
-      margin-top: 4px;
-    }
-
-    .char-counter.invalid {
-      color: #EF4444;
-    }
-    /* Dark theme inputs */
-    input[type="text"], input[type="number"], input[type="email"], textarea, select {
-        background: #1a1a1a !important;
-        color: #fff !important;
-        border-color: #444 !important;
-    }
-    input::placeholder, textarea::placeholder { color: #666 !important; }
-    input:focus, textarea:focus, select:focus {
-        outline: 2px solid #FFF469 !important;
-        border-color: #FFF469 !important;
-    }
-    select option { background: #1a1a1a; color: #fff; }
-    /* Fix bg-yellow-50 cards on dark bg */
-    .bg-yellow-50 { background: #2a2500 !important; }
-    /* Fix canvas content (keep white for PDF) */
-    #canvas-content { background: #fff !important; color: #000 !important; }
-    #canvas-content input, #canvas-content textarea { background: #fff !important; color: #000 !important; }
-
-    /* === WIZARD LAYOUT === */
-    .wizard-layout { display: flex; min-height: 100vh; }
-    .wizard-main { flex: 1; display: flex; flex-direction: column; min-height: 100vh; background: #fff; }
-    .wizard-content { max-width: 720px; width: 100%; margin: 0 auto; padding: 48px 32px; flex: 1; }
-    .wizard-sidebar { width: 280px; background: #1a1a1a; min-height: 100vh; padding: 48px 32px; display: flex; flex-direction: column; position: sticky; top: 0; align-self: flex-start; height: 100vh; overflow-y: auto; }
-    .wizard-sidebar-inner { padding: 32px 24px; height: 100%; overflow-y: auto; }
-    .sidebar-step-item { padding: 12px; margin-bottom: 8px; border-left: 3px solid transparent; transition: all 0.2s ease; cursor: default; }
-    .sidebar-step-item.active { border-left-color: #FFF469; background: #222; }
-    .sidebar-step-item.completed { background: #fff; color: #000; border-left-color: #fff; cursor: pointer; }
-    .sidebar-step-item.completed:hover { background: #E0E0E0; }
-    .sidebar-step-item.locked { opacity: 0.5; }
-    .wizard-footer { padding: 24px 64px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; background: #fff; }
-    .btn-wiz-back { background: transparent; border: 2px solid #d1d5db; color: #6b7280; padding: 14px 28px; font-family: 'Monument', monospace; font-size: 12px; letter-spacing: 0.06em; cursor: pointer; transition: all 0.2s; }
-    .btn-wiz-back:hover { background: #f3f3f3; }
-    .btn-wiz-next { background: #000; color: #fff; border: none; padding: 14px 40px; font-family: 'Monument', monospace; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; flex: 1; }
-    .btn-wiz-next:hover { background: #222; }
-    .btn-wiz-next:disabled { background: #ccc; cursor: default; }
-    /* Override dark inputs for wizard content */
-    .wizard-main input[type="text"], .wizard-main input[type="number"], .wizard-main textarea, .wizard-main select {
-        background: #f9f9f9 !important; color: #000 !important; border-color: #ccc !important;
-    }
-    .wizard-main input::placeholder, .wizard-main textarea::placeholder { color: #999 !important; }
-    .wizard-main input:focus, .wizard-main textarea:focus, .wizard-main select:focus {
-        outline: 2px solid #000 !important; border-color: #000 !important;
-    }
-    @media (max-width: 768px) { .wizard-sidebar { display: none; } .wizard-content { padding: 24px 16px; } }
-
-  </style>
+        /* ── Dependency context ── */
+        .dep-context { border: 1px solid #E0E0E0; margin-bottom: 24px; }
+        .dep-context-header { background: #F5F5F5; padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .dep-context-label { font-family: 'Monument', monospace; font-size: 10px; letter-spacing: 0.1em; color: #666; text-transform: uppercase; }
+        .dep-context-body { padding: 14px 16px; font-size: 14px; color: #333; line-height: 1.6; }
+    </style>
 </head>
 <body>
-  <div id="root"></div>
+<div id="root"></div>
 
-  <script type="text/babel">
-    const { useState, useEffect, useRef, Fragment } = React;
+<script type="text/babel">
+    const { useState, useEffect, useCallback, useRef } = React;
 
+    // ── CONFIG ──────────────────────────────────────────────────────────────────
     const CONFIG = {
-        SUPABASE_URL: 'https://lutzzfaedkbsmbobmrzx.supabase.co',
-        SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1dHp6ZmFlZGtic21ib2Jtcnp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MDA0MDQsImV4cCI6MjA4NjM3NjQwNH0.o2gJba85vDl4NLS-C8Mq3OudWKxet-b0IqO9kazqb8U',
-        TOOL_SLUG: 'processes-decisions',
-        AUTOSAVE_DELAY: 2000,
+        TOOL_SLUG:    'processes-decisions',
+        TOOL_TITLE:   'CORE PROCESSES & DECISIONS',
+        TOOL_SUBTITLE:'Map the key decisions, KPIs and capabilities behind each core activity.',
+        COVER_IMAGE:  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1600&q=80',
+        TOTAL_STEPS:  3,
+        SUPABASE_URL:     'https://lutzzfaedkbsmbobmrzx.supabase.co',
+        SUPABASE_ANON_KEY:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1dHp6ZmFlZGtic21ib2Jtcnp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MDA0MDQsImV4cCI6MjA4NjM3NjQwNH0.o2gJba85vDl4NLS-C8Mq3OudWKxet-b0IqO9kazqb8U',
+
         TRANSITION_CONTENT: {
             1: {
-                brutalTruth: 'Ambiguous decision rights cost organizations more than bad decisions. When everyone thinks someone else is responsible, nothing gets decided — or everything escalates to the CEO, who becomes the bottleneck.',
-                peerProof: '"A €15M company implemented RACI for their top 20 recurring decisions. The CEO\'s direct-intervention rate dropped 60% in 90 days. Their ops director called it \'unlocking a year\'s worth of backlog.\'"'
+                brutalTruth: 'Most companies have no clear decision rights. When everyone decides, no one decides. Your core activities will stagnate until the right people own the right decisions — with the right data in front of them. Ambiguity is not inclusive leadership. It is an abdication of leadership.',
+                peerProof: '"A leading European retailer reduced time-to-decision by 40% after mapping decision rights to their 5 core activities. They discovered that 60% of decisions were being made by people 2 levels too senior — creating bottlenecks at every level of the organisation."'
             },
             2: {
-                brutalTruth: 'Process maps are not bureaucracy — they are the difference between a business that scales and one that depends on tribal knowledge. When your best person leaves, do they take the process with them?',
-                peerProof: '"A 40-person company documented their top 15 processes before a key operations manager left. New hire was onboarded in 3 weeks instead of 3 months. The manager\'s departure became a growth event, not a crisis."'
+                brutalTruth: 'KPIs that don\'t change decisions are decorations. Most companies track what\'s easy to measure — not what matters. If you would not change your behaviour based on a shift in a number, replace it with something that actually drives the activity. You do not need more data. You need better data.',
+                peerProof: '"Zara measures precisely 3 KPIs per core activity — sell-through rate, time to shelf, and customer return rate. That\'s 15 numbers. Their competitors track hundreds. Zara moves faster because their leadership team is aligned on a small number of decision-driving metrics."'
             },
             3: {
-                brutalTruth: 'Improving a broken process makes it break faster. Before you optimize, verify the process is actually necessary. 30% of documented processes in growing companies no longer serve the business that now exists.',
-                peerProof: '"A €6M logistics firm mapped their quoting process and found 7 approval steps for orders under €500. Removing 5 of them cut quote turnaround from 4 days to 4 hours. Revenue increased 18% from faster response alone."'
+                brutalTruth: 'A capability gap is not a weakness — it\'s a roadmap. The companies that win are not those with the most capabilities today. They are those who know exactly what capabilities they need to build, hire, or partner for — and move first. Your gap analysis is only valuable if it becomes a to-do list with names and dates.',
+                peerProof: '"A €30M professional services firm used their capability gap analysis to create 3 PDPs, make 1 strategic hire, and establish 2 technology partnerships — all within 90 days. Six months later their fastest-growing core activity had doubled its KPI score."'
             }
         },
+
         CLOSING_MESSAGES: {
-            1: { title: 'DECISIONS MAPPED.', text: 'You\'ve identified the key decisions that drive each core activity. Now let\'s add the data and metrics.' },
-            2: { title: 'DATA & KPIS SET.', text: 'Your decision engine has feedback loops. Now let\'s define the capabilities you need to win.' },
-            3: { title: 'CAPABILITIES DEFINED.', text: 'You know what it takes to execute. Now let\'s close the gap between where you are and where you need to be.' }
+            1: { title: 'CONTEXT CONFIRMED',  text: 'Your core activities are loaded. Now define the decisions and data that drive each one.' },
+            2: { title: 'DECISIONS MAPPED',    text: 'Well done. Clear decision rights are the foundation of fast execution.' },
+            3: { title: 'CAPABILITIES DEFINED', text: 'Your capability map is complete. Time to build your canvas.' },
         }
     };
 
-    const { createClient } = supabase;
-    const supabaseClient = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+    // ── Default data ─────────────────────────────────────────────────────────
+    const makeDefaultActivities = () => Array(5).fill(null).map(() => ({ name: '' }));
 
-    // Make Supabase client globally available for dependency injection
-    window.supabaseClient = supabaseClient;
+    const makeDefaultDecisionsKpis = () => Array(5).fill(null).map(() => ({
+        decisions: ['', '', ''],
+        kpis: ['', '', '']
+    }));
 
-    // Initialize ToolDB and dependency injection
-    ToolDB.init(CONFIG.TOOL_SLUG);
-        ToolAccessControl.init(CONFIG.TOOL_SLUG);
+    const makeDefaultCapabilities = () => Array(5).fill(null).map(() => ({
+        human: '',
+        systemic: '',
+        relational: '',
+        gaps: ''
+    }));
 
-        // Initialize cognitive load components
-        CognitiveLoad.init('processes-decisions', {"insights":["A decision not made is worse than a wrong decision.","Capabilities take years to build and seconds to lose."],"caseStudy":{"before":"All decisions funneled through the CEO. Weekly design reviews took 3 weeks to schedule. Store managers had no authority to pull underperforming SKUs. The result: 60% slower time-to-shelf than competitors and mounting inventory waste.","after":"Zara implemented a tiered decision framework. Store managers gained authority over local assortment pulls. Design teams were empowered to greenlight trend items in daily syncs. Only strategic bets above a threshold escalated to leadership. Result: 80% of operational decisions now made within 24 hours.","quote":"Once we stopped funneling every call through the top, our people started making better decisions faster than we ever could centrally. The framework did not remove control\u2014it distributed intelligence. \u2014 Retail Operations Director, Zara"}});
-        const { FastTrackInsight, ScienceBox, WarningBox, CaseStudy, ScienceBookmarkIcon, ToolGuideDrawer } = CognitiveLoad.components;
+    const makeDefaultData = () => ({
+        activities:    makeDefaultActivities(),
+        decisionsKpis: makeDefaultDecisionsKpis(),
+        capabilities:  makeDefaultCapabilities(),
+    });
 
-        function DependencyContext({ deps }) {
-            const [open, setOpen] = React.useState(false);
-            if (!deps || deps.length === 0) return null;
-            return (
-                <div style={{ marginBottom: '16px' }}>
-                    <button onClick={() => setOpen(o => !o)} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#FFF9E0', border: '1px solid #F0E68C', borderLeft: '3px solid #DAA520', padding: '8px 14px', fontSize: 12, fontFamily: "'Monument', monospace", letterSpacing: '0.05em', textTransform: 'uppercase', cursor: 'pointer', color: '#555', width: '100%' }}>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#DAA520" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                        CONTEXT FROM PREVIOUS TOOLS ({deps.length})
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2" style={{ marginLeft: 'auto', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}><polyline points="6 9 12 15 18 9"/></svg>
-                    </button>
-                    {open && (
-                        <div style={{ border: '1px solid #F0E68C', borderTop: 'none', padding: '12px 14px' }}>
-                            {deps.map((dep, i) => (
-                                <div key={i} style={{ background: '#fff', padding: '8px 0', borderBottom: i < deps.length - 1 ? '1px solid #F0E68C' : 'none', fontSize: '13px' }}>
-                                    <div style={{ fontWeight: 600, marginBottom: '2px', color: '#333', fontSize: '11px', fontFamily: "'Monument', monospace", letterSpacing: '0.04em', textTransform: 'uppercase' }}>{dep.label}</div>
-                                    <div style={{ color: '#555', whiteSpace: 'pre-wrap' }}>{dep.value}</div>
-                                </div>
-                            ))}
+    // Safe merge loaded data into defaults
+    const mergeLoaded = (saved, defaults) => {
+        const merge = (arr, def) => {
+            if (!Array.isArray(arr)) return def;
+            return def.map((d, i) => arr[i] ? { ...d, ...arr[i] } : d);
+        };
+        return {
+            activities:    merge(saved.activities,    defaults.activities),
+            decisionsKpis: merge(saved.decisions_kpis, defaults.decisionsKpis),
+            capabilities:  merge(saved.capabilities,   defaults.capabilities),
+        };
+    };
+
+    // ── WizardSidebar ─────────────────────────────────────────────────────────
+    function WizardSidebar({ currentStep, data }) {
+        const steps = [
+            { num: 1,        label: 'Core Activities' },
+            { num: 2,        label: 'Decisions & KPIs' },
+            { num: 3,        label: 'Capabilities' },
+            { num: 'canvas', label: 'Canvas' },
+        ];
+        return (
+            <div className="wizard-sidebar">
+                <div className="sidebar-tool-num">SPRINT 23</div>
+                <div className="sidebar-tool-title">{CONFIG.TOOL_TITLE}</div>
+                {steps.map(s => {
+                    const isCanvas = s.num === 'canvas';
+                    const isDone   = isCanvas ? false : currentStep > s.num;
+                    const isActive = isCanvas ? currentStep === 'canvas' : Math.floor(currentStep) === s.num;
+                    const isFuture = isCanvas ? false : currentStep < s.num;
+                    return (
+                        <div key={s.num} className="sidebar-step"
+                            style={{ opacity: isFuture ? 0.35 : 1, cursor: 'default' }}>
+                            <div className={`sidebar-step-dot ${isActive ? 'active' : isDone ? 'done' : ''}`} />
+                            <span className={`sidebar-step-label ${isActive ? 'active' : isDone ? 'done' : ''}`}>{s.label}</span>
                         </div>
-                    )}
+                    );
+                })}
+                {currentStep >= 1 && (
+                    <div className="sidebar-activity-list">
+                        <div style={{ fontFamily: "'Monument', monospace", fontSize: 9, color: '#555', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>CORE ACTIVITIES</div>
+                        {data.activities.map((a, i) => (
+                            <div key={i} className={`sidebar-activity-item ${a.name && a.name.trim() ? 'filled' : ''}`}>
+                                <span className="sidebar-activity-idx">{String(i+1).padStart(2,'0')}</span>
+                                <span>{(a.name && a.name.trim()) || '—'}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // ── MobileStepBar ─────────────────────────────────────────────────────────
+    function MobileStepBar({ currentStep, totalSteps }) {
+        return (
+            <div className="mobile-step-bar">
+                <span className="mobile-step-text">STEP {Math.ceil(currentStep)} OF {totalSteps}</span>
+                {Array.from({ length: totalSteps }, (_, i) => {
+                    const n = i + 1;
+                    const isDone   = currentStep > n;
+                    const isActive = Math.floor(currentStep) === n;
+                    return <div key={n} className={`mobile-step-dot ${isActive ? 'active' : isDone ? 'done' : ''}`} />;
+                })}
+            </div>
+        );
+    }
+
+    // ── DependencyContext ─────────────────────────────────────────────────────
+    function DependencyContext({ deps }) {
+        const [open, setOpen] = useState(false);
+        if (!deps || Object.keys(deps).length === 0) return null;
+        const entries = Object.entries(deps).filter(([, v]) => v);
+        if (entries.length === 0) return null;
+        return (
+            <div className="dep-context">
+                <div className="dep-context-header" onClick={() => setOpen(o => !o)}>
+                    <span className="dep-context-label">Context from previous tools</span>
+                    <span style={{ fontSize: 12, color: '#999' }}>{open ? '▲' : '▼'}</span>
+                </div>
+                {open && (
+                    <div className="dep-context-body">
+                        {entries.map(([k, v]) => (
+                            <div key={k} style={{ marginBottom: 8 }}>
+                                <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#999', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{k.replace(/_/g,' ')}: </span>
+                                <span>{typeof v === 'object' ? JSON.stringify(v) : String(v)}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // ── LearnMore ─────────────────────────────────────────────────────────────
+    function LearnMore({ children }) {
+        const [open, setOpen] = useState(false);
+        return (
+            <>
+                <button className="learn-more-toggle" onClick={() => setOpen(o => !o)}>
+                    <span>{open ? '▲' : '▼'}</span> {open ? 'Hide context' : 'Why this matters'}
+                </button>
+                {open && <div className="learn-more-content">{children}</div>}
+            </>
+        );
+    }
+
+    // ── ActivityNav ───────────────────────────────────────────────────────────
+    function ActivityNav({ activities, activeIdx, onSelect, doneCheck }) {
+        return (
+            <div className="activity-tabs">
+                {activities.map((a, i) => {
+                    const isDone = doneCheck ? doneCheck(i) : false;
+                    const isActive = activeIdx === i;
+                    return (
+                        <button key={i}
+                            className={`activity-tab ${isActive ? 'active' : isDone ? 'done' : ''}`}
+                            onClick={() => onSelect(i)}>
+                            {String(i+1).padStart(2,'0')} {a.name ? a.name.substring(0, 16) + (a.name.length > 16 ? '…' : '') : '—'}
+                        </button>
+                    );
+                })}
+            </div>
+        );
+    }
+
+    // ── ActivityBanner ────────────────────────────────────────────────────────
+    function ActivityBanner({ idx, name }) {
+        return (
+            <div style={{ background: '#000', color: '#fff', padding: '16px 20px', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 16 }}>
+                <span className="plaak" style={{ fontSize: 32, color: '#FFF469' }}>{String(idx+1).padStart(2,'0')}</span>
+                <div>
+                    <div style={{ fontFamily: "'Monument', monospace", fontSize: 9, color: '#555', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>CORE ACTIVITY</div>
+                    <div style={{ fontSize: 18, fontWeight: 600 }}>{name || '—'}</div>
+                </div>
+            </div>
+        );
+    }
+
+    // ── Transition screen ─────────────────────────────────────────────────────
+    function TransitionScreen({ stepNum, onNext }) {
+        const t = CONFIG.TRANSITION_CONTENT[stepNum];
+        if (!t) { onNext(); return null; }
+        return (
+            <div style={{ position: 'fixed', inset: 0, background: '#000', color: '#fff', zIndex: 200, overflowY: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '64px 32px' }}>
+                <div style={{ maxWidth: 720, width: '100%' }} className="animate-in">
+                    <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#555', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 32 }}>
+                        SPRINT 23 — CORE PROCESSES & DECISIONS
+                    </div>
+                    <div style={{ borderLeft: '4px solid #DC2626', paddingLeft: 24, marginBottom: 48 }}>
+                        <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#DC2626', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 12 }}>BRUTAL TRUTH</div>
+                        <p className="plaak" style={{ fontSize: 26, lineHeight: 1.35 }}>{t.brutalTruth}</p>
+                    </div>
+                    <div style={{ borderLeft: '4px solid #FFF469', paddingLeft: 24, marginBottom: 64 }}>
+                        <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#FFF469', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 12 }}>PEER PROOF</div>
+                        <p style={{ fontSize: 18, color: '#ccc', lineHeight: 1.7, fontStyle: 'italic' }}>{t.peerProof}</p>
+                    </div>
+                    <button onClick={onNext} className="plaak"
+                        style={{ background: '#FFF469', color: '#000', border: 'none', padding: '18px 48px', fontSize: 18, cursor: 'pointer', letterSpacing: '0.05em', transition: 'all 0.2s' }}>
+                        CONTINUE →
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // ── STEP 1: Core Activities Context ───────────────────────────────────────
+    function Step1({ data, deps, aiMessage }) {
+        const filledCount = data.activities.filter(a => a.name && a.name.trim()).length;
+        return (
+            <div className="step-content animate-in">
+                <DependencyContext deps={deps} />
+                <p className="step-indicator">STEP 1 OF {CONFIG.TOTAL_STEPS}</p>
+                <div className="opening-box">
+                    <h1 className="step-heading">Core Activities</h1>
+                    <p className="step-hint">Your 5 core activities have been pulled from Sprint 22. Review them before mapping decisions, KPIs and capabilities.</p>
+                </div>
+                <LearnMore>
+                    This sprint builds directly on Sprint 22. For each core activity, you will now define: the key decisions that must be made (and who makes them), the data required to make those decisions well, the outcome KPIs that prove the activity is working, and the capabilities (human, systemic, relational) required to execute it. The result is an operational blueprint — from strategy to execution.
+                </LearnMore>
+
+                <div style={{ background: '#F9F9F9', border: '1px solid #E0E0E0', padding: '20px 24px', marginBottom: 32 }}>
+                    <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#666', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16 }}>TOP 5 CORE ACTIVITIES (FROM SPRINT 22)</div>
+                    {data.activities.map((a, i) => (
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 0', borderBottom: i < 4 ? '1px solid #E0E0E0' : 'none' }}>
+                            <span className="plaak" style={{ fontSize: 22, color: '#FFF469', background: '#000', padding: '4px 10px', minWidth: 44, textAlign: 'center' }}>{i+1}</span>
+                            <span style={{ fontSize: 16, fontWeight: 600, color: (a.name && a.name.trim()) ? '#000' : '#bbb' }}>
+                                {(a.name && a.name.trim()) || 'Not loaded from Sprint 22'}
+                            </span>
+                        </div>
+                    ))}
+                </div>
+
+                {filledCount < 5 && (
+                    <div style={{ background: '#FEF2F2', border: '1px solid #FCA5A5', borderLeft: '4px solid #DC2626', padding: 16, marginBottom: 20, fontSize: 14, color: '#333', lineHeight: 1.6 }}>
+                        <strong>Only {filledCount} of 5 activities loaded.</strong> Please complete Sprint 22 (Core Activities) first — submit your answers there so they appear here.
+                    </div>
+                )}
+
+                {aiMessage && <div className="ai-message">{aiMessage}</div>}
+
+                {filledCount >= 1 && (
+                    <div className="closing-box animate-in">
+                        <p className="closing-title">{CONFIG.CLOSING_MESSAGES[1].title}</p>
+                        <p>{CONFIG.CLOSING_MESSAGES[1].text}</p>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // ── STEP 2: Key Decisions & KPIs ─────────────────────────────────────────
+    function Step2({ data, updateData, aiMessage }) {
+        const [activeIdx, setActiveIdx] = useState(0);
+        const activities   = data.activities;
+        const decisionsKpis = data.decisionsKpis;
+        const current      = decisionsKpis[activeIdx];
+        const currentName  = activities[activeIdx] ? activities[activeIdx].name : '';
+
+        const updateDecision = (dIdx, val) => {
+            const next = decisionsKpis.map((item, i) => {
+                if (i !== activeIdx) return item;
+                const newDecisions = item.decisions.map((d, di) => di === dIdx ? val : d);
+                return { ...item, decisions: newDecisions };
+            });
+            updateData('decisionsKpis', next);
+        };
+
+        const updateKpi = (kIdx, val) => {
+            const next = decisionsKpis.map((item, i) => {
+                if (i !== activeIdx) return item;
+                const newKpis = item.kpis.map((k, ki) => ki === kIdx ? val : k);
+                return { ...item, kpis: newKpis };
+            });
+            updateData('decisionsKpis', next);
+        };
+
+        const doneCheck = (i) => {
+            const item = decisionsKpis[i];
+            return item.decisions.some(d => d.trim()) && item.kpis.some(k => k.trim());
+        };
+
+        const filledCount = decisionsKpis.filter((_, i) => doneCheck(i)).length;
+
+        return (
+            <div className="step-content animate-in" key={activeIdx}>
+                <p className="step-indicator">STEP 2 OF {CONFIG.TOTAL_STEPS}</p>
+                <div className="opening-box">
+                    <h1 className="step-heading">Key Decisions & KPIs</h1>
+                    <p className="step-hint">For each core activity, define the 3 decisions that must be made to execute it — and the KPIs that prove it's working. Use the tabs to navigate between activities.</p>
+                </div>
+                <LearnMore>
+                    Decision rights tell your team who decides what — and with what data. Without this clarity, even great strategies fail. KPIs must be outcome-focused, not activity-focused. "Number of meetings held" is not a KPI. "Customer acquisition cost" is. If a KPI would not change your behaviour when it moves, replace it. Aim for 3 KPIs per activity — enough to manage, not so many they blur.
+                </LearnMore>
+
+                <ActivityNav
+                    activities={activities}
+                    activeIdx={activeIdx}
+                    onSelect={setActiveIdx}
+                    doneCheck={doneCheck}
+                />
+
+                <ActivityBanner idx={activeIdx} name={currentName} />
+
+                <div className="subsection-card" style={{ marginBottom: 24 }}>
+                    <div className="subsection-card-header">
+                        <span className="subsection-card-label">KEY DECISIONS — Who decides what for this activity?</span>
+                    </div>
+                    <div className="subsection-card-body">
+                        <p style={{ fontSize: 13, color: '#666', marginBottom: 16, lineHeight: 1.6 }}>
+                            Name the 3 most important decisions that must be made to execute this activity. Be specific — include who makes the decision and what information they need.
+                        </p>
+                        {current.decisions.map((d, dIdx) => (
+                            <div key={dIdx} className="row-list-item">
+                                <span className="row-list-num" style={{ background: '#000', color: '#FFF469', padding: '2px 6px', fontFamily: "'Monument', monospace", fontSize: 10 }}>{String(dIdx+1).padStart(2,'0')}</span>
+                                <input
+                                    type="text"
+                                    className="field-input"
+                                    style={{ fontSize: 14, padding: '10px 14px' }}
+                                    value={d}
+                                    onChange={e => updateDecision(dIdx, e.target.value)}
+                                    placeholder={
+                                        dIdx === 0 ? 'e.g. Who approves budget allocation above €5K?' :
+                                        dIdx === 1 ? 'e.g. Who decides which client projects to prioritise?' :
+                                        'e.g. Who can override the standard process in urgent cases?'
+                                    }
+                                    maxLength={200}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="subsection-card">
+                    <div className="subsection-card-header">
+                        <span className="subsection-card-label">OUTCOME KPIs — How do you measure success?</span>
+                    </div>
+                    <div className="subsection-card-body">
+                        <p style={{ fontSize: 13, color: '#666', marginBottom: 16, lineHeight: 1.6 }}>
+                            Define 3 KPIs that prove this activity is working. KPIs must drive decisions — if a number wouldn't change your behaviour when it moves, choose a better one.
+                        </p>
+                        {current.kpis.map((k, kIdx) => (
+                            <div key={kIdx} className="row-list-item">
+                                <span className="row-list-num" style={{ background: '#000', color: '#FFF469', padding: '2px 6px', fontFamily: "'Monument', monospace", fontSize: 10 }}>{String(kIdx+1).padStart(2,'0')}</span>
+                                <input
+                                    type="text"
+                                    className="field-input"
+                                    style={{ fontSize: 14, padding: '10px 14px' }}
+                                    value={k}
+                                    onChange={e => updateKpi(kIdx, e.target.value)}
+                                    placeholder={
+                                        kIdx === 0 ? 'e.g. Customer acquisition cost (target: <€120)' :
+                                        kIdx === 1 ? 'e.g. Monthly recurring revenue growth (target: +8%)' :
+                                        'e.g. Net Promoter Score (target: >50)'
+                                    }
+                                    maxLength={150}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {aiMessage && <div className="ai-message" style={{ marginTop: 16 }}>{aiMessage}</div>}
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24 }}>
+                    <p className="field-help">{filledCount}/5 activities filled with decisions and KPIs.</p>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                        {activeIdx > 0 && (
+                            <button className="btn-wiz-back" onClick={() => setActiveIdx(activeIdx - 1)} style={{ padding: '8px 20px' }}>← PREV</button>
+                        )}
+                        {activeIdx < 4 && (
+                            <button className="btn-wiz-next" onClick={() => setActiveIdx(activeIdx + 1)} style={{ padding: '8px 20px' }}>NEXT →</button>
+                        )}
+                    </div>
+                </div>
+
+                {filledCount >= 5 && (
+                    <div className="closing-box animate-in" style={{ marginTop: 24 }}>
+                        <p className="closing-title">{CONFIG.CLOSING_MESSAGES[2].title}</p>
+                        <p>{CONFIG.CLOSING_MESSAGES[2].text}</p>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // ── STEP 3: Capabilities ──────────────────────────────────────────────────
+    function Step3({ data, updateData, aiMessage }) {
+        const [activeIdx, setActiveIdx] = useState(0);
+        const activities    = data.activities;
+        const capabilities  = data.capabilities;
+        const current       = capabilities[activeIdx];
+        const currentName   = activities[activeIdx] ? activities[activeIdx].name : '';
+
+        const updateCap = (field, val) => {
+            const next = capabilities.map((item, i) => i === activeIdx ? { ...item, [field]: val } : item);
+            updateData('capabilities', next);
+        };
+
+        const doneCheck = (i) => {
+            const item = capabilities[i];
+            return item.human.trim() || item.systemic.trim() || item.relational.trim();
+        };
+
+        const filledCount = capabilities.filter((_, i) => doneCheck(i)).length;
+
+        return (
+            <div className="step-content animate-in" key={activeIdx}>
+                <p className="step-indicator">STEP 3 OF {CONFIG.TOTAL_STEPS}</p>
+                <div className="opening-box">
+                    <h1 className="step-heading">Capabilities & Gaps</h1>
+                    <p className="step-hint">For each core activity, define the capabilities you need — human, systemic and relational — and identify the gaps you must close.</p>
+                </div>
+                <LearnMore>
+                    Capabilities are the "how" behind your core activities. Human capabilities = the skills, expertise and behaviours your people need. Systemic capabilities = the processes, technology and infrastructure required. Relational capabilities = the partnerships, networks and trust that enable execution. Capability gaps reveal exactly where to invest: in PDPs, hires, tech upgrades, or partnerships. Without this map, resource allocation is guesswork.
+                </LearnMore>
+
+                <ActivityNav
+                    activities={activities}
+                    activeIdx={activeIdx}
+                    onSelect={setActiveIdx}
+                    doneCheck={doneCheck}
+                />
+
+                <ActivityBanner idx={activeIdx} name={currentName} />
+
+                <div className="capability-grid">
+                    <div className="subsection-card" style={{ marginBottom: 0 }}>
+                        <div className="subsection-card-header">
+                            <span className="subsection-card-label" style={{ color: '#22c55e' }}>HUMAN CAPABILITIES</span>
+                        </div>
+                        <div className="subsection-card-body">
+                            <p style={{ fontSize: 12, color: '#666', marginBottom: 12, lineHeight: 1.5 }}>Skills, expertise and behaviours your people need to execute this activity.</p>
+                            <textarea
+                                className="field-textarea"
+                                style={{ minHeight: 100 }}
+                                value={current.human}
+                                onChange={e => updateCap('human', e.target.value)}
+                                placeholder="e.g. Data analysts who can interpret customer behaviour patterns; Sales people with consultative selling skills"
+                                maxLength={500}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="subsection-card" style={{ marginBottom: 0 }}>
+                        <div className="subsection-card-header">
+                            <span className="subsection-card-label" style={{ color: '#3b82f6' }}>SYSTEMIC CAPABILITIES</span>
+                        </div>
+                        <div className="subsection-card-body">
+                            <p style={{ fontSize: 12, color: '#666', marginBottom: 12, lineHeight: 1.5 }}>Processes, technology and infrastructure required to execute this activity.</p>
+                            <textarea
+                                className="field-textarea"
+                                style={{ minHeight: 100 }}
+                                value={current.systemic}
+                                onChange={e => updateCap('systemic', e.target.value)}
+                                placeholder="e.g. CRM system with deal-stage tracking; Weekly pipeline review process with standardised scoring"
+                                maxLength={500}
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="subsection-card">
+                    <div className="subsection-card-header">
+                        <span className="subsection-card-label" style={{ color: '#f59e0b' }}>RELATIONAL CAPABILITIES</span>
+                    </div>
+                    <div className="subsection-card-body">
+                        <p style={{ fontSize: 12, color: '#666', marginBottom: 12, lineHeight: 1.5 }}>Partnerships, networks and relationships that enable this activity to succeed.</p>
+                        <textarea
+                            className="field-textarea"
+                            style={{ minHeight: 80 }}
+                            value={current.relational}
+                            onChange={e => updateCap('relational', e.target.value)}
+                            placeholder="e.g. Distribution partners in 3 key markets; Trusted referral network of 10+ accountants and lawyers"
+                            maxLength={500}
+                        />
+                    </div>
+                </div>
+
+                <div className="subsection-card" style={{ border: '1px solid #DC2626' }}>
+                    <div className="subsection-card-header" style={{ background: '#FEF2F2', borderBottom: '1px solid #FECACA' }}>
+                        <span className="subsection-card-label" style={{ color: '#DC2626' }}>CAPABILITY GAPS — What do you need to build or acquire?</span>
+                    </div>
+                    <div className="subsection-card-body">
+                        <p style={{ fontSize: 12, color: '#666', marginBottom: 12, lineHeight: 1.5 }}>List the gaps between what you need and what you have today. Be direct — these become your action items.</p>
+                        <textarea
+                            className="field-textarea"
+                            style={{ minHeight: 80 }}
+                            value={current.gaps}
+                            onChange={e => updateCap('gaps', e.target.value)}
+                            placeholder="e.g. Missing: senior data engineer (hire Q2); Need: marketing automation platform (evaluate HubSpot vs ActiveCampaign); Gap: no strategic partner in the Nordic market"
+                            maxLength={600}
+                        />
+                    </div>
+                </div>
+
+                {aiMessage && <div className="ai-message" style={{ marginTop: 8 }}>{aiMessage}</div>}
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>
+                    <p className="field-help">{filledCount}/5 activities have capabilities defined.</p>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                        {activeIdx > 0 && (
+                            <button className="btn-wiz-back" onClick={() => setActiveIdx(activeIdx - 1)} style={{ padding: '8px 20px' }}>← PREV</button>
+                        )}
+                        {activeIdx < 4 && (
+                            <button className="btn-wiz-next" onClick={() => setActiveIdx(activeIdx + 1)} style={{ padding: '8px 20px' }}>NEXT →</button>
+                        )}
+                    </div>
+                </div>
+
+                {filledCount >= 5 && (
+                    <div className="closing-box animate-in" style={{ marginTop: 24 }}>
+                        <p className="closing-title">{CONFIG.CLOSING_MESSAGES[3].title}</p>
+                        <p>{CONFIG.CLOSING_MESSAGES[3].text}</p>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // ── CANVAS STEP ───────────────────────────────────────────────────────────
+    function CanvasStep({ data, onSubmit, submitState, aiMessage }) {
+        const handlePrint = () => {
+            const rows = data.activities.map((a, i) => {
+                const dk = data.decisionsKpis[i] || { decisions: [], kpis: [] };
+                const cap = data.capabilities[i] || { human: '', systemic: '', relational: '', gaps: '' };
+                const decisionsList = dk.decisions.filter(d => d.trim()).map(d => `<li>${d}</li>`).join('') || '<li>—</li>';
+                const kpisList = dk.kpis.filter(k => k.trim()).map(k => `<li>${k}</li>`).join('') || '<li>—</li>';
+                return `<tr>
+                    <td style="font-weight:bold;font-size:14px;vertical-align:top;padding:14px 10px;border:1px solid #ddd;background:#000;color:#fff;width:20%">
+                        <span style="font-size:20px;color:#FFF469">${i+1}.</span><br/>${a.name || '—'}
+                    </td>
+                    <td style="vertical-align:top;padding:12px;border:1px solid #ddd;font-size:13px;width:20%"><ul style="padding-left:16px">${decisionsList}</ul></td>
+                    <td style="vertical-align:top;padding:12px;border:1px solid #ddd;font-size:13px;width:20%"><ul style="padding-left:16px">${kpisList}</ul></td>
+                    <td style="vertical-align:top;padding:12px;border:1px solid #ddd;font-size:13px;width:20%">
+                        ${cap.human ? '<b>Human:</b> ' + cap.human + '<br/>' : ''}
+                        ${cap.systemic ? '<b>Systemic:</b> ' + cap.systemic + '<br/>' : ''}
+                        ${cap.relational ? '<b>Relational:</b> ' + cap.relational : ''}
+                    </td>
+                    <td style="vertical-align:top;padding:12px;border:1px solid #ddd;font-size:13px;background:#FEF2F2;width:20%">${cap.gaps || '—'}</td>
+                </tr>`;
+            }).join('');
+
+            const win = window.open('', '_blank');
+            win.document.write(`<!DOCTYPE html><html><head><title>Core Processes & Decisions Canvas</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;padding:40px;color:#000}h1{font-size:28px;font-weight:bold;margin-bottom:32px}table{width:100%;border-collapse:collapse;margin-bottom:36px}th{background:#000;color:#fff;padding:10px 12px;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;border:1px solid #000}ul{margin:0;padding-left:16px}.case{background:#F9F9F9;padding:24px;border-left:4px solid #000;font-size:14px;line-height:1.7;color:#333;margin-top:32px}h2{font-size:13px;text-transform:uppercase;letter-spacing:0.1em;color:#666;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid #000}</style></head><body>
+            <h1>CORE PROCESSES & DECISIONS CANVAS</h1>
+            <table>
+                <thead><tr>
+                    <th>Core Activity</th>
+                    <th>Key Decisions</th>
+                    <th>KPIs</th>
+                    <th>Capabilities</th>
+                    <th>Capability Gaps</th>
+                </tr></thead>
+                <tbody>${rows}</tbody>
+            </table>
+            <h2>Case Study — Zara</h2>
+            <div class="case">
+                Zara's operational mastery came from mapping their 5 core activities to specific decision rights, KPIs and capabilities. For their <b>fast manufacturing</b> activity, the key decisions were owned by regional production managers (not headquarters), the KPI was "time from design approval to store shelf" (target: 14 days), and the human capability gap they closed was hiring logistics coordinators in each production region. This decision-capability mapping is what separated Zara from every fashion company that had the same strategic intent but never built the operational infrastructure to execute it.
+            </div>
+            </body></html>`);
+            win.document.close();
+            win.print();
+        };
+
+        if (submitState === 'success') {
+            return (
+                <div className="step-content animate-in">
+                    <div style={{ background: '#f0fdf4', border: '1px solid #86efac', padding: 48, textAlign: 'center', marginTop: 32 }}>
+                        <div style={{ fontSize: 48, marginBottom: 16 }}>✓</div>
+                        <h2 className="plaak" style={{ fontSize: 32, marginBottom: 16 }}>SUBMITTED</h2>
+                        <p style={{ fontSize: 16, color: '#555', marginBottom: 32 }}>Your Core Processes & Decisions Canvas has been saved. Your guru will review before Wednesday.</p>
+                        <a href="/dashboard" style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: '#000', letterSpacing: '0.06em', textDecoration: 'underline' }}>← Back to Dashboard</a>
+                    </div>
                 </div>
             );
         }
 
-    // Main App Component
-    function CoreDecisionsApp() {
-            const [deps, setDeps] = useState([]);
-      const [step, setStep] = useState(0);
-      const [aiReviewing, setAiReviewing] = useState(false);
-      const [submitted, setSubmitted] = useState(false);
-
-      const [data, setData] = useState({
-        coreActivities: [
-          {
-            id: 1,
-            name: '',
-            decisions: [{ id: 1, decision: '', frequency: '', impact: '' }],
-            dataInputs: '',
-            kpis: [{ id: 1, kpi: '', target: '' }],
-            requiredCapabilities: '',
-            currentCapabilities: '',
-            capabilityGap: '',
-            developmentPlan: ''
-          }
-        ]
-      });
-
-            useEffect(() => {
-                async function loadDeps() {
-                    const userId = localStorage.getItem('ft_user_id');
-                    if (!userId || !window.ToolDB || !window.DependencyInjection) return;
-                    try {
-                        await ToolDB.whenReady();
-                        const config = DependencyInjection.getDependenciesConfig();
-                        const toolConfig = config[CONFIG.TOOL_SLUG];
-                        if (!toolConfig || !toolConfig.fields) return;
-                        const loaded = [];
-                        for (const field of toolConfig.fields) {
-                            const val = await ToolDB.getDependency(userId, field.source_field);
-                            if (val) {
-                                loaded.push({ label: field.display_label || field.source_field, value: window.DependencyInjection ? DependencyInjection.formatValue(val) : (typeof val === 'object' ? JSON.stringify(val, null, 2) : String(val)) });
-                            }
-                        }
-                        setDeps(loaded);
-                    } catch (err) {
-                        console.warn('[' + CONFIG.TOOL_SLUG + '] Failed to load dependencies:', err);
-                    }
-                }
-                loadDeps();
-            }, []);
-
-      // Load from localStorage
-      useEffect(() => {
-        const saved = localStorage.getItem('core-decisions-data');
-        if (saved) {
-          try {
-            const savedData = JSON.parse(saved);
-            setData(savedData);
-          } catch (e) {
-            console.error('Error loading saved data:', e);
-          }
-        }
-      }, []);
-
-      // Auto-save every 2 seconds
-      useEffect(() => {
-        const interval = setInterval(() => {
-          localStorage.setItem('core-decisions-data', JSON.stringify(data));
-        }, 2000);
-        return () => clearInterval(interval);
-      }, [data]);
-
-      const updateData = (field, value) => {
-        setData({ ...data, [field]: value });
-      };
-
-      const addActivity = () => {
-        const newActivity = {
-          id: Date.now(),
-          name: '',
-          decisions: [{ id: Date.now(), decision: '', frequency: '', impact: '' }],
-          dataInputs: '',
-          kpis: [{ id: Date.now() + 1, kpi: '', target: '' }],
-          requiredCapabilities: '',
-          currentCapabilities: '',
-          capabilityGap: '',
-          developmentPlan: ''
-        };
-        updateData('coreActivities', [...(data.coreActivities || []), newActivity]);
-      };
-
-      const removeActivity = (id) => {
-        if ((data.coreActivities || []).length > 1) {
-          updateData('coreActivities', (data.coreActivities || []).filter(a => a.id !== id));
-        }
-      };
-
-      const updateActivity = (id, field, value) => {
-        const updated = (data.coreActivities || []).map(a => a.id === id ? { ...a, [field]: value } : a);
-        updateData('coreActivities', updated);
-      };
-
-      const addDecision = (activityId) => {
-        const updated = (data.coreActivities || []).map(a => {
-          if (a.id === activityId) {
-            return {
-              ...a,
-              decisions: [...(a.decisions || []), { id: Date.now(), decision: '', frequency: '', impact: '' }]
-            };
-          }
-          return a;
-        });
-        updateData('coreActivities', updated);
-      };
-
-      const removeDecision = (activityId, decisionId) => {
-        const updated = (data.coreActivities || []).map(a => {
-          if (a.id === activityId && (a.decisions || []).length > 1) {
-            return {
-              ...a,
-              decisions: (a.decisions || []).filter(d => d.id !== decisionId)
-            };
-          }
-          return a;
-        });
-        updateData('coreActivities', updated);
-      };
-
-      const updateDecision = (activityId, decisionId, field, value) => {
-        const updated = (data.coreActivities || []).map(a => {
-          if (a.id === activityId) {
-            return {
-              ...a,
-              decisions: (a.decisions || []).map(d => d.id === decisionId ? { ...d, [field]: value } : d)
-            };
-          }
-          return a;
-        });
-        updateData('coreActivities', updated);
-      };
-
-      const addKpi = (activityId) => {
-        const updated = (data.coreActivities || []).map(a => {
-          if (a.id === activityId) {
-            return {
-              ...a,
-              kpis: [...(a.kpis || []), { id: Date.now(), kpi: '', target: '' }]
-            };
-          }
-          return a;
-        });
-        updateData('coreActivities', updated);
-      };
-
-      const removeKpi = (activityId, kpiId) => {
-        const updated = (data.coreActivities || []).map(a => {
-          if (a.id === activityId && (a.kpis || []).length > 1) {
-            return {
-              ...a,
-              kpis: (a.kpis || []).filter(k => k.id !== kpiId)
-            };
-          }
-          return a;
-        });
-        updateData('coreActivities', updated);
-      };
-
-      const updateKpi = (activityId, kpiId, field, value) => {
-        const updated = (data.coreActivities || []).map(a => {
-          if (a.id === activityId) {
-            return {
-              ...a,
-              kpis: (a.kpis || []).map(k => k.id === kpiId ? { ...k, [field]: value } : k)
-            };
-          }
-          return a;
-        });
-        updateData('coreActivities', updated);
-      };
-
-      const goNext = async () => {
-        if (step === 0.5) {
-          setStep(1);
-        } else if (step >= 1 && step <= 4) {
-          const userId = localStorage.getItem('ft_user_id');
-          if (userId && step >= 1 && step <= 4) {
-            setAiReviewing(true);
-            try {
-              let stepAnswers = {};
-              let stepName = '';
-              if (step === 1) {
-                stepName = 'Core Decisions';
-                stepAnswers = {
-                  decision_rights: (data.coreActivities || []).map(a => ({
-                    name: a.name,
-                    decisions: (a.decisions || []).map(d => ({
-                      decision: d.decision,
-                      frequency: d.frequency,
-                      impact: d.impact
-                    }))
-                  }))
-                };
-              } else if (step === 2) {
-                stepName = 'Data & KPIs';
-                stepAnswers = {
-                  top3_per_activity: (data.coreActivities || []).map(a => ({
-                    name: a.name,
-                    dataInputs: a.dataInputs,
-                    kpis: (a.kpis || []).map(k => ({
-                      kpi: k.kpi,
-                      target: k.target
-                    }))
-                  }))
-                };
-              } else if (step === 3) {
-                stepName = 'Capabilities';
-                stepAnswers = {
-                  capabilities: (data.coreActivities || []).map(a => ({
-                    name: a.name,
-                    requiredCapabilities: a.requiredCapabilities
-                  }))
-                };
-              } else if (step === 4) {
-                stepName = 'Gap Analysis';
-                stepAnswers = {
-                  kpi_scoreboard: (data.coreActivities || []).map(a => ({
-                    name: a.name,
-                    currentCapabilities: a.currentCapabilities,
-                    capabilityGap: a.capabilityGap,
-                    developmentPlan: a.developmentPlan
-                  }))
-                };
-              }
-              const canProceed = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, stepName);
-              if (!canProceed) { setAiReviewing(false); return; }
-            } catch (err) {
-              console.warn('[AIChallenge] Error, allowing passage:', err);
-            } finally {
-              setAiReviewing(false);
-            }
-          }
-
-          if (step >= 1 && step <= 4) {
-            setStep(step + 0.5);
-          }
-        } else if (step === 0) {
-          setStep(0.5);
-        }
-      };
-
-      const goBack = () => {
-        if (step === 5) {
-          setStep(4);
-        } else if (step > 1) {
-          setStep(step - 1);
-        } else if (step === 1) {
-          setStep(0.5);
-        }
-      };
-
-      // Validation functions
-      const isStep1Valid = () => {
-        return (data.coreActivities || []).length >= 1 &&
-               (data.coreActivities || []).every(a =>
-                 (a.name || '').trim().length >= 5 &&
-                 (a.decisions || []).length >= 3 &&
-                 (a.decisions || []).every(d =>
-                   (d.decision || '').trim().length >= 20 &&
-                   (d.frequency || '').trim().length >= 3 &&
-                   (d.impact || '').trim().length >= 10
-                 )
-               );
-      };
-
-      const isStep2Valid = () => {
-        return (data.coreActivities || []).every(a =>
-          (a.dataInputs || '').length >= 50 &&
-          (a.kpis || []).length >= 2 &&
-          (a.kpis || []).every(k =>
-            (k.kpi || '').trim().length >= 10 &&
-            (k.target || '').trim().length >= 5
-          )
-        );
-      };
-
-      const isStep3Valid = () => {
-        return (data.coreActivities || []).every(a =>
-          (a.requiredCapabilities || '').length >= 100
-        );
-      };
-
-      const isStep4Valid = () => {
-        return (data.coreActivities || []).every(a =>
-          (a.currentCapabilities || '').length >= 50 &&
-          (a.capabilityGap || '').length >= 50 &&
-          (a.developmentPlan || '').length >= 100
-        );
-      };
-
-      const exportPDF = async () => {
-        try {
-          const canvas = document.getElementById('canvas-content');
-          if (!canvas) {
-            alert('Canvas not found');
-            return;
-          }
-
-          const images = canvas.querySelectorAll('img');
-          const imageStates = [];
-          images.forEach(img => {
-            imageStates.push({ img, display: img.style.display });
-            img.style.display = 'none';
-          });
-
-          const canvasImage = await html2canvas(canvas, {
-            scale: 2,
-            logging: false,
-            backgroundColor: '#ffffff'
-          });
-
-          imageStates.forEach(({ img, display }) => {
-            img.style.display = display;
-          });
-
-          const imgWidth = 190;
-          const imgHeight = (canvasImage.height * imgWidth) / canvasImage.width;
-
-          const { jsPDF } = window.jspdf;
-          const pdf = new jsPDF('p', 'mm', 'a4');
-          const imgData = canvasImage.toDataURL('image/png');
-
-          pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
-          pdf.save('core-decisions-capabilities.pdf');
-        } catch (error) {
-          console.error('PDF export error:', error);
-          alert('Failed to export PDF: ' + error.message);
-        }
-      };
-
-      const handleSubmit = async () => {
-        const userId = localStorage.getItem('ft_user_id');
-        if (!userId) {
-          alert('User not authenticated. Please return to the dashboard.');
-          return false;
-        }
-
-        try {
-          const questionMappings = {
-            decision_rights: (data.coreActivities || []).map(a => ({
-              name: a.name,
-              decisions: (a.decisions || []).map(d => ({
-                decision: d.decision,
-                frequency: d.frequency,
-                impact: d.impact
-              }))
-            })),
-            top3_per_activity: (data.coreActivities || []).map(a => ({
-              name: a.name,
-              dataInputs: a.dataInputs,
-              kpis: (a.kpis || []).map(k => ({
-                kpi: k.kpi,
-                target: k.target
-              }))
-            })),
-            capabilities: (data.coreActivities || []).map(a => ({
-              name: a.name,
-              requiredCapabilities: a.requiredCapabilities
-            })),
-            kpi_scoreboard: (data.coreActivities || []).map(a => ({
-              name: a.name,
-              currentCapabilities: a.currentCapabilities,
-              capabilityGap: a.capabilityGap,
-              developmentPlan: a.developmentPlan
-            }))
-          };
-          await ToolDB.save(userId, questionMappings);
-          setSubmitted(true);
-          return true;
-        } catch (error) {
-          console.error('Supabase submission error:', error);
-          alert('Submission failed. Please try again.');
-          return false;
-        }
-      };
-
-      // Transition screens (half-step values)
-      if ([1.5, 2.5, 3.5].includes(step)) {
-        return window.renderTransitionScreen(step, CONFIG, 4, setStep);
-      }
-
-      if (step === 0) return <CoverPage onStart={goNext} />;
-      if (step === 0.5) return <IntroPage onNext={goNext} />;
-
-      if (submitted) {
         return (
-          <div style={{ minHeight: '100vh', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '12px', padding: '48px 32px', textAlign: 'center', maxWidth: '480px', margin: '0 auto' }}>
-              <div style={{ fontSize: '40px', marginBottom: '16px' }}>✓</div>
-              <h2 style={{ fontFamily: "'Plaak', 'Monument', sans-serif", fontSize: '24px', marginBottom: '12px' }}>SUBMITTED</h2>
-              <p style={{ color: '#555', marginBottom: '24px' }}>Your answers have been saved.</p>
-              <a href="/dashboard" style={{ color: '#000', textDecoration: 'underline', fontSize: '14px' }}>← Back to Dashboard</a>
-            </div>
-          </div>
-        );
-      }
-
-      if (step === 4.5 || step === 5) {
-        return <CanvasPage data={data} onExport={exportPDF} onSubmit={handleSubmit} />;
-      }
-
-      const canProceed = !aiReviewing && (
-        step === 1 ? isStep1Valid() :
-        step === 2 ? isStep2Valid() :
-        step === 3 ? isStep3Valid() :
-        step === 4 ? isStep4Valid() : false
-      );
-
-      const stepLabels = ['', 'Core Decisions', 'Data & KPIs', 'Capabilities', 'Gap Analysis'];
-
-      return (
-        <div className="wizard-layout">
-          <div className="wizard-main">
-            <div className="wizard-content animate-in">
-              <DependencyContext deps={deps} />
-              {step === 1 && <Step1Page data={data} updateActivity={updateActivity} addActivity={addActivity} removeActivity={removeActivity} addDecision={addDecision} removeDecision={removeDecision} updateDecision={updateDecision} aiReviewing={aiReviewing} />}
-              {step === 2 && <Step2Page data={data} updateActivity={updateActivity} addKpi={addKpi} removeKpi={removeKpi} updateKpi={updateKpi} aiReviewing={aiReviewing} />}
-              {step === 3 && <Step3Page data={data} updateActivity={updateActivity} aiReviewing={aiReviewing} />}
-              {step === 4 && <Step4Page data={data} updateActivity={updateActivity} aiReviewing={aiReviewing} />}
-            </div>
-            <div className="wizard-footer">
-              <button className="btn-wiz-back" onClick={goBack}>← BACK</button>
-              <button className="btn-wiz-next" disabled={!canProceed} onClick={goNext}>
-                {aiReviewing ? 'AI COACH REVIEWING...' : step === 4 ? 'VIEW CANVAS →' : 'NEXT →'}
-              </button>
-            </div>
-          </div>
-          <WizardSidebar currentStep={step} stepLabels={stepLabels} totalSteps={4} />
-        </div>
-      );
-    }
-
-    function WizardSidebar({ currentStep, stepLabels, totalSteps }) {
-      return (
-        <div className="wizard-sidebar">
-          <div className="wizard-sidebar-inner">
-            <div style={{ marginBottom: 24 }}>
-              <div style={{ fontFamily: "'Monument', monospace", fontSize: 12, textTransform: 'uppercase', color: '#fff', marginBottom: 4 }}>SPRINT 23</div>
-              <div style={{ fontSize: 13, color: '#999' }}>Core Decisions & Capabilities</div>
-            </div>
-            <div style={{ marginBottom: 16, fontFamily: "'Monument', monospace", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#999' }}>Your journey</div>
-            {Array.from({ length: totalSteps }, (_, i) => i + 1).map(n => {
-              const effectiveStep = Math.ceil(currentStep);
-              const isCompleted = effectiveStep > n, isActive = effectiveStep === n, isLocked = effectiveStep < n;
-              return (
-                <div key={n} className={`sidebar-step-item ${isCompleted ? 'completed' : ''} ${isActive ? 'active' : ''} ${isLocked ? 'locked' : ''}`}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    {isCompleted
-                      ? <span style={{ color: '#000', fontWeight: 700 }}>✓</span>
-                      : <span style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: isActive ? '#FFF469' : '#666' }}>{String(n).padStart(2, '0')}</span>}
-                    <span style={{ fontSize: 14, color: isLocked ? '#555' : isCompleted ? '#000' : '#fff' }}>{stepLabels[n]}</span>
-                  </div>
+            <div className="step-content animate-in">
+                <p className="step-indicator">CANVAS</p>
+                <div className="opening-box">
+                    <h1 className="step-heading">Core Processes & Decisions Canvas</h1>
+                    <p className="step-hint">Review your complete output across all 5 core activities. Download as PDF for your team, then submit your answers.</p>
                 </div>
-              );
-            })}
-          </div>
-        </div>
-      );
-    }
 
-    // Cover Page Component
-    function CoverPage({ onStart }) {
-      return (
-        <div className="relative min-h-screen flex items-center justify-center bg-black">
-          <div
-            className="absolute inset-0 w-full h-full"
-            style={{
-              backgroundImage: 'url("https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1920&q=80")',
-              backgroundSize: 'cover',
-              backgroundPosition: 'center'
-            }}
-          ></div>
-          <div className="absolute inset-0" style={{background: 'linear-gradient(to bottom, rgba(0,0,0,0.6), rgba(0,0,0,0.85))'}}></div>
+                <div style={{ border: '2px solid #000', marginBottom: 32, overflowX: 'auto' }}>
+                    {/* Table header */}
+                    <div style={{ background: '#000', color: '#fff', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: 0 }}>
+                        {['CORE ACTIVITY', 'KEY DECISIONS', 'KPIS', 'CAPABILITIES', 'GAPS'].map(h => (
+                            <div key={h} style={{ padding: '10px 14px', fontFamily: "'Monument', monospace", fontSize: 9, letterSpacing: '0.1em', color: '#FFF469', textTransform: 'uppercase', borderRight: '1px solid #333' }}>{h}</div>
+                        ))}
+                    </div>
 
-          <div className="relative z-10 text-center text-white px-8 max-w-5xl mx-auto">
-            <h1 className="plaak animate-in" style={{fontSize: '100px', lineHeight: '1', marginBottom: '32px'}}>
-              CORE DECISIONS
-            </h1>
-            <h2 className="plaak animate-in" style={{fontSize: '80px', lineHeight: '1', marginBottom: '32px', color: '#FFF469', animationDelay: '0.1s'}}>
-              & CAPABILITIES
-            </h2>
-            <p className="text-4xl mb-12 animate-in" style={{animationDelay: '0.2s'}}>
-              Build the engine room of your company. Define decisions, measure outcomes, build capabilities.
-            </p>
-            <button
-              onClick={onStart}
-              className="bg-white text-black plaak px-16 py-6 border-4 border-white hover:bg-black hover:text-white transition-all text-3xl animate-in"
-              style={{animationDelay: '0.4s'}}
-            >
-              START
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    // Intro Page Component
-    function IntroPage({ onNext }) {
-      return (
-        <div className="bg-black text-white min-h-screen p-16">
-          <div className="max-w-5xl mx-auto">
-            <h1 className="plaak mb-16 animate-in" style={{fontSize: '100px'}}>
-              BEFORE WE START
-            </h1>
-
-            {/* Sprint Info */}
-            <div className="mb-12 animate-in" style={{animationDelay: '0.05s'}}>
-              <h2 className="plaak text-6xl mb-6" style={{color: '#FFF469'}}>SPRINT INFO</h2>
-              <div className="bg-white text-black p-8">
-                <p className="text-2xl font-bold mb-4">Sprint 23: Core Decisions & Capabilities</p>
-                <p className="text-xl leading-relaxed mb-4">
-                  Think of this sprint like laying down train tracks before a high-speed journey. If the tracks aren't properly mapped and reinforced, the train can't move at speed—or worse, it crashes. This sprint is all about identifying and strengthening the decision points and capabilities that will keep us moving fast and in the right direction.
-                </p>
-                <div className="border-l-4 border-black pl-4 italic text-lg">
-                  Companies that clarify decision rights and match them with capabilities are 5x more likely to achieve their strategic goals.
-                </div>
-              </div>
-            </div>
-
-            {/* Purpose */}
-            <div className="mb-12 animate-in" style={{animationDelay: '0.1s'}}>
-              <h2 className="plaak text-6xl mb-6">PURPOSE</h2>
-
-              <div className="border-l-4 border-white pl-6 mb-6">
-                <p className="text-3xl italic mb-2">"Smart people slow down in broken systems. Average people speed up in well-designed systems."</p>
-                <p className="text-xl text-gray-400">— FAST TRACK PRINCIPLE</p>
-              </div>
-
-              <p className="text-3xl leading-relaxed mb-4">
-                Strategy without execution is just a dream. This sprint turns your core activities into something operational, measurable, and manageable. You will clarify decisions, identify KPIs, and specify capabilities needed to deliver results repeatedly and at speed.
-              </p>
-            </div>
-
-            {/* Mistakes to Avoid */}
-            <div className="mb-12 animate-in" style={{animationDelay: '0.2s'}}>
-              <h2 className="plaak text-6xl mb-6" style={{color: '#FFF469'}}>MISTAKES TO AVOID</h2>
-
-              <div className="bg-white text-black p-6 mb-6 border-4 border-yellow-400">
-                <p className="riforma-bold text-2xl mb-4">COMMON EXECUTION FAILURES:</p>
-                <ul className="text-xl space-y-3">
-                  <li className="flex items-start">
-                    <span className="text-3xl mr-3">1.</span>
-                    <span><strong>Treating everything as a core decision:</strong> Focus only on what truly moves the needle, not every choice</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-3xl mr-3">2.</span>
-                    <span><strong>Blurred ownership:</strong> Unclear responsibilities stall execution and lead to poor decisions</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-3xl mr-3">3.</span>
-                    <span><strong>Being vague about KPIs:</strong> "Increase sales" isn't a KPI—"Lead conversion rate" is</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-3xl mr-3">4.</span>
-                    <span><strong>Ignoring capability gaps:</strong> Don't assume current strength equals sufficient strength</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-3xl mr-3">5.</span>
-                    <span><strong>No feedback loops:</strong> Without data, you can't improve decisions or measure impact</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            {/* The Journey */}
-            <div className="mb-16 animate-in" style={{animationDelay: '0.3s'}}>
-              <h2 className="plaak text-6xl mb-8">THE JOURNEY</h2>
-              <div className="grid grid-cols-4 gap-4 text-center">
-                <div className="border-2 border-white p-6">
-                  <div className="text-8xl plaak mb-4">01</div>
-                  <p className="text-xl font-bold mb-2">DECISIONS</p>
-                  <p className="text-base text-gray-400">Key recurring choices</p>
-                </div>
-                <div className="border-2 border-white p-6">
-                  <div className="text-8xl plaak mb-4">02</div>
-                  <p className="text-xl font-bold mb-2">DATA & KPIs</p>
-                  <p className="text-base text-gray-400">Inputs and outcomes</p>
-                </div>
-                <div className="border-2 border-white p-6">
-                  <div className="text-8xl plaak mb-4">03</div>
-                  <p className="text-xl font-bold mb-4">CAPABILITIES</p>
-                  <p className="text-base text-gray-400">Skills and systems</p>
-                </div>
-                <div className="border-2 border-white p-6">
-                  <div className="text-8xl plaak mb-4">04</div>
-                  <p className="text-xl font-bold mb-2">GAP ANALYSIS</p>
-                  <p className="text-base text-gray-400">Close the gaps</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Next Button */}
-            <button
-              onClick={onNext}
-              className="btn-primary w-full text-3xl py-8 plaak"
-            >
-              LET'S START →
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    // Step 1: Core Decisions
-    function Step1Page({ data, updateActivity, addActivity, removeActivity, addDecision, removeDecision, updateDecision, onNext, onBack, canProceed, setShowHelp, aiReviewing }) {
-      return (
-        <div>
-
-            <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
-              STEP 1 OF 4
-            </div>
-            <div className="numbered-section mb-8 animate-in">01. CORE DECISIONS</div>
-
-            {/* Fast Track Insight */}
-
-            {/* The Science */}
-            
-
-            {/* Common Mistake */}
-
-
-            <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
-              Identify the key recurring decisions that drive each core activity
-            </h3>
-
-            <div className="border-l-4 border-yellow-400 pl-6 mb-12 animate-in" style={{animationDelay: '0.1s'}}>
-              <p className="text-2xl italic">
-                "Zara makes weekly decisions: Which trend-based items to greenlight? How many SKUs to release and where? What gets pulled from stores? That speed is their competitive advantage."
-              </p>
-            </div>
-
-            <p className="text-xl mb-8 text-gray-300">
-              For each core activity, define 3-5 key decisions that are made often, directly affect outcomes, need data not opinions, and create visible impact when delayed or wrong. These are leverage points that determine execution speed and quality.
-            </p>
-
-            <div className="space-y-8 mb-12">
-              {(data.coreActivities || []).map((activity, actIndex) => (
-                <div key={activity.id} className="border-4 border-gray-700 p-6 animate-in" style={{animationDelay: `${0.15 + actIndex * 0.05}s`}}>
-                  <div className="flex justify-between items-start mb-6">
-                    <h4 className="riforma-bold text-3xl">Core Activity {actIndex + 1}</h4>
-                    {(data.coreActivities || []).length > 1 && (
-                      <button
-                        onClick={() => removeActivity(activity.id)}
-                        className="text-red-600 hover:text-red-800 text-sm"
-                      >
-                        REMOVE ACTIVITY
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="mb-6">
-                    <label className="monument text-sm block mb-2">ACTIVITY NAME <span className="text-red-500">*</span></label>
-                    
-                    <input
-                      type="text"
-                      value={activity.name || ''}
-                      onChange={(e) => updateActivity(activity.id, 'name', e.target.value)}
-                      placeholder="Fast Fashion Design / Course Development / Customer Onboarding"
-                      className="w-full"
-                    />
-                    <div className="char-counter">{(activity.name || '').length}/200 (min 5)</div>
-                  </div>
-
-                  <div className="mb-4">
-                    <h5 className="riforma-bold text-2xl mb-3">Key Decisions (minimum 3)</h5>
-                    {(activity.decisions || []).map((decision, decIndex) => (
-                      <div key={decision.id} className="border-2 border-gray-700 p-4 mb-4" style={{background:"#1a1a1a"}}>
-                        <div className="flex justify-between items-center mb-3">
-                          <span className="monument text-xs">DECISION {decIndex + 1}</span>
-                          {(activity.decisions || []).length > 1 && (
-                            <button
-                              onClick={() => removeDecision(activity.id, decision.id)}
-                              className="text-red-600 hover:text-red-800 text-sm"
-                            >
-                              REMOVE
-                            </button>
-                          )}
-                        </div>
-
-                        <div className="space-y-3">
-                          <div>
-                            <label className="monument text-xs block mb-1">DECISION DESCRIPTION <span className="text-red-500">*</span></label>
-                            
-                            <textarea
-                              value={decision.decision || ''}
-                              onChange={(e) => updateDecision(activity.id, decision.id, 'decision', e.target.value)}
-                              placeholder="Which features do we prioritize this sprint based on user feedback and strategic goals?"
-                              className="w-full"
-                              rows={3}
-                            />
-                            <div className="char-counter text-xs">{(decision.decision || '').length}/500 (min 20)</div>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <label className="monument text-xs block mb-1">FREQUENCY <span className="text-red-500">*</span></label>
-                              
-                              <input
-                                type="text"
-                                value={decision.frequency || ''}
-                                onChange={(e) => updateDecision(activity.id, decision.id, 'frequency', e.target.value)}
-                                placeholder="Weekly / Monthly / Quarterly"
-                                className="w-full"
-                              />
-                              <div className="char-counter text-xs">{(decision.frequency || '').length}/50 (min 3)</div>
+                    {/* Activity rows */}
+                    {data.activities.map((a, i) => {
+                        const dk  = data.decisionsKpis[i] || { decisions: [], kpis: [] };
+                        const cap = data.capabilities[i]  || { human: '', systemic: '', relational: '', gaps: '' };
+                        return (
+                            <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', borderTop: '1px solid #E0E0E0' }}>
+                                <div style={{ padding: '14px 16px', background: '#000', color: '#fff', borderRight: '1px solid #222' }}>
+                                    <span className="plaak" style={{ fontSize: 20, color: '#FFF469' }}>{i+1}</span>
+                                    <div style={{ fontSize: 13, fontWeight: 600, marginTop: 4 }}>{(a.name && a.name.trim()) || '—'}</div>
+                                </div>
+                                <div style={{ padding: '12px 14px', fontSize: 13, borderRight: '1px solid #E0E0E0', lineHeight: 1.5 }}>
+                                    {dk.decisions.filter(d => d.trim()).map((d, di) => (
+                                        <div key={di} style={{ marginBottom: 4, paddingLeft: 12, position: 'relative' }}>
+                                            <span style={{ position: 'absolute', left: 0, color: '#FFF469', background: '#000', fontSize: 9, padding: '1px 4px' }}>{di+1}</span>
+                                            {d}
+                                        </div>
+                                    ))}
+                                    {!dk.decisions.some(d => d.trim()) && <span style={{ color: '#bbb' }}>—</span>}
+                                </div>
+                                <div style={{ padding: '12px 14px', fontSize: 13, borderRight: '1px solid #E0E0E0', lineHeight: 1.5 }}>
+                                    {dk.kpis.filter(k => k.trim()).map((k, ki) => (
+                                        <div key={ki} style={{ marginBottom: 4, paddingLeft: 12, position: 'relative' }}>
+                                            <span style={{ position: 'absolute', left: 0, color: '#FFF469', background: '#000', fontSize: 9, padding: '1px 4px' }}>{ki+1}</span>
+                                            {k}
+                                        </div>
+                                    ))}
+                                    {!dk.kpis.some(k => k.trim()) && <span style={{ color: '#bbb' }}>—</span>}
+                                </div>
+                                <div style={{ padding: '12px 14px', fontSize: 12, borderRight: '1px solid #E0E0E0', lineHeight: 1.5 }}>
+                                    {cap.human    && <div style={{ marginBottom: 6 }}><span style={{ fontFamily: "'Monument', monospace", fontSize: 9, color: '#22c55e', display: 'block' }}>HUMAN</span>{cap.human}</div>}
+                                    {cap.systemic && <div style={{ marginBottom: 6 }}><span style={{ fontFamily: "'Monument', monospace", fontSize: 9, color: '#3b82f6', display: 'block' }}>SYSTEMIC</span>{cap.systemic}</div>}
+                                    {cap.relational && <div><span style={{ fontFamily: "'Monument', monospace", fontSize: 9, color: '#f59e0b', display: 'block' }}>RELATIONAL</span>{cap.relational}</div>}
+                                    {!cap.human && !cap.systemic && !cap.relational && <span style={{ color: '#bbb' }}>—</span>}
+                                </div>
+                                <div style={{ padding: '12px 14px', fontSize: 12, background: '#FEF2F2', lineHeight: 1.5 }}>
+                                    {cap.gaps || <span style={{ color: '#bbb' }}>—</span>}
+                                </div>
                             </div>
-                            <div>
-                              <label className="monument text-xs block mb-1">IMPACT LEVEL <span className="text-red-500">*</span></label>
-                              <input
-                                type="text"
-                                value={decision.impact || ''}
-                                onChange={(e) => updateDecision(activity.id, decision.id, 'impact', e.target.value)}
-                                placeholder="High / Critical / Medium"
-                                className="w-full"
-                              />
-                              <div className="char-counter text-xs">{(decision.impact || '').length}/50 (min 10)</div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                    <button
-                      onClick={() => addDecision(activity.id)}
-                      className="btn-secondary text-sm w-full"
-                    >
-                      + ADD DECISION
+                        );
+                    })}
+
+                    {/* Case Study */}
+                    <div style={{ padding: '24px 28px', background: '#000', color: '#fff', borderTop: '2px solid #222' }}>
+                        <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#FFF469', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>CASE STUDY — ZARA</div>
+                        <p style={{ fontSize: 14, lineHeight: 1.8, color: '#ccc' }}>
+                            Zara's operational mastery came from mapping their 5 core activities to specific decision rights, KPIs and capabilities. For their <strong style={{ color: '#fff' }}>fast manufacturing</strong> activity, the key decisions were owned by regional production managers — not headquarters — keeping decision velocity high. The KPI was "time from design approval to store shelf" (target: 14 days). The human capability gap they identified and closed was logistics coordinators in each production region. This decision-capability mapping is what separated Zara from every fashion company that had the same strategic intent but never built the operational infrastructure to execute it.
+                        </p>
+                    </div>
+                </div>
+
+                {aiMessage && <div className="ai-message" style={{ marginBottom: 16 }}>{aiMessage}</div>}
+
+                <div style={{ display: 'flex', gap: 16 }}>
+                    <button onClick={handlePrint} className="btn-wiz-back"
+                        style={{ flex: 1, padding: 16, fontSize: 13, border: '2px solid #000', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                        ↓ DOWNLOAD PDF
                     </button>
-                  </div>
+                    <button onClick={onSubmit} disabled={submitState === 'saving'} className="btn-wiz-next"
+                        style={{ flex: 2, padding: 16, fontSize: 13 }}>
+                        {submitState === 'saving' ? 'SAVING…' : 'SUBMIT ANSWERS →'}
+                    </button>
                 </div>
-              ))}
-
-              <button onClick={addActivity} className="btn-secondary w-full">
-                + ADD CORE ACTIVITY
-              </button>
             </div>
-        </div>
-      );
+        );
     }
 
-    // Step 2: Decision Data & KPIs — typeform: one activity at a time
-    function Step2Page({ data, updateActivity, addKpi, removeKpi, updateKpi, aiReviewing }) {
-      const activities = data.coreActivities || [];
-      const [actIdx, setActIdx] = useState(0);
-      const [kpiIdx, setKpiIdx] = useState(0);
+    // ── IntroPage ─────────────────────────────────────────────────────────────
+    function IntroPage({ onNext }) {
+        return (
+            <div style={{ background: '#000', color: '#fff', minHeight: '100vh', padding: '64px' }}>
+                <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+                    <h1 className="plaak animate-in" style={{ fontSize: '100px', marginBottom: '64px' }}>
+                        BEFORE WE START
+                    </h1>
 
-      const totalActivities = activities.length;
-      const activity = activities[actIdx] || {};
-      const kpis = activity.kpis || [];
-      const kpi = kpis[kpiIdx] || {};
-      const isLastActivity = actIdx === totalActivities - 1;
-      const isLastKpi = kpiIdx === kpis.length - 1;
+                    <div className="animate-in" style={{ marginBottom: '48px', animationDelay: '0.08s' }}>
+                        <h2 className="plaak" style={{ fontSize: '48px', color: '#FFF469', marginBottom: '24px' }}>SPRINT INFO</h2>
+                        <div style={{ background: '#fff', color: '#000', padding: '32px' }}>
+                            <p style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '16px' }}>Sprint 23: Core Processes & Decisions</p>
+                            <p style={{ fontSize: '18px', lineHeight: 1.6, marginBottom: '16px' }}>
+                                This is a team meeting tool. Building on Sprint 22, you will now define the key decisions, KPIs and capabilities required to execute each of your 5 core activities. The output is an operational blueprint — bridging strategy and execution.
+                            </p>
+                            <div style={{ borderLeft: '4px solid #000', paddingLeft: '16px', fontStyle: 'italic', fontSize: '16px' }}>
+                                "The essence of strategy is choosing what not to do." — Michael Porter
+                            </div>
+                        </div>
+                    </div>
 
-      // Which sub-screen: 'data' for data inputs, 'kpi' for individual KPI entry
-      const [subScreen, setSubScreen] = useState('data');
+                    <div className="animate-in" style={{ marginBottom: '48px', animationDelay: '0.1s' }}>
+                        <h2 className="plaak" style={{ fontSize: '48px', marginBottom: '24px' }}>PURPOSE</h2>
+                        <div style={{ borderLeft: '4px solid #fff', paddingLeft: '24px', marginBottom: '24px' }}>
+                            <p style={{ fontSize: '28px', fontStyle: 'italic', marginBottom: '8px' }}>
+                                "Strategy without execution is a hallucination. Execution without decision rights is chaos."
+                            </p>
+                            <p style={{ fontSize: '18px', color: '#999' }}>— Fast Track Program</p>
+                        </div>
+                        <p style={{ fontSize: '22px', lineHeight: 1.6 }}>
+                            You will leave this sprint with a complete Core Processes & Decisions table: for each of your 5 core activities, you will have mapped the key decisions (and who makes them), the KPIs that prove it's working, the capabilities required (human, systemic, relational), and the gaps you must close.
+                        </p>
+                    </div>
 
-      const canAdvanceData = (activity.dataInputs || '').trim().length >= 50;
-      const canAdvanceKpi = (kpi.kpi || '').trim().length >= 10 && (kpi.target || '').trim().length >= 5;
+                    <div className="animate-in" style={{ marginBottom: '48px', animationDelay: '0.2s' }}>
+                        <h2 className="plaak" style={{ fontSize: '48px', color: '#FFF469', marginBottom: '24px' }}>MISTAKES TO AVOID</h2>
+                        <ul style={{ fontSize: '20px', listStyle: 'none', padding: 0 }}>
+                            {[
+                                'Vague decisions — "The CEO decides" is not a decision right. Name the decision, the criteria, and the data needed.',
+                                'Vanity KPIs — Track what changes behaviour, not what looks good in a board deck. 3 decision-driving KPIs beat 20 activity metrics.',
+                                'Ignoring capability gaps — A gap is not a failure. It is a roadmap. Name the gap, name the solution (hire, train, partner, build).',
+                                'Doing this alone — This is a team tool. The people who execute each activity must be in the room to validate the decisions and KPIs.',
+                            ].map((item, i) => (
+                                <li key={i} style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '16px' }}>
+                                    <span style={{ fontSize: '32px', marginRight: '16px', lineHeight: 1, flexShrink: 0 }}>•</span>
+                                    <span>{item}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
 
-      const handleNextFromData = () => {
-        if (!canAdvanceData) return;
-        // Move to first KPI
-        setKpiIdx(0);
-        setSubScreen('kpi');
-      };
+                    <div className="animate-in" style={{ marginBottom: '64px', animationDelay: '0.3s' }}>
+                        <h2 className="plaak" style={{ fontSize: '48px', marginBottom: '32px' }}>THE JOURNEY</h2>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', textAlign: 'center' }}>
+                            {[
+                                ['01', 'ACTIVITIES', 'Review top 5 from Sprint 22'],
+                                ['02', 'DECISIONS & KPIs', 'Map decisions + metrics'],
+                                ['03', 'CAPABILITIES', 'Define what you need'],
+                                ['04', 'CANVAS', 'Review, PDF & submit'],
+                            ].map(([num, title, sub]) => (
+                                <div key={num} style={{ border: '2px solid #fff', padding: '20px 12px' }}>
+                                    <div className="plaak" style={{ fontSize: '52px', marginBottom: '12px' }}>{num}</div>
+                                    <p style={{ fontWeight: 'bold', marginBottom: '6px', fontSize: '13px' }}>{title}</p>
+                                    <p style={{ fontSize: '12px', color: '#999' }}>{sub}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
 
-      const handleNextKpi = () => {
-        if (!canAdvanceKpi) return;
-        if (!isLastKpi) {
-          // Go to next KPI
-          setKpiIdx(kpiIdx + 1);
-        } else {
-          // All KPIs for this activity done — move to next activity or finish
-          if (!isLastActivity) {
-            setActIdx(actIdx + 1);
-            setKpiIdx(0);
-            setSubScreen('data');
-          }
-          // If last activity: the outer "NEXT" button in the wizard footer handles moving to step 3
+                    <button onClick={onNext} className="plaak"
+                        style={{ width: '100%', padding: '32px', background: '#FFF469', color: '#000', border: 'none', fontSize: '28px', cursor: 'pointer', letterSpacing: '0.05em', transition: 'opacity 0.2s' }}>
+                        LET'S START →
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // ── Main App ──────────────────────────────────────────────────────────────
+    function ProcessesDecisionsApp() {
+        const [step, setStep]               = useState(0);
+        const [data, setData]               = useState(makeDefaultData());
+        const [userId, setUserId]           = useState(null);
+        const [deps, setDeps]               = useState({});
+        const [authState, setAuthState]     = useState({ loading: true, authenticated: false, error: null });
+        const [submitState, setSubmitState] = useState('idle');
+        const [aiReviewing, setAiReviewing] = useState(false);
+        const [aiMessage, setAiMessage]     = useState('');
+
+        const totalSteps = CONFIG.TOTAL_STEPS;
+
+        // ── Init ──
+        useEffect(() => {
+            const { createClient } = supabase;
+            window.supabaseClient = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+            ToolDB.init(CONFIG.TOOL_SLUG);
+
+            ToolDB.whenReady().then(async () => {
+                const uid = await ToolDB.identifyUser();
+                if (!uid) {
+                    setAuthState({ loading: false, authenticated: false, error: 'No active session found.' });
+                    return;
+                }
+                setUserId(uid);
+                setAuthState({ loading: false, authenticated: true, error: null });
+
+                // Load saved data
+                const saved = await ToolDB.load(uid);
+                if (saved && Object.keys(saved).length > 0) {
+                    setData(mergeLoaded(saved, makeDefaultData()));
+                }
+
+                // Load dependencies — pull core activities from Sprint 22
+                try {
+                    const coreActivities = await ToolDB.getDependency(uid, 'core_activities.activities');
+                    if (coreActivities && Array.isArray(coreActivities)) {
+                        const names = coreActivities.slice(0, 5).map(a => typeof a === 'string' ? a : (a.name || ''));
+                        setData(prev => ({
+                            ...prev,
+                            activities: prev.activities.map((act, i) => ({
+                                ...act,
+                                name: act.name && act.name.trim() ? act.name : (names[i] || '')
+                            }))
+                        }));
+                        setDeps(d => ({ ...d, 'Core Activities (Sprint 22)': names.filter(Boolean).join(', ') }));
+                    } else {
+                        // Try alternative reference key
+                        const top5 = await ToolDB.getDependency(uid, 'org.activities.top5');
+                        if (top5 && Array.isArray(top5)) {
+                            const names = top5.slice(0, 5).map(a => typeof a === 'string' ? a : (a.name || ''));
+                            setData(prev => ({
+                                ...prev,
+                                activities: prev.activities.map((act, i) => ({
+                                    ...act,
+                                    name: act.name && act.name.trim() ? act.name : (names[i] || '')
+                                }))
+                            }));
+                            setDeps(d => ({ ...d, 'Core Activities (Sprint 22)': names.filter(Boolean).join(', ') }));
+                        }
+                    }
+
+                    const vp = await ToolDB.getDependency(uid, 'core_activities.value_proposition');
+                    if (vp) setDeps(d => ({ ...d, 'Value Proposition': typeof vp === 'string' ? vp : JSON.stringify(vp) }));
+                } catch (_) {}
+            });
+        }, []);
+
+        const updateData = useCallback((field, val) => {
+            setData(prev => ({ ...prev, [field]: val }));
+            setAiMessage('');
+        }, []);
+
+        // ── canProceed per step ──
+        const canProceed = () => {
+            if (step === 1) return data.activities.some(a => a.name && a.name.trim());
+            if (step === 2) return data.decisionsKpis.some(item => item.decisions.some(d => d.trim()) && item.kpis.some(k => k.trim()));
+            if (step === 3) return data.capabilities.some(item => item.human.trim() || item.systemic.trim() || item.relational.trim());
+            return true;
+        };
+
+        // ── handleNext ──
+        const handleNext = async () => {
+            setAiMessage('');
+            if (!canProceed()) {
+                if (step === 1) setAiMessage('Please complete Sprint 22 first — your core activities need to be loaded before you can proceed.');
+                if (step === 2) setAiMessage('Define at least one key decision and one KPI for at least one activity before continuing.');
+                if (step === 3) setAiMessage('Define at least one capability (human, systemic or relational) for at least one activity before continuing.');
+                return;
+            }
+
+            // AI review step 2 — decisions quality
+            if (step === 2 && window.AIChallenge) {
+                const examples = data.decisionsKpis
+                    .map((item, i) => {
+                        const actName = data.activities[i] ? data.activities[i].name : '';
+                        const decs = item.decisions.filter(d => d.trim());
+                        const kpis = item.kpis.filter(k => k.trim());
+                        if (!decs.length && !kpis.length) return null;
+                        return `Activity ${i+1} (${actName}):\nDecisions: ${decs.join('; ')}\nKPIs: ${kpis.join('; ')}`;
+                    })
+                    .filter(Boolean)
+                    .join('\n\n');
+                if (examples) {
+                    setAiReviewing(true);
+                    const ok = await window.AIChallenge.reviewStep(
+                        userId,
+                        CONFIG.TOOL_SLUG,
+                        { decisions_and_kpis: examples },
+                        'Key Decisions & KPIs'
+                    );
+                    setAiReviewing(false);
+                    if (!ok) return;
+                }
+            }
+
+            // AI review step 3 — capabilities quality
+            if (step === 3 && window.AIChallenge) {
+                const examples = data.capabilities
+                    .map((item, i) => {
+                        const actName = data.activities[i] ? data.activities[i].name : '';
+                        const parts = [
+                            item.human.trim()     ? 'Human: ' + item.human.trim()       : null,
+                            item.systemic.trim()  ? 'Systemic: ' + item.systemic.trim() : null,
+                            item.relational.trim() ? 'Relational: ' + item.relational.trim() : null,
+                            item.gaps.trim()      ? 'Gaps: ' + item.gaps.trim()         : null,
+                        ].filter(Boolean);
+                        if (!parts.length) return null;
+                        return `Activity ${i+1} (${actName}):\n${parts.join('\n')}`;
+                    })
+                    .filter(Boolean)
+                    .join('\n\n');
+                if (examples) {
+                    setAiReviewing(true);
+                    const ok = await window.AIChallenge.reviewStep(
+                        userId,
+                        CONFIG.TOOL_SLUG,
+                        { capabilities: examples },
+                        'Capabilities & Gaps'
+                    );
+                    setAiReviewing(false);
+                    if (!ok) return;
+                }
+            }
+
+            // After last wizard step → transition, then canvas
+            setStep(step + 0.5);
+        };
+
+        // ── handleTransitionNext ──
+        const handleTransitionNext = () => {
+            if (Math.floor(step) === totalSteps) {
+                setStep('canvas');
+            } else {
+                setStep(Math.floor(step) + 1);
+            }
+        };
+
+        // ── handleBack ──
+        const handleBack = () => {
+            if (step === 'canvas') { setStep(totalSteps); return; }
+            if (step === 1)       { setStep(0.5); return; }
+            setStep(step - 1);
+        };
+
+        // ── handleSubmit ──
+        const handleSubmit = async () => {
+            setSubmitState('saving');
+            try {
+                await ToolDB.save(userId, {
+                    activities:    data.activities,
+                    decisions_kpis: data.decisionsKpis,
+                    capabilities:  data.capabilities,
+                });
+                await ToolDB.markComplete(userId);
+                setSubmitState('success');
+            } catch (err) {
+                console.error('[ProcessesDecisions] Submit error:', err);
+                setSubmitState('error');
+                setAiMessage('Submission failed. Please try again.');
+            }
+        };
+
+        const isWizardStep = Number.isInteger(step) && step >= 1 && step <= totalSteps;
+        const isTransition = !Number.isInteger(step) && step !== 0;
+
+        // ── Loading / auth screens ──
+        if (authState.loading) {
+            return (
+                <div style={{ background: '#000', color: '#fff', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ fontFamily: "'Monument', monospace", fontSize: 12, letterSpacing: '0.1em', color: '#555' }}>LOADING…</div>
+                </div>
+            );
         }
-      };
 
-      const handleAddKpi = () => {
-        addKpi(activity.id);
-        // Will advance to the new (last) KPI after state update
-        setKpiIdx(kpis.length); // new index = old length
-      };
+        if (!authState.authenticated) {
+            return (
+                <div style={{ background: '#000', color: '#fff', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
+                    <div style={{ fontFamily: "'Monument', monospace", fontSize: 12, letterSpacing: '0.1em', color: '#DC2626' }}>ACCESS DENIED</div>
+                    <div style={{ fontSize: 14, color: '#666' }}>{authState.error || 'No active session. Please access this tool from your Fast Track dashboard.'}</div>
+                </div>
+            );
+        }
 
-      return (
-        <div className="animate-in">
-          <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
-            STEP 2 OF 4
-          </div>
-          <div className="numbered-section mb-8">02. DECISION DATA & KPIs</div>
-
-          {/* Activity progress indicator */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 24 }}>
-            {activities.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => { setActIdx(i); setKpiIdx(0); setSubScreen('data'); }}
-                title={`Activity ${i + 1}`}
-                style={{
-                  width: 32, height: 6, border: 'none', borderRadius: 3, cursor: 'pointer', padding: 0,
-                  background: i === actIdx ? '#FFF469' : i < actIdx ? '#555' : '#333',
-                  transition: 'background 0.2s'
-                }}
-              />
-            ))}
-            <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#999', marginLeft: 6 }}>
-              ACTIVITY {actIdx + 1} OF {totalActivities}
-            </span>
-          </div>
-
-          {/* Activity label */}
-          <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', background: '#111', display: 'inline-block', padding: '4px 12px', marginBottom: 16, letterSpacing: '0.1em', border: '1px solid #333' }}>
-            {(activity.name || '').substring(0, 40) || `Activity ${actIdx + 1}`}
-          </div>
-
-          {subScreen === 'data' && (
-            <div className="animate-in">
-              <h3 className="riforma-bold mb-4" style={{ fontSize: 28 }}>
-                What data inputs drive decisions for this activity?
-              </h3>
-              <p style={{ color: '#999', marginBottom: 16, fontSize: 14 }}>What information is needed to make smart decisions for <strong style={{color:'#fff'}}>{activity.name || `Activity ${actIdx + 1}`}</strong>?</p>
-              <div className="border-l-4 border-yellow-400 pl-6 mb-8">
-                <p style={{ fontStyle: 'italic', color: '#ccc', fontSize: 16 }}>
-                  "Zara's Design KPIs: Time from sketch to shelf, SKU success rate, weekly trend adoption rate."
-                </p>
-              </div>
-              <textarea
-                value={activity.dataInputs || ''}
-                onChange={(e) => updateActivity(activity.id, 'dataInputs', e.target.value)}
-                placeholder="Real-time sales data by region, inventory levels, customer feedback scores, competitor trend analysis, store manager reports"
-                className="w-full"
-                rows={5}
-                autoFocus
-              />
-              <div className="char-counter">{(activity.dataInputs || '').length}/1000 (min 50)</div>
-
-              <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
-                {actIdx > 0 && (
-                  <button
-                    onClick={() => { setActIdx(actIdx - 1); setKpiIdx(0); setSubScreen('data'); }}
-                    className="btn-secondary"
-                    style={{ flexShrink: 0 }}
-                  >← PREV</button>
+        // ── Render ──
+        return (
+            <div className="tool-frame">
+                {/* Cover page — step 0 */}
+                {step === 0 && (
+                    <div style={{ position: 'relative', width: '100%', minHeight: '100vh', background: '#000', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                        <div style={{ position: 'absolute', inset: 0, backgroundImage: `url('${CONFIG.COVER_IMAGE}')`, backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.35 }} />
+                        <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', padding: '0 32px', maxWidth: 800 }}>
+                            <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 24 }}>SPRINT 23</div>
+                            <h1 className="plaak animate-in" style={{ fontSize: 'clamp(48px, 8vw, 96px)', color: '#fff', marginBottom: 24, lineHeight: 1 }}>
+                                {CONFIG.TOOL_TITLE}
+                            </h1>
+                            <p style={{ fontSize: 18, color: '#ccc', marginBottom: 48, lineHeight: 1.6 }}>{CONFIG.TOOL_SUBTITLE}</p>
+                            <button className="plaak" onClick={() => setStep(0.5)}
+                                style={{ background: '#FFF469', color: '#000', border: 'none', padding: '20px 56px', fontSize: 20, cursor: 'pointer', letterSpacing: '0.05em', transition: 'opacity 0.2s' }}>
+                                START →
+                            </button>
+                        </div>
+                    </div>
                 )}
-                <button
-                  onClick={handleNextFromData}
-                  disabled={!canAdvanceData}
-                  className="btn-primary"
-                  style={{ flex: 1 }}
-                >
-                  ADD KPIs FOR THIS ACTIVITY →
-                </button>
-              </div>
-            </div>
-          )}
 
-          {subScreen === 'kpi' && (
-            <div className="animate-in">
-              {/* KPI progress */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
-                {kpis.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setKpiIdx(i)}
-                    style={{
-                      width: 24, height: 6, border: 'none', borderRadius: 3, cursor: 'pointer', padding: 0,
-                      background: i === kpiIdx ? '#FFF469' : (kpis[i].kpi && kpis[i].target) ? '#888' : '#333',
-                      transition: 'background 0.2s'
-                    }}
-                  />
-                ))}
-                <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#999', marginLeft: 6 }}>
-                  KPI {kpiIdx + 1} OF {kpis.length}
-                </span>
-              </div>
+                {/* Intro page — step 0.5 */}
+                {step === 0.5 && <IntroPage onNext={() => setStep(1)} />}
 
-              <h3 className="riforma-bold mb-2" style={{ fontSize: 26 }}>
-                KPI {kpiIdx + 1}: What will you measure?
-              </h3>
-              <p style={{ color: '#999', marginBottom: 20, fontSize: 14 }}>Define a specific, measurable outcome metric for this activity.</p>
+                {/* Transition screens — half steps */}
+                {isTransition && step > 0.5 && (
+                    <TransitionScreen stepNum={Math.floor(step)} onNext={handleTransitionNext} />
+                )}
 
-              <div style={{ marginBottom: 16 }}>
-                <label className="monument text-xs block mb-1" style={{ color: '#FFF469' }}>KPI METRIC <span style={{color:'#ef4444'}}>*</span></label>
-                <input
-                  type="text"
-                  value={kpi.kpi || ''}
-                  onChange={(e) => updateKpi(activity.id, kpi.id, 'kpi', e.target.value)}
-                  placeholder="Time from sketch to shelf / Lead conversion rate / Employee satisfaction score"
-                  className="w-full"
-                  autoFocus
-                  onKeyDown={(e) => { if (e.key === 'Enter' && canAdvanceKpi) handleNextKpi(); }}
-                />
-                <div className="char-counter text-xs">{(kpi.kpi || '').length}/300 (min 10)</div>
-              </div>
+                {/* Wizard steps 1–3 */}
+                {isWizardStep && (
+                    <div className="wizard-layout">
+                        <MobileStepBar currentStep={step} totalSteps={totalSteps} />
+                        <div className="wizard-main">
+                            {step === 1 && <Step1 data={data} deps={deps} aiMessage={aiMessage} />}
+                            {step === 2 && <Step2 data={data} updateData={updateData} aiMessage={aiMessage} />}
+                            {step === 3 && <Step3 data={data} updateData={updateData} aiMessage={aiMessage} />}
 
-              <div style={{ marginBottom: 24 }}>
-                <label className="monument text-xs block mb-1" style={{ color: '#FFF469' }}>TARGET / BENCHMARK <span style={{color:'#ef4444'}}>*</span></label>
-                <input
-                  type="text"
-                  value={kpi.target || ''}
-                  onChange={(e) => updateKpi(activity.id, kpi.id, 'target', e.target.value)}
-                  placeholder="Under 14 days / Above 15% / 8/10 or higher"
-                  className="w-full"
-                  onKeyDown={(e) => { if (e.key === 'Enter' && canAdvanceKpi) handleNextKpi(); }}
-                />
-                <div className="char-counter text-xs">{(kpi.target || '').length}/200 (min 5)</div>
-              </div>
-
-              <div style={{ display: 'flex', gap: 12 }}>
-                <button
-                  onClick={() => kpiIdx > 0 ? setKpiIdx(kpiIdx - 1) : setSubScreen('data')}
-                  className="btn-secondary"
-                  style={{ flexShrink: 0 }}
-                >←</button>
-
-                <button
-                  onClick={handleAddKpi}
-                  className="btn-secondary"
-                  style={{ flexShrink: 0 }}
-                >+ ADD KPI</button>
-
-                <button
-                  onClick={handleNextKpi}
-                  disabled={!canAdvanceKpi}
-                  className="btn-primary"
-                  style={{ flex: 1 }}
-                >
-                  {isLastKpi
-                    ? isLastActivity
-                      ? '✓ Done with KPIs — Click NEXT →'
-                      : `Next Activity (${actIdx + 2}/${totalActivities}) →`
-                    : `Next KPI →`}
-                </button>
-              </div>
-
-              {kpis.length >= 2 && isLastKpi && isLastActivity && (
-                <p style={{ marginTop: 12, fontSize: 12, color: '#10B981', fontFamily: "'Monument', monospace", textAlign: 'center' }}>
-                  ✓ {kpis.filter(k => k.kpi && k.target).length} KPIs defined — ready to continue
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    // Step 3: Required Capabilities
-    function Step3Page({ data, updateActivity, onNext, onBack, canProceed, setShowHelp, aiReviewing }) {
-      return (
-        <div>
-
-            <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
-              STEP 3 OF 4
-            </div>
-            <div className="numbered-section mb-8 animate-in">03. REQUIRED CAPABILITIES</div>
-
-            {/* Fast Track Insight */}
-
-            {/* The Science */}
-            
-
-
-            <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
-              Define skills, systems, and resources needed for excellence
-            </h3>
-
-            <div className="border-l-4 border-yellow-400 pl-6 mb-12 animate-in" style={{animationDelay: '0.1s'}}>
-              <p className="text-2xl italic">
-                "Zara's Design Capabilities: Designers and buyers in daily sync making real-time calls, rapid prototyping labs, tight feedback loops from stores and data systems. Without these, their speed model collapses."
-              </p>
-            </div>
-
-            <p className="text-xl mb-8 text-gray-300">
-              Capabilities are the real-world skills, systems, and resources needed to win. They may be human (expertise), systemic (tools, workflows), or relational (partnerships). No capability means no delivery.
-            </p>
-
-            <div className="space-y-8 mb-12">
-              {(data.coreActivities || []).map((activity, actIndex) => (
-                <div key={activity.id} className="border-4 border-gray-700 p-6 animate-in" style={{animationDelay: `${0.15 + actIndex * 0.05}s`}}>
-                  <h4 className="riforma-bold text-3xl mb-6">
-                    {(activity.name || '').substring(0, 50) || `Activity ${actIndex + 1}`}
-                  </h4>
-
-                  <div className="border-2 border-gray-700 p-6" style={{background:"#1a1a1a"}}>
-                    <label className="monument text-sm block mb-2">REQUIRED CAPABILITIES <span className="text-red-500">*</span></label>
-                    <p className="text-sm text-gray-400 mb-2">What skills, systems, and resources are required to execute this activity at world-class level?</p>
-                    <textarea
-                      value={activity.requiredCapabilities || ''}
-                      onChange={(e) => updateActivity(activity.id, 'requiredCapabilities', e.target.value)}
-                      placeholder="HUMAN: Curriculum designers who understand regulation AND pedagogy, experienced facilitators with 5+ years teaching experience&#10;&#10;SYSTEMIC: Fast modular content production system, LMS platform with analytics, quality assurance workflow&#10;&#10;RELATIONAL: Direct input from 10+ industry partners, collaboration with regulatory bodies, peer review network"
-                      className="w-full"
-                      rows={10}
-                    />
-                    <div className="char-counter">{(activity.requiredCapabilities || '').length}/2000 (min 100)</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-        </div>
-      );
-    }
-
-    // Step 4: Gap Analysis — typeform: one activity at a time, three sub-screens per activity
-    function Step4Page({ data, updateActivity, aiReviewing }) {
-      const activities = data.coreActivities || [];
-      const [actIdx, setActIdx] = useState(0);
-      // subScreen: 'current' | 'gap' | 'plan'
-      const [subScreen, setSubScreen] = useState('current');
-
-      const totalActivities = activities.length;
-      const activity = activities[actIdx] || {};
-      const isLastActivity = actIdx === totalActivities - 1;
-
-      const subScreens = ['current', 'gap', 'plan'];
-      const subScreenIndex = subScreens.indexOf(subScreen);
-      const isLastSubScreen = subScreen === 'plan';
-
-      const canAdvanceCurrent = (activity.currentCapabilities || '').trim().length >= 50;
-      const canAdvanceGap = (activity.capabilityGap || '').trim().length >= 50;
-      const canAdvancePlan = (activity.developmentPlan || '').trim().length >= 100;
-
-      const canAdvanceCurrent_ai = canAdvanceCurrent;
-
-      const goNextSubScreen = () => {
-        if (subScreen === 'current' && canAdvanceCurrent) setSubScreen('gap');
-        else if (subScreen === 'gap' && canAdvanceGap) setSubScreen('plan');
-        else if (subScreen === 'plan' && canAdvancePlan) {
-          if (!isLastActivity) {
-            setActIdx(actIdx + 1);
-            setSubScreen('current');
-          }
-          // last activity + last sub: outer NEXT handles step advancement
-        }
-      };
-
-      const goBackSubScreen = () => {
-        if (subScreen === 'current' && actIdx > 0) {
-          setActIdx(actIdx - 1);
-          setSubScreen('plan');
-        } else if (subScreen === 'gap') setSubScreen('current');
-        else if (subScreen === 'plan') setSubScreen('gap');
-      };
-
-      const subScreenLabels = { current: 'CURRENT CAPABILITIES', gap: 'CAPABILITY GAPS', plan: 'DEVELOPMENT PLAN' };
-      const subScreenNums = { current: 1, gap: 2, plan: 3 };
-
-      return (
-        <div className="animate-in">
-          <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
-            STEP 4 OF 4
-          </div>
-          <div className="numbered-section mb-8">04. GAP ANALYSIS</div>
-
-          {/* Activity progress dots */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-            {activities.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => { setActIdx(i); setSubScreen('current'); }}
-                title={`Activity ${i + 1}`}
-                style={{
-                  width: 32, height: 6, border: 'none', borderRadius: 3, cursor: 'pointer', padding: 0,
-                  background: i === actIdx ? '#FFF469' : i < actIdx ? '#555' : '#333',
-                  transition: 'background 0.2s'
-                }}
-              />
-            ))}
-            <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#999', marginLeft: 6 }}>
-              ACTIVITY {actIdx + 1} OF {totalActivities}
-            </span>
-          </div>
-
-          {/* Sub-screen progress dots */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 24 }}>
-            {subScreens.map((s, i) => (
-              <div
-                key={s}
-                style={{
-                  width: 16, height: 4, borderRadius: 2,
-                  background: s === subScreen ? '#FFF469' : subScreenIndex > i ? '#666' : '#333'
-                }}
-              />
-            ))}
-            <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#999', marginLeft: 6 }}>
-              {subScreenLabels[subScreen]} ({subScreenNums[subScreen]}/3)
-            </span>
-          </div>
-
-          {/* Activity label */}
-          <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', background: '#111', display: 'inline-block', padding: '4px 12px', marginBottom: 20, letterSpacing: '0.1em', border: '1px solid #333' }}>
-            {(activity.name || '').substring(0, 40) || `Activity ${actIdx + 1}`}
-          </div>
-
-          {subScreen === 'current' && (
-            <div className="animate-in">
-              <h3 className="riforma-bold mb-2" style={{ fontSize: 26 }}>What capabilities do you have today?</h3>
-              <p style={{ color: '#999', marginBottom: 16, fontSize: 14 }}>Be honest: what skills, systems, and resources do we currently have for <strong style={{color:'#fff'}}>{activity.name || `Activity ${actIdx + 1}`}</strong>?</p>
-              <textarea
-                value={activity.currentCapabilities || ''}
-                onChange={(e) => updateActivity(activity.id, 'currentCapabilities', e.target.value)}
-                placeholder={"HUMAN: 2 curriculum designers, 3 part-time facilitators\n\nSYSTEMIC: Basic LMS platform (no analytics), manual content review\n\nRELATIONAL: 3 industry partners, informal regulatory contacts"}
-                className="w-full"
-                rows={7}
-                autoFocus
-              />
-              <div className="char-counter">{(activity.currentCapabilities || '').length}/2000 (min 50)</div>
-              <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
-                <button onClick={goBackSubScreen} disabled={actIdx === 0 && subScreen === 'current'} className="btn-secondary" style={{ flexShrink: 0 }}>←</button>
-                <button onClick={goNextSubScreen} disabled={!canAdvanceCurrent} className="btn-primary" style={{ flex: 1 }}>
-                  IDENTIFY GAPS →
-                </button>
-              </div>
-            </div>
-          )}
-
-          {subScreen === 'gap' && (
-            <div className="animate-in">
-              <h3 className="riforma-bold mb-2" style={{ fontSize: 26 }}>What are the capability gaps?</h3>
-              <p style={{ color: '#999', marginBottom: 16, fontSize: 14 }}>Compare current vs required. What's missing for <strong style={{color:'#fff'}}>{activity.name || `Activity ${actIdx + 1}`}</strong>?</p>
-              <div className="border-l-4 border-yellow-400 pl-4 mb-6" style={{ borderColor: '#FFF469' }}>
-                <p style={{ fontStyle: 'italic', color: '#ccc', fontSize: 14 }}>
-                  "The gap becomes your training agenda, hiring spec, and partner criteria."
-                </p>
-              </div>
-              <textarea
-                value={activity.capabilityGap || ''}
-                onChange={(e) => updateActivity(activity.id, 'capabilityGap', e.target.value)}
-                placeholder={"HUMAN GAPS: Need 1 senior designer with dual expertise\n\nSYSTEMIC GAPS: LMS lacks analytics, no automated QA workflow\n\nRELATIONAL GAPS: Need 7 more industry partners"}
-                className="w-full"
-                rows={7}
-                autoFocus
-              />
-              <div className="char-counter">{(activity.capabilityGap || '').length}/2000 (min 50)</div>
-              <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
-                <button onClick={goBackSubScreen} className="btn-secondary" style={{ flexShrink: 0 }}>←</button>
-                <button onClick={goNextSubScreen} disabled={!canAdvanceGap} className="btn-primary" style={{ flex: 1 }}>
-                  BUILD DEVELOPMENT PLAN →
-                </button>
-              </div>
-            </div>
-          )}
-
-          {subScreen === 'plan' && (
-            <div className="animate-in">
-              <h3 className="riforma-bold mb-2" style={{ fontSize: 26 }}>How will you close the gaps?</h3>
-              <p style={{ color: '#999', marginBottom: 16, fontSize: 14 }}>Concrete actions with timelines to close the gaps for <strong style={{color:'#fff'}}>{activity.name || `Activity ${actIdx + 1}`}</strong>.</p>
-              <textarea
-                value={activity.developmentPlan || ''}
-                onChange={(e) => updateActivity(activity.id, 'developmentPlan', e.target.value)}
-                placeholder={"Q2 2025: Hire senior designer (budget: $120K)\nQ2 2025: Regulatory training workshop (2 days)\nQ3 2025: Upgrade LMS analytics module ($50K)\nQ4 2025: Partner outreach campaign — 7 new partners\nQ1 2026: Recruit 2 experienced facilitators ($80K each)"}
-                className="w-full"
-                rows={8}
-                autoFocus
-              />
-              <div className="char-counter">{(activity.developmentPlan || '').length}/3000 (min 100)</div>
-              <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
-                <button onClick={goBackSubScreen} className="btn-secondary" style={{ flexShrink: 0 }}>←</button>
-                <button onClick={goNextSubScreen} disabled={!canAdvancePlan} className="btn-primary" style={{ flex: 1 }}>
-                  {isLastActivity
-                    ? '✓ Done — Click VIEW CANVAS →'
-                    : `Next Activity (${actIdx + 2}/${totalActivities}) →`}
-                </button>
-              </div>
-              {isLastActivity && canAdvancePlan && (
-                <p style={{ marginTop: 12, fontSize: 12, color: '#10B981', fontFamily: "'Monument', monospace", textAlign: 'center' }}>
-                  ✓ All {totalActivities} activities analysed — ready to view canvas
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    // Canvas Page
-    function CanvasPage({ data, onExport, onSubmit }) {
-      return (
-        <div className="bg-black text-white min-h-screen p-16">
-          <div className="max-w-6xl mx-auto">
-            {/* Canvas Content */}
-            <div id="canvas-content" className="bg-white p-16 mb-8">
-              <div className="border-b-4 border-black pb-8 mb-8">
-                <h1 className="plaak text-7xl mb-2">CORE DECISIONS & CAPABILITIES</h1>
-                <p className="text-2xl text-gray-400">Sprint 23 - Build The Engine Room</p>
-              </div>
-
-              {(data.coreActivities || []).map((activity, index) => (
-                <div key={activity.id} className="mb-12 pb-8 border-b-2 border-gray-700">
-                  {/* Activity Header */}
-                  <div className="mb-6">
-                    <h2 className="riforma-bold text-4xl mb-2">
-                      {(activity.name || '').substring(0, 80) || `Core Activity ${index + 1}`}
-                    </h2>
-                  </div>
-
-                  {/* Decisions */}
-                  <div className="mb-6">
-                    <h3 className="riforma-bold text-2xl mb-3">Key Decisions</h3>
-                    <div className="space-y-2">
-                      {(activity.decisions || []).slice(0, 5).map((decision, i) => (
-                        <div key={i} className="p-4 border-l-4 border-yellow-400" style={{background:"#1a1a1a"}}>
-                          <p className="text-base mb-1">{(decision.decision || '').substring(0, 150)}</p>
-                          <p className="text-sm text-gray-400">
-                            Frequency: {decision.frequency || 'N/A'} | Impact: {decision.impact || 'N/A'}
-                          </p>
+                            <div className="wizard-footer">
+                                <button className="btn-wiz-back" onClick={handleBack}>← BACK</button>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                                    {aiReviewing && (
+                                        <span style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#666', letterSpacing: '0.06em' }}>AI REVIEWING…</span>
+                                    )}
+                                    <button className="btn-wiz-next" onClick={handleNext} disabled={aiReviewing}>
+                                        {aiReviewing ? 'REVIEWING…' : step === totalSteps ? 'FINISH →' : 'NEXT →'}
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                      ))}
+                        <WizardSidebar currentStep={step} data={data} />
                     </div>
-                  </div>
+                )}
 
-                  {/* KPIs */}
-                  <div className="mb-6">
-                    <h3 className="riforma-bold text-2xl mb-3">KPIs</h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      {(activity.kpis || []).slice(0, 4).map((kpi, i) => (
-                        <div key={i} className="bg-yellow-50 p-3 border-l-4 border-yellow-400">
-                          <p className="riforma-bold text-base mb-1">{(kpi.kpi || '').substring(0, 80)}</p>
-                          <p className="text-sm text-gray-400">Target: {(kpi.target || '').substring(0, 50)}</p>
+                {/* Canvas step */}
+                {step === 'canvas' && (
+                    <div className="wizard-layout">
+                        <div className="wizard-main">
+                            <CanvasStep data={data} onSubmit={handleSubmit} submitState={submitState} aiMessage={aiMessage} />
+                            <div className="wizard-footer">
+                                <button className="btn-wiz-back" onClick={handleBack}>← BACK</button>
+                                <div />
+                            </div>
                         </div>
-                      ))}
+                        <WizardSidebar currentStep="canvas" data={data} />
                     </div>
-                  </div>
-
-                  {/* Capability Gap */}
-                  <div className="mb-6">
-                    <h3 className="riforma-bold text-2xl mb-3">Capability Gap</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="p-4 border-l-4 border-yellow-400" style={{background:"#1a1a1a"}}>
-                        <p className="riforma-bold text-lg mb-2">Current</p>
-                        <p className="text-sm">{(activity.currentCapabilities || '').substring(0, 200)}...</p>
-                      </div>
-                      <div className="p-4 border-l-4 border-yellow-400" style={{background:"#1a1a1a"}}>
-                        <p className="riforma-bold text-lg mb-2">Required</p>
-                        <p className="text-sm">{(activity.requiredCapabilities || '').substring(0, 200)}...</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Development Plan */}
-                  <div className="bg-neutral-900 p-4 border-2 border-gray-300">
-                    <h3 className="riforma-bold text-xl mb-2">Development Plan</h3>
-                    <p className="text-sm">{(activity.developmentPlan || '').substring(0, 300)}...</p>
-                  </div>
-                </div>
-              ))}
-
-              <div className="mt-12 pt-8 border-t-2 border-gray-700 text-center text-sm text-gray-500">
-                <p>Generated: {new Date().toLocaleDateString()}</p>
-                <p className="mt-1">Fast Track Sprint 23 - Core Decisions & Capabilities</p>
-              </div>
+                )}
             </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-6 mb-6">
-              <button onClick={onExport} className="btn-primary flex-1">
-                EXPORT PDF
-              </button>
-              <button onClick={onSubmit} className="btn-primary flex-1">
-                SUBMIT
-              </button>
-            </div>
-
-            {/* Case Study */}
-            <CaseStudy
-                before={"All decisions funneled through the CEO. Weekly design reviews took 3 weeks to schedule. Store managers had no authority to pull underperforming SKUs. The result: 60% slower time-to-shelf than competitors and mounting inventory waste."}
-                after={"Zara implemented a tiered decision framework. Store managers gained authority over local assortment pulls. Design teams were empowered to greenlight trend items in daily syncs. Only strategic bets above a threshold escalated to leadership. Result: 80% of operational decisions now made within 24 hours."}
-                quote={"Once we stopped funneling every call through the top, our people started making better decisions faster than we ever could centrally. The framework did not remove control \u2014 it distributed intelligence. \u2014 Retail Operations Director, Zara"}
-            />
-          </div>
-        </div>
-      );
+        );
     }
 
-    // Progress Indicator
-    function ProgressIndicator({ currentStep }) {
-      const steps = [
-        { number: 1, label: 'Decisions' },
-        { number: 2, label: 'Data & KPIs' },
-        { number: 3, label: 'Capabilities' },
-        { number: 4, label: 'Gap Analysis' }
-      ];
-
-      return (
-        <div className="flex items-center justify-center gap-4 mb-12">
-          {steps.map((step, index) => (
-            <Fragment key={step.number}>
-              <div className="flex flex-col items-center">
-                <div className={`progress-dot ${step.number === currentStep ? 'active' : ''} ${step.number < currentStep ? 'completed' : ''}`}></div>
-                <div className="monument text-xs mt-2">{step.label}</div>
-              </div>
-              {index < steps.length - 1 && <div className="progress-line w-12"></div>}
-            </Fragment>
-          ))}
-        </div>
-      );
-    }
-
-    // Render App
-        ReactDOM.render(<CoreDecisionsApp />, document.getElementById('root'));
-  </script>
+    ReactDOM.render(<ProcessesDecisionsApp />, document.getElementById('root'));
+</script>
 </body>
 </html>
