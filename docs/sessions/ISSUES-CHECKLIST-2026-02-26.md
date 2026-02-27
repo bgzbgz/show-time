@@ -138,7 +138,7 @@
 | 13-1 | Remove "Your Details" section from "Before We Start" page | ✅ |
 | 13-2 | Context from previous tools: button style (G3) | ✅ |
 | 13-3 | Remove question mark bubble (G8) | ✅ |
-| 13-4 | Doesn't follow new design overall | ❌ |
+| 13-4 | Doesn't follow new design overall | ✅ |
 | 13-5 | "Continue Anyway" on AI coach didn't let user pass first section | ✅ |
 | 13-6 | Remove Fast Track Insight + Science boxes (G5) | ✅ |
 
@@ -226,12 +226,12 @@
 ### Tool 23 — Core Decisions & Processes
 | # | Issue | Status |
 |---|-------|--------|
-| 23-1 | Doesn't follow new design | ❌ |
+| 23-1 | Doesn't follow new design | ✅ |
 | 23-2 | Context from previous tools: button style (G3) | ✅ |
 | 23-3 | Remove question mark bubble (G8) | ✅ |
 | 23-4 | KPI entry: each on separate screen (G13) | ✅ |
 | 23-5 | No AI layer active | ✅ |
-| 23-6 | Required capabilities: design problems | ❌ |
+| 23-6 | Required capabilities: design problems | ✅ |
 | 23-7 | Transition screens: wrong design (G11) | ✅ |
 | 23-8 | Gap analysis: typeform style + AI reviews each answer (G13) | ✅ |
 | 23-9 | Submission success message not styled (G9) | ✅ |
@@ -239,20 +239,20 @@
 ### Tool 24 — FIT & ABC Analysis
 | # | Issue | Status |
 |---|-------|--------|
-| 24-1 | Doesn't follow new design | ❌ |
+| 24-1 | Doesn't follow new design | ✅ |
 | 24-2 | Remove question mark bubble (G8) | ✅ |
 | 24-3 | Too many boxes — appear only after answers completed (G6) | ✅ |
 | 24-4 | Each question on separate screen (G13) | ✅ |
-| 24-5 | Colors after answers are not brand colors | ❌ |
+| 24-5 | Colors after answers are not brand colors | ✅ |
 | 24-6 | Transition screens: not new design (G11) | ✅ |
 | 24-7 | AI layer doesn't work | ✅ |
-| 24-8 | Action plans: same design issues | ❌ |
+| 24-8 | Action plans: same design issues | ✅ |
 | 24-9 | Submission success message not styled (G9) | ✅ |
 
 ### Tool 25 — Org Redesign
 | # | Issue | Status |
 |---|-------|--------|
-| 25-1 | Doesn't follow new design (same as 24) | ❌ |
+| 25-1 | Doesn't follow new design (same as 24) | ✅ |
 | 25-2 | Fast Track Insight + Science: appear after answers (G6) | ✅ |
 | 25-3 | Each team member: individual slide (typeform) (G13) | ✅ |
 | 25-4 | Scoring instructions confusing and logic incorrect | ✅ |
@@ -284,8 +284,8 @@
 
 | Status | Count |
 |--------|-------|
-| ✅ Fixed / Done | **~103** |
-| ❌ Not done / Needs work | **~7** |
+| ✅ Fixed / Done | **~110** |
+| ❌ Not done / Needs work | **1** |
 | 🔲 Needs investigation | **0** |
 
 ---
@@ -295,10 +295,3 @@
 | # | Issue | Notes |
 |---|-------|-------|
 | 01-5 | Strengths amplifier: broken horizontal drag / scroll | Minor UX, deferred |
-| 13-4 | Doesn't follow new design overall | Visual overhaul needed |
-| 23-1 | Doesn't follow new design | Visual overhaul needed |
-| 23-6 | Required capabilities: design problems | Minor section layout |
-| 24-1 | Doesn't follow new design | Visual overhaul needed |
-| 24-5 | Colors after answers are not brand colors | CSS brand color fix |
-| 24-8 | Action plans: same design issues | Layout fix needed |
-| 25-1 | Doesn't follow new design | Visual overhaul needed |
