@@ -3,1489 +3,1029 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Know Thyself | Fast Track Tool</title>
+    <title>Know Thyself | Fast Track Program</title>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <!-- ToolDB shared library -->
     <script src="../../shared/js/tool-db.js"></script>
     <script src="../../shared/js/ai-challenge.js"></script>
-    <!-- Dependency Injection -->
     <script src="../../shared/js/dependency-injection.js"></script>
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
     <script src="../../shared/js/cognitive-load.js"></script>
     <script src="../../js/tool-access-control.js"></script>
 
-    <!-- Font preloading to prevent FOUT -->
-    <link rel="preload" href="Plaak3Trial-43-Bold.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="RiformaLL-Regular.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="MonumentGrotesk-Mono.woff2" as="font" type="font/woff2" crossorigin>
-
     <style>
-        /* === FONT FACES === */
-        @font-face { font-family: 'Plaak'; src: url('Plaak3Trial-43-Bold.woff2') format('woff2'); font-weight: bold; font-display: swap; }
-        @font-face { font-family: 'Riforma'; src: url('RiformaLL-Regular.woff2') format('woff2'); font-weight: normal; font-display: swap; }
-        @font-face { font-family: 'Riforma'; src: url('RiformaLL-Regular.woff2') format('woff2'); font-weight: 600; font-display: swap; }
-        @font-face { font-family: 'Monument'; src: url('MonumentGrotesk-Mono.woff2') format('woff2'); font-display: swap; }
+        @font-face { font-family: 'Plaak';    src: url('Plaak3Trial-43-Bold.woff2') format('woff2'); font-weight: bold; }
+        @font-face { font-family: 'Riforma';  src: url('RiformaLL-Regular.woff2')   format('woff2'); font-weight: normal; }
+        @font-face { font-family: 'Riforma';  src: url('RiformaLL-Regular.woff2')   format('woff2'); font-weight: 600; }
+        @font-face { font-family: 'Monument'; src: url('MonumentGrotesk-Mono.woff2') format('woff2'); }
 
-        /* === BASE RESET === */
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Riforma', -apple-system, sans-serif;
-            font-size: 16px;
-            color: #000;
-            background: #000;
-            -webkit-font-smoothing: antialiased;
-        }
+        body { font-family: 'Riforma', -apple-system, sans-serif; font-size: 16px; color: #000; background: #000; -webkit-font-smoothing: antialiased; }
 
-        /* === CUSTOM SCROLLBAR === */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #000; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #333; }
-        * { scrollbar-width: thin; scrollbar-color: #000 transparent; }
-
-        /* === TYPOGRAPHY HELPERS === */
-        .plaak { font-family: 'Plaak', sans-serif; font-weight: bold; letter-spacing: -0.01em; line-height: 1.2; }
+        .plaak   { font-family: 'Plaak', sans-serif; font-weight: bold; letter-spacing: -0.01em; line-height: 1.2; }
         .monument { font-family: 'Monument', monospace; letter-spacing: 0.05em; }
 
-        /* === LAYOUT FRAME === */
-        .tool-frame { background: #fff; min-height: 100vh; }
-        .tool-inner { background: #fff; min-height: 100vh; }
-
-        /* === WIZARD LAYOUT === */
         .wizard-layout { display: flex; min-height: 100vh; }
-        .wizard-main {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            background: #fff;
-        }
-        .wizard-content { flex: 1; padding: 48px 32px; max-width: 720px; width: 100%; margin: 0 auto; }
-
-        /* === SIDEBAR === */
+        .wizard-main { flex: 1; display: flex; flex-direction: column; min-height: 100vh; background: #fff; padding: 0 48px; }
         .wizard-sidebar { width: 280px; background: #1a1a1a; min-height: 100vh; padding: 48px 32px; display: flex; flex-direction: column; position: sticky; top: 0; align-self: flex-start; height: 100vh; overflow-y: auto; }
-        .wizard-sidebar-inner {
-            padding: 32px 24px;
-            height: 100%;
-            overflow-y: auto;
-            overflow-x: hidden;
-        }
-        .sidebar-step-item {
-            padding: 12px;
-            margin-bottom: 8px;
-            border-left: 3px solid transparent;
-            transition: all 0.2s ease;
-        }
-        .sidebar-step-item.active { border-left-color: #FFF469; background: #222; }
-        .sidebar-step-item.completed { background: #fff; color: #000; border-left-color: #fff; cursor: pointer; }
-        .sidebar-step-item.completed:hover { background: #E0E0E0; }
-        .sidebar-step-item.locked { opacity: 0.5; }
-        .sidebar-step-item .step-num { font-family: 'Riforma', sans-serif; font-size: 14px; }
-        .sidebar-step-item .step-name { font-family: 'Riforma', sans-serif; font-size: 14px; }
-        .sidebar-snippet { font-size: 12px; margin-top: 4px; opacity: 0.7; line-height: 1.3; }
 
-        /* === STEP HEADER === */
-        .step-indicator {
-            font-family: 'Monument', monospace;
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #6B7280;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .step-time { font-family: 'Monument', monospace; font-size: 11px; color: #6B7280; }
-        .step-heading {
-            font-family: 'Plaak', sans-serif;
-            font-weight: bold;
-            font-size: 32px;
-            text-transform: uppercase;
-            letter-spacing: -0.01em;
-            line-height: 1.2;
-            color: #000;
-            margin-bottom: 6px;
-        }
-        .step-hint {
-            font-size: 16px;
-            color: #6B7280;
-            line-height: 1.5;
-            margin: 0 0 32px 0;
-        }
+        .step-content { max-width: 100%; padding: 40px 0; flex: 1; }
+        .step-indicator { font-family: 'Monument', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #666; margin-bottom: 8px; }
+        .opening-box { margin-bottom: 32px; }
+        .opening-box .step-heading { font-family: 'Plaak', sans-serif; font-weight: bold; font-size: 32px; letter-spacing: -0.01em; line-height: 1.2; color: #000; margin-bottom: 6px; }
+        .opening-box .step-hint { font-size: 14px; color: #666; line-height: 1.5; margin: 0; }
 
-        /* === FORM ELEMENTS === */
-        .ft-label {
-            display: flex; align-items: center; gap: 6px;
-            font-family: 'Monument', monospace; font-size: 14px; font-weight: 500;
-            text-transform: uppercase; letter-spacing: 0.05em; color: #000; margin-bottom: 8px;
-        }
-        .ft-required { color: #DC2626; font-weight: 700; }
+        .field-group { margin-bottom: 32px; }
+        .field-label { font-weight: 600; font-size: 16px; color: #000; margin-bottom: 8px; display: block; }
+        .field-input { border: 1px solid #E0E0E0; padding: 12px 16px; font-family: 'Riforma', sans-serif; font-size: 16px; width: 100%; color: #000; background: #fff; transition: border-color 0.2s; outline: none; }
+        .field-input:focus { border-color: #000; }
+        .field-textarea { border: 1px solid #E0E0E0; padding: 12px 16px; font-family: 'Riforma', sans-serif; font-size: 16px; width: 100%; min-height: 80px; resize: none; color: #000; background: #fff; transition: border-color 0.2s; outline: none; overflow: hidden; }
+        .field-textarea:focus { border-color: #000; }
+        .field-help { font-size: 13px; color: #666; margin-top: 4px; }
 
-        .ft-input {
-            width: 100%;
-            height: 44px;
-            padding: 8px 16px;
-            font-family: 'Riforma', sans-serif;
-            font-size: 16px;
-            color: #000;
-            background: #fff;
-            border: 1px solid #E5E7EB;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        }
-        .ft-input:focus { outline: none; border-color: #000; box-shadow: 0 0 0 3px #FFF469; }
-        .ft-input.has-error, .ft-input.error { border: 2px solid #DC2626; }
+        .closing-box { border-top: 1px solid #E0E0E0; padding: 20px 0 0 0; margin-top: 8px; text-align: center; }
+        .closing-box .closing-title { font-family: 'Monument', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #000; margin-bottom: 6px; }
+        .closing-box p { font-size: 14px; color: #666; }
 
-        .ft-textarea {
-            width: 100%;
-            min-height: 120px;
-            padding: 12px 16px;
-            font-family: 'Riforma', sans-serif;
-            font-size: 16px;
-            color: #000;
-            background: #fff;
-            border: 1px solid #E5E7EB;
-            resize: none;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        }
-        .ft-textarea:focus { outline: none; border-color: #000; box-shadow: 0 0 0 3px #FFF469; }
+        .wizard-footer { display: flex; justify-content: space-between; align-items: center; padding: 24px 48px; border-top: 1px solid #e5e7eb; background: #fff; }
+        .btn-wiz-back { background: transparent; border: 2px solid #d1d5db; color: #6b7280; padding: 12px 28px; font-family: 'Monument', monospace; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
+        .btn-wiz-back:hover { border-color: #000; color: #000; }
+        .btn-wiz-next { background: #000; color: #fff; border: 2px solid #000; padding: 12px 36px; font-family: 'Monument', monospace; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
+        .btn-wiz-next:hover:not(:disabled) { background: #FFF469; color: #000; border-color: #FFF469; }
+        .btn-wiz-next:disabled { background: #E0E0E0; color: #9CA3AF; border-color: #E0E0E0; cursor: not-allowed; }
 
-        .ft-help { font-size: 14px; color: #6B7280; margin-top: 4px; line-height: 1.5; }
-        .ft-error-msg { font-size: 14px; font-weight: 600; color: #DC2626; margin-top: 4px; }
-        .ft-field-group { margin-bottom: 24px; }
-        .ft-field-group:last-child { margin-bottom: 0; }
-        .ft-section { margin-bottom: 32px; }
+        .activity-row { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 8px; }
+        .activity-row-num { font-family: 'Monument', monospace; font-size: 11px; color: #999; min-width: 24px; padding-top: 14px; }
+        .btn-remove { background: none; border: none; color: #999; cursor: pointer; font-size: 18px; padding: 6px 8px; transition: color 0.2s; flex-shrink: 0; }
+        .btn-remove:hover { color: #DC2626; }
+        .btn-add { width: 100%; padding: 10px 0; border: 2px dashed #E0E0E0; background: none; font-family: 'Monument', monospace; font-size: 12px; color: #666; letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer; margin-top: 4px; transition: all 0.2s; }
+        .btn-add:hover { border-color: #000; color: #000; }
 
-        /* === YELLOW INSIGHT BOX === */
-        .ft-insight { background: #FFF469; border: 3px solid #000; padding: 16px; margin-bottom: 32px; }
+        .sidebar-tool-num { font-family: 'Monument', monospace; font-size: 10px; color: #555; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 8px; }
+        .sidebar-tool-title { font-family: 'Plaak', sans-serif; font-size: 22px; color: #fff; margin-bottom: 32px; line-height: 1.1; }
+        .sidebar-step { padding: 8px 0; border-bottom: 1px solid #2a2a2a; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: opacity 0.2s; }
+        .sidebar-step:last-child { border-bottom: none; }
+        .sidebar-step-dot { width: 6px; height: 6px; border-radius: 50%; background: #555; flex-shrink: 0; transition: background 0.2s; }
+        .sidebar-step-dot.active { background: #FFF469; }
+        .sidebar-step-dot.done   { background: #4ade80; }
+        .sidebar-step-label { font-family: 'Monument', monospace; font-size: 10px; letter-spacing: 0.08em; color: #555; text-transform: uppercase; transition: color 0.2s; }
+        .sidebar-step-label.active { color: #FFF469; }
+        .sidebar-step-label.done   { color: #4ade80; }
 
-        /* === EXAMPLE BOX === */
-        .ft-example { background: #F3F4F6; padding: 16px; margin-bottom: 8px; font-size: 14px; line-height: 1.6; color: #1F2937; }
-
-        /* === ERROR SUMMARY === */
-        .ft-error-summary { border: 2px solid #DC2626; background: #fff; padding: 16px; margin-bottom: 24px; }
-        .ft-error-summary a { color: #DC2626; text-decoration: underline; cursor: pointer; }
-
-        /* === BUTTON FOOTER === */
-        .btn-footer {
-            position: sticky; bottom: 0; z-index: 10;
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 16px 32px; border-top: 1px solid #E5E7EB; background: #fff; width: 100%;
-        }
-        .btn-back {
-            background: #fff; color: #000; border: 2px solid #000;
-            padding: 12px 24px; font-family: 'Riforma', sans-serif; font-size: 16px;
-            cursor: pointer; transition: all 0.2s ease; min-height: 44px;
-        }
-        .btn-back:hover { background: #F3F4F6; }
-        .btn-next {
-            background: #000; color: #fff; border: 2px solid #000;
-            padding: 12px 24px; font-family: 'Riforma', sans-serif; font-size: 16px;
-            cursor: pointer; transition: all 0.2s ease; min-height: 44px;
-        }
-        .btn-next:hover:not(:disabled) { transform: scale(1.02); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        .btn-next:disabled { background: #E5E7EB; color: #9CA3AF; border-color: #E5E7EB; cursor: not-allowed; }
-
-        /* === MOBILE STEP BAR === */
-        .mobile-step-bar { display: none; padding: 12px 16px; border-bottom: 1px solid #E5E7EB; background: #F3F4F6; }
-        .mobile-step-bar .bar-text { font-family: 'Monument', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #6B7280; margin-bottom: 6px; }
-        .mobile-progress { height: 3px; background: #E5E7EB; width: 100%; }
-        .mobile-progress-fill { height: 100%; background: #000; transition: width 0.3s ease; }
-
-        /* === CANVAS STYLES === */
-        .numbered-section { background: #000; color: #fff; padding: 8px 14px; font-size: 14px; font-weight: bold; letter-spacing: 0.5px; display: inline-block; font-family: 'Monument', monospace; }
-
-        /* === ANIMATIONS === */
-        @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .animate-in { animation: fadeSlideIn 0.3s ease-out; }
-        .fade-in { animation: fadeIn 0.5s ease-out; }
-
-        /* === PRINT === */
-        @media print { .no-print { display: none !important; } body { background: white; } }
-
-        /* === RESPONSIVE === */
-        @media (min-width: 769px) and (max-width: 1024px) {
-            .wizard-sidebar { width: 220px; }
-            .wizard-sidebar-inner { padding: 24px 16px; }
-        }
+        .mobile-step-bar { display: none; }
         @media (max-width: 768px) {
             .wizard-sidebar { display: none; }
-            .mobile-step-bar { display: block; }
-            .wizard-content { padding: 24px 16px; }
-            .step-heading { font-size: 24px; }
-            .btn-footer { padding: 12px 16px; }
-        }
-        @media (max-width: 480px) {
-            .step-heading { font-size: 20px; }
-            .wizard-content { padding: 20px 12px; }
+            .wizard-main { padding: 0 24px; }
+            .mobile-step-bar { display: flex; align-items: center; gap: 8px; padding: 16px 24px; background: #1a1a1a; }
+            .mobile-step-dot { width: 8px; height: 8px; border-radius: 50%; background: #333; transition: background 0.2s; }
+            .mobile-step-dot.active { background: #FFF469; }
+            .mobile-step-dot.done   { background: #4ade80; }
+            .mobile-step-text { font-family: 'Monument', monospace; font-size: 11px; color: #fff; letter-spacing: 0.06em; }
+            .wizard-footer { padding: 16px 24px; }
         }
 
-        /* === TOOL-SPECIFIC: Legacy button styles === */
-        .btn-primary {
-            background: #000; color: #fff; padding: 12px 24px; border: 2px solid #000;
-            font-family: 'Riforma', sans-serif; font-size: 16px; cursor: pointer; transition: all 0.2s ease;
-        }
-        .btn-primary:hover:not(:disabled) { transform: scale(1.02); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        .btn-primary:disabled { background: #E0E0E0; color: #9CA3AF; cursor: not-allowed; opacity: 0.5; border-color: #E0E0E0; }
-        .btn-secondary {
-            background: #fff; color: #000; padding: 12px 24px; border: 2px solid #000;
-            font-family: 'Riforma', sans-serif; font-size: 16px; cursor: pointer; transition: all 0.2s ease;
-        }
-        .btn-secondary:hover { background: #F8F8F8; }
+        .animate-in { animation: fadeSlideIn 0.4s ease both; }
+        @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 
-        textarea { resize: none !important; min-height: 100px; }
+        .ai-message { background: #FFF9C4; border: 1px solid #FFF469; border-left: 4px solid #FFF469; padding: 12px 16px; font-size: 14px; color: #333; margin-top: 16px; line-height: 1.6; }
+
+        .energy-btn { padding: 6px 14px; border: 2px solid #E0E0E0; background: #fff; font-family: 'Monument', monospace; font-size: 11px; letter-spacing: 0.04em; cursor: pointer; transition: all 0.15s; }
+        .energy-btn.plus.active  { background: #22c55e; border-color: #22c55e; color: #fff; }
+        .energy-btn.minus.active { background: #DC2626; border-color: #DC2626; color: #fff; }
+        .energy-btn:not(.active) { color: #999; }
+
+        .value-row { border: 1px solid #E0E0E0; padding: 16px; margin-bottom: 12px; }
+        .value-row-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+        .value-number { font-family: 'Plaak', sans-serif; font-size: 22px; color: #000; min-width: 32px; }
+
+        .align-track { display: flex; align-items: center; gap: 10px; }
+        .align-track input[type=range] { flex: 1; accent-color: #000; }
+        .align-track-val { font-family: 'Monument', monospace; font-size: 12px; min-width: 36px; text-align: right; }
+
+        .goal-row { border: 1px solid #E0E0E0; padding: 16px; margin-bottom: 12px; }
+        .goal-row-header { font-family: 'Plaak', sans-serif; font-size: 18px; margin-bottom: 12px; }
+
+        .canvas-section { margin-bottom: 40px; }
+        .canvas-section-title { font-family: 'Monument', monospace; font-size: 10px; color: #999; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #000; }
+        .canvas-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .canvas-card { border: 1px solid #E0E0E0; padding: 16px; }
+        .canvas-card-label { font-family: 'Monument', monospace; font-size: 9px; color: #999; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; }
+        .canvas-card-value { font-size: 14px; color: #333; line-height: 1.6; white-space: pre-wrap; }
+
+        .submit-success { background: #f0fdf4; border: 1px solid #86efac; padding: 32px; text-align: center; margin-top: 24px; }
+
+        .ft-reveal { margin-top: 24px; padding-top: 20px; border-top: 1px solid #e5e7eb; animation: ftRevealIn 0.4s ease; }
+        .ft-reveal-label { font-family: 'Monument', monospace; font-size: 10px; letter-spacing: 0.12em; color: #888; text-transform: uppercase; margin-bottom: 8px; }
+        .ft-reveal-text { font-size: 14px; color: #555; line-height: 1.8; }
+        @keyframes ftRevealIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        .dep-context { border: 1px solid #E0E0E0; margin-bottom: 24px; }
+        .dep-context-header { background: #F5F5F5; padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .dep-context-label { font-family: 'Monument', monospace; font-size: 10px; letter-spacing: 0.1em; color: #666; text-transform: uppercase; }
+        .dep-context-body { padding: 14px 16px; font-size: 14px; color: #333; line-height: 1.6; }
     </style>
 </head>
 <body>
-    <div id="root"></div>
+<div id="root"></div>
 
-    <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+<script type="text/babel">
+    const { useState, useEffect, useRef } = React;
 
-        // Configuration
-        const CONFIG = {
-            SUPABASE_URL: 'https://lutzzfaedkbsmbobmrzx.supabase.co',
-            SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1dHp6ZmFlZGtic21ib2Jtcnp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MDA0MDQsImV4cCI6MjA4NjM3NjQwNH0.o2gJba85vDl4NLS-C8Mq3OudWKxet-b0IqO9kazqb8U',
-            TOOL_SLUG: 'know-thyself',
-            AUTOSAVE_DELAY: 2000,
-            STORAGE_KEY: 'fasttrack_know_thyself_data',
-            TOOL_NAME: 'know_thyself'
-        };
-
-        // Initialize Supabase client
-        const { createClient } = supabase;
-        const supabaseClient = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
-
-        // Make Supabase client globally available for dependency injection
-        window.supabaseClient = supabaseClient;
-
-        // Initialize ToolDB and dependency injection
-        ToolDB.init(CONFIG.TOOL_SLUG);
-        ToolAccessControl.init(CONFIG.TOOL_SLUG);
-
-        // Initialize cognitive load components
-        CognitiveLoad.init('know-thyself', {"insights":["Self-awareness is the foundation of leadership. You cannot lead others until you understand yourself.","The 80/20 rule: 80% of your leadership effectiveness comes from understanding your personal values and strengths."],"caseStudy":{"before":"A mid-sized tech company CEO spent years chasing every market opportunity without a clear sense of personal values or purpose. Team turnover was 40%, strategic direction changed quarterly, and key talent left because they could not see a coherent vision.","after":"After completing the Know Thyself sprint, the CEO articulated a clear identity statement rooted in personal strengths and values. The leadership team aligned around a shared vision, decision-making speed doubled, and employee engagement scores rose by 35% within six months.","quote":"Once I understood my own strengths and values, every business decision became clearer. I stopped second-guessing and started leading with conviction."}});
-        const { FastTrackInsight, ScienceBox, WarningBox, CaseStudy, ScienceBookmarkIcon, ToolGuideDrawer } = CognitiveLoad.components;
-
-        /* ============================================================
-           TRANSITION CONTENT — VP-style screens between steps
-           ============================================================ */
-        const TRANSITION_CONTENT = {
+    const CONFIG = {
+        TOOL_SLUG:    'know-thyself',
+        TOOL_TITLE:   'KNOW THYSELF',
+        TOOL_SUBTITLE:'Uncover your dream, strengths, values, and growth plan — the foundation of exceptional leadership.',
+        COVER_IMAGE:  'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80',
+        TOTAL_STEPS:  4,
+        SUPABASE_URL:     'https://lutzzfaedkbsmbobmrzx.supabase.co',
+        SUPABASE_ANON_KEY:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1dHp6ZmFlZGtic21ib2Jtcnp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MDA0MDQsImV4cCI6MjA4NjM3NjQwNH0.o2gJba85vDl4NLS-C8Mq3OudWKxet-b0IqO9kazqb8U',
+        TRANSITION_CONTENT: {
             1: {
-                title: 'DREAM DEFINED.',
-                text: "You've found your reason to get up in the morning. Now let's discover what fuels you.",
-                brutalTruth: "Leaders who define a vivid, values-aligned dream make faster decisions and maintain motivation through setbacks. Your 80th birthday vision creates the emotional anchor that drives everything else in Fast Track.",
-                peerProof: "Harvard Business Review research shows leaders who write down a vivid personal vision are 42% more likely to achieve their goals. The act of writing activates deeper cognitive processing and creates a psychological contract with yourself."
+                brutalTruth: 'Leaders who cannot articulate their dream make reactive decisions. They chase every opportunity, chase every market trend, and wonder why their team has no direction. Your 80th birthday vision is not a soft exercise — it is the emotional anchor every other decision in Fast Track is built on.',
+                peerProof: '"Harvard Business Review research shows leaders who write down a vivid personal vision are 42% more likely to achieve their goals. The act of writing activates deeper cognitive processing and creates a psychological contract with yourself. Your dream is your North Star."'
             },
             2: {
-                title: 'STRENGTHS MAPPED.',
-                text: "You know what energizes you. Now align your values with your actions.",
-                brutalTruth: "Focus on strengths, not weaknesses. Buckingham and Clifton's research proves the key to excellence lies in identifying and cultivating your natural talents. People who focus on strengths are 3x more likely to report an excellent quality of life.",
-                peerProof: "Gallup StrengthsFinder research across 1.7M employees found strength-based development is 3x more effective than fixing weaknesses. People who use their strengths daily are 6x more likely to be engaged at work."
+                brutalTruth: 'The number one mistake leaders make is trying to fix weaknesses. Buckingham and Clifton proved this destroys engagement and limits performance. Focus on strengths and delegate the rest. The Gallup data is unambiguous: strength-based development is 3x more effective than fixing gaps.',
+                peerProof: '"A €30M manufacturing CEO discovered his core strength was systems thinking, not the relationship building he had been trying to develop. He restructured his week to play to that strength, delegated relationship management to a COO, and revenue grew 22% in 18 months with less personal effort."'
             },
             3: {
-                title: 'VALUES ALIGNED.',
-                text: "Your core values are clear. Now set goals to close the gap between where you are and where you want to be.",
-                brutalTruth: "Values-driven decisions eliminate internal conflict. When personal values and professional endeavors are aligned, work becomes deeply fulfilling — not just productive. The pattern in your dream and strengths answers reveals what truly matters.",
-                peerProof: "Barrett Values Centre research across 6,000+ organizations shows companies with strong values alignment outperform peers by 4x in revenue growth. When actions align with core values, decisions become faster and more confident."
+                brutalTruth: 'Values-driven decisions eliminate internal conflict. When you keep saying yes to work that contradicts your values, you burn out — not because you worked too hard but because the work felt hollow. Most leaders cannot name their top 3 values without hesitation. That silence explains everything.',
+                peerProof: '"Barrett Values Centre research across 6,000+ organisations shows companies with strong values alignment outperform peers by 4x in revenue growth. When actions align with core values, decisions become faster and more confident — and good talent stays longer."'
             },
             4: {
-                title: 'PLAN SET.',
-                text: "Self-knowledge complete. Your dream, strengths, values, and growth plan are locked in.",
-                brutalTruth: "Goals without action plans are wishes. Turn vision into execution with specific actions and deadlines. No vague aspirations — only concrete next steps that connect to your dream.",
-                peerProof: "Research on structured goal-setting shows that specific, written action plans increase goal achievement by 42-78% compared to verbal intentions. Your growth blueprint creates the accountability that transforms insight into action."
+                brutalTruth: 'Goals without deadlines are confessions of low priority. Research on structured goal-setting shows specific, written action plans increase goal achievement by 42–78% compared to verbal intentions. Stop calling vague aspirations goals. A goal has a number and a date or it does not exist.',
+                peerProof: '"A logistics company founder set three specific 90-day goals after this sprint — all with a named action and a hard date. Six months later, two were complete and one was 80% done. The year before, with four vague \"priorities\", she had completed none."'
             }
-        };
-
-        /* ============================================================
-           SHARED COMPONENTS
-           ============================================================ */
-
-        function CheckIcon({ color = "#fff", size = 16 }) {
-            return <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>;
+        },
+        CLOSING_MESSAGES: {
+            1: { title: 'DREAM DEFINED',      text: 'Your North Star is locked in. Now find what fuels you.' },
+            2: { title: 'STRENGTHS MAPPED',   text: 'You know what energizes you. Now align your values.' },
+            3: { title: 'VALUES ALIGNED',     text: 'Your compass is set. Now make the plan.' },
+            4: { title: 'PLAN COMPLETE',      text: 'Self-knowledge locked in. Time to build your canvas.' },
         }
+    };
 
-        function ButtonFooter({ onBack, onNext, nextLabel = 'Next', showBack = true, disabled = false }) {
-            return (
-                <div className="btn-footer no-print">
-                    {showBack ? <button className="btn-back" onClick={onBack}>&larr; Back</button> : <div />}
-                    <button className="btn-next" disabled={disabled} onClick={onNext}>{nextLabel} &rarr;</button>
-                </div>
-            );
-        }
+    const { createClient } = supabase;
+    const supabaseClient = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+    window.supabaseClient = supabaseClient;
 
-        function MobileStepBar({ currentStep, totalSteps }) {
-            const total = totalSteps || 4;
-            const progress = currentStep >= 999 ? 100 : Math.round((currentStep / total) * 100);
-            return (
-                <div className="mobile-step-bar no-print">
-                    <div className="bar-text">Step {Math.min(currentStep, total)} of {total}</div>
-                    <div className="mobile-progress"><div className="mobile-progress-fill" style={{ width: `${progress}%` }} /></div>
-                </div>
-            );
-        }
+    ToolDB.init(CONFIG.TOOL_SLUG);
+    ToolAccessControl.init(CONFIG.TOOL_SLUG);
+    CognitiveLoad.init(CONFIG.TOOL_SLUG);
 
-        function CoachFeedbackPanel() {
-            const [expanded, setExpanded] = useState(false);
-            const [feedback, setFeedback] = useState(null);
-            useEffect(() => {
-                const check = () => { if (window.AIChallenge && window.AIChallenge.getLastFeedback) setFeedback(window.AIChallenge.getLastFeedback()); };
-                check();
-                const interval = setInterval(check, 2000);
-                return () => clearInterval(interval);
-            }, []);
-            if (!feedback) return null;
-            return (
-                <div style={{ marginTop: 24, borderTop: '1px solid #333', paddingTop: 16 }}>
-                    <button onClick={() => setExpanded(!expanded)}
-                        style={{ background: 'none', border: 'none', color: '#FFF469', cursor: 'pointer', fontFamily: "'Monument', monospace", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 6, padding: 0, width: '100%' }}>
-                        <span style={{ transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s', display: 'inline-block' }}>&#9654;</span>
-                        COACH FEEDBACK
+    const makeDefaultData = () => ({
+        birthdayStory: '',
+        whatLove: '',
+        whatGoodAt: '',
+        giveToWorld: '',
+        paidFor: '',
+        inspired: '',
+        feltBest: '',
+        likeAboutSelf: '',
+        hardships: '',
+        dream: '',
+        activities: Array(5).fill(null).map(() => ({ activity: '', energy: '' })),
+        strengthsList: ['', '', ''],
+        doMore: '',
+        doLess: '',
+        startDoing: '',
+        values: Array(5).fill(null).map(() => ({ value: '', howLive: '', alignment: 50 })),
+        goals: Array(3).fill(null).map(() => ({ goal: '', actions: '', byWhen: '' })),
+    });
+
+    function autoGrow(el) {
+        if (!el) return;
+        el.style.height = 'auto';
+        el.style.height = el.scrollHeight + 'px';
+    }
+
+    function AutoTextarea({ value, onChange, placeholder, minHeight = 80, style = {} }) {
+        const ref = useRef(null);
+        useEffect(() => { autoGrow(ref.current); }, [value]);
+        return (
+            <textarea ref={ref} className="field-textarea"
+                style={Object.assign({ minHeight }, style)}
+                value={value}
+                onChange={onChange}
+                placeholder={placeholder}
+                onInput={e => autoGrow(e.target)}
+            />
+        );
+    }
+
+    function WizardSidebar({ currentStep, data, onNavigate }) {
+        const steps = [
+            { num: 1, label: 'Dream Launcher' },
+            { num: 2, label: 'Strengths Amplifier' },
+            { num: 3, label: 'Values Compass' },
+            { num: 4, label: 'Growth Blueprint' },
+            { num: 'canvas', label: 'Canvas' },
+        ];
+        return (
+            <div className="wizard-sidebar">
+                <div className="sidebar-tool-num">SPRINT 01</div>
+                <div className="sidebar-tool-title">{CONFIG.TOOL_TITLE}</div>
+                {steps.map(s => {
+                    const isCanvas = s.num === 'canvas';
+                    const isDone   = isCanvas ? false : (typeof currentStep === 'number' && currentStep > s.num);
+                    const isActive = isCanvas ? currentStep === 'canvas' : (typeof currentStep === 'number' && Math.floor(currentStep) === s.num);
+                    const isFuture = isCanvas ? false : (typeof currentStep === 'number' && currentStep < s.num);
+                    return (
+                        <div key={String(s.num)} className="sidebar-step"
+                            onClick={() => isDone && onNavigate(s.num)}
+                            style={{ opacity: isFuture ? 0.35 : 1, cursor: isDone ? 'pointer' : 'default' }}>
+                            <div className={'sidebar-step-dot' + (isActive ? ' active' : isDone ? ' done' : '')} />
+                            <span className={'sidebar-step-label' + (isActive ? ' active' : isDone ? ' done' : '')}>{s.label}</span>
+                        </div>
+                    );
+                })}
+                {data.dream && (
+                    <div style={{ marginTop: 24, borderTop: '1px solid #2a2a2a', paddingTop: 16 }}>
+                        <div style={{ fontFamily: "'Monument', monospace", fontSize: 9, color: '#555', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>MY DREAM</div>
+                        <div style={{ fontSize: 12, color: '#ccc', lineHeight: 1.5, fontStyle: 'italic' }}>
+                            "{data.dream.substring(0, 80)}{data.dream.length > 80 ? '…' : ''}"
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    function TransitionScreen({ stepNum, onNext }) {
+        const t = CONFIG.TRANSITION_CONTENT[stepNum];
+        if (!t) { onNext(); return null; }
+        return (
+            <div style={{ position: 'fixed', inset: 0, background: '#000', color: '#fff', zIndex: 200, overflowY: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '64px 32px' }}>
+                <div style={{ maxWidth: 720, width: '100%' }} className="animate-in">
+                    <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#555', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 32 }}>
+                        SPRINT 01 — KNOW THYSELF
+                    </div>
+                    <div style={{ borderLeft: '4px solid #DC2626', paddingLeft: 24, marginBottom: 48 }}>
+                        <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#DC2626', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 12 }}>BRUTAL TRUTH</div>
+                        <p className="plaak" style={{ fontSize: 26, lineHeight: 1.35 }}>{t.brutalTruth}</p>
+                    </div>
+                    <div style={{ borderLeft: '4px solid #FFF469', paddingLeft: 24, marginBottom: 64 }}>
+                        <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#FFF469', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 12 }}>PEER PROOF</div>
+                        <p style={{ fontSize: 18, color: '#ccc', lineHeight: 1.7, fontStyle: 'italic' }}>{t.peerProof}</p>
+                    </div>
+                    <button onClick={onNext} className="plaak"
+                        style={{ background: '#FFF469', color: '#000', border: 'none', padding: '18px 48px', fontSize: 18, cursor: 'pointer', letterSpacing: '0.05em', transition: 'all 0.2s' }}>
+                        CONTINUE →
                     </button>
-                    {expanded && (
-                        <div style={{ marginTop: 10, fontSize: 12, color: '#ccc', lineHeight: 1.5 }}>
-                            {feedback.type === 'approved' && <p style={{ color: '#FFF469' }}>{feedback.message}</p>}
-                            {feedback.type === 'challenges' && (<>
-                                {feedback.encouragement && <p style={{ color: '#FFF469', marginBottom: 8 }}>{feedback.encouragement}</p>}
-                                {feedback.challenges && feedback.challenges.map((ch, i) => (
-                                    <div key={i} style={{ marginBottom: 8, paddingLeft: 8, borderLeft: '2px solid #555' }}>
-                                        <div style={{ fontSize: 10, color: '#999', marginBottom: 2 }}>{ch.question_text || ch.question_key}</div>
-                                        <div>{ch.feedback}</div>
-                                    </div>
-                                ))}
-                            </>)}
+                </div>
+            </div>
+        );
+    }
+
+    function IntroPage({ onNext }) {
+        return (
+            <div style={{ background: '#000', color: '#fff', minHeight: '100vh', padding: '64px 48px' }} className="animate-in">
+                <div style={{ maxWidth: 720, margin: '0 auto' }}>
+                    <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#555', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 32 }}>
+                        SPRINT 01 — INDIVIDUAL TOOL
+                    </div>
+                    <h1 className="plaak" style={{ fontSize: 72, marginBottom: 24, lineHeight: 1.05 }}>BEFORE WE START</h1>
+                    <p style={{ fontSize: 18, color: '#ccc', marginBottom: 48, lineHeight: 1.7 }}>
+                        This sprint is one of the most crucial in the Fast Track program. You will delve into your personal strengths, values, and purpose. What you discover here is the foundation every other strategy decision in Fast Track is built on.
+                    </p>
+                    <div style={{ borderLeft: '4px solid #FFF469', paddingLeft: 24, marginBottom: 48 }}>
+                        <p className="plaak" style={{ fontSize: 22, color: '#FFF469', marginBottom: 8 }}>
+                            "The unexamined life is not worth living."
+                        </p>
+                        <p style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#555', letterSpacing: '0.1em', textTransform: 'uppercase' }}>SOCRATES</p>
+                    </div>
+                    <div style={{ marginBottom: 48 }}>
+                        <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#555', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 16 }}>YOUR JOURNEY TODAY</div>
+                        {[
+                            { num: '01', label: 'Dream Launcher',        desc: 'Define your reason to get up in the morning' },
+                            { num: '02', label: 'Strengths Amplifier',   desc: 'Map what energizes you and where you truly excel' },
+                            { num: '03', label: 'Values Compass',        desc: 'Identify the principles that drive your best decisions' },
+                            { num: '04', label: 'Personal Growth Blueprint', desc: 'Set clear goals aligned to who you are' },
+                        ].map(item => (
+                            <div key={item.num} style={{ display: 'flex', gap: 16, padding: '12px 0', borderBottom: '1px solid #1a1a1a' }}>
+                                <span style={{ fontFamily: "'Plaak', sans-serif", fontSize: 18, color: '#FFF469', minWidth: 32 }}>{item.num}</span>
+                                <div>
+                                    <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#fff', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 2 }}>{item.label}</div>
+                                    <div style={{ fontSize: 13, color: '#666' }}>{item.desc}</div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <div style={{ background: '#111', border: '1px solid #222', padding: '20px 24px', marginBottom: 48 }}>
+                        <div style={{ fontFamily: "'Monument', monospace", fontSize: 9, color: '#DC2626', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 8 }}>MISTAKES TO AVOID</div>
+                        <ul style={{ fontSize: 14, color: '#888', lineHeight: 1.8, paddingLeft: 16 }}>
+                            <li>Writing what you think you should say instead of what is true</li>
+                            <li>Being vague — specificity is what makes insights actionable</li>
+                            <li>Rushing — each section deserves genuine reflection</li>
+                        </ul>
+                    </div>
+                    <button onClick={onNext} className="plaak"
+                        style={{ background: '#fff', color: '#000', border: 'none', padding: '18px 48px', fontSize: 20, cursor: 'pointer', letterSpacing: '0.05em', transition: 'all 0.2s' }}
+                        onMouseOver={e => { e.target.style.background = '#FFF469'; }}
+                        onMouseOut={e => { e.target.style.background = '#fff'; }}>
+                        LET'S START →
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // ────────────────────────────────────────────────────────────
+    // STEP 1: Dream Launcher
+    // ────────────────────────────────────────────────────────────
+    function Step1({ data, updateData, aiMessage }) {
+        const update = (field, val) => updateData(field, val);
+
+        const GUIDING = [
+            { key: 'whatLove',      label: 'What do you love doing?',                         ph: 'e.g. Building things from scratch, solving complex problems…' },
+            { key: 'whatGoodAt',    label: 'What are you naturally good at?',                  ph: 'e.g. Strategic thinking, connecting people, simplifying complexity…' },
+            { key: 'giveToWorld',   label: 'What can you give to the world?',                  ph: 'e.g. A more efficient system, leadership that empowers others…' },
+            { key: 'paidFor',       label: 'What can you be paid well for?',                   ph: 'e.g. Building high-performance teams, creating profitable businesses…' },
+            { key: 'inspired',      label: 'What or who inspires you most?',                   ph: 'e.g. Entrepreneurs who built from nothing, leaders who serve others…' },
+            { key: 'feltBest',      label: 'When did you feel most alive and at your best?',   ph: 'e.g. Leading a major turnaround, launching a new product…' },
+            { key: 'likeAboutSelf', label: 'What do you like most about yourself as a leader?', ph: 'e.g. My honesty, my drive, my ability to stay calm under pressure…' },
+            { key: 'hardships',     label: 'What hardships have shaped you most?',             ph: 'e.g. Losing a business taught me resilience and financial discipline…' },
+        ];
+
+        const dreamFilled = (data.dream || '').length >= 20;
+
+        return (
+            <div className="step-content animate-in">
+                <p className="step-indicator">STEP 1 OF {CONFIG.TOTAL_STEPS}</p>
+                <div className="opening-box">
+                    <h1 className="step-heading">Dream Launcher</h1>
+                    <p className="step-hint">Reflect on the guiding questions, then crystallize your dream — your reason to get up in the morning. Be specific and vivid.</p>
+                </div>
+
+                <div className="field-group">
+                    <label className="field-label">Your 80th Birthday Vision</label>
+                    <p className="field-help" style={{ marginBottom: 10 }}>Imagine your 80th birthday. The people who matter most are celebrating you. What do they say about the life you lived, the leader you were, the impact you made?</p>
+                    <AutoTextarea
+                        value={data.birthdayStory}
+                        onChange={e => update('birthdayStory', e.target.value)}
+                        placeholder="e.g. At my 80th birthday, my team said I was the leader who showed them that business could be built with integrity and purpose. My children said I was fully present. I had built a company that outlasted me, employed 500 people, and changed an industry…"
+                        minHeight={140}
+                    />
+                    {(data.birthdayStory || '').length >= 50 && (
+                        <div className="ft-reveal">
+                            <div className="ft-reveal-label">FAST TRACK INSIGHT</div>
+                            <p className="ft-reveal-text">The 80th birthday exercise creates what psychologists call a "future self" anchor. Leaders who write vivid future visions make faster, more aligned decisions — because they have a destination to navigate toward. Vagueness is the enemy of leadership clarity.</p>
                         </div>
                     )}
                 </div>
-            );
-        }
 
-        function WizardSidebar({ currentStep, formData, onNavigate }) {
-            const steps = [
-                { num: 1, label: 'Dream Launcher', time: '~8 min' },
-                { num: 2, label: 'Strengths', time: '~5 min' },
-                { num: 3, label: 'Values', time: '~5 min' },
-                { num: 4, label: 'Growth Plan', time: '~4 min' }
-            ];
-            const getSnippet = (n) => {
-                if (n === 1 && formData.dream) return '"' + formData.dream.substring(0, 50) + (formData.dream.length > 50 ? '...' : '') + '"';
-                if (n === 2 && formData.strengths[0]?.strength) { const f = formData.strengths.filter(s => s.strength?.trim()); return f.length + ' strength' + (f.length !== 1 ? 's' : '') + ' mapped'; }
-                if (n === 3 && formData.values[0]?.value) { const f = formData.values.filter(v => v.value?.trim()); return f.length + ' value' + (f.length !== 1 ? 's' : '') + ' defined'; }
-                if (n === 4 && formData.goals[0]?.goal) { const f = formData.goals.filter(g => g.goal?.trim()); return f.length + ' goal' + (f.length !== 1 ? 's' : '') + ' set'; }
-                return null;
-            };
-            return (
-                <div className="wizard-sidebar no-print">
-                    <div className="wizard-sidebar-inner">
-                        <div style={{ marginBottom: 24 }}>
-                            <div className="monument" style={{ fontSize: 12, textTransform: 'uppercase', color: '#fff', marginBottom: 4 }}>KNOW THYSELF</div>
-                            <div style={{ fontSize: 13, color: '#999' }}>~22 min total</div>
+                <div style={{ background: '#F5F5F5', borderLeft: '4px solid #000', padding: '14px 20px', marginBottom: 24 }}>
+                    <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#666', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>GUIDING QUESTIONS</div>
+                    <p style={{ fontSize: 13, color: '#555', lineHeight: 1.6 }}>Answer these to uncover the raw material for your dream. Your answers to each question feed into the final statement below.</p>
+                </div>
+
+                {GUIDING.map(q => (
+                    <div key={q.key} className="field-group">
+                        <label className="field-label" style={{ fontWeight: 'normal', fontSize: 14 }}>{q.label}</label>
+                        <AutoTextarea
+                            value={data[q.key] || ''}
+                            onChange={e => update(q.key, e.target.value)}
+                            placeholder={q.ph}
+                            minHeight={60}
+                        />
+                    </div>
+                ))}
+
+                <div className="field-group" style={{ background: '#000', padding: '24px', marginTop: 8 }}>
+                    <label className="field-label" style={{ color: '#FFF469', fontFamily: "'Monument', monospace", fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                        My Dream — Reason to Get Up Every Morning
+                    </label>
+                    <p style={{ fontSize: 13, color: '#888', marginBottom: 12, lineHeight: 1.6 }}>
+                        Synthesize everything above into one clear statement. Not a company goal — a personal north star. Be concrete.
+                    </p>
+                    <AutoTextarea
+                        value={data.dream}
+                        onChange={e => update('dream', e.target.value)}
+                        placeholder="e.g. My dream is to build a €50M company that creates 300 jobs in my region and proves that integrity-based leadership outperforms in the long run."
+                        minHeight={80}
+                        style={{ background: '#111', color: '#fff', borderColor: '#333', fontSize: 16 }}
+                    />
+                </div>
+
+                {aiMessage && <div className="ai-message">{aiMessage}</div>}
+
+                {dreamFilled && (
+                    <div className="closing-box animate-in" style={{ marginTop: 16 }}>
+                        <p className="closing-title">{CONFIG.CLOSING_MESSAGES[1].title}</p>
+                        <p>{CONFIG.CLOSING_MESSAGES[1].text}</p>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // ────────────────────────────────────────────────────────────
+    // STEP 2: Strengths Amplifier
+    // ────────────────────────────────────────────────────────────
+    function Step2({ data, updateData, aiMessage }) {
+        const updateActivity = (idx, field, val) => {
+            const next = data.activities.map((a, i) => i === idx ? Object.assign({}, a, { [field]: val }) : a);
+            updateData('activities', next);
+        };
+        const addActivity = () => {
+            if (data.activities.length < 10) updateData('activities', data.activities.concat([{ activity: '', energy: '' }]));
+        };
+        const removeActivity = idx => {
+            if (data.activities.length <= 3) return;
+            updateData('activities', data.activities.filter((_, i) => i !== idx));
+        };
+        const updateStrength = (idx, val) => {
+            const next = data.strengthsList.slice();
+            next[idx] = val;
+            updateData('strengthsList', next);
+        };
+        const addStrength = () => {
+            if (data.strengthsList.length < 7) updateData('strengthsList', data.strengthsList.concat(['']));
+        };
+
+        const filledActivities = data.activities.filter(a => a.activity.trim()).length;
+        const filledStrengths  = data.strengthsList.filter(s => s.trim()).length;
+
+        return (
+            <div className="step-content animate-in">
+                <p className="step-indicator">STEP 2 OF {CONFIG.TOTAL_STEPS}</p>
+                <div className="opening-box">
+                    <h1 className="step-heading">Strengths Amplifier</h1>
+                    <p className="step-hint">Map what energizes you, identify your core strengths, and decide what to do more, less, and differently.</p>
+                </div>
+
+                <div className="field-group">
+                    <label className="field-label">Activities — Energy Audit</label>
+                    <p className="field-help" style={{ marginBottom: 12 }}>List activities you do regularly. Mark whether each gives you energy (+) or drains you (−).</p>
+                    <div style={{ display: 'flex', gap: 8, padding: '6px 0 8px', borderBottom: '2px solid #000', marginBottom: 8 }}>
+                        <span style={{ minWidth: 24 }}></span>
+                        <span style={{ flex: 1, fontFamily: "'Monument', monospace", fontSize: 10, color: '#666', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Activity</span>
+                        <span style={{ minWidth: 100, fontFamily: "'Monument', monospace", fontSize: 10, color: '#666', textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'center' }}>Energy</span>
+                        <span style={{ minWidth: 32 }}></span>
+                    </div>
+                    {data.activities.map((a, idx) => (
+                        <div key={idx} className="activity-row" style={{ alignItems: 'center' }}>
+                            <span className="activity-row-num" style={{ paddingTop: 0 }}>{String(idx+1).padStart(2,'0')}</span>
+                            <input type="text" className="field-input"
+                                style={{ padding: '8px 12px', fontSize: 14, flex: 1 }}
+                                value={a.activity}
+                                onChange={e => updateActivity(idx, 'activity', e.target.value)}
+                                placeholder="e.g. Presenting strategy to the team"
+                            />
+                            <div style={{ display: 'flex', gap: 4, minWidth: 100, justifyContent: 'center' }}>
+                                <button className={'energy-btn plus' + (a.energy === '+' ? ' active' : '')}
+                                    onClick={() => updateActivity(idx, 'energy', a.energy === '+' ? '' : '+')}>+ GIVES</button>
+                                <button className={'energy-btn minus' + (a.energy === '-' ? ' active' : '')}
+                                    onClick={() => updateActivity(idx, 'energy', a.energy === '-' ? '' : '-')}>− DRAINS</button>
+                            </div>
+                            <button className="btn-remove" onClick={() => removeActivity(idx)} disabled={data.activities.length <= 3} style={{ opacity: data.activities.length <= 3 ? 0.2 : 1 }}>×</button>
                         </div>
-                        <div style={{ marginBottom: 16, fontFamily: "'Monument', monospace", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#999' }}>Your journey</div>
-                        {steps.map(s => {
-                            const effectiveStep = Math.ceil(currentStep);
-                            const isCompleted = effectiveStep > s.num, isActive = effectiveStep === s.num, isLocked = effectiveStep < s.num;
-                            const snippet = isCompleted ? getSnippet(s.num) : null;
-                            return (
-                                <div key={s.num} className={`sidebar-step-item ${isCompleted ? 'completed' : ''} ${isActive ? 'active' : ''} ${isLocked ? 'locked' : ''}`}
-                                    onClick={() => isCompleted && onNavigate && onNavigate(s.num)}
-                                    title={isCompleted ? 'Click to review this step' : ''}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                        {isCompleted ? <CheckIcon color="#000" size={14} /> : <span className="step-num" style={{ color: isActive ? '#fff' : '#ccc' }}>{String(s.num).padStart(2, '0')}</span>}
-                                        <span className="step-name" style={{ color: isLocked ? '#666' : isCompleted ? '#000' : '#fff' }}>{s.label}</span>
-                                    </div>
-                                    {snippet && <div className="sidebar-snippet">{snippet}</div>}
+                    ))}
+                    {data.activities.length < 10 && (
+                        <button className="btn-add" onClick={addActivity}>+ Add Activity</button>
+                    )}
+                    <p className="field-help" style={{ marginTop: 8 }}>{filledActivities} activities listed. Rate each to reveal your energy pattern.</p>
+                </div>
+
+                <div className="field-group">
+                    <label className="field-label">My Top Strengths</label>
+                    <p className="field-help" style={{ marginBottom: 12 }}>What do you do naturally that others find exceptional? Focus on what energizes you AND what you're skilled at.</p>
+                    {data.strengthsList.map((s, idx) => (
+                        <div key={idx} className="activity-row" style={{ alignItems: 'center', marginBottom: 8 }}>
+                            <span className="activity-row-num" style={{ paddingTop: 0 }}>{String(idx+1).padStart(2,'0')}</span>
+                            <input type="text" className="field-input"
+                                style={{ padding: '8px 12px', fontSize: 14, flex: 1 }}
+                                value={s}
+                                onChange={e => updateStrength(idx, e.target.value)}
+                                placeholder="e.g. Strategic pattern recognition, Building trust quickly, Systems design"
+                            />
+                        </div>
+                    ))}
+                    {data.strengthsList.length < 7 && (
+                        <button className="btn-add" onClick={addStrength}>+ Add Strength</button>
+                    )}
+                    <p className="field-help" style={{ marginTop: 8 }}>{filledStrengths} strengths defined (aim for 3–5).</p>
+                    {filledStrengths >= 2 && (
+                        <div className="ft-reveal">
+                            <div className="ft-reveal-label">FAST TRACK INSIGHT</div>
+                            <p className="ft-reveal-text">Gallup research shows people who use their strengths daily are 6x more engaged at work. The goal is not to list skills you think you should have — list what you naturally do better than 90% of people and find energizing.</p>
+                        </div>
+                    )}
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+                    {[
+                        { key: 'doMore',     label: 'Do MORE of',    ph: 'e.g. Strategic planning sessions, mentoring team members' },
+                        { key: 'doLess',     label: 'Do LESS of',    ph: 'e.g. Operational firefighting, low-leverage meetings' },
+                        { key: 'startDoing', label: 'START doing',   ph: 'e.g. Weekly 1:1s focused on development, reading strategy' },
+                    ].map(item => (
+                        <div key={item.key} className="field-group" style={{ marginBottom: 0 }}>
+                            <label className="field-label" style={{ fontSize: 13, fontFamily: "'Monument', monospace", letterSpacing: '0.06em', textTransform: 'uppercase' }}>{item.label}</label>
+                            <AutoTextarea value={data[item.key]} onChange={e => updateData(item.key, e.target.value)} placeholder={item.ph} minHeight={80} />
+                        </div>
+                    ))}
+                </div>
+
+                {aiMessage && <div className="ai-message">{aiMessage}</div>}
+
+                {filledStrengths >= 2 && (
+                    <div className="closing-box animate-in" style={{ marginTop: 24 }}>
+                        <p className="closing-title">{CONFIG.CLOSING_MESSAGES[2].title}</p>
+                        <p>{CONFIG.CLOSING_MESSAGES[2].text}</p>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // ────────────────────────────────────────────────────────────
+    // STEP 3: Values Compass
+    // ────────────────────────────────────────────────────────────
+    function Step3({ data, updateData, aiMessage }) {
+        const updateValue = (idx, field, val) => {
+            const next = data.values.map((v, i) => i === idx ? Object.assign({}, v, { [field]: val }) : v);
+            updateData('values', next);
+        };
+
+        const filledValues = data.values.filter(v => v.value.trim()).length;
+
+        return (
+            <div className="step-content animate-in">
+                <p className="step-indicator">STEP 3 OF {CONFIG.TOTAL_STEPS}</p>
+                <div className="opening-box">
+                    <h1 className="step-heading">Values Compass</h1>
+                    <p className="step-hint">Identify your 5 core personal values, describe how you live each one, and assess how aligned your current actions are.</p>
+                </div>
+
+                <div style={{ background: '#F5F5F5', borderLeft: '4px solid #000', padding: '14px 20px', marginBottom: 24 }}>
+                    <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#666', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>HOW TO CHOOSE YOUR VALUES</div>
+                    <p style={{ fontSize: 13, color: '#555', lineHeight: 1.6 }}>Choose values that are genuinely yours — not values you think a leader should have. Ask: when you violated this value, did it feel wrong? When you lived it fully, did it feel right? Common examples: integrity, creativity, courage, independence, impact, family, growth, service, excellence.</p>
+                </div>
+
+                {data.values.map((v, idx) => (
+                    <div key={idx} className="value-row">
+                        <div className="value-row-header">
+                            <span className="value-number">{String(idx+1).padStart(2,'0')}</span>
+                            <input type="text" className="field-input"
+                                style={{ padding: '10px 14px', fontSize: 16, fontWeight: 600, flex: 1 }}
+                                value={v.value}
+                                onChange={e => updateValue(idx, 'value', e.target.value)}
+                                placeholder="Value name (e.g. Integrity, Growth, Courage)"
+                            />
+                        </div>
+                        <div style={{ marginBottom: 12 }}>
+                            <label className="field-label" style={{ fontSize: 13, color: '#666', fontWeight: 'normal', marginBottom: 6 }}>How do you live this value daily?</label>
+                            <AutoTextarea
+                                value={v.howLive}
+                                onChange={e => updateValue(idx, 'howLive', e.target.value)}
+                                placeholder="e.g. I give honest feedback even when it's uncomfortable. I keep commitments even when inconvenient."
+                                minHeight={60}
+                            />
+                        </div>
+                        <div>
+                            <label className="field-label" style={{ fontSize: 13, color: '#666', fontWeight: 'normal', marginBottom: 8 }}>How aligned are your current actions with this value?</label>
+                            <div className="align-track">
+                                <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#DC2626' }}>0%</span>
+                                <input type="range" min={0} max={100} step={5}
+                                    value={v.alignment}
+                                    onChange={e => updateValue(idx, 'alignment', Number(e.target.value))}
+                                    style={{ flex: 1 }}
+                                />
+                                <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#22c55e' }}>100%</span>
+                                <span className="align-track-val" style={{ color: v.alignment >= 80 ? '#22c55e' : v.alignment >= 50 ? '#f59e0b' : '#DC2626', fontFamily: "'Monument', monospace", fontSize: 14, fontWeight: 'bold' }}>{v.alignment}%</span>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+
+                {filledValues >= 3 && (
+                    <div className="ft-reveal">
+                        <div className="ft-reveal-label">FAST TRACK INSIGHT</div>
+                        <p className="ft-reveal-text">Look at your alignment scores. Any value below 60% is a source of internal tension — it means you know what matters but your daily behavior contradicts it. That gap is a leadership drain. Closing the gap is not a soft goal; it is a performance lever.</p>
+                    </div>
+                )}
+
+                {aiMessage && <div className="ai-message">{aiMessage}</div>}
+
+                {filledValues >= 3 && (
+                    <div className="closing-box animate-in" style={{ marginTop: 24 }}>
+                        <p className="closing-title">{CONFIG.CLOSING_MESSAGES[3].title}</p>
+                        <p>{CONFIG.CLOSING_MESSAGES[3].text}</p>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // ────────────────────────────────────────────────────────────
+    // STEP 4: Personal Growth Blueprint
+    // ────────────────────────────────────────────────────────────
+    function Step4({ data, updateData, aiMessage }) {
+        const updateGoal = (idx, field, val) => {
+            const next = data.goals.map((g, i) => i === idx ? Object.assign({}, g, { [field]: val }) : g);
+            updateData('goals', next);
+        };
+
+        const filledGoals = data.goals.filter(g => g.goal.trim()).length;
+
+        return (
+            <div className="step-content animate-in">
+                <p className="step-indicator">STEP 4 OF {CONFIG.TOTAL_STEPS}</p>
+                <div className="opening-box">
+                    <h1 className="step-heading">Personal Growth Blueprint</h1>
+                    <p className="step-hint">Set 2–3 specific goals aligned to your strengths and values. Each goal needs a concrete action and a hard deadline.</p>
+                </div>
+
+                <div style={{ background: '#FFFDE7', border: '1px solid #FFF469', borderLeft: '4px solid #FFF469', padding: '12px 16px', marginBottom: 24, fontSize: 13, color: '#333', lineHeight: 1.6 }}>
+                    <strong>Good example:</strong> "Develop executive presence — join Toastmasters and deliver 2 company-wide presentations by June 30."<br/>
+                    <strong>Common pitfall:</strong> "Be better at leadership." (vague, no action, no deadline — not a goal)
+                </div>
+
+                {data.goals.map((g, idx) => (
+                    <div key={idx} className="goal-row">
+                        <div className="goal-row-header">GOAL {String(idx+1).padStart(2,'0')}</div>
+                        <div className="field-group" style={{ marginBottom: 12 }}>
+                            <label className="field-label" style={{ fontSize: 13, fontWeight: 'normal', color: '#666', marginBottom: 6 }}>What is your goal?</label>
+                            <AutoTextarea
+                                value={g.goal}
+                                onChange={e => updateGoal(idx, 'goal', e.target.value)}
+                                placeholder="e.g. Improve leadership presence and public speaking confidence"
+                                minHeight={60}
+                            />
+                        </div>
+                        <div className="field-group" style={{ marginBottom: 12 }}>
+                            <label className="field-label" style={{ fontSize: 13, fontWeight: 'normal', color: '#666', marginBottom: 6 }}>How will you achieve it? (Specific actions)</label>
+                            <AutoTextarea
+                                value={g.actions}
+                                onChange={e => updateGoal(idx, 'actions', e.target.value)}
+                                placeholder="e.g. Join Toastmasters by end of month. Deliver 2 company presentations by Q2. Hire executive coach for 6 sessions."
+                                minHeight={60}
+                            />
+                        </div>
+                        <div>
+                            <label className="field-label" style={{ fontSize: 13, fontWeight: 'normal', color: '#666', marginBottom: 6 }}>By when?</label>
+                            <input type="text" className="field-input"
+                                style={{ padding: '8px 12px', fontSize: 14 }}
+                                value={g.byWhen}
+                                onChange={e => updateGoal(idx, 'byWhen', e.target.value)}
+                                placeholder="e.g. June 30, 2026"
+                            />
+                        </div>
+                    </div>
+                ))}
+
+                {filledGoals >= 2 && (
+                    <div className="ft-reveal">
+                        <div className="ft-reveal-label">FAST TRACK INSIGHT</div>
+                        <p className="ft-reveal-text">Research by Dr. Gail Matthews found that people who write down specific goals with action steps and deadlines are 76% more likely to achieve them. Longitudinal studies show individuals who review and adjust their growth plans quarterly maintain 60% higher alignment between intentions and actual behavior.</p>
+                    </div>
+                )}
+
+                {aiMessage && <div className="ai-message">{aiMessage}</div>}
+
+                {filledGoals >= 2 && (
+                    <div className="closing-box animate-in" style={{ marginTop: 24 }}>
+                        <p className="closing-title">{CONFIG.CLOSING_MESSAGES[4].title}</p>
+                        <p>{CONFIG.CLOSING_MESSAGES[4].text}</p>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // ────────────────────────────────────────────────────────────
+    // CANVAS
+    // ────────────────────────────────────────────────────────────
+    function CanvasPage({ data, userId, onBack }) {
+        const [submitStatus, setSubmitStatus] = useState(null);
+
+        const handleSubmit = async () => {
+            setSubmitStatus('saving');
+            try {
+                await ToolDB.save(userId, {
+                    birthday_story: data.birthdayStory,
+                    dream:          data.dream,
+                    activities:     data.activities,
+                    strengths:      data.strengthsList,
+                    values:         data.values,
+                    goals:          data.goals,
+                });
+                await ToolDB.markComplete(userId);
+                setSubmitStatus('done');
+            } catch(e) {
+                setSubmitStatus('error');
+            }
+        };
+
+        const filledStrengths = data.strengthsList.filter(s => s.trim());
+        const filledValues    = data.values.filter(v => v.value.trim());
+        const filledGoals     = data.goals.filter(g => g.goal.trim());
+
+        return (
+            <div style={{ background: '#fff', minHeight: '100vh', padding: '48px' }} className="animate-in">
+                <div style={{ maxWidth: 900, margin: '0 auto' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 40 }}>
+                        <div>
+                            <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#999', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 6 }}>SPRINT 01</div>
+                            <h1 className="plaak" style={{ fontSize: 48 }}>KNOW THYSELF</h1>
+                        </div>
+                        <button onClick={onBack} className="btn-wiz-back">← Back to Edit</button>
+                    </div>
+
+                    <div className="canvas-section">
+                        <div className="canvas-section-title">MY DREAM</div>
+                        <div style={{ background: '#000', color: '#FFF469', padding: '24px 28px' }}>
+                            <p className="plaak" style={{ fontSize: 22, lineHeight: 1.4 }}>
+                                {data.dream || '—'}
+                            </p>
+                        </div>
+                        {data.birthdayStory && (
+                            <div style={{ padding: '16px 20px', background: '#F9F9F9', borderLeft: '4px solid #E0E0E0', marginTop: 8, fontSize: 14, color: '#555', lineHeight: 1.7, fontStyle: 'italic' }}>
+                                {data.birthdayStory}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="canvas-section">
+                        <div className="canvas-section-title">STRENGTHS & ENERGY</div>
+                        <div className="canvas-grid">
+                            <div className="canvas-card">
+                                <div className="canvas-card-label">Top Strengths</div>
+                                <div className="canvas-card-value">
+                                    {filledStrengths.length > 0
+                                        ? filledStrengths.map((s, i) => <div key={i} style={{ marginBottom: 4 }}>• {s}</div>)
+                                        : '—'}
                                 </div>
-                            );
-                        })}
-                        <CoachFeedbackPanel />
-                    </div>
-                </div>
-            );
-        }
-
-        // Celebration Screen Component - Fast Track Style (Not Childish)
-        function CelebrationScreen({ title, progress, final, onContinue }) {
-            React.useEffect(() => {
-                // Auto-advance after 2 seconds (quick, confident)
-                const timer = setTimeout(() => {
-                    onContinue();
-                }, 2000);
-                return () => clearTimeout(timer);
-            }, [onContinue]);
-
-            return (
-                <div className="fixed inset-0 bg-black text-white flex items-center justify-center z-50 fade-in">
-                    <div className="text-center px-8">
-                        {/* Bold Statement - No cheerleading */}
-                        <h1 className="plaak text-8xl md:text-9xl mb-8 animate-in">
-                            {title}
-                        </h1>
-                        
-                        {/* Progress Metric - Data, not emotion */}
-                        <div className="max-w-2xl mx-auto mb-8 animate-in" style={{animationDelay: '0.1s'}}>
-                            <div className="h-2 bg-gray-800 mb-4">
-                                <div 
-                                    className="h-full bg-white transition-all duration-1000"
-                                    style={{width: `${progress}%`}}
-                                ></div>
                             </div>
-                            <p className="monument text-xl tracking-wider">
-                                [{progress}% COMPLETE]
-                            </p>
+                            <div className="canvas-card">
+                                <div className="canvas-card-label">Energy Map</div>
+                                <div>
+                                    <div style={{ fontFamily: "'Monument', monospace", fontSize: 9, color: '#22c55e', letterSpacing: '0.1em', marginBottom: 6 }}>GIVES ENERGY</div>
+                                    {data.activities.filter(a => a.energy === '+' && a.activity.trim()).map((a, i) => <div key={i} style={{ fontSize: 13, marginBottom: 2 }}>+ {a.activity}</div>)}
+                                    <div style={{ fontFamily: "'Monument', monospace", fontSize: 9, color: '#DC2626', letterSpacing: '0.1em', margin: '10px 0 6px' }}>DRAINS ENERGY</div>
+                                    {data.activities.filter(a => a.energy === '-' && a.activity.trim()).map((a, i) => <div key={i} style={{ fontSize: 13, marginBottom: 2 }}>− {a.activity}</div>)}
+                                </div>
+                            </div>
                         </div>
-
-                        {/* Next Action - Clear, not playful */}
-                        {!final && (
-                            <p className="text-xl text-gray-400 animate-in" style={{animationDelay: '0.2s'}}>
-                                Next section loading...
-                            </p>
-                        )}
-                        
-                        {final && (
-                            <div className="animate-in" style={{animationDelay: '0.2s'}}>
-                                <p className="text-3xl mb-8 font-bold">Self-knowledge locked in</p>
-                                <button 
-                                    onClick={onContinue}
-                                    className="bg-white text-black plaak text-2xl px-12 py-4 border-4 border-white hover:bg-black hover:text-white hover:border-white transition-all"
-                                >
-                                    VIEW CANVAS →
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            );
-        }
-
-        function DependencyContext({ deps }) {
-            const [open, setOpen] = React.useState(false);
-            if (!deps || deps.length === 0) return null;
-            return (
-                <div style={{ marginBottom: '16px' }}>
-                    <button onClick={() => setOpen(o => !o)} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#FFF9E0', border: '1px solid #F0E68C', borderLeft: '3px solid #DAA520', padding: '8px 14px', fontSize: 12, fontFamily: "'Monument', monospace", letterSpacing: '0.05em', textTransform: 'uppercase', cursor: 'pointer', color: '#555', width: '100%' }}>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#DAA520" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                        CONTEXT FROM PREVIOUS TOOLS ({deps.length})
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2" style={{ marginLeft: 'auto', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}><polyline points="6 9 12 15 18 9"/></svg>
-                    </button>
-                    {open && (
-                        <div style={{ border: '1px solid #F0E68C', borderTop: 'none', padding: '12px 14px' }}>
-                            {deps.map((dep, i) => (
-                                <div key={i} style={{ background: '#fff', padding: '8px 0', borderBottom: i < deps.length - 1 ? '1px solid #F0E68C' : 'none', fontSize: '13px' }}>
-                                    <div style={{ fontWeight: 600, marginBottom: '2px', color: '#333', fontSize: '11px', fontFamily: "'Monument', monospace", letterSpacing: '0.04em', textTransform: 'uppercase' }}>{dep.label}</div>
-                                    <div style={{ color: '#555', whiteSpace: 'pre-wrap' }}>{dep.value}</div>
+                        <div className="canvas-grid" style={{ marginTop: 12 }}>
+                            {[
+                                { label: 'Do More', value: data.doMore },
+                                { label: 'Do Less', value: data.doLess },
+                                { label: 'Start Doing', value: data.startDoing },
+                            ].map(item => (
+                                <div key={item.label} className="canvas-card">
+                                    <div className="canvas-card-label">{item.label}</div>
+                                    <div className="canvas-card-value">{item.value || '—'}</div>
                                 </div>
                             ))}
                         </div>
-                    )}
-                </div>
-            );
-        }
-
-        function KnowThyselfTool() {
-            const [deps, setDeps] = useState([]);
-            const [step, setStep] = useState(0); // 0=cover, 0.5=intro, 1-4=sections, 999=canvas
-            const [subStep, setSubStep] = useState(0); // Track micro-steps within each section (0-based)
-            // Define total substeps for each section
-            const SUBSTEPS = {
-                1: 10, // Dream Launcher: 80th birthday + 8 questions + final dream
-                2: 3,  // Strengths: activities, strengths, actions
-                3: 5,  // Values: 5 values (one at a time)
-                4: 3   // Growth: 3 goals (one at a time)
-            };
-            
-            const [formData, setFormData] = useState({
-                // User Identification
-                userName: '',
-                userEmail: '',
-                
-                // Section 1: Dream Launcher - 80th Birthday Story & Guiding Questions
-                birthdayStory: '', // THE CORE: Your 80th birthday vision
-                whatLove: '',
-                whatGoodAt: '',
-                giveToWorld: '',
-                paidFor: '',
-                inspired: '',
-                feltBest: '',
-                likeAboutSelf: '',
-                hardships: '',
-                dream: '', // My reason to get up in the morning
-                
-                // Section 2: Strengths Amplifier
-                activities: [
-                    { activity: '', energy: '' },
-                    { activity: '', energy: '' },
-                    { activity: '', energy: '' }
-                ],
-                strengths: [
-                    { strength: '', fitPercent: '' },
-                    { strength: '', fitPercent: '' },
-                    { strength: '', fitPercent: '' }
-                ],
-                doMore: '',
-                doLess: '',
-                startTo: '',
-                
-                // Section 3: Values Compass
-                values: [
-                    { value: '', howLive: '', alignment: '' },
-                    { value: '', howLive: '', alignment: '' },
-                    { value: '', howLive: '', alignment: '' },
-                    { value: '', howLive: '', alignment: '' },
-                    { value: '', howLive: '', alignment: '' }
-                ],
-                
-                // Section 4: Personal Growth Blueprint
-                goals: [
-                    { goal: '', action: '', byWhen: '' },
-                    { goal: '', action: '', byWhen: '' },
-                    { goal: '', action: '', byWhen: '' }
-                ]
-            });
-
-            const [validationErrors, setValidationErrors] = useState({});
-            const [aiReviewing, setAiReviewing] = useState(false);
-            const [aiMessage, setAiMessage] = useState('');
-            const autosaveTimer = useRef(null);
-
-            useEffect(() => {
-                async function loadDeps() {
-                    const userId = localStorage.getItem('ft_user_id');
-                    if (!userId || !window.ToolDB || !window.DependencyInjection) return;
-                    try {
-                        await ToolDB.whenReady();
-                        const config = DependencyInjection.getDependenciesConfig();
-                        const toolConfig = config[CONFIG.TOOL_SLUG];
-                        if (!toolConfig || !toolConfig.fields) return;
-                        const loaded = [];
-                        for (const field of toolConfig.fields) {
-                            const val = await ToolDB.getDependency(userId, field.source_field);
-                            if (val) {
-                                loaded.push({ label: field.display_label || field.source_field, value: window.DependencyInjection ? DependencyInjection.formatValue(val) : (typeof val === 'object' ? JSON.stringify(val, null, 2) : String(val)) });
-                            }
-                        }
-                        setDeps(loaded);
-                    } catch (err) {
-                        console.warn('[' + CONFIG.TOOL_SLUG + '] Failed to load dependencies:', err);
-                    }
-                }
-                loadDeps();
-            }, []);
-
-            // Load saved data
-            useEffect(() => {
-                // Check for reset parameter
-                const urlParams = new URLSearchParams(window.location.search);
-                if (urlParams.get('reset') === 'true') {
-                    localStorage.removeItem(CONFIG.STORAGE_KEY);
-                    window.history.replaceState({}, document.title, window.location.pathname);
-                    return;
-                }
-                
-                const saved = localStorage.getItem(CONFIG.STORAGE_KEY);
-                if (saved) {
-                    try {
-                        const parsed = JSON.parse(saved);
-                        setFormData(parsed.formData || formData);
-                        setStep(parsed.step || 0);
-                    } catch (e) {
-                        console.log('Error loading saved data:', e);
-                    }
-                }
-            }, []);
-
-            // Autosave
-            useEffect(() => {
-                if (autosaveTimer.current) {
-                    clearTimeout(autosaveTimer.current);
-                }
-                
-                autosaveTimer.current = setTimeout(() => {
-                    const dataToSave = { formData, step, timestamp: new Date().toISOString() };
-                    localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(dataToSave));
-                }, 1000);
-                
-                return () => {
-                    if (autosaveTimer.current) {
-                        clearTimeout(autosaveTimer.current);
-                    }
-                };
-            }, [formData, step]);
-
-            const updateFormData = (field, value) => {
-                setFormData(prev => ({ ...prev, [field]: value }));
-                setValidationErrors(prev => ({ ...prev, [field]: null }));
-            };
-
-            const updateArrayField = (field, index, value) => {
-                setFormData(prev => ({
-                    ...prev,
-                    [field]: prev[field].map((item, i) => i === index ? value : item)
-                }));
-            };
-
-            const updateObjectInArray = (field, index, key, value) => {
-                setFormData(prev => ({
-                    ...prev,
-                    [field]: prev[field].map((item, i) => 
-                        i === index ? { ...item, [key]: value } : item
-                    )
-                }));
-            };
-
-            // Validation
-            const validateSection = (sectionNum) => {
-                const errors = {};
-                
-                switch(sectionNum) {
-                    case 1: // Dream Launcher
-                        if (!formData.birthdayStory || formData.birthdayStory.trim().length < 50) {
-                            errors.birthdayStory = 'Your 80th birthday story needs more detail (minimum 50 characters)';
-                        }
-                        if (!formData.dream || formData.dream.trim().length < 20) {
-                            errors.dream = 'Your dream needs more detail (minimum 20 characters)';
-                        }
-                        break;
-                    case 2: // Strengths Amplifier
-                        // At least 3 activities required
-                        const filledActivities = formData.activities.filter(a => a.activity && a.activity.trim().length > 0);
-                        if (filledActivities.length < 3) {
-                            errors.activities = 'Enter at least 3 activities';
-                        }
-                        // At least 3 strengths required
-                        const filledStrengths = formData.strengths.filter(s => s.strength && s.strength.trim().length > 0);
-                        if (filledStrengths.length < 3) {
-                            errors.strengths = 'Enter at least 3 strengths';
-                        }
-                        break;
-                    case 3: // Values Compass
-                        const filledValues = formData.values.filter(v => v.value && v.value.trim().length > 0);
-                        if (filledValues.length < 3) {
-                            errors.values = 'Enter at least 3 core values';
-                        }
-                        break;
-                    case 4: // Growth Blueprint
-                        const filledGoals = formData.goals.filter(g => g.goal && g.goal.trim().length > 0);
-                        if (filledGoals.length < 2) {
-                            errors.goals = 'Enter at least 2 goals';
-                        }
-                        break;
-                }
-                
-                setValidationErrors(errors);
-                return Object.keys(errors).length === 0;
-            };
-
-            const canProceed = (sectionNum) => {
-                return validateSection(sectionNum);
-            };
-            
-            // Build section-specific answers for AI review
-            const getSectionAnswers = (sectionNum) => {
-                switch (sectionNum) {
-                    case 1: return { birthday_story: formData.birthdayStory, dream: formData.dream, what_love: formData.whatLove, what_good_at: formData.whatGoodAt };
-                    case 2: return { activities: formData.activities.filter(a => a.activity).map(a => `${a.activity} (${a.energy})`).join(', '), strengths: formData.strengths.filter(s => s.strength).map(s => s.strength).join(', ') };
-                    case 3: return { values: formData.values.filter(v => v.value).map(v => v.value).join(', ') };
-                    case 4: return { goals: formData.goals.filter(g => g.goal).map(g => g.goal).join(', ') };
-                    default: return {};
-                }
-            };
-
-            const SECTION_NAMES = { 1: 'Dream Launcher', 2: 'Strengths Amplifier', 3: 'Values Compass', 4: 'Growth Blueprint' };
-
-            // Navigate to next sub-step or next section
-            // AI challenge fires after every slide, not just the last one
-            const nextSubStep = () => {
-                const totalSubSteps = SUBSTEPS[step] || 0;
-                const isLastSubStep = subStep >= totalSubSteps - 1;
-                const sectionNum = Math.floor(step);
-                const userId = localStorage.getItem('ft_user_id') || 'anon-' + Date.now();
-
-                const advance = () => {
-                    if (isLastSubStep) {
-                        setSubStep(0);
-                        setStep(step + 0.5);
-                    } else {
-                        setSubStep(subStep + 1);
-                    }
-                };
-
-                setAiReviewing(true);
-                window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, getSectionAnswers(sectionNum), SECTION_NAMES[sectionNum])
-                    .then(function (canProceed) {
-                        setAiReviewing(false);
-                        if (canProceed) {
-                            setAiMessage('');
-                            advance();
-                        } else {
-                            setAiMessage(window.AIChallenge?.getLastFeedback?.()?.suggestion || 'Please expand your answer before continuing.');
-                        }
-                    })
-                    .catch(function () {
-                        setAiReviewing(false);
-                        setAiMessage('');
-                        advance();
-                    });
-            };
-            
-            // Navigate to previous sub-step or previous section
-            const prevSubStep = () => {
-                if (subStep > 0) {
-                    setSubStep(subStep - 1);
-                } else if (step > 1) {
-                    // Go back to previous section's last substep
-                    const prevSection = step - 1;
-                    setStep(prevSection);
-                    setSubStep(SUBSTEPS[prevSection] - 1);
-                }
-            };
-
-            const clearCache = () => {
-                localStorage.removeItem(CONFIG.STORAGE_KEY);
-                window.location.reload();
-            };
-
-            // Cover Page (step 0)
-            if (step === 0) {
-                return (
-                    <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
-                        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url("https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80")', backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.3 }} />
-                        <div style={{ position: 'relative', textAlign: 'center', color: '#fff', padding: '0 32px' }} className="animate-in">
-                            <h1 className="plaak" style={{ fontSize: 80, marginBottom: 16, textTransform: 'uppercase' }}>KNOW THYSELF</h1>
-                            <p style={{ fontSize: 18, color: '#ccc', marginBottom: 48 }}>The foundation of exceptional leadership</p>
-                            <button onClick={() => setStep(0.5)}
-                                style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 48px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s ease', minHeight: 44 }}
-                                onMouseOver={e => { e.target.style.background = '#FFF469'; }}
-                                onMouseOut={e => { e.target.style.background = '#fff'; }}
-                            >START</button>
-                        </div>
                     </div>
-                );
-            }
 
-            // Intro Page (step 0.5)
-            if (step === 0.5) { return <IntroPage onNext={() => setStep(1)} />; }
-
-
-        // SECTION 4: Personal Growth Blueprint - TYPEFORM STYLE
-        function Step4({ formData, updateObjectInArray, subStep, nextSubStep, prevSubStep, aiReviewing, aiMessage }) {
-            
-            const currentGoal = formData.goals[subStep];
-            const canAdvance = currentGoal.goal && currentGoal.goal.trim().length > 0;
-
-            return (
-                <main className="min-h-screen flex items-center justify-center p-8">
-                    <div className="max-w-4xl w-full animate-in">
-                        {/* Progress */}
-                        <div className="mb-8">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-sm font-bold">PERSONAL GROWTH BLUEPRINT</span>
-                                <span className="text-sm">{subStep + 1} / 3</span>
-                            </div>
-                            <div className="h-1 bg-gray-200">
-                                <div 
-                                    className="h-full bg-black transition-all duration-300"
-                                    style={{width: `${((subStep + 1) / 3) * 100}%`}}
-                                ></div>
-                            </div>
-                        </div>
-                        
-                        {/* Goal Card */}
-                        <div className="border-2 border-black p-8 bg-white mb-6">
-                            <h2 className="plaak text-4xl mb-6">GOAL #{subStep + 1}</h2>
-                            
-                            <div className="space-y-6">
-                                <div>
-                                    <label className="block font-bold mb-2 text-xl">What is your goal?</label>
-                                    <textarea
-                                        className="ft-input text-lg"
-                                        value={currentGoal.goal}
-                                        onChange={(e) => updateObjectInArray('goals', subStep, 'goal', e.target.value)}
-                                        onInput={(e) => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
-                                        rows="3"
-                                        style={{ resize: 'none', overflow: 'hidden' }}
-                                        placeholder="e.g., Improve leadership presence, Build a high-performing team"
-                                        autoFocus
-                                    />
-                                </div>
-                                
-                                <div>
-                                    <label className="block font-bold mb-2 text-xl">How will you achieve it? (Action steps)</label>
-                                    <textarea
-                                        className="ft-input"
-                                        value={currentGoal.action}
-                                        onChange={(e) => updateObjectInArray('goals', subStep, 'action', e.target.value)}
-                                        onInput={(e) => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
-                                        rows="4"
-                                        style={{ resize: 'none', overflow: 'hidden' }}
-                                        placeholder="e.g., Join Toastmasters, deliver 2 presentations monthly, hire executive coach"
-                                    />
-                                </div>
-                                
-                                <div>
-                                    <label className="block font-bold mb-2 text-xl">By when? (Deadline)</label>
-                                    <input
-                                        type="date"
-                                        className="ft-input text-lg"
-                                        value={currentGoal.byWhen}
-                                        onChange={(e) => updateObjectInArray('goals', subStep, 'byWhen', e.target.value)}
-                                        min={new Date().toISOString().split('T')[0]}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                        
-                        {/* Navigation */}
-                        <div className="flex justify-between items-center">
-                            <button
-                                className="btn-secondary py-3 px-6"
-                                onClick={prevSubStep}
-                            >
-                                ← Back
-                            </button>
-
-                            <button
-                                className="btn-primary py-4 px-8 text-lg"
-                                onClick={nextSubStep}
-                                disabled={!canAdvance || aiReviewing}
-                            >
-                                {aiReviewing ? 'Reviewing...' : (subStep === 2 ? 'Complete Blueprint →' : 'Next Goal')}
-                            </button>
-                        </div>
-                        {aiMessage && <div style={{color:'#dc2626', fontSize:'13px', marginTop:'8px', padding:'8px 12px', background:'#fef2f2', borderRadius:'6px'}}>{aiMessage}</div>}
-
-                        {!canAdvance && (
-                            <p className="text-center text-gray-600 mt-4 text-sm">
-                                Please enter a goal to continue
-                            </p>
-                        )}
-                    </div>
-                </main>
-            );
-        }
-
-        // OLD CODE - KEEPING FOR REFERENCE
-        function Step4Old({ formData, updateFormData, updateObjectInArray, validationErrors, canProceed, onBack, onNext }) {
-            const handleNext = () => {
-                if (canProceed()) {
-                    onNext();
-                }
-            };
-
-            return (
-                <main className="p-12 max-w-6xl mx-auto">
-                    <div className="animate-in">
-                        <div className="numbered-section">[04] PERSONAL GROWTH BLUEPRINT - OLD</div>
-
-                        {/* Fast Track Insight */}
-
-
-                        {/* The Science */}
-                        {/* TODO: add field condition */}
-<div className="ft-reveal-science">
-    <div className="ft-reveal-label">SCIENCE BEHIND IT</div>
-    <p className="ft-reveal-text">Dr. Gail Matthews' research at Dominican University found that people who write down specific goals with action steps and deadlines are 76% more likely to achieve them. Longitudinal studies also show that individuals who review and adjust their personal growth plans quarterly maintain 60% higher alignment between their intentions and actual behavior. The structure creates psychological accountability that prevents strategic drift.</p>
-  </div>
-
-                        
-                        <div className="border-2 border-black p-6 mb-8 bg-white">
-                            <h3 className="plaak text-3xl mb-2">YOUR EXECUTION PLAN</h3>
-                            <p className="text-xl">
-                                Set specific goals with clear actions and deadlines. No vague aspirations.
-                            </p>
-                        </div>
-
-                        <div className="space-y-6">
-                            <div className="bg-gray-50 border-2 border-black p-6">
-                                <h3 className="plaak text-xl mb-4">GUIDING QUESTIONS</h3>
-                                <ul className="space-y-2 text-sm text-gray-700">
-                                    <li>• How do you see yourself in the next 10 years? Next 3 years?</li>
-                                    <li>• What would it TAKE to become the best version of yourself in the next 1 year?</li>
-                                    <li>• What do you have to cut off? What is the price you are willing to pay?</li>
-                                </ul>
-                            </div>
-
-                            <div>
-                                <label className="block font-bold mb-4 text-xl">
-                                    Your Plan
-                                </label>
-                                
-                                {/* Examples */}
-                                <div className="mb-4 grid grid-cols-2 gap-4">
-                                    <div className="bg-gray-50 border-2 border-black p-3">
-                                        <p className="font-bold mb-1 text-sm">GOOD EXAMPLE</p>
-                                        <p className="text-xs italic"><strong>Goal:</strong> "Develop executive presence"</p>
-                                        <p className="text-xs italic"><strong>Action:</strong> "Join Toastmasters, deliver 2 company presentations monthly"</p>
-                                        <p className="text-xs italic"><strong>By when:</strong> "June 30, 2025"</p>
+                    <div className="canvas-section">
+                        <div className="canvas-section-title">VALUES COMPASS</div>
+                        {filledValues.length > 0 ? (
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
+                                {filledValues.map((v, i) => (
+                                    <div key={i} className="canvas-card">
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                                            <div className="canvas-card-label">{v.value}</div>
+                                            <span style={{ fontFamily: "'Monument', monospace", fontSize: 11, fontWeight: 'bold', color: v.alignment >= 80 ? '#22c55e' : v.alignment >= 50 ? '#f59e0b' : '#DC2626' }}>{v.alignment}%</span>
+                                        </div>
+                                        <div className="canvas-card-value">{v.howLive || '—'}</div>
                                     </div>
-                                    <div className="bg-red-50 border-2 border-red-500 p-3">
-                                        <p className="font-bold mb-1 text-sm">COMMON PITFALL</p>
-                                        <p className="text-xs italic"><strong>Goal:</strong> "Be better at leadership"</p>
-                                        <p className="text-xs italic"><strong>Action:</strong> "Try harder"</p>
-                                        <p className="text-xs italic"><strong>By when:</strong> "Soon"</p>
-                                        <p className="text-xs mt-1">Everything is vague and unmeasurable</p>
+                                ))}
+                            </div>
+                        ) : <div style={{ color: '#999', fontSize: 14 }}>No values defined yet.</div>}
+                    </div>
+
+                    <div className="canvas-section">
+                        <div className="canvas-section-title">PERSONAL GROWTH BLUEPRINT</div>
+                        {filledGoals.length > 0 ? (
+                            filledGoals.map((g, i) => (
+                                <div key={i} style={{ border: '1px solid #E0E0E0', padding: '16px', marginBottom: 8 }}>
+                                    <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                                        <span style={{ fontFamily: "'Plaak', sans-serif", fontSize: 22, color: '#000', minWidth: 32 }}>0{i+1}</span>
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ fontWeight: 600, marginBottom: 6 }}>{g.goal}</div>
+                                            {g.actions && <div style={{ fontSize: 13, color: '#555', marginBottom: 4 }}>→ {g.actions}</div>}
+                                            {g.byWhen  && <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#DC2626', letterSpacing: '0.06em' }}>BY: {g.byWhen}</div>}
+                                        </div>
                                     </div>
                                 </div>
-                                
-                                <div className="overflow-x-auto">
-                                    <table className="w-full border-2 border-black">
-                                        <thead>
-                                            <tr className="bg-black text-white">
-                                                <th className="p-3 text-left border-r-2 border-white">Goals</th>
-                                                <th className="p-3 text-left border-r-2 border-white">Action (how will you achieve the goal)</th>
-                                                <th className="p-3 text-left">By when</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {formData.goals.map((goal, i) => (
-                                                <tr key={i} className="border-t-2 border-black">
-                                                    <td className="p-3 border-r-2 border-black align-top">
-                                                        <textarea
-                                                            className="ft-input"
-                                                            value={goal.goal}
-                                                            onChange={(e) => updateObjectInArray('goals', i, 'goal', e.target.value)}
-                                                            placeholder="e.g., Improve leadership presence"
-                                                            rows="3"
-                                                        />
-                                                    </td>
-                                                    <td className="p-3 border-r-2 border-black align-top">
-                                                        <textarea
-                                                            className="ft-input"
-                                                            value={goal.action}
-                                                            onChange={(e) => updateObjectInArray('goals', i, 'action', e.target.value)}
-                                                            placeholder="e.g., Join Toastmasters, practice weekly presentations"
-                                                            rows="3"
-                                                        />
-                                                    </td>
-                                                    <td className="p-3 align-top">
-                                                        <input
-                                                            type="date"
-                                                            className="ft-input"
-                                                            value={goal.byWhen}
-                                                            onChange={(e) => updateObjectInArray('goals', i, 'byWhen', e.target.value)}
-                                                            min={new Date().toISOString().split('T')[0]}
-                                                        />
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                            
-                            {validationErrors.goals && (
-                                <div className="mt-4 p-4 bg-red-50 border-2 border-red-500 text-red-700">
-                                    <p className="font-bold">{validationErrors.goals}</p>
+                            ))
+                        ) : <div style={{ color: '#999', fontSize: 14 }}>No goals defined yet.</div>}
+                    </div>
+
+                    <div className="canvas-section">
+                        <div className="canvas-section-title">FAST TRACK REMINDER</div>
+                        <div style={{ background: '#F5F5F5', padding: '20px 24px', borderLeft: '4px solid #000' }}>
+                            <p style={{ fontSize: 14, color: '#333', lineHeight: 1.8 }}>
+                                Your dream, strengths, values, and growth plan are the foundation of every decision you will make in Fast Track. When you are unsure which market to enter, which team to build, or which strategy to choose — come back here. The answer is usually hidden in what you know about yourself.
+                            </p>
+                        </div>
+                    </div>
+
+                    {submitStatus === 'done' ? (
+                        <div className="submit-success">
+                            <div style={{ fontSize: 40, marginBottom: 8 }}>✓</div>
+                            <h2 className="plaak" style={{ fontSize: 28, marginBottom: 8 }}>SUBMITTED</h2>
+                            <p style={{ color: '#555', marginBottom: 16 }}>Your self-knowledge profile has been saved. Bring your Dream and Strengths to the team meeting.</p>
+                            <a href="/dashboard" style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#000', letterSpacing: '0.08em', textTransform: 'uppercase', textDecoration: 'none', borderBottom: '2px solid #000' }}>← Back to Dashboard</a>
+                        </div>
+                    ) : (
+                        <div style={{ textAlign: 'center', padding: '32px 0' }}>
+                            {submitStatus === 'error' && (
+                                <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', padding: '12px 16px', marginBottom: 16, fontSize: 14, color: '#DC2626' }}>
+                                    Failed to save. Please check your connection and try again.
                                 </div>
                             )}
-                        </div>
-
-                        {/* Helper Content - Collapsible */}
-                        <details className="border-2 border-black p-4 mt-8">
-                            <summary className="font-bold cursor-pointer text-lg">Need Help? View Tips & Mistakes to Avoid</summary>
-                            <div className="mt-4 space-y-4">
-                                <div className="border-2 border-red-600 p-4">
-                                    <p className="font-bold mb-3 text-lg">MISTAKES TO AVOID</p>
-                                    <ul className="space-y-2 text-sm">
-                                        <li><strong>Vagueness:</strong> Ensure goals are specific and measurable.</li>
-                                        <li><strong>Inconsistency:</strong> Regularly review and adjust your plan.</li>
-                                    </ul>
-                                </div>
-                                <div className="border-2 border-black p-4">
-                                    <p className="font-bold mb-2">Pro Tip</p>
-                                    <p className="text-sm">Specific beats vague. "Hire COO by March 1" beats "Improve delegation."</p>
-                                </div>
-                            </div>
-                        </details>
-
-                        <div className="flex justify-between mt-12">
-                            <button className="btn-secondary text-lg py-3 px-6" onClick={onBack}>
-                                ← Back
+                            <button onClick={handleSubmit} disabled={submitStatus === 'saving'} className="btn-wiz-next" style={{ padding: '16px 48px', fontSize: 14 }}>
+                                {submitStatus === 'saving' ? 'SAVING…' : 'SUBMIT ANSWERS'}
                             </button>
-                            <button 
-                                className="btn-primary text-xl py-4 px-8"
-                                onClick={handleNext}
-                            >
-                                View Your Canvas →
-                            </button>
-                        </div>
-                        
-                        {validationErrors.goals && (
-                            <div className="mt-4 p-4 bg-red-50 border-2 border-red-500 text-red-700 text-center">
-                                <p className="font-bold text-lg">↑ Complete at least 2 goals to continue</p>
-                            </div>
-                        )}
-                    </div>
-                </main>
-            );
-        }
-
-        // Canvas View Component - CAROUSEL STYLE
-        function CanvasView({ formData, onBack }) {
-            const [canvasView, setCanvasView] = useState(0); // 0=summary, 1=dream, 2=strengths, 3=values, 4=growth
-            const [submitStatus, setSubmitStatus] = useState(null);
-            const [submitMessage, setSubmitMessage] = useState('');
-
-            const handleShare = () => {
-                setSubmitMessage('SUBMITTED\n\nYour insights are now visible to your team. Bring this to your Guru-led meeting.'); setSubmitStatus('success');
-            };
-
-            const handleSubmit = async () => {
-                try {
-                    // Get user ID from localStorage
-                    const userId = localStorage.getItem('ft_user_id');
-                    if (!userId) {
-                        alert('User not authenticated. Please return to the dashboard.');
-                        return;
-                    }
-
-                    // Guru summary — only high-level insights, no personal reflections
-                    const guruSummary = {
-                        dream: formData.dream,
-                        top_strengths: formData.strengths.filter(s => s.strength?.trim()).map(s => s.strength).join(', '),
-                        core_values: formData.values.filter(v => v.value?.trim()).map(v => v.value).join(', '),
-                        avg_values_alignment: (() => {
-                            const filled = formData.values.filter(v => v.alignment);
-                            if (!filled.length) return null;
-                            return Math.round(filled.reduce((sum, v) => sum + Number(v.alignment), 0) / filled.length) + '%';
-                        })(),
-                        goals: formData.goals.filter(g => g.goal?.trim()).map(g => g.goal + (g.byWhen ? ' (by ' + g.byWhen + ')' : '')).join('; '),
-                        do_more_of: formData.doMore,
-                        do_less_of: formData.doLess
-                    };
-
-                    const questionMappings = {
-                        // Full answers (private — only visible to user)
-                        birthdayStory: formData.birthdayStory,
-                        whatLove: formData.whatLove,
-                        whatGoodAt: formData.whatGoodAt,
-                        giveToWorld: formData.giveToWorld,
-                        paidFor: formData.paidFor,
-                        inspired: formData.inspired,
-                        feltBest: formData.feltBest,
-                        likeAboutSelf: formData.likeAboutSelf,
-                        hardships: formData.hardships,
-                        dream: formData.dream,
-                        activities: formData.activities,
-                        strengths: formData.strengths,
-                        doMore: formData.doMore,
-                        doLess: formData.doLess,
-                        startTo: formData.startTo,
-                        value_1: formData.values?.[0],
-                        value_2: formData.values?.[1],
-                        value_3: formData.values?.[2],
-                        value_4: formData.values?.[3],
-                        value_5: formData.values?.[4],
-                        goal_1: formData.goals?.[0],
-                        goal_2: formData.goals?.[1],
-                        goal_3: formData.goals?.[2],
-                        // Guru-visible summary
-                        guru_summary: guruSummary
-                    };
-
-                    await ToolDB.save(userId, questionMappings);
-                    setSubmitStatus('success');
-                    setSubmitMessage('LOCKED IN! Know Thyself complete.');
-
-                } catch (error) {
-                    console.error('Submit error:', error);
-                    setSubmitStatus('error');
-                    setSubmitMessage('SUBMISSION FAILED: ' + error.message);
-                }
-            };
-
-            const handleExport = () => {
-                window.print();
-            };
-
-            // Filter filled items
-            const filledActivities = formData.activities.filter(a => a.activity && a.activity.trim());
-            const filledStrengths = formData.strengths.filter(s => s.strength && s.strength.trim());
-            const filledValues = formData.values.filter(v => v.value && v.value.trim());
-            const filledGoals = formData.goals.filter(g => g.goal && g.goal.trim());
-            
-            // Carousel navigation
-            const goToView = (view) => setCanvasView(view);
-            const nextView = () => canvasView < 4 && setCanvasView(canvasView + 1);
-            const prevView = () => canvasView > 0 && setCanvasView(canvasView - 1);
-
-            return (
-                <div className="min-h-screen bg-white">
-                    {/* Summary Dashboard View */}
-                    {canvasView === 0 && (
-                        <div className="min-h-screen flex items-center justify-center p-8">
-                            <div className="max-w-5xl w-full">
-                                {/* Header */}
-                                <div className="text-center mb-12">
-                                    <h1 className="plaak text-6xl mb-4">YOUR CANVAS</h1>
-                                    <p className="text-2xl text-gray-600">{formData.userName}</p>
-                                </div>
-                                
-                                {/* Main Dream - Hero Section */}
-                                <div className="border-4 border-black p-8 mb-8 bg-white">
-                                    <h2 className="plaak text-3xl mb-4">MY DREAM</h2>
-                                    <p className="text-xl leading-relaxed mb-4">
-                                        {formData.dream ? formData.dream.substring(0, 200) + (formData.dream.length > 200 ? '...' : '') : 'Not specified'}
-                                    </p>
-                                    <button onClick={() => goToView(1)} className="btn-secondary text-sm">
-                                        View Full Story →
-                                    </button>
-                                </div>
-                                
-                                {/* Summary Grid */}
-                                <div className="grid grid-cols-3 gap-6 mb-8">
-                                    {/* Strengths */}
-                                    <div className="border-2 border-black p-6 bg-white">
-                                        <h3 className="plaak text-xl mb-4">STRENGTHS</h3>
-                                        <ul className="space-y-2 mb-4">
-                                            {filledStrengths.slice(0, 3).map((s, i) => (
-                                                <li key={i} className="text-sm">• {s.strength}</li>
-                                            ))}
-                                        </ul>
-                                        <button onClick={() => goToView(2)} className="text-sm underline">
-                                            View All →
-                                        </button>
-                                    </div>
-                                    
-                                    {/* Values */}
-                                    <div className="border-2 border-black p-6 bg-white">
-                                        <h3 className="plaak text-xl mb-4">VALUES</h3>
-                                        <ul className="space-y-2 mb-4">
-                                            {filledValues.slice(0, 3).map((v, i) => (
-                                                <li key={i} className="text-sm">• {v.value}</li>
-                                            ))}
-                                        </ul>
-                                        <button onClick={() => goToView(3)} className="text-sm underline">
-                                            View All →
-                                        </button>
-                                    </div>
-                                    
-                                    {/* Goals */}
-                                    <div className="border-2 border-black p-6 bg-white">
-                                        <h3 className="plaak text-xl mb-4">GOALS</h3>
-                                        <ul className="space-y-2 mb-4">
-                                            {filledGoals.slice(0, 3).map((g, i) => (
-                                                <li key={i} className="text-sm">• {g.goal.substring(0, 40)}...</li>
-                                            ))}
-                                        </ul>
-                                        <button onClick={() => goToView(4)} className="text-sm underline">
-                                            View All →
-                                        </button>
-                                    </div>
-                                </div>
-                                
-                                {/* Status Message */}
-                                {submitMessage && (
-                                    <div className={`p-4 mb-4 border-2 text-lg font-bold text-center ${submitStatus === 'success' ? 'bg-gray-50 border-black text-black' : submitStatus === 'error' ? 'bg-red-50 border-red-500 text-red-700' : 'bg-yellow-50 border-yellow-500 text-yellow-800'}`}>
-                                        {submitMessage}
-                                    </div>
-                                )}
-
-                                {/* Action Buttons */}
-                                <div className="flex gap-4 justify-center">
-                                    <button onClick={handleExport} className="btn-secondary flex-1 text-lg py-4">
-                                        Export PDF
-                                    </button>
-                                    <button onClick={handleShare} className="btn-secondary flex-1 text-lg py-4">
-                                        Submit Answers
-                                    </button>
-                                    <button onClick={handleSubmit} className="btn-primary flex-1 text-lg py-4">
-                                        Save Your Answers
-                                    </button>
-                                </div>
-
-                                {/* Case Study */}
-                                <CaseStudy
-                                    before={"Maria, a logistics company founder, had grown her business to 120 employees but felt increasingly disconnected from her work. She could not explain to her team why the company existed beyond making money. Turnover was rising, strategic decisions took weeks, and she was burning out chasing opportunities that did not align with who she was."}
-                                    after={"After completing Know Thyself, Maria identified her core strength as systems thinking and her driving value as creating independence for others. She articulated a clear dream: build the most empowering workplace in her region. Within 6 months, employee turnover dropped by half, she declined 3 misaligned partnerships without hesitation, and her team began making autonomous decisions aligned with the shared vision."}
-                                    quote={"Before this exercise, I was running a company. After it, I was leading a mission. The difference is everything. — Maria K., Logistics CEO"}
-                                />
-                                
-                                <div className="text-center mt-8">
-                                    <button onClick={onBack} className="text-gray-600 underline">
-                                        ← Back to Edit
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                    
-                    {/* Detail Views */}
-                    {canvasView > 0 && (
-                        <div className="min-h-screen p-8">
-                            {/* Navigation Header */}
-                            <div className="max-w-5xl mx-auto mb-8">
-                                <div className="flex items-center justify-between">
-                                    <button onClick={() => goToView(0)} className="btn-secondary">
-                                        ← Back to Summary
-                                    </button>
-                                    <div className="text-sm font-bold">
-                                        {canvasView} / 4
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div className="max-w-5xl mx-auto">
-                                {/* View 1: Dream Launcher */}
-                                {canvasView === 1 && (
-                                    <div className="border-4 border-black p-8 bg-white mb-8">
-                                <div className="numbered-section mb-6">[01] DREAM LAUNCHER</div>
-                                {/* 80th Birthday Story */}
-                                {formData.birthdayStory && (
-                                    <div className="border-2 border-black p-6 mb-6 bg-white">
-                                        <h3 className="plaak text-2xl mb-3">MY 80TH BIRTHDAY VISION</h3>
-                                        <p className="text-lg italic leading-relaxed">{formData.birthdayStory}</p>
-                                    </div>
-                                )}
-                                
-                                {/* Final Dream */}
-                                <div className="border-2 border-black p-6 mb-6 bg-white">
-                                    <h3 className="plaak text-xl mb-2">MY REASON TO GET UP IN THE MORNING</h3>
-                                    <p className="text-lg">{formData.dream || 'Not specified'}</p>
-                                </div>
-                                
-                                {/* Guiding Questions */}
-                                {(formData.whatLove || formData.whatGoodAt || formData.giveToWorld || formData.paidFor || 
-                                  formData.inspired || formData.feltBest || formData.likeAboutSelf || formData.hardships) && (
-                                    <details className="border-2 border-black p-4">
-                                        <summary className="font-bold cursor-pointer">View Guiding Questions Reflections</summary>
-                                        <div className="mt-4 space-y-2 text-sm">
-                                            {formData.whatLove && <p><strong>What I love:</strong> {formData.whatLove}</p>}
-                                            {formData.whatGoodAt && <p><strong>What I'm good at:</strong> {formData.whatGoodAt}</p>}
-                                            {formData.giveToWorld && <p><strong>What I can give to the world:</strong> {formData.giveToWorld}</p>}
-                                            {formData.paidFor && <p><strong>What I can be paid for:</strong> {formData.paidFor}</p>}
-                                            {formData.inspired && <p><strong>What inspires me:</strong> {formData.inspired}</p>}
-                                            {formData.feltBest && <p><strong>When I felt my best:</strong> {formData.feltBest}</p>}
-                                            {formData.likeAboutSelf && <p><strong>What I like about myself:</strong> {formData.likeAboutSelf}</p>}
-                                            {formData.hardships && <p><strong>Hardships I overcame:</strong> {formData.hardships}</p>}
-                                        </div>
-                                    </details>
-                                )}
-                                    </div>
-                                )}
-                                
-                                {/* View 2: Strengths Amplifier */}
-                                {canvasView === 2 && (
-                                    <div className="border-4 border-black p-8 bg-white mb-8">
-                                <div className="numbered-section mb-6">[02] STRENGTHS AMPLIFIER</div>
-                                
-                                {filledActivities.length > 0 && (
-                                    <div className="mb-6">
-                                        <h3 className="plaak text-lg mb-3">MY ACTIVITIES</h3>
-                                        <div className="space-y-2">
-                                            {filledActivities.map((act, i) => (
-                                                <div key={i} className="bg-gray-50 border-l-4 border-gray-400 p-4 flex justify-between items-center">
-                                                    <span className="font-bold">{act.activity}</span>
-                                                    <span className={`text-2xl ${act.energy === '+' ? 'text-black' : 'text-red-600'}`}>
-                                                        {act.energy}
-                                                    </span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {filledStrengths.length > 0 && (
-                                    <div className="mb-6">
-                                        <h3 className="plaak text-lg mb-3">MY STRENGTHS</h3>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            {filledStrengths.map((str, i) => (
-                                                <div key={i} className="border-2 border-black p-4 bg-white">
-                                                    <div className="font-bold text-lg mb-1">{str.strength}</div>
-                                                    <div className="text-sm text-gray-600">Fit: {str.fitPercent}%</div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div className="border-2 border-black p-6 bg-white">
-                                    <h3 className="plaak text-lg mb-3">ACTION PLAN</h3>
-                                    {formData.doMore && <p className="mb-2"><strong>Do More:</strong> {formData.doMore}</p>}
-                                    {formData.doLess && <p className="mb-2"><strong>Do Less:</strong> {formData.doLess}</p>}
-                                    {formData.startTo && <p><strong>Start To:</strong> {formData.startTo}</p>}
-                                </div>
-                                    </div>
-                                )}
-                                
-                                {/* View 3: Values Compass */}
-                                {canvasView === 3 && (
-                                    <div className="border-4 border-black p-8 bg-white mb-8">
-                                <div className="numbered-section mb-6">[03] VALUES COMPASS</div>
-                                {filledValues.length > 0 ? (
-                                    <div className="space-y-4">
-                                        {filledValues.map((val, i) => (
-                                            <div key={i} className="border-2 border-black p-6 bg-white">
-                                                <h3 className="plaak text-xl mb-2">{val.value}</h3>
-                                                {val.howLive && <p className="mb-2 text-sm"><strong>How I live it:</strong> {val.howLive}</p>}
-                                                {val.alignment && <p className="text-sm"><strong>Alignment:</strong> {val.alignment}%</p>}
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <p className="text-gray-500">No values specified</p>
-                                )}
-                                    </div>
-                                )}
-                                
-                                {/* View 4: Personal Growth Blueprint */}
-                                {canvasView === 4 && (
-                                    <div className="border-4 border-black p-8 bg-white mb-8">
-                                <div className="numbered-section mb-6">[04] PERSONAL GROWTH BLUEPRINT</div>
-                                {filledGoals.length > 0 ? (
-                                    <div className="space-y-4">
-                                        {filledGoals.map((goal, i) => (
-                                            <div key={i} className="border-2 border-black p-6 bg-white">
-                                                <div className="font-bold text-xl mb-3">{goal.goal}</div>
-                                                {goal.action && (
-                                                    <div className="mb-2">
-                                                        <strong className="text-sm">Action:</strong>
-                                                        <p className="text-sm mt-1">{goal.action}</p>
-                                                    </div>
-                                                )}
-                                                {goal.byWhen && (
-                                                    <div className="text-sm">
-                                                        <strong>Deadline:</strong> {new Date(goal.byWhen).toLocaleDateString()}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <p className="text-gray-500">No goals specified</p>
-                                )}
-                                    </div>
-                                )}
-                                
-                                {/* Navigation for Detail Views */}
-                                <div className="flex justify-between items-center mt-8">
-                                    <button 
-                                        onClick={prevView}
-                                        className="btn-secondary py-3 px-6"
-                                        disabled={canvasView === 1}
-                                    >
-                                        ← Previous Section
-                                    </button>
-                                    <button 
-                                        onClick={nextView}
-                                        className="btn-secondary py-3 px-6"
-                                        disabled={canvasView === 4}
-                                    >
-                                        Next Section →
-                                    </button>
-                                </div>
-                            </div>
                         </div>
                     )}
                 </div>
-            );
-        }
-
-        // Render App
-
-        function IntroPage({ onNext }) {
-          return (
-            <div className="bg-black text-white min-h-screen p-16">
-              <div className="max-w-5xl mx-auto">
-                <h1 className="plaak mb-16 animate-in" style={{fontSize: '100px'}}>
-                  BEFORE WE START
-                </h1>
-
-                {/* Sprint Info */}
-                <div className="mb-12 animate-in" style={{animationDelay: '0.08s'}}>
-                  <h2 className="plaak text-6xl mb-6" style={{color: '#FFF469'}}>SPRINT INFO</h2>
-                  <div className="bg-white text-black p-8">
-                    <p className="text-2xl font-bold mb-4">Sprint 1: Know Thyself</p>
-                    <p className="text-xl leading-relaxed mb-4">This is a personal reflection tool. Your guru will only see a short summary of your answers — not the full details. Be honest with yourself. The more truthful you are, the more valuable this exercise becomes.</p>
-                    <div className="border-l-4 border-black pl-4 italic text-lg">
-                      "Knowing yourself is the beginning of all wisdom."
-                    </div>
-                  </div>
-                </div>
-
-                {/* Purpose */}
-                <div className="mb-12 animate-in" style={{animationDelay: '0.1s'}}>
-                  <h2 className="plaak text-6xl mb-6">PURPOSE</h2>
-                  <div className="border-l-4 border-white pl-6 mb-6">
-                    <p className="text-3xl italic mb-2">"The unexamined life is not worth living."</p>
-                    <p className="text-xl text-gray-400">— Socrates</p>
-                  </div>
-                  <p className="text-3xl leading-relaxed mb-4">Build a complete self-portrait across your dreams, strengths, values, and goals. Most leaders operate on autopilot — this tool forces the clarity that separates high-performance executives from average ones.</p>
-                  <p className="text-2xl text-gray-400">Executives who regularly practise structured self-reflection outperform peers by 36% in leadership effectiveness (Harvard Business Review).</p>
-                </div>
-
-                {/* Mistakes to Avoid */}
-                <div className="mb-12 animate-in" style={{animationDelay: '0.2s'}}>
-                  <h2 className="plaak text-6xl mb-6" style={{color: '#FFF469'}}>MISTAKES TO AVOID</h2>
-                  <ul className="text-2xl space-y-4">
-                    <li className="flex items-start">
-                      <span className="text-4xl mr-4">•</span>
-                      <span>Rushing through answers to reach a quick result — depth beats speed here.</span>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-4xl mr-4">•</span>
-                      <span>Being too self-critical or too self-lenient; aim for honest, specific accuracy.</span>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-4xl mr-4">•</span>
-                      <span>Skipping sections that feel uncomfortable — those are exactly the ones that matter.</span>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-4xl mr-4">•</span>
-                      <span>Treating this as a one-time exercise rather than an annual leadership reset.</span>
-                    </li>
-                  </ul>
-                </div>
-
-                {/* The Journey */}
-                <div className="mb-16 animate-in" style={{animationDelay: '0.3s'}}>
-                  <h2 className="plaak text-6xl mb-8">THE JOURNEY</h2>
-                  <div className="grid grid-cols-4 gap-6 text-center">
-                    <div className="border-2 border-white p-6">
-                      <div className="text-8xl plaak mb-4">01</div>
-                      <p className="text-xl font-bold mb-2">DREAM LAUNCHER</p>
-                      <p className="text-base text-gray-400">Envision your 80th birthday</p>
-                    </div>
-                    <div className="border-2 border-white p-6">
-                      <div className="text-8xl plaak mb-4">02</div>
-                      <p className="text-xl font-bold mb-2">STRENGTHS AMPLIFIER</p>
-                      <p className="text-base text-gray-400">Map activities and strengths</p>
-                    </div>
-                    <div className="border-2 border-white p-6">
-                      <div className="text-8xl plaak mb-4">03</div>
-                      <p className="text-xl font-bold mb-2">VALUES COMPASS</p>
-                      <p className="text-base text-gray-400">Discover your 5 core values</p>
-                    </div>
-                    <div className="border-2 border-white p-6">
-                      <div className="text-8xl plaak mb-4">04</div>
-                      <p className="text-xl font-bold mb-2">GROWTH BLUEPRINT</p>
-                      <p className="text-base text-gray-400">Goals with actions and deadlines</p>
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  onClick={onNext}
-                  className="btn-primary w-full text-3xl py-8 plaak"
-                >
-                  LET'S START →
-                </button>
-              </div>
             </div>
-          );
+        );
+    }
+
+    // ────────────────────────────────────────────────────────────
+    // APP
+    // ────────────────────────────────────────────────────────────
+    function App() {
+        const [step, setStep] = useState(0);
+        const [userId, setUserId] = useState(null);
+        const [data, setData] = useState(makeDefaultData());
+        const [aiReviewing, setAiReviewing] = useState(false);
+        const [aiMessage, setAiMessage] = useState('');
+
+        useEffect(() => {
+            ToolDB.whenReady().then(async () => {
+                const uid = await ToolDB.identifyUser();
+                setUserId(uid);
+                if (uid) {
+                    const saved = await ToolDB.load(uid);
+                    if (saved && Object.keys(saved).length > 0) {
+                        setData(prev => {
+                            const next = Object.assign({}, prev);
+                            if (saved.birthday_story !== undefined) next.birthdayStory = saved.birthday_story;
+                            if (saved.dream         !== undefined) next.dream          = saved.dream;
+                            if (saved.activities    !== undefined) next.activities     = saved.activities.length ? saved.activities : prev.activities;
+                            if (saved.strengths     !== undefined) next.strengthsList  = saved.strengths.length  ? saved.strengths  : prev.strengthsList;
+                            if (saved.values        !== undefined) next.values         = saved.values.length     ? saved.values     : prev.values;
+                            if (saved.goals         !== undefined) next.goals          = saved.goals.length      ? saved.goals      : prev.goals;
+                            // legacy compat
+                            ['whatLove','whatGoodAt','giveToWorld','paidFor','inspired','feltBest','likeAboutSelf','hardships','doMore','doLess','startDoing'].forEach(k => {
+                                if (saved[k] !== undefined) next[k] = saved[k];
+                            });
+                            return next;
+                        });
+                    }
+                }
+            });
+        }, []);
+
+        const updateData = (field, val) => {
+            setData(prev => Object.assign({}, prev, { [field]: val }));
+        };
+
+        const handleNext = async (currentStep) => {
+            setAiMessage('');
+            const uid = userId || 'anon-' + Date.now();
+            const stepAnswers = {
+                1: { birthday_story: data.birthdayStory, dream: data.dream },
+                2: { strengths: data.strengthsList.filter(Boolean).join(', '), activities: data.activities.filter(a=>a.activity).map(a=>`${a.activity}(${a.energy})`).join(', ') },
+                3: { values: data.values.filter(v=>v.value).map(v=>`${v.value}(${v.alignment}%)`).join(', ') },
+                4: { goals: data.goals.filter(g=>g.goal).map(g=>g.goal).join(', ') },
+            };
+            const stepNames = { 1: 'Dream Launcher', 2: 'Strengths Amplifier', 3: 'Values Compass', 4: 'Growth Blueprint' };
+            const answers = stepAnswers[currentStep];
+            const hasText = answers && Object.values(answers).some(v => v && v.length > 10);
+            if (!hasText) {
+                setStep(currentStep + 0.5);
+                return;
+            }
+            setAiReviewing(true);
+            try {
+                const ok = await window.AIChallenge.reviewStep(uid, CONFIG.TOOL_SLUG, answers, stepNames[currentStep]);
+                setAiReviewing(false);
+                if (ok) {
+                    setAiMessage('');
+                    setStep(currentStep + 0.5);
+                } else {
+                    setAiMessage(window.AIChallenge?.getLastFeedback?.()?.suggestion || 'Please add more detail before continuing.');
+                }
+            } catch(e) {
+                setAiReviewing(false);
+                setStep(currentStep + 0.5);
+            }
+        };
+
+        const handleBack = (currentStep) => {
+            setAiMessage('');
+            if (currentStep === 1) setStep(0.5);
+            else setStep(currentStep - 1);
+        };
+
+        const stepCanAdvance = {
+            1: (data.dream || '').length >= 20,
+            2: data.strengthsList.filter(s => s.trim()).length >= 2,
+            3: data.values.filter(v => v.value.trim()).length >= 3,
+            4: data.goals.filter(g => g.goal.trim()).length >= 2,
+        };
+
+        // Cover
+        if (step === 0) {
+            return (
+                <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', inset: 0, backgroundImage: `url("${CONFIG.COVER_IMAGE}")`, backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.3 }} />
+                    <div style={{ position: 'relative', textAlign: 'center', color: '#fff', padding: '0 32px' }} className="animate-in">
+                        <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#555', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 16 }}>SPRINT 01</div>
+                        <h1 className="plaak" style={{ fontSize: 80, marginBottom: 16, textTransform: 'uppercase' }}>KNOW THYSELF</h1>
+                        <p style={{ fontSize: 18, color: '#ccc', marginBottom: 48 }}>The foundation of exceptional leadership</p>
+                        <button onClick={() => setStep(0.5)}
+                            style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 48px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s' }}
+                            onMouseOver={e => { e.target.style.background = '#FFF469'; }}
+                            onMouseOut={e => { e.target.style.background = '#fff'; }}>
+                            START
+                        </button>
+                    </div>
+                </div>
+            );
         }
 
-        ReactDOM.render(<KnowThyselfTool />, document.getElementById('root'));
-    </script>
+        // Intro
+        if (step === 0.5) {
+            return <IntroPage onNext={() => setStep(1)} />;
+        }
+
+        // Transitions
+        if (!Number.isInteger(step) && step > 0.5) {
+            const stepNum = Math.floor(step);
+            return <TransitionScreen stepNum={stepNum} onNext={() => setStep(stepNum + 1 > CONFIG.TOTAL_STEPS ? 'canvas' : stepNum + 1)} />;
+        }
+
+        // Canvas
+        if (step === 'canvas') {
+            return <CanvasPage data={data} userId={userId} onBack={() => setStep(CONFIG.TOTAL_STEPS)} />;
+        }
+
+        // Wizard steps 1–4
+        if (Number.isInteger(step) && step >= 1 && step <= CONFIG.TOTAL_STEPS) {
+            const stepComponents = {
+                1: <Step1 data={data} updateData={updateData} aiMessage={aiMessage} />,
+                2: <Step2 data={data} updateData={updateData} aiMessage={aiMessage} />,
+                3: <Step3 data={data} updateData={updateData} aiMessage={aiMessage} />,
+                4: <Step4 data={data} updateData={updateData} aiMessage={aiMessage} />,
+            };
+            return (
+                <div className="wizard-layout">
+                    <div className="mobile-step-bar" style={{ display: 'none' }}>
+                        <span className="mobile-step-text">STEP {step} OF {CONFIG.TOTAL_STEPS}</span>
+                        {Array.from({ length: CONFIG.TOTAL_STEPS }, (_, i) => {
+                            const n = i + 1;
+                            return <div key={n} className={'mobile-step-dot' + (step === n ? ' active' : step > n ? ' done' : '')} />;
+                        })}
+                    </div>
+                    <WizardSidebar currentStep={step} data={data} onNavigate={s => setStep(s)} />
+                    <div className="wizard-main">
+                        <div style={{ flex: 1, padding: '0 0', overflowY: 'auto' }}>
+                            <div style={{ padding: '0 48px' }}>
+                                {stepComponents[step]}
+                            </div>
+                        </div>
+                        <div className="wizard-footer">
+                            <button className="btn-wiz-back" onClick={() => handleBack(step)}>← BACK</button>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                                {aiReviewing && (
+                                    <span style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#666', letterSpacing: '0.06em' }}>AI REVIEWING…</span>
+                                )}
+                                {step < CONFIG.TOTAL_STEPS ? (
+                                    <button className="btn-wiz-next"
+                                        disabled={!stepCanAdvance[step] || aiReviewing}
+                                        onClick={() => handleNext(step)}>
+                                        NEXT →
+                                    </button>
+                                ) : (
+                                    <button className="btn-wiz-next"
+                                        disabled={!stepCanAdvance[step] || aiReviewing}
+                                        onClick={() => { setAiMessage(''); setStep('canvas'); }}>
+                                        VIEW CANVAS →
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        return null;
+    }
+
+    ReactDOM.render(<App />, document.getElementById('root'));
+</script>
 </body>
 </html>
-
