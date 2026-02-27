@@ -413,28 +413,46 @@
     function Step2({ data, updateData, aiMessage }) {
         const [activeIdx, setActiveIdx] = useState(0);
         const [autoAdvancing, setAutoAdvancing] = useState(false);
-        const completedSet = useRef(new Set());
-        const activities   = data.activities;
-        const decisionsKpis = data.decisionsKpis;
-        const current      = decisionsKpis[activeIdx];
-        const currentName  = activities[activeIdx] ? activities[activeIdx].name : '';
+        const completedSet   = useRef(new Set());
+        const advanceTimer   = useRef(null);
+        const activities     = data.activities;
+        const decisionsKpis  = data.decisionsKpis;
+        const current        = decisionsKpis[activeIdx];
+        const currentName    = activities[activeIdx] ? activities[activeIdx].name : '';
+
+        // Cancel timer when user manually switches activity tab
+        useEffect(() => {
+            clearTimeout(advanceTimer.current);
+            setAutoAdvancing(false);
+        }, [activeIdx]);
+
+        // Trigger auto-advance synchronously from handlers (avoids stale-closure issues)
+        const scheduleAdvance = (newDecisions, newKpis) => {
+            if (activeIdx >= 4) return;
+            if (completedSet.current.has(activeIdx)) return;
+            const done = newDecisions.some(d => d.trim()) && newKpis.some(k => k.trim());
+            if (!done) return;
+            completedSet.current.add(activeIdx);
+            clearTimeout(advanceTimer.current);
+            setAutoAdvancing(true);
+            advanceTimer.current = setTimeout(() => {
+                setAutoAdvancing(false);
+                setActiveIdx(i => Math.min(i + 1, 4));
+            }, 1000);
+        };
 
         const updateDecision = (dIdx, val) => {
-            const next = decisionsKpis.map((item, i) => {
-                if (i !== activeIdx) return item;
-                const newDecisions = item.decisions.map((d, di) => di === dIdx ? val : d);
-                return { ...item, decisions: newDecisions };
-            });
+            const newDecisions = current.decisions.map((d, di) => di === dIdx ? val : d);
+            const next = decisionsKpis.map((item, i) => i === activeIdx ? { ...item, decisions: newDecisions } : item);
             updateData('decisionsKpis', next);
+            scheduleAdvance(newDecisions, current.kpis);
         };
 
         const updateKpi = (kIdx, val) => {
-            const next = decisionsKpis.map((item, i) => {
-                if (i !== activeIdx) return item;
-                const newKpis = item.kpis.map((k, ki) => ki === kIdx ? val : k);
-                return { ...item, kpis: newKpis };
-            });
+            const newKpis = current.kpis.map((k, ki) => ki === kIdx ? val : k);
+            const next = decisionsKpis.map((item, i) => i === activeIdx ? { ...item, kpis: newKpis } : item);
             updateData('decisionsKpis', next);
+            scheduleAdvance(current.decisions, newKpis);
         };
 
         const doneCheck = (i) => {
@@ -443,21 +461,6 @@
         };
 
         const filledCount = decisionsKpis.filter((_, i) => doneCheck(i)).length;
-
-        // Auto-advance when current activity is filled (once per activity index)
-        const currentKey = current.decisions.join('|') + '||' + current.kpis.join('|');
-        useEffect(() => {
-            const done = doneCheck(activeIdx);
-            if (done && !completedSet.current.has(activeIdx) && activeIdx < 4) {
-                completedSet.current.add(activeIdx);
-                setAutoAdvancing(true);
-                const t = setTimeout(() => {
-                    setAutoAdvancing(false);
-                    setActiveIdx(i => Math.min(i + 1, 4));
-                }, 1000);
-                return () => { clearTimeout(t); setAutoAdvancing(false); };
-            }
-        }, [currentKey, activeIdx]);
 
         return (
             <div className="step-content animate-in" key={activeIdx}>
@@ -562,15 +565,39 @@
     function Step3({ data, updateData, aiMessage }) {
         const [activeIdx, setActiveIdx] = useState(0);
         const [autoAdvancing, setAutoAdvancing] = useState(false);
-        const completedSet = useRef(new Set());
+        const completedSet  = useRef(new Set());
+        const advanceTimer  = useRef(null);
         const activities    = data.activities;
         const capabilities  = data.capabilities;
         const current       = capabilities[activeIdx];
         const currentName   = activities[activeIdx] ? activities[activeIdx].name : '';
 
+        // Cancel timer when user manually switches activity tab
+        useEffect(() => {
+            clearTimeout(advanceTimer.current);
+            setAutoAdvancing(false);
+        }, [activeIdx]);
+
+        // Trigger auto-advance synchronously from handler (avoids stale-closure issues)
+        const scheduleAdvance = (updatedItem) => {
+            if (activeIdx >= 4) return;
+            if (completedSet.current.has(activeIdx)) return;
+            const done = !!(updatedItem.human.trim() || updatedItem.systemic.trim() || updatedItem.relational.trim());
+            if (!done) return;
+            completedSet.current.add(activeIdx);
+            clearTimeout(advanceTimer.current);
+            setAutoAdvancing(true);
+            advanceTimer.current = setTimeout(() => {
+                setAutoAdvancing(false);
+                setActiveIdx(i => Math.min(i + 1, 4));
+            }, 1000);
+        };
+
         const updateCap = (field, val) => {
-            const next = capabilities.map((item, i) => i === activeIdx ? { ...item, [field]: val } : item);
+            const updatedItem = { ...current, [field]: val };
+            const next = capabilities.map((item, i) => i === activeIdx ? updatedItem : item);
             updateData('capabilities', next);
+            scheduleAdvance(updatedItem);
         };
 
         const doneCheck = (i) => {
@@ -579,21 +606,6 @@
         };
 
         const filledCount = capabilities.filter((_, i) => doneCheck(i)).length;
-
-        // Auto-advance when current activity is filled (once per activity index)
-        const currentKey = current.human + '||' + current.systemic + '||' + current.relational;
-        useEffect(() => {
-            const done = doneCheck(activeIdx);
-            if (done && !completedSet.current.has(activeIdx) && activeIdx < 4) {
-                completedSet.current.add(activeIdx);
-                setAutoAdvancing(true);
-                const t = setTimeout(() => {
-                    setAutoAdvancing(false);
-                    setActiveIdx(i => Math.min(i + 1, 4));
-                }, 1000);
-                return () => { clearTimeout(t); setAutoAdvancing(false); };
-            }
-        }, [currentKey, activeIdx]);
 
         return (
             <div className="step-content animate-in" key={activeIdx}>
