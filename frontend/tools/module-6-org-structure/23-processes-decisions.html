@@ -412,47 +412,23 @@
     // ── STEP 2: Key Decisions & KPIs ─────────────────────────────────────────
     function Step2({ data, updateData, aiMessage }) {
         const [activeIdx, setActiveIdx] = useState(0);
-        const [autoAdvancing, setAutoAdvancing] = useState(false);
-        const completedSet   = useRef(new Set());
-        const advanceTimer   = useRef(null);
-        const activities     = data.activities;
-        const decisionsKpis  = data.decisionsKpis;
-        const current        = decisionsKpis[activeIdx];
-        const currentName    = activities[activeIdx] ? activities[activeIdx].name : '';
+        const activities    = data.activities;
+        const decisionsKpis = data.decisionsKpis;
+        const current       = decisionsKpis[activeIdx];
+        const currentName   = activities[activeIdx] ? activities[activeIdx].name : '';
 
-        // Cancel timer when user manually switches activity tab
-        useEffect(() => {
-            clearTimeout(advanceTimer.current);
-            setAutoAdvancing(false);
-        }, [activeIdx]);
-
-        // Trigger auto-advance synchronously from handlers (avoids stale-closure issues)
-        const scheduleAdvance = (newDecisions, newKpis) => {
-            if (activeIdx >= 4) return;
-            if (completedSet.current.has(activeIdx)) return;
-            const done = newDecisions.some(d => d.trim()) && newKpis.some(k => k.trim());
-            if (!done) return;
-            completedSet.current.add(activeIdx);
-            clearTimeout(advanceTimer.current);
-            setAutoAdvancing(true);
-            advanceTimer.current = setTimeout(() => {
-                setAutoAdvancing(false);
-                setActiveIdx(i => Math.min(i + 1, 4));
-            }, 1000);
-        };
+        const goNextActivity = () => { if (activeIdx < 4) setActiveIdx(i => i + 1); };
 
         const updateDecision = (dIdx, val) => {
             const newDecisions = current.decisions.map((d, di) => di === dIdx ? val : d);
             const next = decisionsKpis.map((item, i) => i === activeIdx ? { ...item, decisions: newDecisions } : item);
             updateData('decisionsKpis', next);
-            scheduleAdvance(newDecisions, current.kpis);
         };
 
         const updateKpi = (kIdx, val) => {
             const newKpis = current.kpis.map((k, ki) => ki === kIdx ? val : k);
             const next = decisionsKpis.map((item, i) => i === activeIdx ? { ...item, kpis: newKpis } : item);
             updateData('decisionsKpis', next);
-            scheduleAdvance(current.decisions, newKpis);
         };
 
         const doneCheck = (i) => {
@@ -528,6 +504,7 @@
                                     style={{ fontSize: 14, padding: '10px 14px' }}
                                     value={k}
                                     onChange={e => updateKpi(kIdx, e.target.value)}
+                                    onKeyDown={kIdx === 2 ? (e => { if (e.key === 'Enter') { e.preventDefault(); goNextActivity(); } }) : undefined}
                                     placeholder={
                                         kIdx === 0 ? 'e.g. Customer acquisition cost (target: <€120)' :
                                         kIdx === 1 ? 'e.g. Monthly recurring revenue growth (target: +8%)' :
@@ -537,19 +514,17 @@
                                 />
                             </div>
                         ))}
+                        {activeIdx < 4 && (
+                            <p style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#999', letterSpacing: '0.06em', marginTop: 10 }}>
+                                ↵ PRESS ENTER ON THE LAST KPI TO GO TO THE NEXT CORE ACTIVITY
+                            </p>
+                        )}
                     </div>
                 </div>
 
                 {aiMessage && <div className="ai-message" style={{ marginTop: 16 }}>{aiMessage}</div>}
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24 }}>
-                    <p className="field-help">{filledCount}/5 activities filled with decisions and KPIs.</p>
-                    {autoAdvancing && (
-                        <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#22c55e', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <span>✓ SAVED — MOVING TO NEXT ACTIVITY…</span>
-                        </div>
-                    )}
-                </div>
+                <p className="field-help" style={{ marginTop: 20 }}>{filledCount}/5 activities filled with decisions and KPIs.</p>
 
                 {filledCount >= 5 && (
                     <div className="closing-box animate-in" style={{ marginTop: 24 }}>
@@ -564,40 +539,17 @@
     // ── STEP 3: Capabilities ──────────────────────────────────────────────────
     function Step3({ data, updateData, aiMessage }) {
         const [activeIdx, setActiveIdx] = useState(0);
-        const [autoAdvancing, setAutoAdvancing] = useState(false);
-        const completedSet  = useRef(new Set());
-        const advanceTimer  = useRef(null);
-        const activities    = data.activities;
-        const capabilities  = data.capabilities;
-        const current       = capabilities[activeIdx];
-        const currentName   = activities[activeIdx] ? activities[activeIdx].name : '';
+        const activities   = data.activities;
+        const capabilities = data.capabilities;
+        const current      = capabilities[activeIdx];
+        const currentName  = activities[activeIdx] ? activities[activeIdx].name : '';
 
-        // Cancel timer when user manually switches activity tab
-        useEffect(() => {
-            clearTimeout(advanceTimer.current);
-            setAutoAdvancing(false);
-        }, [activeIdx]);
-
-        // Trigger auto-advance synchronously from handler (avoids stale-closure issues)
-        const scheduleAdvance = (updatedItem) => {
-            if (activeIdx >= 4) return;
-            if (completedSet.current.has(activeIdx)) return;
-            const done = !!(updatedItem.human.trim() || updatedItem.systemic.trim() || updatedItem.relational.trim());
-            if (!done) return;
-            completedSet.current.add(activeIdx);
-            clearTimeout(advanceTimer.current);
-            setAutoAdvancing(true);
-            advanceTimer.current = setTimeout(() => {
-                setAutoAdvancing(false);
-                setActiveIdx(i => Math.min(i + 1, 4));
-            }, 1000);
-        };
+        const goNextActivity = () => { if (activeIdx < 4) setActiveIdx(i => i + 1); };
 
         const updateCap = (field, val) => {
             const updatedItem = { ...current, [field]: val };
             const next = capabilities.map((item, i) => i === activeIdx ? updatedItem : item);
             updateData('capabilities', next);
-            scheduleAdvance(updatedItem);
         };
 
         const doneCheck = (i) => {
@@ -691,22 +643,21 @@
                             style={{ minHeight: 80 }}
                             value={current.gaps}
                             onChange={e => updateCap('gaps', e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); goNextActivity(); } }}
                             placeholder="e.g. Missing: senior data engineer (hire Q2); Need: marketing automation platform (evaluate HubSpot vs ActiveCampaign); Gap: no strategic partner in the Nordic market"
                             maxLength={600}
                         />
+                        {activeIdx < 4 && (
+                            <p style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#999', letterSpacing: '0.06em', marginTop: 8 }}>
+                                ↵ PRESS ENTER TO GO TO THE NEXT CORE ACTIVITY
+                            </p>
+                        )}
                     </div>
                 </div>
 
                 {aiMessage && <div className="ai-message" style={{ marginTop: 8 }}>{aiMessage}</div>}
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>
-                    <p className="field-help">{filledCount}/5 activities have capabilities defined.</p>
-                    {autoAdvancing && (
-                        <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#22c55e', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <span>✓ SAVED — MOVING TO NEXT ACTIVITY…</span>
-                        </div>
-                    )}
-                </div>
+                <p className="field-help" style={{ marginTop: 16 }}>{filledCount}/5 activities have capabilities defined.</p>
 
                 {filledCount >= 5 && (
                     <div className="closing-box animate-in" style={{ marginTop: 24 }}>
