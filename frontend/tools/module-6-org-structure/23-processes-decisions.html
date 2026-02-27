@@ -412,6 +412,8 @@
     // ── STEP 2: Key Decisions & KPIs ─────────────────────────────────────────
     function Step2({ data, updateData, aiMessage }) {
         const [activeIdx, setActiveIdx] = useState(0);
+        const [autoAdvancing, setAutoAdvancing] = useState(false);
+        const completedSet = useRef(new Set());
         const activities   = data.activities;
         const decisionsKpis = data.decisionsKpis;
         const current      = decisionsKpis[activeIdx];
@@ -441,6 +443,21 @@
         };
 
         const filledCount = decisionsKpis.filter((_, i) => doneCheck(i)).length;
+
+        // Auto-advance when current activity is filled (once per activity index)
+        const currentKey = current.decisions.join('|') + '||' + current.kpis.join('|');
+        useEffect(() => {
+            const done = doneCheck(activeIdx);
+            if (done && !completedSet.current.has(activeIdx) && activeIdx < 4) {
+                completedSet.current.add(activeIdx);
+                setAutoAdvancing(true);
+                const t = setTimeout(() => {
+                    setAutoAdvancing(false);
+                    setActiveIdx(i => Math.min(i + 1, 4));
+                }, 1000);
+                return () => { clearTimeout(t); setAutoAdvancing(false); };
+            }
+        }, [currentKey, activeIdx]);
 
         return (
             <div className="step-content animate-in" key={activeIdx}>
@@ -524,14 +541,11 @@
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24 }}>
                     <p className="field-help">{filledCount}/5 activities filled with decisions and KPIs.</p>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                        {activeIdx > 0 && (
-                            <button className="btn-wiz-back" onClick={() => setActiveIdx(activeIdx - 1)} style={{ padding: '8px 20px' }}>← PREV</button>
-                        )}
-                        {activeIdx < 4 && (
-                            <button className="btn-wiz-next" onClick={() => setActiveIdx(activeIdx + 1)} style={{ padding: '8px 20px' }}>NEXT →</button>
-                        )}
-                    </div>
+                    {autoAdvancing && (
+                        <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#22c55e', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span>✓ SAVED — MOVING TO NEXT ACTIVITY…</span>
+                        </div>
+                    )}
                 </div>
 
                 {filledCount >= 5 && (
@@ -547,6 +561,8 @@
     // ── STEP 3: Capabilities ──────────────────────────────────────────────────
     function Step3({ data, updateData, aiMessage }) {
         const [activeIdx, setActiveIdx] = useState(0);
+        const [autoAdvancing, setAutoAdvancing] = useState(false);
+        const completedSet = useRef(new Set());
         const activities    = data.activities;
         const capabilities  = data.capabilities;
         const current       = capabilities[activeIdx];
@@ -559,10 +575,25 @@
 
         const doneCheck = (i) => {
             const item = capabilities[i];
-            return item.human.trim() || item.systemic.trim() || item.relational.trim();
+            return !!(item.human.trim() || item.systemic.trim() || item.relational.trim());
         };
 
         const filledCount = capabilities.filter((_, i) => doneCheck(i)).length;
+
+        // Auto-advance when current activity is filled (once per activity index)
+        const currentKey = current.human + '||' + current.systemic + '||' + current.relational;
+        useEffect(() => {
+            const done = doneCheck(activeIdx);
+            if (done && !completedSet.current.has(activeIdx) && activeIdx < 4) {
+                completedSet.current.add(activeIdx);
+                setAutoAdvancing(true);
+                const t = setTimeout(() => {
+                    setAutoAdvancing(false);
+                    setActiveIdx(i => Math.min(i + 1, 4));
+                }, 1000);
+                return () => { clearTimeout(t); setAutoAdvancing(false); };
+            }
+        }, [currentKey, activeIdx]);
 
         return (
             <div className="step-content animate-in" key={activeIdx}>
@@ -658,14 +689,11 @@
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>
                     <p className="field-help">{filledCount}/5 activities have capabilities defined.</p>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                        {activeIdx > 0 && (
-                            <button className="btn-wiz-back" onClick={() => setActiveIdx(activeIdx - 1)} style={{ padding: '8px 20px' }}>← PREV</button>
-                        )}
-                        {activeIdx < 4 && (
-                            <button className="btn-wiz-next" onClick={() => setActiveIdx(activeIdx + 1)} style={{ padding: '8px 20px' }}>NEXT →</button>
-                        )}
-                    </div>
+                    {autoAdvancing && (
+                        <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#22c55e', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span>✓ SAVED — MOVING TO NEXT ACTIVITY…</span>
+                        </div>
+                    )}
                 </div>
 
                 {filledCount >= 5 && (
