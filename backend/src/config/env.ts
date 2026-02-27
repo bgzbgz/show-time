@@ -68,6 +68,9 @@ const envSchema = z.object({
   // Anthropic AI (Claude) — for AI Challenge Layer
   ANTHROPIC_API_KEY: z.string().optional(),
 
+  // Crystal Knows — personality profiles for team coaching
+  CRYSTAL_KNOWS_API_KEY: z.string().optional(),
+
   // PDF Export
   PUPPETEER_EXECUTABLE_PATH: z.string().optional(),
   PDF_EXPORT_TIMEOUT_MS: z.coerce.number().int().positive().default(60000),
