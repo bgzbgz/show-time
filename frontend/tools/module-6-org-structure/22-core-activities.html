@@ -3,69 +3,995 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Core Activities & Processes | Fast Track</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Core Activities & Processes | Fast Track Program</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../../shared/js/tool-db.js"></script>
+    <script src="../../shared/js/ai-challenge.js"></script>
+    <script src="../../shared/js/dependency-injection.js"></script>
+    <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
+    <script src="../../shared/js/cognitive-load.js"></script>
+    <script src="../../js/tool-access-control.js"></script>
+
     <style>
-    @font-face {
-      font-family: 'Plaak';
-      src: url('Plaak3Trial-43-Bold.woff2') format('woff2');
-      font-weight: bold;
-      font-style: normal;
-    }
+        @font-face { font-family: 'Plaak';    src: url('Plaak3Trial-43-Bold.woff2') format('woff2'); font-weight: bold; }
+        @font-face { font-family: 'Riforma';  src: url('RiformaLL-Regular.woff2')   format('woff2'); font-weight: normal; }
+        @font-face { font-family: 'Riforma';  src: url('RiformaLL-Regular.woff2')   format('woff2'); font-weight: 600; }
+        @font-face { font-family: 'Monument'; src: url('MonumentGrotesk-Mono.woff2') format('woff2'); }
 
-    @font-face {
-      font-family: 'Riforma';
-      src: url('RiformaLL-Regular.woff2') format('woff2');
-      font-weight: normal;
-      font-style: normal;
-    }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Riforma', -apple-system, sans-serif; font-size: 16px; color: #000; background: #000; -webkit-font-smoothing: antialiased; }
 
-    @font-face {
-      font-family: 'Monument';
-      src: url('MonumentGrotesk-Mono.woff2') format('woff2');
-      font-weight: normal;
-      font-style: normal;
-    }
+        .plaak   { font-family: 'Plaak', sans-serif; font-weight: bold; letter-spacing: -0.01em; line-height: 1.2; }
+        .monument { font-family: 'Monument', monospace; letter-spacing: 0.05em; }
 
-        @font-face {
-            font-family: 'Plaak';
-            src: url('fonts/Plaak3Trial-43-Bold.woff2') format('woff2'),
-                 url('../../shared/fonts/Plaak3Trial-43-Bold.woff2') format('woff2');
-            font-weight: bold;
+        .tool-frame { background: #fff; min-height: 100vh; }
+        .tool-inner { background: #fff; min-height: 100vh; }
+
+        /* ── Wizard layout ── */
+        .wizard-layout { display: flex; min-height: 100vh; }
+        .wizard-main { flex: 1; display: flex; flex-direction: column; min-height: 100vh; background: #fff; padding: 0 48px; }
+        .wizard-sidebar { width: 280px; background: #1a1a1a; min-height: 100vh; padding: 48px 32px; display: flex; flex-direction: column; position: sticky; top: 0; align-self: flex-start; height: 100vh; overflow-y: auto; }
+
+        /* ── Step content ── */
+        .step-content { max-width: 100%; padding: 40px 0; flex: 1; }
+        .step-indicator { font-family: 'Monument', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #666; margin-bottom: 8px; }
+        .opening-box { margin-bottom: 32px; }
+        .opening-box .step-heading { font-family: 'Plaak', sans-serif; font-weight: bold; font-size: 32px; letter-spacing: -0.01em; line-height: 1.2; color: #000; margin-bottom: 6px; }
+        .opening-box .step-hint { font-size: 14px; color: #666; line-height: 1.5; margin: 0; }
+
+        /* ── Fields ── */
+        .field-group { margin-bottom: 40px; }
+        .field-group:last-child { margin-bottom: 0; }
+        .field-label { font-weight: 600; font-size: 16px; color: #000; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+        .field-input { border: 1px solid #E0E0E0; padding: 12px 16px; font-family: 'Riforma', sans-serif; font-size: 16px; width: 100%; color: #000; background: #fff; transition: border-color 0.2s; }
+        .field-input:focus { outline: none; border-color: #000; }
+        .field-textarea { border: 1px solid #E0E0E0; padding: 12px 16px; font-family: 'Riforma', sans-serif; font-size: 16px; width: 100%; min-height: 100px; resize: none !important; color: #000; background: #fff; transition: border-color 0.2s; }
+        .field-textarea:focus { outline: none; border-color: #000; }
+        .field-help  { font-size: 13px; color: #666; margin-top: 4px; }
+        .field-error { font-size: 13px; color: #DC2626; margin-top: 4px; }
+
+        /* ── Closing box ── */
+        .closing-box { border-top: 1px solid #E0E0E0; padding: 20px 0 0 0; margin-top: 8px; text-align: center; }
+        .closing-box p { font-size: 14px; color: #666; }
+        .closing-box .closing-title { font-family: 'Monument', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #000; margin-bottom: 6px; }
+
+        /* ── Wizard footer / buttons ── */
+        .wizard-footer { display: flex; justify-content: space-between; align-items: center; padding: 24px 48px; border-top: 1px solid #e5e7eb; background: #fff; }
+        .btn-wiz-back { background: transparent; border: 2px solid #d1d5db; color: #6b7280; padding: 12px 28px; font-family: 'Monument', monospace; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
+        .btn-wiz-back:hover { border-color: #000; color: #000; }
+        .btn-wiz-next { background: #000; color: #fff; border: 2px solid #000; padding: 12px 36px; font-family: 'Monument', monospace; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
+        .btn-wiz-next:hover:not(:disabled) { background: #FFF469; color: #000; border-color: #FFF469; }
+        .btn-wiz-next:disabled { background: #E0E0E0; color: #9CA3AF; border-color: #E0E0E0; cursor: not-allowed; }
+
+        /* ── Learn more ── */
+        .learn-more-toggle { font-family: 'Monument', monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: #000; background: #F5F5F5; border: 1px solid #E0E0E0; cursor: pointer; padding: 10px 14px; display: flex; align-items: center; gap: 8px; margin-bottom: 24px; width: 100%; }
+        .learn-more-content { background: #F5F5F5; border: 1px solid #E0E0E0; border-top: none; padding: 16px; font-size: 14px; color: #333; line-height: 1.7; margin-bottom: 24px; }
+
+        /* ── Activity card ── */
+        .activity-card { border: 1px solid #E0E0E0; margin-bottom: 16px; }
+        .activity-card-header { background: #000; color: #fff; padding: 14px 20px; display: flex; align-items: center; gap: 12px; }
+        .activity-card-number { font-family: 'Plaak', sans-serif; font-size: 24px; color: #FFF469; min-width: 32px; }
+        .activity-card-body { padding: 20px; }
+
+        /* ── Process row ── */
+        .process-row { background: #F9F9F9; border: 1px solid #E0E0E0; padding: 16px; margin-bottom: 12px; }
+        .process-row-header { font-family: 'Monument', monospace; font-size: 10px; letter-spacing: 0.1em; color: #666; text-transform: uppercase; margin-bottom: 8px; }
+        .kpi-row { display: flex; gap: 8px; margin-top: 8px; align-items: center; }
+        .kpi-label { font-family: 'Monument', monospace; font-size: 10px; color: #999; letter-spacing: 0.08em; min-width: 40px; }
+
+        /* ── Brainstorm list ── */
+        .activity-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+        .activity-row-num { font-family: 'Monument', monospace; font-size: 11px; color: #999; min-width: 24px; }
+        .btn-remove { background: none; border: none; color: #999; cursor: pointer; font-size: 18px; padding: 4px 8px; transition: color 0.2s; flex-shrink: 0; }
+        .btn-remove:hover { color: #DC2626; }
+        .btn-add { width: 100%; padding: 10px 0; border: 2px dashed #E0E0E0; background: none; font-family: 'Monument', monospace; font-size: 12px; color: #666; letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer; margin-top: 4px; transition: all 0.2s; }
+        .btn-add:hover { border-color: #000; color: #000; }
+
+        /* ── Checklist ── */
+        .checklist-item { border: 1px solid #E0E0E0; padding: 20px 24px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+        .checklist-item-text { font-size: 15px; color: #000; line-height: 1.5; flex: 1; }
+        .checklist-toggle { display: flex; gap: 8px; flex-shrink: 0; }
+        .checklist-btn { padding: 8px 20px; border: 2px solid #E0E0E0; background: #fff; font-family: 'Monument', monospace; font-size: 11px; letter-spacing: 0.06em; cursor: pointer; transition: all 0.2s; text-transform: uppercase; }
+        .checklist-btn.selected-yes { background: #000; color: #FFF469; border-color: #000; }
+        .checklist-btn.selected-no  { background: #DC2626; color: #fff; border-color: #DC2626; }
+
+        /* ── Sidebar ── */
+        .sidebar-tool-num { font-family: 'Monument', monospace; font-size: 10px; color: #555; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 8px; }
+        .sidebar-tool-title { font-family: 'Plaak', sans-serif; font-size: 22px; color: #fff; margin-bottom: 32px; line-height: 1.1; }
+        .sidebar-step { padding: 8px 0; border-bottom: 1px solid #2a2a2a; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: opacity 0.2s; }
+        .sidebar-step:last-child { border-bottom: none; }
+        .sidebar-step-dot { width: 6px; height: 6px; border-radius: 50%; background: #555; flex-shrink: 0; transition: background 0.2s; }
+        .sidebar-step-dot.active { background: #FFF469; }
+        .sidebar-step-dot.done   { background: #4ade80; }
+        .sidebar-step-label { font-family: 'Monument', monospace; font-size: 10px; letter-spacing: 0.08em; color: #555; text-transform: uppercase; transition: color 0.2s; }
+        .sidebar-step-label.active { color: #FFF469; }
+        .sidebar-step-label.done   { color: #4ade80; }
+        .sidebar-activity-list { margin-top: 24px; border-top: 1px solid #2a2a2a; padding-top: 16px; }
+        .sidebar-activity-item { font-size: 12px; color: #555; padding: 4px 0; line-height: 1.4; display: flex; gap: 8px; }
+        .sidebar-activity-item.filled { color: #ccc; }
+        .sidebar-activity-idx { font-family: 'Monument', monospace; font-size: 10px; color: #FFF469; flex-shrink: 0; }
+
+        /* ── Mobile step bar ── */
+        .mobile-step-bar { display: none; }
+        @media (max-width: 768px) {
+            .wizard-sidebar { display: none; }
+            .wizard-main { padding: 0 24px; }
+            .mobile-step-bar { display: flex; align-items: center; gap: 8px; padding: 16px 24px; background: #1a1a1a; }
+            .mobile-step-dot { width: 8px; height: 8px; border-radius: 50%; background: #333; transition: background 0.2s; }
+            .mobile-step-dot.active { background: #FFF469; }
+            .mobile-step-dot.done   { background: #4ade80; }
+            .mobile-step-text { font-family: 'Monument', monospace; font-size: 11px; color: #fff; letter-spacing: 0.06em; }
+            .wizard-footer { padding: 16px 24px; }
         }
-        @font-face {
-            font-family: 'Monument';
-            src: url('fonts/MonumentGrotesk-Mono.woff2') format('woff2'),
-                 url('../../shared/fonts/MonumentGrotesk-Mono.woff2') format('woff2');
-        }
-        body { margin: 0; padding: 0; background: #0a0a0a; color: #fff; font-family: 'Monument', monospace; }
-        .plaak { font-family: 'Plaak', sans-serif; text-transform: uppercase; font-weight: bold; letter-spacing: -0.02em; }
+
+        /* ── Transitions / cover ── */
+        .animate-in { animation: fadeSlideIn 0.4s ease both; }
+        @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ── AI message ── */
+        .ai-message { background: #FFF9C4; border: 1px solid #FFF469; border-left: 4px solid #FFF469; padding: 12px 16px; font-size: 14px; color: #333; margin-bottom: 16px; line-height: 1.6; }
+
+        /* ── Dependency context ── */
+        .dep-context { border: 1px solid #E0E0E0; margin-bottom: 24px; }
+        .dep-context-header { background: #F5F5F5; padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .dep-context-label { font-family: 'Monument', monospace; font-size: 10px; letter-spacing: 0.1em; color: #666; text-transform: uppercase; }
+        .dep-context-body { padding: 14px 16px; font-size: 14px; color: #333; line-height: 1.6; }
     </style>
 </head>
 <body>
-    <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 48px 32px; background: #0a0a0a;">
-        <div style="max-width: 640px; text-align: center;">
-            <div style="font-family: 'Monument', monospace; font-size: 11px; letter-spacing: 0.12em; color: #555; text-transform: uppercase; margin-bottom: 32px;">
-                SPRINT 22 / MODULE 6 — ORG STRUCTURE
+<div id="root"></div>
+
+<script type="text/babel">
+    const { useState, useEffect, useCallback } = React;
+
+    // ── CONFIG ──────────────────────────────────────────────────────────────────
+    const CONFIG = {
+        TOOL_SLUG:    'core-activities',
+        TOOL_TITLE:   'CORE ACTIVITIES',
+        TOOL_SUBTITLE:'Define the 5 activities that drive 80% of your strategic success.',
+        COVER_IMAGE:  'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1600&q=80',
+        TOTAL_STEPS:  5,
+        SUPABASE_URL:     'https://lutzzfaedkbsmbobmrzx.supabase.co',
+        SUPABASE_ANON_KEY:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1dHp6ZmFlZGtic21ib2Jtcnp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MDA0MDQsImV4cCI6MjA4NjM3NjQwNH0.o2gJba85vDl4NLS-C8Mq3OudWKxet-b0IqO9kazqb8U',
+
+        TRANSITION_CONTENT: {
+            1: {
+                brutalTruth: 'Most companies confuse activity with strategy. They are busy doing everything and excelling at nothing. If you cannot name the 5 things your company must do better than anyone else, your entire team is misdirected — and they have no idea.',
+                peerProof: '"A €15M B2B services firm discovered that 70% of their team\'s effort went to activities unrelated to their core value proposition. After defining and communicating their 5 core activities, they cut operational waste by 30% in one quarter."'
+            },
+            2: {
+                brutalTruth: 'A long list of activities is not a strategy. It is an excuse to avoid making hard choices. The discipline to choose only 5 — and to kill everything else — is where most leadership teams fail. They call it priorities. They have 20.',
+                peerProof: '"Zara\'s global dominance was not built by doing everything in fashion. It was built by mastering 5 specific activities: customer insight, rapid design, fast manufacturing, consistent branding, and precise inventory. That focus is what made them unbeatable."'
+            },
+            3: {
+                brutalTruth: 'Naming a core activity is not the same as owning it. Without defined processes, your strategy remains aspirational. Execution is where strategies die — and they die because nobody mapped the critical steps required to make each activity happen.',
+                peerProof: '"A nursing education company went from 40% to 85% graduate job placement — not by working harder, but by mapping the 3 critical processes under each core activity and holding someone accountable for each one."'
+            },
+            4: {
+                brutalTruth: 'A KPI that doesn\'t change behavior is just a number. Most companies track what is easy to measure, not what actually matters. Every metric you define here must create a decision. If you would not act on a change in this number, it is the wrong KPI.',
+                peerProof: '"Teams with 3 clear, specific KPIs per process outperform those with vague targets by 40%. Measurement creates focus. Focus creates accountability. Accountability creates results. It is not magic — it is structure."'
+            }
+        },
+
+        CLOSING_MESSAGES: {
+            1: { title: 'CONTEXT LOCKED',          text: 'Your value proposition is the lens for every decision ahead. Keep it visible.' },
+            2: { title: 'BRAINSTORM COMPLETE',      text: 'Good. You have mapped the landscape. Now comes the hard part — choosing what truly matters.' },
+            3: { title: 'CORE ACTIVITIES DEFINED',  text: 'These are the 5 activities your company must master. Now build the engine that makes each one happen.' },
+            4: { title: 'PROCESSES & KPIs SET',     text: 'You have built the operational blueprint. Time to commit to it and measure what matters.' },
+        }
+    };
+
+    // ── Default data ─────────────────────────────────────────────────────────
+    const makeDefaultData = () => ({
+        valueProposition: '',
+        activities: Array(8).fill(''),
+        coreActivities: Array(5).fill(null).map(() => ({
+            name: '',
+            processes: Array(3).fill(null).map(() => ({ name: '', kpis: ['', '', ''] }))
+        })),
+        checklist: { q1: null, q2: null, q3: null, q4: null }
+    });
+
+    // ── WizardSidebar ─────────────────────────────────────────────────────────
+    function WizardSidebar({ currentStep, data, onNavigate }) {
+        const steps = [
+            { num: 1, label: 'Value Proposition' },
+            { num: 2, label: 'Activity Brainstorm' },
+            { num: 3, label: 'Top 5 Activities' },
+            { num: 4, label: 'Processes & KPIs' },
+            { num: 5, label: 'Sprint Checklist' },
+        ];
+        return (
+            <div className="wizard-sidebar">
+                <div className="sidebar-tool-num">SPRINT 22</div>
+                <div className="sidebar-tool-title">{CONFIG.TOOL_TITLE}</div>
+                {steps.map(s => {
+                    const isDone   = currentStep > s.num;
+                    const isActive = Math.floor(currentStep) === s.num;
+                    return (
+                        <div key={s.num} className="sidebar-step"
+                            onClick={() => isDone && onNavigate(s.num)}
+                            style={{ opacity: currentStep < s.num ? 0.35 : 1, cursor: isDone ? 'pointer' : 'default' }}>
+                            <div className={`sidebar-step-dot ${isActive ? 'active' : isDone ? 'done' : ''}`} />
+                            <span className={`sidebar-step-label ${isActive ? 'active' : isDone ? 'done' : ''}`}>{s.label}</span>
+                        </div>
+                    );
+                })}
+                {currentStep >= 3 && (
+                    <div className="sidebar-activity-list">
+                        <div style={{ fontFamily: "'Monument', monospace", fontSize: 9, color: '#555', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>CORE ACTIVITIES</div>
+                        {data.coreActivities.map((a, i) => (
+                            <div key={i} className={`sidebar-activity-item ${a.name.trim() ? 'filled' : ''}`}>
+                                <span className="sidebar-activity-idx">{String(i+1).padStart(2,'0')}</span>
+                                <span>{a.name.trim() || '—'}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
-            <h1 class="plaak" style="font-size: 72px; line-height: 1; margin-bottom: 24px; color: #fff;">
-                CORE<br/>ACTIVITIES
-            </h1>
-            <div style="width: 60px; height: 4px; background: #FFF469; margin: 0 auto 32px;"></div>
-            <p style="font-size: 15px; line-height: 1.8; color: #888; margin-bottom: 40px; font-family: sans-serif;">
-                This tool is currently being redesigned.<br/>
-                It will be available again shortly.
-            </p>
-            <div style="background: #111; border: 1px solid #222; border-left: 4px solid #FFF469; padding: 20px 24px; text-align: left; margin-bottom: 40px;">
-                <p style="font-family: 'Monument', monospace; font-size: 10px; color: #FFF469; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px;">COMING SOON</p>
-                <p style="font-size: 14px; color: #aaa; line-height: 1.7;">
-                    Map your company's core activities, define the critical processes that power them, and set KPIs to track performance — all in one structured sprint.
-                </p>
+        );
+    }
+
+    // ── MobileStepBar ─────────────────────────────────────────────────────────
+    function MobileStepBar({ currentStep, totalSteps }) {
+        return (
+            <div className="mobile-step-bar">
+                <span className="mobile-step-text">STEP {Math.ceil(currentStep)} OF {totalSteps}</span>
+                {Array.from({ length: totalSteps }, (_, i) => {
+                    const n = i + 1;
+                    const isDone   = currentStep > n;
+                    const isActive = Math.floor(currentStep) === n;
+                    return <div key={n} className={`mobile-step-dot ${isActive ? 'active' : isDone ? 'done' : ''}`} />;
+                })}
             </div>
-            <a href="/dashboard" style="display: inline-block; font-family: 'Monument', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; background: transparent; border: 2px solid #444; color: #888; padding: 14px 32px; text-decoration: none;">
-                ← BACK TO DASHBOARD
-            </a>
-        </div>
-    </div>
+        );
+    }
+
+    // ── DependencyContext ─────────────────────────────────────────────────────
+    function DependencyContext({ deps }) {
+        const [open, setOpen] = useState(false);
+        if (!deps || Object.keys(deps).length === 0) return null;
+        const entries = Object.entries(deps).filter(([, v]) => v);
+        if (entries.length === 0) return null;
+        return (
+            <div className="dep-context">
+                <div className="dep-context-header" onClick={() => setOpen(o => !o)}>
+                    <span className="dep-context-label">Context from previous tools</span>
+                    <span style={{ fontSize: 12, color: '#999' }}>{open ? '▲' : '▼'}</span>
+                </div>
+                {open && (
+                    <div className="dep-context-body">
+                        {entries.map(([k, v]) => (
+                            <div key={k} style={{ marginBottom: 8 }}>
+                                <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#999', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{k.replace(/_/g,' ')}: </span>
+                                <span>{typeof v === 'object' ? JSON.stringify(v) : String(v)}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // ── LearnMore ─────────────────────────────────────────────────────────────
+    function LearnMore({ children }) {
+        const [open, setOpen] = useState(false);
+        return (
+            <>
+                <button className="learn-more-toggle" onClick={() => setOpen(o => !o)}>
+                    <span>{open ? '▲' : '▼'}</span> {open ? 'Hide context' : 'Why this matters'}
+                </button>
+                {open && <div className="learn-more-content">{children}</div>}
+            </>
+        );
+    }
+
+    // ── Transition screen ─────────────────────────────────────────────────────
+    function TransitionScreen({ stepNum, onNext }) {
+        const t = CONFIG.TRANSITION_CONTENT[stepNum];
+        if (!t) { onNext(); return null; }
+        return (
+            <div style={{ minHeight: '100vh', background: '#000', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '64px 32px' }}>
+                <div style={{ maxWidth: 720 }} className="animate-in">
+                    <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#555', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 32 }}>
+                        SPRINT 22 — CORE ACTIVITIES
+                    </div>
+                    <div style={{ borderLeft: '4px solid #DC2626', paddingLeft: 24, marginBottom: 48 }}>
+                        <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#DC2626', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 12 }}>BRUTAL TRUTH</div>
+                        <p className="plaak" style={{ fontSize: 26, lineHeight: 1.35 }}>{t.brutalTruth}</p>
+                    </div>
+                    <div style={{ borderLeft: '4px solid #FFF469', paddingLeft: 24, marginBottom: 64 }}>
+                        <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#FFF469', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 12 }}>PEER PROOF</div>
+                        <p style={{ fontSize: 18, color: '#ccc', lineHeight: 1.7, fontStyle: 'italic' }}>{t.peerProof}</p>
+                    </div>
+                    <button onClick={onNext} className="plaak"
+                        style={{ background: '#FFF469', color: '#000', border: 'none', padding: '18px 48px', fontSize: 18, cursor: 'pointer', letterSpacing: '0.05em', transition: 'all 0.2s' }}>
+                        CONTINUE →
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // ── STEP 1: Value Proposition ─────────────────────────────────────────────
+    function Step1({ data, updateData, deps, aiMessage }) {
+        return (
+            <div className="step-content animate-in">
+                <DependencyContext deps={deps} />
+                <p className="step-indicator">STEP 1 OF {CONFIG.TOTAL_STEPS}</p>
+                <div className="opening-box">
+                    <h1 className="step-heading">Value Proposition</h1>
+                    <p className="step-hint">Your core activities must deliver your value proposition. Anchor everything to this statement before you proceed.</p>
+                </div>
+                <LearnMore>
+                    Your organisational structure exists for one reason: to deliver your strategy. The strategy is embodied in your value proposition — the specific promise you make to customers that your competitors cannot easily replicate. Every core activity you define in this sprint must directly serve this promise. If an activity doesn't connect to the value proposition, it is overhead, not strategy.
+                </LearnMore>
+                <div className="questions-grid">
+                    <div className="field-group">
+                        <label className="field-label">Your Company's Value Proposition</label>
+                        <textarea className="field-textarea" style={{ minHeight: 120 }}
+                            value={data.valueProposition}
+                            onChange={e => updateData('valueProposition', e.target.value)}
+                            placeholder="e.g. We deliver fast, trend-responsive fashion at accessible prices — new collections every two weeks, always aligned with what customers actually want right now."
+                            maxLength={600}
+                        />
+                        <p className="field-help">{data.valueProposition.length}/600 (min 20 characters)</p>
+                        <p className="field-help" style={{ marginTop: 6, color: '#000', fontWeight: 600 }}>
+                            💡 Tip: Be specific. "We provide great customer service" is not a value proposition. What is the specific promise that makes you different?
+                        </p>
+                    </div>
+                </div>
+                {aiMessage && <div className="ai-message">{aiMessage}</div>}
+                {data.valueProposition.length >= 20 && (
+                    <div className="closing-box animate-in">
+                        <p className="closing-title">{CONFIG.CLOSING_MESSAGES[1].title}</p>
+                        <p>{CONFIG.CLOSING_MESSAGES[1].text}</p>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // ── STEP 2: Brainstorm Activities ─────────────────────────────────────────
+    function Step2({ data, updateData, aiMessage }) {
+        const activities = data.activities;
+        const filled = activities.filter(a => a.trim()).length;
+
+        const updateActivity = (idx, val) => {
+            const next = [...activities];
+            next[idx] = val;
+            updateData('activities', next);
+        };
+        const addRow = () => {
+            if (activities.length < 15) updateData('activities', [...activities, '']);
+        };
+        const removeRow = (idx) => {
+            if (activities.length <= 5) return;
+            updateData('activities', activities.filter((_, i) => i !== idx));
+        };
+
+        return (
+            <div className="step-content animate-in">
+                <p className="step-indicator">STEP 2 OF {CONFIG.TOTAL_STEPS}</p>
+                <div className="opening-box">
+                    <h1 className="step-heading">Brainstorm All Activities</h1>
+                    <p className="step-hint">List every activity your company currently performs. Don't filter yet — just get them all out. Minimum 5, maximum 15.</p>
+                </div>
+                <LearnMore>
+                    Before you can identify what matters most, you need to see the full picture of what your organisation actually does. Write down every activity — from sales and marketing to product development, customer service, finance, HR, and operations. Include the obvious and the hidden. The quality of your Top 5 depends on the quality and honesty of this brainstorm. Don't leave anything out just because it seems minor — that is exactly where hidden strategic value often hides.
+                </LearnMore>
+                <div className="questions-grid">
+                    <div className="field-group">
+                        <label className="field-label">All Company Activities <span style={{ fontWeight: 400, color: '#666', fontSize: 14 }}>({filled} added, min 5)</span></label>
+                        {activities.map((a, idx) => (
+                            <div key={idx} className="activity-row">
+                                <span className="activity-row-num">{String(idx+1).padStart(2,'0')}</span>
+                                <input type="text" className="field-input"
+                                    value={a}
+                                    onChange={e => updateActivity(idx, e.target.value)}
+                                    placeholder={idx === 0 ? 'e.g. Targeted B2B lead generation via LinkedIn' : idx === 1 ? 'e.g. Product development & feature roadmapping' : idx === 2 ? 'e.g. Onboarding new customers' : 'Add an activity…'}
+                                    style={{ flex: 1 }}
+                                />
+                                {activities.length > 5 && (
+                                    <button className="btn-remove" onClick={() => removeRow(idx)} title="Remove">×</button>
+                                )}
+                            </div>
+                        ))}
+                        {activities.length < 15 && (
+                            <button className="btn-add" onClick={addRow}>+ Add Activity</button>
+                        )}
+                        <p className="field-help" style={{ marginTop: 8 }}>
+                            Be specific. Not "Marketing" — write "Weekly content marketing targeting mid-market CFOs." Vague activities produce vague strategy.
+                        </p>
+                    </div>
+                </div>
+                {aiMessage && <div className="ai-message">{aiMessage}</div>}
+                {filled >= 5 && (
+                    <div className="closing-box animate-in">
+                        <p className="closing-title">{CONFIG.CLOSING_MESSAGES[2].title}</p>
+                        <p>{CONFIG.CLOSING_MESSAGES[2].text}</p>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // ── STEP 3: Top 5 Core Activities ─────────────────────────────────────────
+    function Step3({ data, updateData, aiMessage }) {
+        const filledActivities = data.activities.filter(a => a.trim());
+        const coreActivities = data.coreActivities;
+
+        const updateCore = (idx, field, val) => {
+            const next = coreActivities.map((a, i) => i === idx ? { ...a, [field]: val } : a);
+            updateData('coreActivities', next);
+        };
+        const filledCount = coreActivities.filter(a => a.name.trim().length >= 3).length;
+
+        return (
+            <div className="step-content animate-in">
+                <p className="step-indicator">STEP 3 OF {CONFIG.TOTAL_STEPS}</p>
+                <div className="opening-box">
+                    <h1 className="step-heading">Top 5 Core Activities</h1>
+                    <p className="step-hint">From your brainstorm, select and precisely define the 5 activities that have the greatest impact on delivering your value proposition.</p>
+                </div>
+                <LearnMore>
+                    These are the 20% of activities responsible for 80% of your strategic success. They must be specific, actionable, and directly linked to your value proposition. Avoid generic labels. "Marketing" is not a core activity. "Rapid trend-responsive product launches reaching stores within 2 weeks of customer insight" is a core activity. The precision of your language here determines the precision of your team's execution. Use your brainstorm list on the right as reference — you do not have to copy them verbatim; refine and sharpen each one.
+                </LearnMore>
+
+                {filledActivities.length > 0 && (
+                    <div style={{ background: '#F5F5F5', border: '1px solid #E0E0E0', padding: 16, marginBottom: 28 }}>
+                        <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#999', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>YOUR BRAINSTORM LIST</div>
+                        {filledActivities.map((a, i) => (
+                            <div key={i} style={{ fontSize: 13, color: '#555', padding: '3px 0', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                                <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#FFF469', background: '#000', padding: '2px 5px', marginTop: 2, flexShrink: 0 }}>{String(i+1).padStart(2,'0')}</span>
+                                <span>{a}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                <div className="questions-grid">
+                    {coreActivities.map((a, idx) => (
+                        <div key={idx} className="activity-card">
+                            <div className="activity-card-header">
+                                <span className="activity-card-number">{String(idx+1).padStart(2,'0')}</span>
+                                <span style={{ fontFamily: "'Monument', monospace", fontSize: 11, letterSpacing: '0.08em', color: '#ccc', textTransform: 'uppercase' }}>Core Activity {idx+1}</span>
+                            </div>
+                            <div className="activity-card-body">
+                                <div style={{ marginBottom: 14 }}>
+                                    <label style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#666', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 6 }}>Activity Name</label>
+                                    <input type="text" className="field-input"
+                                        value={a.name}
+                                        onChange={e => updateCore(idx, 'name', e.target.value)}
+                                        placeholder="e.g. Rapid-Response Manufacturing & Operations"
+                                        maxLength={120}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                    <p className="field-help" style={{ marginTop: 4 }}>All 5 must be filled. {5 - filledCount} remaining.</p>
+                </div>
+                {aiMessage && <div className="ai-message">{aiMessage}</div>}
+                {filledCount === 5 && (
+                    <div className="closing-box animate-in">
+                        <p className="closing-title">{CONFIG.CLOSING_MESSAGES[3].title}</p>
+                        <p>{CONFIG.CLOSING_MESSAGES[3].text}</p>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // ── STEP 4: Processes & KPIs ──────────────────────────────────────────────
+    function Step4({ data, updateData, activityIdx, setActivityIdx, aiMessage }) {
+        const coreActivities = data.coreActivities;
+        const current = coreActivities[activityIdx];
+
+        const updateProcess = (pIdx, field, val) => {
+            const next = coreActivities.map((a, ai) => {
+                if (ai !== activityIdx) return a;
+                const newProcesses = a.processes.map((p, pi) => {
+                    if (pi !== pIdx) return p;
+                    if (field === 'name') return { ...p, name: val };
+                    const newKpis = [...p.kpis];
+                    newKpis[field] = val;
+                    return { ...p, kpis: newKpis };
+                });
+                return { ...a, processes: newProcesses };
+            });
+            updateData('coreActivities', next);
+        };
+
+        const filledProcesses = current.processes.filter(p => p.name.trim()).length;
+
+        return (
+            <div className="step-content animate-in" key={activityIdx}>
+                <p className="step-indicator">STEP 4 OF {CONFIG.TOTAL_STEPS} — ACTIVITY {activityIdx + 1} OF 5</p>
+                <div className="opening-box">
+                    <h1 className="step-heading">Processes & KPIs</h1>
+                    <p className="step-hint">For each core activity, define the 3 critical processes that make it happen — and the KPIs that prove it's working.</p>
+                </div>
+                <LearnMore>
+                    Within each core activity there are a handful of processes that are truly critical — the sub-routines that must run smoothly and consistently for the activity to succeed. Your job here is to identify the top 3 processes per activity (those whose improvement would most significantly enhance performance), then set 3 measurable KPIs for each process. KPIs must create decisions — if you would not change behavior based on a shift in this number, choose a different KPI.
+                </LearnMore>
+
+                {/* Activity navigator */}
+                <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+                    {coreActivities.map((a, i) => {
+                        const hasProceses = a.processes.some(p => p.name.trim());
+                        return (
+                            <button key={i}
+                                onClick={() => setActivityIdx(i)}
+                                style={{
+                                    padding: '6px 14px',
+                                    background: activityIdx === i ? '#000' : hasProceses ? '#F0F0F0' : '#fff',
+                                    color: activityIdx === i ? '#FFF469' : hasProceses ? '#000' : '#999',
+                                    border: `2px solid ${activityIdx === i ? '#000' : hasProceses ? '#000' : '#E0E0E0'}`,
+                                    fontFamily: "'Monument', monospace",
+                                    fontSize: 10,
+                                    letterSpacing: '0.06em',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                }}>
+                                {String(i+1).padStart(2,'0')}
+                            </button>
+                        );
+                    })}
+                </div>
+
+                {/* Current activity header */}
+                <div style={{ background: '#000', color: '#fff', padding: '16px 20px', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 16 }}>
+                    <span className="plaak" style={{ fontSize: 32, color: '#FFF469' }}>{String(activityIdx+1).padStart(2,'0')}</span>
+                    <div>
+                        <div style={{ fontFamily: "'Monument', monospace", fontSize: 9, color: '#555', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>CORE ACTIVITY</div>
+                        <div style={{ fontSize: 18, fontWeight: 600 }}>{current.name || '—'}</div>
+                    </div>
+                </div>
+
+                {/* Processes */}
+                {current.processes.map((proc, pIdx) => (
+                    <div key={pIdx} className="process-row">
+                        <div className="process-row-header">PROCESS {pIdx + 1} OF 3</div>
+                        <input type="text" className="field-input"
+                            value={proc.name}
+                            onChange={e => updateProcess(pIdx, 'name', e.target.value)}
+                            placeholder={pIdx === 0 ? 'e.g. Small-batch production runs for flexibility' : pIdx === 1 ? 'e.g. Just-in-time inventory replenishment' : 'e.g. Vertically integrated logistics control'}
+                            style={{ marginBottom: 12 }}
+                            maxLength={150}
+                        />
+                        {proc.name.trim() && (
+                            <div>
+                                <div style={{ fontFamily: "'Monument', monospace", fontSize: 9, color: '#999', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>KPIs for this process</div>
+                                {proc.kpis.map((kpi, kIdx) => (
+                                    <div key={kIdx} className="kpi-row">
+                                        <span className="kpi-label">KPI {kIdx+1}</span>
+                                        <input type="text" className="field-input"
+                                            value={kpi}
+                                            onChange={e => updateProcess(pIdx, kIdx, e.target.value)}
+                                            placeholder={kIdx === 0 ? 'e.g. Sell-through rate (%)' : kIdx === 1 ? 'e.g. Days inventory outstanding' : 'e.g. On-time delivery rate (%)'}
+                                            maxLength={120}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                ))}
+                <p className="field-help" style={{ marginTop: 8 }}>Fill at least 1 process with its KPIs for this activity. {filledProcesses}/3 processes filled.</p>
+                {aiMessage && <div className="ai-message">{aiMessage}</div>}
+                {filledProcesses >= 1 && activityIdx === 4 && (
+                    <div className="closing-box animate-in">
+                        <p className="closing-title">{CONFIG.CLOSING_MESSAGES[4].title}</p>
+                        <p>{CONFIG.CLOSING_MESSAGES[4].text}</p>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // ── STEP 5: Sprint Checklist ──────────────────────────────────────────────
+    function Step5({ data, updateData, onSubmit, submitState, aiMessage }) {
+        const { checklist } = data;
+        const questions = [
+            { key: 'q1', text: 'We have identified 5 core activities that we need to master in order to execute our value proposition.' },
+            { key: 'q2', text: 'The core activities are aligned with our strategy and outline the competitive advantage we will have over the competition.' },
+            { key: 'q3', text: 'We have identified the 3 critical processes for each core activity.' },
+            { key: 'q4', text: 'There is a clear, measurable KPI for each process that will drive accountability.' },
+        ];
+        const allAnswered = questions.every(q => checklist[q.key] !== null);
+
+        const setAnswer = (key, val) => updateData('checklist', { ...checklist, [key]: val });
+
+        if (submitState === 'success') {
+            return (
+                <div className="step-content animate-in">
+                    <div style={{ background: '#f0fdf4', border: '1px solid #86efac', padding: 48, textAlign: 'center', marginTop: 32 }}>
+                        <div style={{ fontSize: 48, marginBottom: 16 }}>✓</div>
+                        <h2 className="plaak" style={{ fontSize: 32, marginBottom: 16 }}>SUBMITTED</h2>
+                        <p style={{ fontSize: 16, color: '#555', marginBottom: 32 }}>Your Core Activities & Processes have been saved. Your guru will review before Wednesday.</p>
+                        <a href="/dashboard" style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: '#000', letterSpacing: '0.06em', textDecoration: 'underline' }}>← Back to Dashboard</a>
+                    </div>
+                </div>
+            );
+        }
+
+        return (
+            <div className="step-content animate-in">
+                <p className="step-indicator">STEP 5 OF {CONFIG.TOTAL_STEPS}</p>
+                <div className="opening-box">
+                    <h1 className="step-heading">Sprint Checklist</h1>
+                    <p className="step-hint">Before you submit, confirm your team has genuinely completed each item. Be honest — partial credit is worse than no credit.</p>
+                </div>
+                <div className="questions-grid" style={{ marginTop: 24 }}>
+                    {questions.map((q, i) => (
+                        <div key={q.key} className="checklist-item">
+                            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flex: 1 }}>
+                                <span style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', background: '#000', padding: '3px 7px', marginTop: 2, flexShrink: 0 }}>{String(i+1).padStart(2,'0')}</span>
+                                <p className="checklist-item-text">{q.text}</p>
+                            </div>
+                            <div className="checklist-toggle">
+                                <button className={`checklist-btn ${checklist[q.key] === true ? 'selected-yes' : ''}`}
+                                    onClick={() => setAnswer(q.key, true)}>YES</button>
+                                <button className={`checklist-btn ${checklist[q.key] === false ? 'selected-no' : ''}`}
+                                    onClick={() => setAnswer(q.key, false)}>NO</button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                {aiMessage && <div className="ai-message" style={{ marginTop: 16 }}>{aiMessage}</div>}
+                {allAnswered && (
+                    <div style={{ marginTop: 32 }}>
+                        {questions.some(q => checklist[q.key] === false) && (
+                            <div style={{ background: '#FEF2F2', border: '1px solid #FCA5A5', borderLeft: '4px solid #DC2626', padding: 16, marginBottom: 20, fontSize: 14, color: '#333', lineHeight: 1.6 }}>
+                                <strong>Some items are incomplete.</strong> You can still submit, but your guru will prioritise the gaps in your review.
+                            </div>
+                        )}
+                        <button onClick={onSubmit} disabled={submitState === 'saving'} className="btn-wiz-next"
+                            style={{ width: '100%', padding: 18, fontSize: 14 }}>
+                            {submitState === 'saving' ? 'SAVING…' : 'SUBMIT ANSWERS →'}
+                        </button>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // ── IntroPage ─────────────────────────────────────────────────────────────
+    function IntroPage({ onNext }) {
+        return (
+            <div style={{ background: '#000', color: '#fff', minHeight: '100vh', padding: '64px' }}>
+                <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+                    <h1 className="plaak animate-in" style={{ fontSize: '100px', marginBottom: '64px' }}>
+                        BEFORE WE START
+                    </h1>
+
+                    {/* Sprint Info */}
+                    <div className="animate-in" style={{ marginBottom: '48px', animationDelay: '0.08s' }}>
+                        <h2 className="plaak" style={{ fontSize: '48px', color: '#FFF469', marginBottom: '24px' }}>SPRINT INFO</h2>
+                        <div style={{ background: '#fff', color: '#000', padding: '32px' }}>
+                            <p style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '16px' }}>Sprint 22: Define Core Activities</p>
+                            <p style={{ fontSize: '18px', lineHeight: 1.6, marginBottom: '16px' }}>
+                                This is a team meeting tool. Your organisation's structure exists to deliver your strategy. This sprint identifies the 5 activities your company must master to execute your value proposition — then maps the processes and KPIs that make each one operational.
+                            </p>
+                            <div style={{ borderLeft: '4px solid #000', paddingLeft: '16px', fontStyle: 'italic', fontSize: '16px' }}>
+                                "Strategy without process is a daydream. Process without strategy is a nightmare." — Sun Tzu
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Purpose */}
+                    <div className="animate-in" style={{ marginBottom: '48px', animationDelay: '0.1s' }}>
+                        <h2 className="plaak" style={{ fontSize: '48px', marginBottom: '24px' }}>PURPOSE</h2>
+                        <div style={{ borderLeft: '4px solid #fff', paddingLeft: '24px', marginBottom: '24px' }}>
+                            <p style={{ fontSize: '28px', fontStyle: 'italic', marginBottom: '8px' }}>
+                                "Think of your organisation like a racing yacht — every rope, sail, and crew member aligned perfectly to cut swiftly through the water."
+                            </p>
+                            <p style={{ fontSize: '18px', color: '#999' }}>— Fast Track Program</p>
+                        </div>
+                        <p style={{ fontSize: '22px', lineHeight: 1.6, marginBottom: '16px' }}>
+                            This sprint aligns your team's activities and processes to move faster and more efficiently toward your strategic goals. You will leave with a clear operational blueprint: 5 core activities, their critical processes, and the KPIs that keep execution honest.
+                        </p>
+                        <p style={{ fontSize: '18px', color: '#999' }}>
+                            Companies that clearly define core activities achieve up to 25% higher operational efficiency. Organisations without this clarity are 3× more likely to experience misalignment and wasted resources.
+                        </p>
+                    </div>
+
+                    {/* Mistakes to Avoid */}
+                    <div className="animate-in" style={{ marginBottom: '48px', animationDelay: '0.2s' }}>
+                        <h2 className="plaak" style={{ fontSize: '48px', color: '#FFF469', marginBottom: '24px' }}>MISTAKES TO AVOID</h2>
+                        <ul style={{ fontSize: '20px', listStyle: 'none', padding: 0 }}>
+                            {[
+                                'Over-generalising — "Marketing" is not a core activity. Be precise. Clearly define activities so they are actionable, not aspirational.',
+                                'Rushing the process — give each step focused time. The quality of your output determines the quality of your execution for the next 90 days.',
+                                'Ignoring team input — this is a collaborative tool. Every voice in the room strengthens the definitions. Push back on vague language.',
+                                'Choosing KPIs that are easy to measure rather than meaningful — if a KPI does not change a decision, replace it.',
+                            ].map((item, i) => (
+                                <li key={i} style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '16px' }}>
+                                    <span style={{ fontSize: '32px', marginRight: '16px', lineHeight: 1, flexShrink: 0 }}>•</span>
+                                    <span>{item}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+
+                    {/* The Journey */}
+                    <div className="animate-in" style={{ marginBottom: '64px', animationDelay: '0.3s' }}>
+                        <h2 className="plaak" style={{ fontSize: '48px', marginBottom: '32px' }}>THE JOURNEY</h2>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '16px', textAlign: 'center' }}>
+                            {[
+                                ['01', 'VALUE PROP',  'Anchor to strategy'],
+                                ['02', 'BRAINSTORM',  'Map all activities'],
+                                ['03', 'TOP 5',       'Choose what matters'],
+                                ['04', 'PROCESSES',   'Build the engine'],
+                                ['05', 'CHECKLIST',   'Commit & submit'],
+                            ].map(([num, title, sub]) => (
+                                <div key={num} style={{ border: '2px solid #fff', padding: '20px 12px' }}>
+                                    <div className="plaak" style={{ fontSize: '52px', marginBottom: '12px' }}>{num}</div>
+                                    <p style={{ fontWeight: 'bold', marginBottom: '6px', fontSize: '13px' }}>{title}</p>
+                                    <p style={{ fontSize: '12px', color: '#999' }}>{sub}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <button onClick={onNext} className="plaak"
+                        style={{ width: '100%', padding: '32px', background: '#FFF469', color: '#000', border: 'none', fontSize: '28px', cursor: 'pointer', letterSpacing: '0.05em', transition: 'opacity 0.2s' }}>
+                        LET'S START →
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // ── Main App ──────────────────────────────────────────────────────────────
+    function CoreActivitiesApp() {
+        const [step, setStep]               = useState(0);
+        const [data, setData]               = useState(makeDefaultData());
+        const [userId, setUserId]           = useState(null);
+        const [deps, setDeps]               = useState({});
+        const [authState, setAuthState]     = useState({ loading: true, authenticated: false, error: null });
+        const [submitState, setSubmitState] = useState('idle'); // idle | saving | success | error
+        const [aiReviewing, setAiReviewing] = useState(false);
+        const [aiMessage, setAiMessage]     = useState('');
+        const [activityIdx, setActivityIdx] = useState(0); // for step 4 sub-navigation
+
+        const totalSteps = CONFIG.TOTAL_STEPS;
+
+        // ── Init ──
+        useEffect(() => {
+            const { createClient } = supabase;
+            window.supabaseClient = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+            ToolDB.init(CONFIG.TOOL_SLUG);
+
+            ToolDB.whenReady().then(async () => {
+                const uid = await ToolDB.identifyUser();
+                if (!uid) {
+                    setAuthState({ loading: false, authenticated: false, error: 'No active session found.' });
+                    return;
+                }
+                setUserId(uid);
+                setAuthState({ loading: false, authenticated: true, error: null });
+
+                // Load saved data
+                const saved = await ToolDB.load(uid);
+                if (saved && Object.keys(saved).length > 0) {
+                    setData(prev => ({
+                        valueProposition: saved.value_proposition || prev.valueProposition,
+                        activities:       saved.brainstorm_activities || prev.activities,
+                        coreActivities:   saved.core_activities       || prev.coreActivities,
+                        checklist:        saved.sprint_checklist      || prev.checklist,
+                    }));
+                }
+
+                // Load dependencies
+                try {
+                    const vp = await ToolDB.getDependency(uid, 'value_proposition');
+                    if (vp) setDeps(d => ({ ...d, 'Value Proposition (Tool 15)': vp }));
+                    const seg = await ToolDB.getDependency(uid, 'target_segment');
+                    if (seg) setDeps(d => ({ ...d, 'Target Segment (Tool 13)': seg }));
+                } catch (_) {}
+            });
+        }, []);
+
+        const updateData = useCallback((field, val) => {
+            setData(prev => ({ ...prev, [field]: val }));
+            setAiMessage('');
+        }, []);
+
+        // ── canProceed per step ──
+        const canProceed = () => {
+            if (step === 1) return data.valueProposition.trim().length >= 20;
+            if (step === 2) return data.activities.filter(a => a.trim()).length >= 5;
+            if (step === 3) return data.coreActivities.every(a => a.name.trim().length >= 3);
+            if (step === 4) return data.coreActivities.every(a => a.processes.some(p => p.name.trim()));
+            return true;
+        };
+
+        // ── handleNext ──
+        const handleNext = async () => {
+            setAiMessage('');
+            if (!canProceed()) {
+                if (step === 1) setAiMessage('Please enter your value proposition (min 20 characters) before continuing.');
+                if (step === 2) setAiMessage('Add at least 5 activities to your brainstorm before continuing.');
+                if (step === 3) setAiMessage('All 5 core activities must be named before continuing.');
+                if (step === 4) setAiMessage('Each core activity needs at least 1 process defined before continuing.');
+                return;
+            }
+
+            // AI review on step 3
+            if (step === 3 && window.AIChallenge) {
+                setAiReviewing(true);
+                const reviewText = data.coreActivities.map((a, i) => `${i+1}. ${a.name}`).join('\n');
+                const canProceedAI = await window.AIChallenge.reviewStep(userId, reviewText, step, CONFIG.TOOL_SLUG);
+                setAiReviewing(false);
+                if (!canProceedAI) {
+                    setAiMessage(window.AIChallenge.getLastFeedback?.()?.suggestion || 'Please review your core activity definitions — they should be specific and actionable, not generic.');
+                    return;
+                }
+            }
+
+            // Move to transition screen
+            setStep(step + 0.5);
+        };
+
+        // ── handleTransitionNext ──
+        const handleTransitionNext = () => setStep(Math.floor(step) + 1);
+
+        // ── handleBack ──
+        const handleBack = () => {
+            if (step === 1) { setStep(0.5); return; }
+            setStep(step - 1);
+        };
+
+        // ── handleSubmit ──
+        const handleSubmit = async () => {
+            setSubmitState('saving');
+            try {
+                const questionMappings = {
+                    value_proposition:    data.valueProposition,
+                    brainstorm_activities: data.activities.filter(a => a.trim()),
+                    core_activities:      data.coreActivities,
+                    sprint_checklist:     data.checklist,
+                };
+                await ToolDB.save(userId, questionMappings);
+                await ToolDB.markComplete(userId);
+                setSubmitState('success');
+            } catch (err) {
+                console.error('[CoreActivities] Submit error:', err);
+                setSubmitState('error');
+                setAiMessage('Submission failed. Please try again.');
+            }
+        };
+
+        // ── Render ──
+        return (
+            <div className="tool-frame">
+                {/* Loading */}
+                {authState.loading && (
+                    <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: '#555', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Loading…</div>
+                    </div>
+                )}
+
+                {/* Auth error */}
+                {!authState.loading && !authState.authenticated && (
+                    <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ textAlign: 'center', color: '#fff', padding: '0 32px', maxWidth: 640 }}>
+                            <h1 className="plaak" style={{ fontSize: 48, marginBottom: 24 }}>AUTHENTICATION REQUIRED</h1>
+                            <p style={{ fontSize: 20, marginBottom: 32 }}>Please access this tool from your LearnWorlds course.</p>
+                            <p style={{ fontSize: 16, color: '#999' }}>{authState.error || 'No active session found'}</p>
+                        </div>
+                    </div>
+                )}
+
+                {/* Step 0: Cover */}
+                {step === 0 && authState.authenticated && (
+                    <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+                        <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${CONFIG.COVER_IMAGE})`, backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.4 }} />
+                        <div style={{ position: 'relative', textAlign: 'center', color: '#fff', padding: '0 32px' }} className="animate-in">
+                            <div style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: '#FFF469', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 24 }}>
+                                SPRINT 22 / MODULE 6 — ORG STRUCTURE
+                            </div>
+                            <h1 className="plaak" style={{ fontSize: 80, marginBottom: 16 }}>{CONFIG.TOOL_TITLE}</h1>
+                            <p style={{ fontSize: 18, color: '#ccc', marginBottom: 48, maxWidth: 560, margin: '0 auto 48px' }}>{CONFIG.TOOL_SUBTITLE}</p>
+                            <button onClick={() => setStep(0.5)}
+                                style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 48px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s' }}
+                                onMouseOver={e => { e.target.style.background = '#FFF469'; }}
+                                onMouseOut={e => { e.target.style.background = '#fff'; }}>
+                                START
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Step 0.5: Intro */}
+                {step === 0.5 && authState.authenticated && (
+                    <IntroPage onNext={() => setStep(1)} />
+                )}
+
+                {/* Transition screens (1.5, 2.5, 3.5, 4.5) */}
+                {(step === 1.5 || step === 2.5 || step === 3.5 || step === 4.5) && (
+                    <TransitionScreen stepNum={Math.floor(step)} onNext={handleTransitionNext} />
+                )}
+
+                {/* Steps 1–5: Wizard */}
+                {step >= 1 && step <= totalSteps && (
+                    <div className="tool-inner">
+                        <div className="wizard-layout">
+                            <div className="wizard-main">
+                                <MobileStepBar currentStep={step} totalSteps={totalSteps} />
+                                <div style={{ flex: 1 }}>
+                                    {step === 1 && (
+                                        <Step1
+                                            data={data}
+                                            updateData={updateData}
+                                            deps={deps}
+                                            aiMessage={aiMessage}
+                                        />
+                                    )}
+                                    {step === 2 && (
+                                        <Step2
+                                            data={data}
+                                            updateData={updateData}
+                                            aiMessage={aiMessage}
+                                        />
+                                    )}
+                                    {step === 3 && (
+                                        <Step3
+                                            data={data}
+                                            updateData={updateData}
+                                            aiMessage={aiMessage}
+                                        />
+                                    )}
+                                    {step === 4 && (
+                                        <Step4
+                                            data={data}
+                                            updateData={updateData}
+                                            activityIdx={activityIdx}
+                                            setActivityIdx={setActivityIdx}
+                                            aiMessage={aiMessage}
+                                        />
+                                    )}
+                                    {step === 5 && (
+                                        <Step5
+                                            data={data}
+                                            updateData={updateData}
+                                            onSubmit={handleSubmit}
+                                            submitState={submitState}
+                                            aiMessage={aiMessage}
+                                        />
+                                    )}
+                                </div>
+                                {submitState !== 'success' && (
+                                    <div className="wizard-footer">
+                                        <button className="btn-wiz-back" onClick={handleBack}>
+                                            ← BACK
+                                        </button>
+                                        {step < totalSteps && (
+                                            <button className="btn-wiz-next" onClick={handleNext} disabled={aiReviewing}>
+                                                {aiReviewing ? 'REVIEWING…' : 'NEXT →'}
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                            <WizardSidebar
+                                currentStep={step}
+                                data={data}
+                                onNavigate={s => { setStep(s); setAiMessage(''); }}
+                            />
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+        ReactDOM.render(<CoreActivitiesApp />, document.getElementById('root'));
+    </script>
 </body>
 </html>
