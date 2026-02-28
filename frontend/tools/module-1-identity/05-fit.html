@@ -526,7 +526,7 @@
                 ? [{ num: 1, label: 'VALUES' }, { num: 2, label: 'JOB' }, { num: 3, label: 'TEAM' }, { num: 4, label: 'BOSS' }]
                 : mode === 'abc'
                 ? [{ num: 5, label: 'ABC MATRIX' }, { num: 6, label: 'REVIEW' }]
-                : [{ num: 7, label: 'TEAM SUMMARY' }, { num: 8, label: 'MEETING' }];
+                : [{ num: 7, label: 'FIT SUMMARY' }, { num: 8, label: 'TEAM MEETING' }];
 
             const effectiveStep = Math.ceil(currentStep);
 
@@ -964,7 +964,7 @@
            TEAM MODE: STEP 7 - Team FIT Summary (compile scores during meeting)
            ============================================================ */
 
-        function TeamFITSummaryStep({ teamData, setTeamData, myCeoScores }) {
+        function TeamFITSummaryStep({ teamData, setTeamData, myCeoScores, teamSubStep }) {
             const [newMemberName, setNewMemberName] = useState('');
 
             const addMember = () => {
@@ -1020,94 +1020,126 @@
             const totalFit = Math.round((dimAverages.values + dimAverages.job + dimAverages.team + dimAverages.boss) / 4);
             const getFitColor = (v) => v < 60 ? '#DC2626' : v <= 90 ? '#D97706' : '#059669';
 
+            const subLabels = ['ADD MEMBERS', 'ENTER SCORES', 'TEAM SUMMARY'];
+
             return (
-                <div className="animate-in">
-                    <div className="step-indicator">
-                        <span>Team Meeting -- Step 1 of 2</span>
-                        <span className="step-time">~15 min</span>
+                <div className="step-content animate-in" key={teamSubStep}>
+                    <div className="opening-box">
+                        <p className="step-indicator">STEP 1 OF 2 · {subLabels[teamSubStep]}</p>
+                        <h1 className="step-heading">TEAM FIT SUMMARY</h1>
+                        <p className="step-hint">
+                            {teamSubStep === 0 ? 'Add each team member who completed the individual FIT assessment.' :
+                             teamSubStep === 1 ? 'Enter each member\'s FIT scores from their individual assessments (0-100% per dimension).' :
+                             'Review the aggregated team FIT scores across all four dimensions.'}
+                        </p>
                     </div>
-                    <h2 className="step-heading">Team FIT Summary</h2>
-                    <p className="step-hint">Compile each team member's FIT scores from their individual assessments.</p>
 
+                    {/* teamSubStep 0: Add Members */}
+                    {teamSubStep === 0 && (
+                        <div>
+                            {/* CEO's own scores if available */}
+                            {myCeoScores && (
+                                <div style={{ background: '#F0FDF4', border: '1px solid #D1FAE5', padding: 20, marginBottom: 32 }}>
+                                    <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#065F46', marginBottom: 12 }}>
+                                        YOUR SCORES (from individual phase)
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 12 }}>
+                                        {[
+                                            { label: 'Values', val: myCeoScores.values },
+                                            { label: 'Job', val: myCeoScores.job },
+                                            { label: 'Team', val: myCeoScores.team },
+                                            { label: 'Boss', val: myCeoScores.boss }
+                                        ].map(item => (
+                                            <div key={item.label} style={{ textAlign: 'center' }}>
+                                                <div style={{ fontSize: 12, color: '#065F46', marginBottom: 4 }}>{item.label}</div>
+                                                <div style={{ fontSize: 22, fontWeight: 700, color: getFitColor(item.val) }}>{item.val}%</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
 
-
-                    {/* CEO's own scores if available */}
-                    {myCeoScores && (
-                        <div style={{ background: '#F0FDF4', border: '1px solid #D1FAE5', padding: 16, marginBottom: 24 }}>
-                            <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#065F46', marginBottom: 12 }}>
-                                Your Scores (auto-populated from individual phase)
+                            <div className="field-group">
+                                <label className="field-label">Add Team Member <span style={{ color: '#DC2626', fontWeight: 700 }}>*</span></label>
+                                <p className="field-help" style={{ marginTop: 0, marginBottom: 12 }}>Add up to 9 team members. You'll enter their FIT scores in the next step.</p>
+                                <div style={{ display: 'flex', gap: 8 }}>
+                                    <input
+                                        type="text"
+                                        value={newMemberName}
+                                        onChange={(e) => setNewMemberName(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && addMember()}
+                                        placeholder="Enter team member's name"
+                                        className="field-input"
+                                    />
+                                    <button onClick={addMember} className="btn-wiz-next" style={{ whiteSpace: 'nowrap', minWidth: 100, padding: '10px 20px' }}
+                                        disabled={!newMemberName.trim() || members.length >= 9}>
+                                        ADD
+                                    </button>
+                                </div>
+                                {members.length >= 9 && (
+                                    <p className="field-help" style={{ color: '#D97706' }}>Maximum 9 team members reached.</p>
+                                )}
                             </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
-                                    <span>Values:</span><strong>{myCeoScores.values}%</strong>
+
+                            {members.length > 0 && (
+                                <div style={{ marginTop: 24 }}>
+                                    <div className="field-label" style={{ marginBottom: 12 }}>
+                                        Team Members ({members.length})
+                                    </div>
+                                    {members.map((member, idx) => (
+                                        <div key={member.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', border: '1px solid #E5E7EB', marginBottom: 8 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                                <span style={{ background: '#000', color: '#fff', width: 28, height: 28, borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 600, flexShrink: 0 }}>
+                                                    {idx + 1}
+                                                </span>
+                                                <span style={{ fontWeight: 600, fontSize: 15 }}>{member.name}</span>
+                                            </div>
+                                            <button onClick={() => removeMember(member.id)} style={{ background: 'none', border: 'none', color: '#DC2626', cursor: 'pointer', fontSize: 13, fontFamily: "'Monument', monospace", letterSpacing: '0.05em' }}>REMOVE</button>
+                                        </div>
+                                    ))}
                                 </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
-                                    <span>Job:</span><strong>{myCeoScores.job}%</strong>
-                                </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
-                                    <span>Team:</span><strong>{myCeoScores.team}%</strong>
-                                </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
-                                    <span>Boss:</span><strong>{myCeoScores.boss}%</strong>
-                                </div>
-                            </div>
+                            )}
                         </div>
                     )}
 
-                    {/* Add member */}
-                    <div className="field-group">
-                        <label className="field-label">Add Team Member</label>
-                        <div style={{ display: 'flex', gap: 8 }}>
-                            <input
-                                type="text"
-                                value={newMemberName}
-                                onChange={(e) => setNewMemberName(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && addMember()}
-                                placeholder="Member name"
-                                className="field-input"
-                            />
-                            <button onClick={addMember} className="btn-wiz-next" style={{ whiteSpace: 'nowrap', minWidth: 100, padding: '10px 20px' }}>
-                                Add
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Member cards with 4 FIT fields */}
-                    {members.length > 0 && (
+                    {/* teamSubStep 1: Enter FIT Scores */}
+                    {teamSubStep === 1 && (
                         <div>
-                            <div className="field-label" style={{ marginBottom: 16 }}>
-                                Team Members ({members.length})
-                            </div>
-                            {members.map(member => {
+                            {members.map((member, idx) => {
                                 const memberAvg = Math.round((member.valuesFit + member.jobFit + member.teamFit + member.bossFit) / 4);
                                 return (
-                                    <div key={member.id} style={{ border: '1px solid #E5E7EB', padding: 16, marginBottom: 12 }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                                            <span style={{ fontWeight: 600, fontSize: 15 }}>{member.name}</span>
+                                    <div key={member.id} style={{ border: '1px solid #E5E7EB', padding: 24, marginBottom: 16 }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                                <span style={{ fontSize: 13, color: '#6B7280' }}>Avg: <strong style={{ color: getFitColor(memberAvg) }}>{memberAvg}%</strong></span>
-                                                <button onClick={() => removeMember(member.id)} style={{ background: 'none', border: 'none', color: '#DC2626', cursor: 'pointer', fontSize: 13 }}>Remove</button>
+                                                <span style={{ background: '#000', color: '#fff', width: 28, height: 28, borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 600, flexShrink: 0 }}>
+                                                    {idx + 1}
+                                                </span>
+                                                <span style={{ fontWeight: 600, fontSize: 16 }}>{member.name}</span>
+                                            </div>
+                                            <div style={{ textAlign: 'right' }}>
+                                                <div style={{ fontFamily: "'Monument', monospace", fontSize: 9, color: '#6B7280', letterSpacing: '0.08em', textTransform: 'uppercase' }}>AVG FIT</div>
+                                                <div style={{ fontSize: 22, fontWeight: 700, color: getFitColor(memberAvg) }}>{memberAvg}%</div>
                                             </div>
                                         </div>
-                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                                             {[
-                                                { field: 'valuesFit', label: 'Values FIT (%)' },
-                                                { field: 'jobFit', label: 'Job FIT (%)' },
-                                                { field: 'teamFit', label: 'Team FIT (%)' },
-                                                { field: 'bossFit', label: 'Boss FIT (%)' }
+                                                { field: 'valuesFit', label: 'Values FIT' },
+                                                { field: 'jobFit', label: 'Job FIT' },
+                                                { field: 'teamFit', label: 'Team FIT' },
+                                                { field: 'bossFit', label: 'Boss FIT' }
                                             ].map(item => (
-                                                <div key={item.field} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                                    <label style={{ flex: 1, fontSize: 13 }}>{item.label}</label>
+                                                <div key={item.field}>
+                                                    <label style={{ fontSize: 13, color: '#6B7280', display: 'block', marginBottom: 6 }}>{item.label}</label>
                                                     <input
-                                                        type="number"
+                                                        type="range"
                                                         min="0"
                                                         max="100"
-                                                        value={member[item.field] || ''}
+                                                        value={member[item.field] || 0}
                                                         onChange={(e) => updateMemberField(member.id, item.field, e.target.value)}
-                                                        className="field-input"
-                                                        style={{ width: 70 }}
-                                                        placeholder="0-100"
+                                                        className="fit-slider"
+                                                        style={{ marginBottom: 4 }}
                                                     />
+                                                    <div style={{ textAlign: 'center', fontWeight: 600, fontSize: 14, color: getFitColor(member[item.field] || 0) }}>{member[item.field] || 0}%</div>
                                                 </div>
                                             ))}
                                         </div>
@@ -1117,47 +1149,90 @@
                         </div>
                     )}
 
-                    {/* Summary table */}
-                    {members.length > 0 && (
-                        <div style={{ marginBottom: 32 }} style={{ marginTop: 24 }}>
-                            <div className="field-label" style={{ marginBottom: 12 }}>Team FIT Summary</div>
-                            <div style={{ border: '1px solid #E5E7EB', overflow: 'hidden' }}>
-                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                    <thead style={{ background: '#F9FAFB' }}>
-                                        <tr>
-                                            <th style={{ padding: '8px 16px', textAlign: 'left', fontSize: 13, fontWeight: 600 }}>Dimension</th>
-                                            <th style={{ padding: '8px 16px', textAlign: 'center', fontSize: 13, fontWeight: 600 }}>Team Average</th>
-                                            <th style={{ padding: '8px 16px', textAlign: 'center', fontSize: 13, fontWeight: 600 }}>Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {[
-                                            { label: 'Values', val: dimAverages.values },
-                                            { label: 'Job', val: dimAverages.job },
-                                            { label: 'Team', val: dimAverages.team },
-                                            { label: 'Boss', val: dimAverages.boss }
-                                        ].map(row => (
-                                            <tr key={row.label} style={{ borderTop: '1px solid #E5E7EB' }}>
-                                                <td style={{ padding: '8px 16px', fontSize: 14 }}>{row.label}</td>
-                                                <td style={{ padding: '8px 16px', textAlign: 'center', fontWeight: 600, color: getFitColor(row.val) }}>{row.val}%</td>
-                                                <td style={{ padding: '8px 16px', textAlign: 'center' }}>
-                                                    <span className={`badge ${row.val < 60 ? 'badge-red' : row.val <= 90 ? 'badge-yellow' : 'badge-green'}`}>
-                                                        {row.val < 60 ? 'Needs attention' : row.val <= 90 ? 'Moderate' : 'Strong'}
-                                                    </span>
-                                                </td>
+                    {/* teamSubStep 2: Summary Dashboard */}
+                    {teamSubStep === 2 && members.length > 0 && (
+                        <div>
+                            {/* Big total FIT score */}
+                            <div style={{ textAlign: 'center', marginBottom: 40 }}>
+                                <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#6B7280', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>TOTAL TEAM FIT SCORE</div>
+                                <span style={{ fontFamily: "'Plaak', sans-serif", fontSize: 72, fontWeight: 'bold', color: getFitColor(totalFit), lineHeight: 1 }}>{totalFit}</span>
+                                <span style={{ fontFamily: "'Plaak', sans-serif", fontSize: 36, fontWeight: 'bold', color: getFitColor(totalFit) }}>%</span>
+                                <div style={{ marginTop: 8 }}>
+                                    <span className={`badge ${totalFit < 60 ? 'badge-red' : totalFit <= 90 ? 'badge-yellow' : 'badge-green'}`}>
+                                        {totalFit < 60 ? 'Low alignment — needs urgent attention' : totalFit <= 90 ? 'Moderate alignment — targeted improvements needed' : 'Strong alignment — protect and maintain'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Dimension cards */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 32 }}>
+                                {[
+                                    { label: 'THE VALUES', val: dimAverages.values },
+                                    { label: 'THE JOB', val: dimAverages.job },
+                                    { label: 'THE TEAM', val: dimAverages.team },
+                                    { label: 'THE BOSS', val: dimAverages.boss }
+                                ].map(item => (
+                                    <div key={item.label} style={{ border: '2px solid #E5E7EB', padding: 20, textAlign: 'center' }}>
+                                        <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#6B7280', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>{item.label}</div>
+                                        <div style={{ fontSize: 32, fontWeight: 700, color: getFitColor(item.val), marginBottom: 8 }}>{item.val}%</div>
+                                        <span className={`badge ${item.val < 60 ? 'badge-red' : item.val <= 90 ? 'badge-yellow' : 'badge-green'}`} style={{ fontSize: 11 }}>
+                                            {item.val < 60 ? 'Needs attention' : item.val <= 90 ? 'Moderate' : 'Strong'}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Per-member summary table */}
+                            <div style={{ marginBottom: 32 }}>
+                                <div className="field-label" style={{ marginBottom: 12 }}>Individual Member Scores</div>
+                                <div style={{ border: '1px solid #E5E7EB', overflow: 'hidden' }}>
+                                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                        <thead style={{ background: '#F9FAFB' }}>
+                                            <tr>
+                                                <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: 13, fontWeight: 600 }}>Member</th>
+                                                <th style={{ padding: '10px 12px', textAlign: 'center', fontSize: 11, fontWeight: 600, fontFamily: "'Monument', monospace" }}>Values</th>
+                                                <th style={{ padding: '10px 12px', textAlign: 'center', fontSize: 11, fontWeight: 600, fontFamily: "'Monument', monospace" }}>Job</th>
+                                                <th style={{ padding: '10px 12px', textAlign: 'center', fontSize: 11, fontWeight: 600, fontFamily: "'Monument', monospace" }}>Team</th>
+                                                <th style={{ padding: '10px 12px', textAlign: 'center', fontSize: 11, fontWeight: 600, fontFamily: "'Monument', monospace" }}>Boss</th>
+                                                <th style={{ padding: '10px 12px', textAlign: 'center', fontSize: 11, fontWeight: 600, fontFamily: "'Monument', monospace" }}>Avg</th>
                                             </tr>
-                                        ))}
-                                        <tr style={{ borderTop: '2px solid #000', background: '#F9FAFB' }}>
-                                            <td style={{ padding: '10px 16px', fontSize: 14, fontWeight: 700 }}>Total FIT</td>
-                                            <td style={{ padding: '10px 16px', textAlign: 'center', fontWeight: 700, fontSize: 18, color: getFitColor(totalFit) }}>{totalFit}%</td>
-                                            <td style={{ padding: '10px 16px', textAlign: 'center' }}>
-                                                <span className={`badge ${totalFit < 60 ? 'badge-red' : totalFit <= 90 ? 'badge-yellow' : 'badge-green'}`}>
-                                                    {totalFit < 60 ? 'Low alignment' : totalFit <= 90 ? 'Moderate alignment' : 'Strong alignment'}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody>
+                                            {members.map(member => {
+                                                const avg = Math.round((member.valuesFit + member.jobFit + member.teamFit + member.bossFit) / 4);
+                                                return (
+                                                    <tr key={member.id} style={{ borderTop: '1px solid #E5E7EB' }}>
+                                                        <td style={{ padding: '10px 16px', fontSize: 14, fontWeight: 500 }}>{member.name}</td>
+                                                        <td style={{ padding: '10px 12px', textAlign: 'center', fontSize: 14, color: getFitColor(member.valuesFit) }}>{member.valuesFit}%</td>
+                                                        <td style={{ padding: '10px 12px', textAlign: 'center', fontSize: 14, color: getFitColor(member.jobFit) }}>{member.jobFit}%</td>
+                                                        <td style={{ padding: '10px 12px', textAlign: 'center', fontSize: 14, color: getFitColor(member.teamFit) }}>{member.teamFit}%</td>
+                                                        <td style={{ padding: '10px 12px', textAlign: 'center', fontSize: 14, color: getFitColor(member.bossFit) }}>{member.bossFit}%</td>
+                                                        <td style={{ padding: '10px 12px', textAlign: 'center', fontSize: 14, fontWeight: 700, color: getFitColor(avg) }}>{avg}%</td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            {/* Scoring benchmarks */}
+                            <div style={{ background: '#F9FAFB', border: '1px solid #E5E7EB', padding: 20 }}>
+                                <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6B7280', marginBottom: 12 }}>SCORING BENCHMARKS</div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#DC2626', flexShrink: 0 }} />
+                                        <span style={{ fontSize: 13, color: '#374151' }}>Below 60% — Poor fit</span>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#D97706', flexShrink: 0 }} />
+                                        <span style={{ fontSize: 13, color: '#374151' }}>60-90% — Moderate fit</span>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#059669', flexShrink: 0 }} />
+                                        <span style={{ fontSize: 13, color: '#374151' }}>Above 90% — Strong fit</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -1229,19 +1304,17 @@
             const getFitColor = (v) => v < 60 ? '#DC2626' : v <= 90 ? '#D97706' : '#059669';
 
             return (
-                <div className="animate-in" id="canvas-content">
-                    <div className="step-indicator">
-                        <span>Team Meeting -- Step 2 of 2</span>
-                        <span className="step-time">~90 min</span>
+                <div className="step-content animate-in" id="canvas-content">
+                    <div className="opening-box">
+                        <p className="step-indicator">STEP 2 OF 2 · TEAM MEETING</p>
+                        <h1 className="step-heading">TEAM MEETING & REVIEW</h1>
+                        <p className="step-hint">Follow the 90-minute meeting agenda, capture notes and action items, then submit.</p>
                     </div>
-                    <h2 className="step-heading">Team Meeting & Review</h2>
-                    <p className="step-hint">Follow the meeting agenda, capture notes and action items, then submit.</p>
 
-                    {/* Quick FIT Overview */}
+                    {/* Quick FIT Overview — card style */}
                     {members.length > 0 && (
                         <div style={{ marginBottom: 32 }}>
-                            <div className="field-label" style={{ marginBottom: 12 }}>Team FIT Overview</div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: 8, marginBottom: 16 }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: 8 }}>
                                 {[
                                     { label: 'Values', val: dimAverages.values },
                                     { label: 'Job', val: dimAverages.job },
@@ -1249,9 +1322,9 @@
                                     { label: 'Boss', val: dimAverages.boss },
                                     { label: 'Total', val: totalFit }
                                 ].map(item => (
-                                    <div key={item.label} style={{ textAlign: 'center', border: '1px solid #E5E7EB', padding: '8px 4px' }}>
-                                        <div style={{ fontFamily: "'Monument', monospace", fontSize: 9, textTransform: 'uppercase', color: '#6B7280', marginBottom: 4 }}>{item.label}</div>
-                                        <div style={{ fontWeight: 700, fontSize: 18, color: getFitColor(item.val) }}>{item.val}%</div>
+                                    <div key={item.label} style={{ textAlign: 'center', border: item.label === 'Total' ? '2px solid #000' : '1px solid #E5E7EB', padding: '12px 4px', background: item.label === 'Total' ? '#F9FAFB' : '#fff' }}>
+                                        <div style={{ fontFamily: "'Monument', monospace", fontSize: 9, textTransform: 'uppercase', color: '#6B7280', marginBottom: 4, letterSpacing: '0.08em' }}>{item.label}</div>
+                                        <div style={{ fontWeight: 700, fontSize: item.label === 'Total' ? 24 : 18, color: getFitColor(item.val) }}>{item.val}%</div>
                                     </div>
                                 ))}
                             </div>
@@ -1259,13 +1332,16 @@
                     )}
 
                     {/* Meeting Agenda */}
-                    <div style={{ marginBottom: 32 }}>
-                        <div className="field-label" style={{ marginBottom: 16 }}>Meeting Agenda -- 90 Minutes</div>
+                    <div style={{ marginBottom: 40 }}>
+                        <div className="field-label" style={{ marginBottom: 16 }}>
+                            Meeting Agenda
+                            <span style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#6B7280', fontWeight: 400, marginLeft: 8 }}>90 MINUTES</span>
+                        </div>
                         {MEETING_AGENDA.map(segment => (
                             <div key={segment.num} style={{ border: '1px solid #E5E7EB', padding: 20, marginBottom: 12 }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                        <span style={{ background: '#000', color: '#fff', width: 28, height: 28, borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 600 }}>
+                                        <span style={{ background: '#000', color: '#fff', width: 28, height: 28, borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 600, flexShrink: 0 }}>
                                             {segment.num}
                                         </span>
                                         <span style={{ fontWeight: 600, fontSize: 15 }}>{segment.title}</span>
@@ -1274,11 +1350,11 @@
                                 </div>
                                 <p style={{ fontSize: 14, color: '#374151', lineHeight: 1.6, marginBottom: 8 }}>{segment.description}</p>
                                 {segment.keyQuestion && (
-                                    <div style={{ background: '#F0FDF4', border: '1px solid #D1FAE5', padding: '8px 12px', marginBottom: 8, fontSize: 13 }}>
-                                        <strong style={{ color: '#065F46' }}>Key Q:</strong> <span style={{ color: '#374151' }}>{segment.keyQuestion}</span>
+                                    <div style={{ background: '#F0FDF4', border: '1px solid #D1FAE5', padding: '10px 14px', marginBottom: 8, fontSize: 13 }}>
+                                        <strong style={{ color: '#065F46' }}>Key Question:</strong> <span style={{ color: '#374151' }}>{segment.keyQuestion}</span>
                                     </div>
                                 )}
-                                <div style={{ background: '#FEF3C7', border: '1px solid #FDE68A', padding: '8px 12px', fontSize: 13 }}>
+                                <div style={{ background: '#FEF3C7', border: '1px solid #FDE68A', padding: '10px 14px', fontSize: 13 }}>
                                     <strong style={{ color: '#92400E' }}>Pitfall:</strong> <span style={{ color: '#78350F' }}>{segment.pitfall}</span>
                                 </div>
                             </div>
@@ -1286,16 +1362,16 @@
                     </div>
 
                     {/* Meeting Notes */}
-                    <div style={{ marginBottom: 32 }}>
+                    <div style={{ marginBottom: 40 }}>
                         <div className="field-group">
-                            <label className="field-label">Meeting Notes & Action Items</label>
-                            <p className="field-help" style={{ marginBottom: 8, marginTop: 0 }}>Capture key decisions, action items, and owners from the meeting.</p>
+                            <label className="field-label">Meeting Notes & Action Items <span style={{ color: '#DC2626', fontWeight: 700 }}>*</span></label>
+                            <p className="field-help" style={{ marginBottom: 8, marginTop: 0 }}>Capture key decisions, action items, owners, and deadlines from the meeting.</p>
                             <textarea
                                 className="field-textarea"
                                 value={meetingNotes}
                                 onChange={(e) => setMeetingNotes(e.target.value)}
                                 placeholder="Write your meeting notes, action items, and next steps here..."
-                                style={{ minHeight: 180 }}
+                                style={{ minHeight: 200 }}
                             />
                         </div>
                     </div>
@@ -1304,10 +1380,10 @@
                     <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 24 }}>
                         <button onClick={onExportPDF} className="btn-wiz-back" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-                            Export PDF
+                            EXPORT PDF
                         </button>
                         <button onClick={onSubmit} className="btn-wiz-next" disabled={submitStatus === 'success'}>
-                            {submitStatus === 'success' ? 'Submitted' : 'Submit Team Meeting'}
+                            {submitStatus === 'success' ? 'SUBMITTED' : 'SUBMIT TEAM MEETING'}
                         </button>
                     </div>
 
@@ -1339,12 +1415,14 @@
             const [checkingTeamUnlock, setCheckingTeamUnlock] = useState(false);
             const [meetingNotes, setMeetingNotes] = useState('');
             const [subStep, setSubStep] = useState(0); // 0=YOU, 1=THEM, 2=FIT%
+            const [teamSubStep, setTeamSubStep] = useState(0); // 0=ADD MEMBERS, 1=ENTER SCORES, 2=SUMMARY
 
-            // Reset subStep when step changes to a new integer
+            // Reset subStep/teamSubStep when step changes to a new integer
             const prevStepRef = useRef(0);
             useEffect(() => {
                 if (Number.isInteger(step) && step !== prevStepRef.current) {
                     setSubStep(0);
+                    setTeamSubStep(0);
                 }
                 prevStepRef.current = step;
             }, [step]);
@@ -1651,9 +1729,13 @@
                 return true;
             };
 
-            // Validation for team steps
-            const canProceedTeam = (stepNum) => {
-                if (stepNum === 7) return teamData.teamMembers.length >= 1 && teamData.teamMembers.every(m => m.name.trim());
+            // Validation for team steps (sub-step aware)
+            const canProceedTeam = (stepNum, currentTeamSubStep) => {
+                if (stepNum === 7) {
+                    if (currentTeamSubStep === 0) return teamData.teamMembers.length >= 1 && teamData.teamMembers.every(m => m.name.trim());
+                    if (currentTeamSubStep === 1) return teamData.teamMembers.every(m => m.valuesFit > 0 || m.jobFit > 0 || m.teamFit > 0 || m.bossFit > 0);
+                    return true; // subStep 2 = summary, always can proceed
+                }
                 return true;
             };
 
@@ -2106,23 +2188,37 @@
                         <div className="wizard-layout">
                             <div className="wizard-main">
                                 <MobileStepBar currentStep={step - 6} totalSteps={2} />
-                                <div className="step-content">
-                                    {step === 7 && (
-                                        <TeamFITSummaryStep teamData={teamData} setTeamData={setTeamData}
-                                            myCeoScores={fitData.values.you.some(v => v.trim()) ? myCeoScores : null} />
-                                    )}
-                                    {step === 8 && (
-                                        <TeamMeetingStep teamData={teamData} meetingNotes={meetingNotes} setMeetingNotes={setMeetingNotes}
-                                            onExportPDF={exportPDF} onSubmit={handleTeamSubmit} submitStatus={submitStatus} submitMessage={submitMessage} />
-                                    )}
-                                </div>
+                                {step === 7 && (
+                                    <TeamFITSummaryStep teamData={teamData} setTeamData={setTeamData}
+                                        myCeoScores={fitData.values.you.some(v => v.trim()) ? myCeoScores : null}
+                                        teamSubStep={teamSubStep} />
+                                )}
+                                {step === 8 && (
+                                    <TeamMeetingStep teamData={teamData} meetingNotes={meetingNotes} setMeetingNotes={setMeetingNotes}
+                                        onExportPDF={exportPDF} onSubmit={handleTeamSubmit} submitStatus={submitStatus} submitMessage={submitMessage} />
+                                )}
                                 {aiMessage && <div className="ai-message" style={{ margin: '0 0 16px' }}>{aiMessage}</div>}
                                 <div className="wizard-footer no-print">
-                                    <button className="btn-wiz-back" onClick={() => step === 7 ? setStep(0.7) : setStep(7)}>← BACK</button>
+                                    <button className="btn-wiz-back" onClick={() => {
+                                        if (step === 7 && teamSubStep > 0) { setTeamSubStep(teamSubStep - 1); }
+                                        else if (step === 7) { setStep(0.7); }
+                                        else { setStep(7); setTeamSubStep(2); }
+                                    }}>← BACK</button>
                                     <button className="btn-wiz-next"
-                                        disabled={(step === 7 && !canProceedTeam(7)) || aiReviewing}
-                                        onClick={() => step === 7 ? setStep(7.5) : handleTeamSubmit()}>
-                                        {aiReviewing ? 'REVIEWING...' : (step === 7 ? 'MEETING AGENDA →' : 'SUBMIT TEAM MEETING →')}
+                                        disabled={(step === 7 && !canProceedTeam(7, teamSubStep)) || aiReviewing}
+                                        onClick={() => {
+                                            if (step === 7 && teamSubStep < 2) {
+                                                setTeamSubStep(teamSubStep + 1);
+                                            } else if (step === 7) {
+                                                setStep(7.5); // transition → meeting
+                                            } else {
+                                                handleTeamSubmit();
+                                            }
+                                        }}>
+                                        {aiReviewing ? 'REVIEWING...' : (
+                                            step === 7 ? (teamSubStep === 0 ? 'ENTER SCORES →' : teamSubStep === 1 ? 'VIEW SUMMARY →' : 'MEETING AGENDA →') :
+                                            'SUBMIT TEAM MEETING →'
+                                        )}
                                     </button>
                                 </div>
                             </div>
