@@ -1,7 +1,7 @@
 /**
  * ToolDB — Shared database layer for all Fast Track tools.
- * Reads go direct to Supabase (anon key, SELECT only).
- * Writes (identify, save, complete) go through the backend API (service_role).
+ * ALL reads and writes go through the backend API (service_role).
+ * No direct Supabase access from the frontend.
  */
 const ToolDB = (function() {
     'use strict';
@@ -22,32 +22,28 @@ const ToolDB = (function() {
     }
 
     async function _doInit(slug) {
-        const client = window.supabaseClient;
-        if (!client) {
-            console.error('[ToolDB] No supabaseClient on window');
-            return;
-        }
-
         await identifyUser();
 
-        const { data, error } = await client
-            .from('tool_questions')
-            .select('id, question_key, question_type, reference_key')
-            .eq('tool_slug', slug);
+        try {
+            const res = await fetch(`${API_BASE}/api/toolsave/questions?tool_slug=${encodeURIComponent(slug)}`);
+            if (!res.ok) {
+                console.error('[ToolDB] Failed to load questions for', slug, res.status);
+                return;
+            }
+            const { data } = await res.json();
 
-        if (error) {
-            console.error('[ToolDB] Failed to load questions for', slug, error);
+            questionCache = {};
+            (data || []).forEach(q => {
+                questionCache[q.question_key] = {
+                    id: q.id,
+                    question_type: q.question_type,
+                    reference_key: q.reference_key
+                };
+            });
+        } catch (err) {
+            console.error('[ToolDB] Failed to load questions for', slug, err);
             return;
         }
-
-        questionCache = {};
-        (data || []).forEach(q => {
-            questionCache[q.question_key] = {
-                id: q.id,
-                question_type: q.question_type,
-                reference_key: q.reference_key
-            };
-        });
 
         console.log(`[ToolDB] Initialized for "${slug}" — ${Object.keys(questionCache).length} questions cached`);
     }
@@ -103,71 +99,50 @@ const ToolDB = (function() {
 
     /**
      * Load all saved answers for a user on this tool.
-     * Direct Supabase read (SELECT only — safe with anon key).
+     * Routes through backend API.
      */
     async function load(userId) {
         await whenReady();
-        const client = window.supabaseClient;
-        if (!client || !userId) return {};
+        if (!userId || !toolSlug) return {};
 
-        const questionIds = Object.values(questionCache).map(q => q.id);
-        if (questionIds.length === 0) return {};
+        if (Object.keys(questionCache).length === 0) return {};
 
-        const { data, error } = await client
-            .from('user_responses')
-            .select('question_id, response_value, response_data')
-            .eq('user_id', userId)
-            .in('question_id', questionIds);
-
-        if (error) {
-            console.error('[ToolDB] Load error:', error);
+        try {
+            const res = await fetch(
+                `${API_BASE}/api/toolsave/load?tool_slug=${encodeURIComponent(toolSlug)}&user_id=${encodeURIComponent(userId)}`
+            );
+            if (!res.ok) {
+                console.error('[ToolDB] Load error:', res.status);
+                return {};
+            }
+            const { data } = await res.json();
+            const result = data || {};
+            console.log(`[ToolDB] Loaded ${Object.keys(result).length} responses for tool "${toolSlug}"`);
+            return result;
+        } catch (err) {
+            console.error('[ToolDB] Load error:', err);
             return {};
         }
-
-        const idToKey = {};
-        for (const [key, q] of Object.entries(questionCache)) {
-            idToKey[q.id] = key;
-        }
-
-        const result = {};
-        (data || []).forEach(row => {
-            const key = idToKey[row.question_id];
-            if (key) {
-                result[key] = row.response_data !== null ? row.response_data : row.response_value;
-            }
-        });
-
-        console.log(`[ToolDB] Loaded ${Object.keys(result).length} responses for tool "${toolSlug}"`);
-        return result;
     }
 
     /**
      * Get a dependency value by reference_key (cross-tool).
-     * Direct Supabase read (SELECT only — safe with anon key).
+     * Routes through backend API.
      */
     async function getDependency(userId, referenceKey) {
-        const client = window.supabaseClient;
-        if (!client || !userId || !referenceKey) return null;
+        if (!userId || !referenceKey) return null;
 
-        const { data: questions } = await client
-            .from('tool_questions')
-            .select('id')
-            .eq('reference_key', referenceKey)
-            .limit(1);
-
-        if (!questions || questions.length === 0) return null;
-
-        const { data: responses } = await client
-            .from('user_responses')
-            .select('response_value, response_data')
-            .eq('user_id', userId)
-            .eq('question_id', questions[0].id)
-            .limit(1);
-
-        if (!responses || responses.length === 0) return null;
-
-        const row = responses[0];
-        return row.response_data !== null ? row.response_data : row.response_value;
+        try {
+            const res = await fetch(
+                `${API_BASE}/api/toolsave/dependency?reference_key=${encodeURIComponent(referenceKey)}&user_id=${encodeURIComponent(userId)}`
+            );
+            if (!res.ok) return null;
+            const { data } = await res.json();
+            return data;
+        } catch (err) {
+            console.error('[ToolDB] getDependency error:', err);
+            return null;
+        }
     }
 
     /**

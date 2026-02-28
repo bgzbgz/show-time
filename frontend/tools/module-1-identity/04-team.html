@@ -17,7 +17,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <!-- Supabase JS -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <!-- Chart.js for radar visualization -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
@@ -421,19 +420,12 @@
 
         // Configuration
         const CONFIG = {
-            SUPABASE_URL: 'https://lutzzfaedkbsmbobmrzx.supabase.co',
-            SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1dHp6ZmFlZGtic21ib2Jtcnp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MDA0MDQsImV4cCI6MjA4NjM3NjQwNH0.o2gJba85vDl4NLS-C8Mq3OudWKxet-b0IqO9kazqb8U',
             TOOL_SLUG: 'team',
             AUTOSAVE_DELAY: 2000
         };
 
-        const supabase = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
-
         const TOOL_SLUG = CONFIG.TOOL_SLUG;
         const STORAGE_KEY = 'fasttrack_team_tool';
-
-        // Make Supabase client globally available for dependency injection
-        window.supabaseClient = supabase;
 
         // Initialize ToolDB and dependency injection
         ToolDB.init(CONFIG.TOOL_SLUG);
@@ -1473,45 +1465,15 @@
                     const userId = localStorage.getItem('ft_user_id');
                     if (!userId) { setCheckingTeamUnlock(false); return; }
 
-                    // Get user's organization_id
-                    const { data: userData } = await supabase
-                        .from('users')
-                        .select('organization_id')
-                        .eq('id', userId)
-                        .single();
-
-                    if (!userData?.organization_id) {
-                        console.warn('[Team] No organization found — team tool stays locked');
-                        setCheckingTeamUnlock(false);
-                        return;
-                    }
-
-                    // Get all org members
-                    const { data: orgMembers } = await supabase
-                        .from('users')
-                        .select('id')
-                        .eq('organization_id', userData.organization_id);
-
-                    if (!orgMembers || orgMembers.length === 0) {
-                        setCheckingTeamUnlock(false);
-                        return;
-                    }
-
-                    // Check which org members have submitted team-individual
-                    const { data: submissions } = await supabase
-                        .from('user_responses')
-                        .select('user_id')
-                        .eq('tool_slug', 'team-individual')
-                        .in('user_id', orgMembers.map(m => m.id));
-
-                    const submittedUserIds = new Set((submissions || []).map(s => s.user_id));
-                    const allCompleted = orgMembers.every(m => submittedUserIds.has(m.id));
+                    const res = await fetch(`https://backend-production-639c.up.railway.app/api/toolsave/team-unlock?tool_slug=team-individual&user_id=${encodeURIComponent(userId)}`);
+                    const { data } = await res.json();
+                    const allCompleted = data.unlocked;
 
                     setTeamToolUnlocked(allCompleted);
                     if (allCompleted) {
                         console.log('[Team] All org members completed individual assessment — team tool unlocked');
                     } else {
-                        console.log(`[Team] ${submittedUserIds.size}/${orgMembers.length} members completed individual assessment`);
+                        console.log(`[Team] ${data.submitted}/${data.total} members completed individual assessment`);
                     }
                 } catch (e) {
                     console.warn('[Team] Team unlock check failed:', e);

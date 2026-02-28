@@ -12,7 +12,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <!-- Supabase JS Client -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../../shared/js/tool-db.js"></script>
     <script src="../../shared/js/ai-challenge.js"></script>
     <script src="../../shared/js/dependency-injection.js"></script>
@@ -432,20 +431,13 @@
         const { useState, useEffect, useRef, useCallback } = React;
 
         const CONFIG = {
-            SUPABASE_URL: 'https://lutzzfaedkbsmbobmrzx.supabase.co',
-            SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1dHp6ZmFlZGtic21ib2Jtcnp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MDA0MDQsImV4cCI6MjA4NjM3NjQwNH0.o2gJba85vDl4NLS-C8Mq3OudWKxet-b0IqO9kazqb8U',
             TOOL_SLUG: 'energy',
             STORAGE_KEY: 'ft_energy_autosave',
             AUTOSAVE_DELAY: 2000
         };
 
         // Initialize Supabase client
-        const { createClient } = supabase;
-        const supabaseClient = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
-
         // Make Supabase client globally available for dependency injection
-        window.supabaseClient = supabaseClient;
-
         // Initialize ToolDB and dependency injection
         ToolDB.init(CONFIG.TOOL_SLUG);
         ToolAccessControl.init(CONFIG.TOOL_SLUG);
@@ -1646,41 +1638,16 @@
                     const userId = localStorage.getItem('ft_user_id');
                     if (!userId) { setCheckingTeamUnlock(false); return; }
 
-                    const { data: userData } = await supabaseClient
-                        .from('users')
-                        .select('organization_id')
-                        .eq('id', userId)
-                        .single();
-
-                    if (!userData?.organization_id) {
-                        console.warn('[Energy] No organization found -- team tool stays locked');
-                        setCheckingTeamUnlock(false);
-                        return;
-                    }
-
-                    // Count org members
-                    const { data: orgMembers } = await supabaseClient
-                        .from('users')
-                        .select('id')
-                        .eq('organization_id', userData.organization_id);
-
-                    if (!orgMembers || orgMembers.length === 0) {
-                        setCheckingTeamUnlock(false);
-                        return;
-                    }
-
-                    // Count who submitted energy-individual
-                    const memberIds = orgMembers.map(m => m.id);
-                    const { data: submissions } = await supabaseClient
-                        .from('user_responses')
-                        .select('user_id')
-                        .eq('tool_slug', 'energy-individual')
-                        .in('user_id', memberIds);
-
-                    const submittedCount = submissions ? new Set(submissions.map(s => s.user_id)).size : 0;
-                    const allSubmitted = submittedCount >= orgMembers.length;
+                    const res = await fetch(`https://backend-production-639c.up.railway.app/api/toolsave/team-unlock?tool_slug=energy-individual&user_id=${encodeURIComponent(userId)}`);
+                    const { data } = await res.json();
+                    const allSubmitted = data.unlocked;
 
                     setTeamToolUnlocked(allSubmitted);
+                    if (allSubmitted) {
+                        console.log('[Energy] All org members completed individual — team tool unlocked');
+                    } else {
+                        console.log(`[Energy] ${data.submitted}/${data.total} members completed`);
+                    }
                 } catch (e) {
                     console.warn('[Energy] Team unlock check failed:', e);
                 } finally {

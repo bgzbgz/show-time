@@ -3,7 +3,7 @@
  * Checks if a user has completed prerequisite tools before allowing access.
  * If prerequisites are not met, shows a branded lock screen.
  *
- * Usage in tool HTML (after supabase client, tool-db.js, and dependency-injection.js):
+ * Usage in tool HTML (after tool-db.js and dependency-injection.js):
  *   <script src="../../js/tool-access-control.js"></script>
  *   <script>
  *     ToolAccessControl.init('value-proposition');
@@ -11,11 +11,13 @@
  *
  * Uses:
  * - DependencyInjection.getDependenciesConfig() for the dependency graph
- * - Supabase tool_completions table for completion status
+ * - Backend API /api/toolsave/completions for completion status
  */
 
 var ToolAccessControl = (function () {
     'use strict';
+
+    var API_BASE = 'https://backend-production-639c.up.railway.app';
 
     // Tool display names
     var TOOL_NAMES = {
@@ -78,21 +80,13 @@ var ToolAccessControl = (function () {
             return Promise.resolve({ allowed: true, reason: 'no_deps', missing: [] });
         }
 
-        if (!window.supabaseClient) {
-            console.warn('[ToolAccessControl] No supabaseClient — allowing access');
-            return Promise.resolve({ allowed: true, reason: 'no_supabase', missing: [] });
-        }
-
-        return window.supabaseClient
-            .from('tool_completions')
-            .select('tool_slug')
-            .eq('user_id', userId)
-            .then(function (result) {
-                var completedSlugs = (result.data || []).map(function (r) { return r.tool_slug; });
-                var missing = requiredTools.filter(function (slug) {
+        return fetch(API_BASE + '/api/toolsave/completions?user_id=' + encodeURIComponent(userId))
+            .then(function(res) { return res.json(); })
+            .then(function(json) {
+                var completedSlugs = json.data || [];
+                var missing = requiredTools.filter(function(slug) {
                     return completedSlugs.indexOf(slug) === -1;
                 });
-
                 return {
                     allowed: missing.length === 0,
                     reason: missing.length === 0 ? 'all_complete' : 'missing_prereqs',
@@ -100,7 +94,7 @@ var ToolAccessControl = (function () {
                     completed: completedSlugs
                 };
             })
-            .catch(function (err) {
+            .catch(function(err) {
                 console.error('[ToolAccessControl] Error:', err);
                 return { allowed: true, reason: 'error', missing: [] };
             });

@@ -66,7 +66,6 @@ function checkFile(filePath) {
     { pattern: /react@18.*production/i, name: 'React 18' },
     { pattern: /react-dom@18.*production/i, name: 'ReactDOM 18' },
     { pattern: /babel.*standalone/i, name: 'Babel standalone' },
-    { pattern: /supabase/i, name: 'Supabase client' },
   ];
   for (const req of requiredScripts) {
     if (!req.pattern.test(html)) {

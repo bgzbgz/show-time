@@ -8,7 +8,6 @@
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../../shared/js/tool-db.js"></script>
     <script src="../../shared/js/ai-challenge.js"></script>
     <script src="../../shared/js/dependency-injection.js"></script>
@@ -92,8 +91,6 @@
     const { useState, useEffect, useRef } = React;
 
     const CONFIG = {
-        SUPABASE_URL: 'https://lutzzfaedkbsmbobmrzx.supabase.co',
-        SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1dHp6ZmFlZGtic21ib2Jtcnp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MDA0MDQsImV4cCI6MjA4NjM3NjQwNH0.o2gJba85vDl4NLS-C8Mq3OudWKxet-b0IqO9kazqb8U',
         TOOL_SLUG: 'performance',
         AUTOSAVE_DELAY: 2000,
         TRANSITION_CONTENT: {
@@ -122,9 +119,6 @@
         }
     };
 
-    const { createClient } = supabase;
-    const supabaseClient = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
-    window.supabaseClient = supabaseClient;
     ToolDB.init(CONFIG.TOOL_SLUG);
     ToolAccessControl.init(CONFIG.TOOL_SLUG);
 
@@ -726,14 +720,14 @@
             try {
                 const userId = localStorage.getItem('ft_user_id');
                 if (!userId) { setCheckingTeamUnlock(false); return; }
-                const { data: userData } = await supabaseClient.from('users').select('organization_id').eq('id', userId).single();
-                if (!userData?.organization_id) { setCheckingTeamUnlock(false); return; }
-                const { data: orgMembers } = await supabaseClient.from('users').select('id').eq('organization_id', userData.organization_id);
-                if (!orgMembers || orgMembers.length === 0) { setCheckingTeamUnlock(false); return; }
-                const memberIds = orgMembers.map(m => m.id);
-                const { data: submissions } = await supabaseClient.from('user_responses').select('user_id').eq('tool_slug', 'performance-individual').in('user_id', memberIds);
-                const submittedCount = submissions ? new Set(submissions.map(s => s.user_id)).size : 0;
-                setTeamToolUnlocked(submittedCount >= orgMembers.length);
+                const res = await fetch(`https://backend-production-639c.up.railway.app/api/toolsave/team-unlock?tool_slug=performance-individual&user_id=${encodeURIComponent(userId)}`);
+                const { data } = await res.json();
+                setTeamToolUnlocked(data.unlocked);
+                if (data.unlocked) {
+                    console.log('[Performance] All org members completed individual — team tool unlocked');
+                } else {
+                    console.log(`[Performance] ${data.submitted}/${data.total} members completed`);
+                }
             } catch (e) {
                 console.warn('[Performance] Team unlock check failed:', e);
             } finally {

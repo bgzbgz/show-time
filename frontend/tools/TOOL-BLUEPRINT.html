@@ -10,7 +10,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../../shared/js/dependency-injection.js"></script>
     <link rel="stylesheet" href="../../shared/css/cognitive-load.css">
     <script src="../../shared/js/cognitive-load.js"></script>
@@ -345,8 +344,6 @@
            CONFIG — Change these per tool
            ============================================================ */
         const CONFIG = {
-            SUPABASE_URL: 'https://lutzzfaedkbsmbobmrzx.supabase.co',
-            SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1dHp6ZmFlZGtic21ib2Jtcnp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MDA0MDQsImV4cCI6MjA4NjM3NjQwNH0.o2gJba85vDl4NLS-C8Mq3OudWKxet-b0IqO9kazqb8U',
             TOOL_SLUG: '{{tool_slug}}',           // e.g. 'know-thyself'
             SPRINT_NUMBER: 0,                       // e.g. 1
             SCHEMA_NAME: '{{schema_name}}',         // e.g. 'sprint_01_know_thyself'
@@ -369,9 +366,6 @@
             }
         };
 
-        const { createClient } = supabase;
-        const supabaseClient = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
-        window.supabaseClient = supabaseClient;
         DependencyInjection.init(CONFIG.TOOL_SLUG, CONFIG.SCHEMA_NAME);
         CognitiveLoad.init(CONFIG.TOOL_SLUG);
 
@@ -561,16 +555,10 @@
                         // Map your fields here for Supabase storage
                     };
 
-                    console.log(`[${CONFIG.TOOL_SLUG} Submit] Calling RPC...`);
-                    const { data: result, error: submitError } = await supabaseClient.rpc('submit_tool_data', {
-                        p_schema_name: CONFIG.SCHEMA_NAME,
-                        p_user_id: userId,
-                        p_data: submissionData,
-                        p_tool_slug: CONFIG.TOOL_SLUG
-                    });
-                    console.log(`[${CONFIG.TOOL_SLUG} Submit] Result:`, result, 'Error:', submitError);
-                    if (submitError) throw submitError;
-                    if (!result || !result.success) throw new Error(result?.message || 'Submission failed');
+                    // Save via ToolDB (routes through backend API)
+                    console.log(`[${CONFIG.TOOL_SLUG} Submit] Saving via ToolDB...`);
+                    await ToolDB.save(userId, submissionData);
+                    console.log(`[${CONFIG.TOOL_SLUG} Submit] Saved successfully`);
                     setSubmitStatus('success');
                     setSubmitMessage('Submission saved successfully!');
                     localStorage.setItem('lastSubmissionId', result.submission_id);
