@@ -170,80 +170,106 @@
     }
 
     /* === STEP 1: INDIVIDUAL PRIORITIES BREAKDOWN === */
-    function Step1({ d, u }) {
+    function Step1({ d, u, priorityIdx, setPriorityIdx }) {
         const priorities = d.priorities || Array(3).fill(null).map(() => ({
             priority: '', totalHours: '', deadline: '',
             steps: Array(5).fill(null).map(() => ({ step: '', hours: '', week: '' }))
         }));
-        const updateP = (i, f, v) => { const next = [...priorities]; next[i] = { ...next[i], [f]: v }; u('priorities', next); };
-        const updateStep = (pi, si, f, v) => {
+        const updateP = (f, v) => { const next = [...priorities]; next[priorityIdx] = { ...next[priorityIdx], [f]: v }; u('priorities', next); };
+        const updateStep = (si, f, v) => {
             const next = [...priorities];
-            const steps = [...(next[pi].steps || Array(5).fill(null).map(() => ({ step: '', hours: '', week: '' })))];
+            const steps = [...(next[priorityIdx].steps || Array(5).fill(null).map(() => ({ step: '', hours: '', week: '' })))];
             steps[si] = { ...steps[si], [f]: v };
-            next[pi] = { ...next[pi], steps };
+            next[priorityIdx] = { ...next[priorityIdx], steps };
             u('priorities', next);
         };
         const addPriority = () => {
-            if (priorities.length < 5) u('priorities', [...priorities, { priority: '', totalHours: '', deadline: '', steps: Array(5).fill(null).map(() => ({ step: '', hours: '', week: '' })) }]);
+            if (priorities.length < 5) {
+                u('priorities', [...priorities, { priority: '', totalHours: '', deadline: '', steps: Array(5).fill(null).map(() => ({ step: '', hours: '', week: '' })) }]);
+                setPriorityIdx(priorities.length);
+            }
         };
+        const p = priorities[priorityIdx] || priorities[0];
+        const hasFilled = (idx) => {
+            const pr = priorities[idx];
+            return pr && pr.priority && pr.priority.trim().length > 0;
+        };
+
         return (
-            <div className="animate-in">
-                <div className="step-indicator"><span>Step 1 of 4</span><span className="step-time">~10 min</span></div>
+            <div className="animate-in" key={priorityIdx}>
+                <div className="step-indicator"><span>Step 1 of 4 · Priority {priorityIdx + 1} of {priorities.length}</span><span className="step-time">~10 min</span></div>
                 <h2 className="step-heading">PRIORITIES BREAKDOWN</h2>
                 <p className="step-hint">Identify your big priorities, then slice each into 5 manageable steps with deadlines. Start simple — the first step should feel almost too easy.</p>
-                <div className="ft-example">
-                    <strong>Do's:</strong> Start with the simplest possible action. Celebrate completing each step.<br/>
-                    <strong>Don'ts:</strong> Choose a first step that's too complex. Rush through steps without thorough completion.
+
+                {/* Priority navigator */}
+                <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap', alignItems: 'center' }}>
+                    {priorities.map((_, i) => (
+                        <button key={i} onClick={() => setPriorityIdx(i)} style={{
+                            width: 44, height: 44, border: `2px solid ${priorityIdx === i ? '#000' : hasFilled(i) ? '#000' : '#E5E7EB'}`,
+                            background: priorityIdx === i ? '#000' : hasFilled(i) ? '#F0F0F0' : '#fff',
+                            color: priorityIdx === i ? '#FFF469' : hasFilled(i) ? '#000' : '#999',
+                            fontFamily: "'Monument', monospace", fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s'
+                        }}>{String(i + 1).padStart(2, '0')}</button>
+                    ))}
+                    {priorities.length < 5 && (
+                        <button onClick={addPriority} style={{
+                            height: 44, padding: '0 16px', border: '2px dashed #E5E7EB', background: 'none', cursor: 'pointer',
+                            fontFamily: "'Monument', monospace", fontSize: 12, color: '#6B7280', transition: 'all 0.2s'
+                        }}>+ ADD</button>
+                    )}
                 </div>
-                {priorities.map((p, i) => (
-                    <div key={i} style={{ border: '2px solid #000', padding: 24, marginBottom: 24 }}>
-                        <div className="numbered-section" style={{ marginBottom: 16 }}>PRIORITY {i + 1}</div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px 140px', gap: 12, marginBottom: 16 }}>
-                            <div className="ft-field-group" style={{ marginBottom: 0 }}>
-                                <label className="ft-label">PRIORITY <span className="ft-required">*</span></label>
-                                <input className="ft-input" placeholder="The big, intimidating elephant in the room" value={p.priority} onChange={e => updateP(i, 'priority', e.target.value)} />
-                            </div>
-                            <div className="ft-field-group" style={{ marginBottom: 0 }}>
-                                <label className="ft-label">TOTAL HRS</label>
-                                <input className="ft-input" type="number" placeholder="Hours" value={p.totalHours} onChange={e => updateP(i, 'totalHours', e.target.value)} />
-                            </div>
-                            <div className="ft-field-group" style={{ marginBottom: 0 }}>
-                                <label className="ft-label">DEADLINE</label>
-                                <input className="ft-input" type="date" value={p.deadline} onChange={e => updateP(i, 'deadline', e.target.value)} />
-                            </div>
-                        </div>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
-                            <thead><tr style={{ background: '#F3F4F6' }}>
-                                <th style={{ padding: '8px 12px', textAlign: 'left', fontFamily: "'Monument', monospace", fontSize: 11 }}>#</th>
-                                <th style={{ padding: '8px 12px', textAlign: 'left', fontFamily: "'Monument', monospace", fontSize: 11 }}>ACTION STEP</th>
-                                <th style={{ padding: '8px 12px', width: 80, fontFamily: "'Monument', monospace", fontSize: 11 }}>HOURS</th>
-                                <th style={{ padding: '8px 12px', width: 100, fontFamily: "'Monument', monospace", fontSize: 11 }}>WEEK</th>
-                            </tr></thead>
-                            <tbody>
-                                {(p.steps || []).map((s, si) => (
-                                    <tr key={si} style={{ borderBottom: '1px solid #E5E7EB' }}>
-                                        <td style={{ padding: '6px 12px', fontWeight: 600, color: si === 0 ? '#16A34A' : '#000' }}>{si + 1}{si === 0 && ' ★'}</td>
-                                        <td style={{ padding: 4 }}><input className="ft-input" style={{ border: 'none', height: 36, fontSize: 14 }} placeholder={si === 0 ? 'Start SIMPLE — almost too easy' : `Step ${si + 1} (gradually increase complexity)`} value={s.step} onChange={e => updateStep(i, si, 'step', e.target.value)} /></td>
-                                        <td style={{ padding: 4 }}><input className="ft-input" type="number" style={{ border: 'none', height: 36, textAlign: 'center', fontSize: 13 }} placeholder="hrs" value={s.hours} onChange={e => updateStep(i, si, 'hours', e.target.value)} /></td>
-                                        <td style={{ padding: 4 }}><input className="ft-input" style={{ border: 'none', height: 36, textAlign: 'center', fontSize: 13 }} placeholder="Wk #" value={s.week} onChange={e => updateStep(i, si, 'week', e.target.value)} /></td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                        {(() => {
-                            const totalAllocated = (p.steps || []).reduce((sum, s) => sum + (parseInt(s.hours) || 0), 0);
-                            const budget = parseInt(p.totalHours) || 0;
-                            return budget > 0 && (
-                                <div style={{ padding: '8px 12px', background: totalAllocated > budget ? '#FEF2F2' : '#F0FDF4', marginTop: 8, fontSize: 13 }}>
-                                    <strong>{totalAllocated}h allocated</strong> of {budget}h budget {totalAllocated > budget && <span style={{ color: '#DC2626', fontWeight: 600 }}>— Over budget!</span>}
-                                </div>
-                            );
-                        })()}
+
+                {priorityIdx === 0 && (
+                    <div className="ft-example" style={{ marginBottom: 24 }}>
+                        <strong>Do's:</strong> Start with the simplest possible action. Celebrate completing each step.<br/>
+                        <strong>Don'ts:</strong> Choose a first step that's too complex. Rush through steps without thorough completion.
                     </div>
-                ))}
-                {priorities.length < 5 && (
-                    <button onClick={addPriority} style={{ width: '100%', padding: 12, border: '2px dashed #E5E7EB', background: 'none', cursor: 'pointer', fontFamily: "'Monument', monospace", fontSize: 12 }}>+ ADD PRIORITY</button>
                 )}
+
+                <div style={{ border: '2px solid #000', padding: 24 }}>
+                    <div className="numbered-section" style={{ marginBottom: 16 }}>PRIORITY {priorityIdx + 1}</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px 140px', gap: 12, marginBottom: 16 }}>
+                        <div className="ft-field-group" style={{ marginBottom: 0 }}>
+                            <label className="ft-label">PRIORITY <span className="ft-required">*</span></label>
+                            <input className="ft-input" placeholder="The big, intimidating elephant in the room" value={p.priority} onChange={e => updateP('priority', e.target.value)} />
+                        </div>
+                        <div className="ft-field-group" style={{ marginBottom: 0 }}>
+                            <label className="ft-label">TOTAL HRS</label>
+                            <input className="ft-input" type="number" placeholder="Hours" value={p.totalHours} onChange={e => updateP('totalHours', e.target.value)} />
+                        </div>
+                        <div className="ft-field-group" style={{ marginBottom: 0 }}>
+                            <label className="ft-label">DEADLINE</label>
+                            <input className="ft-input" type="date" value={p.deadline} onChange={e => updateP('deadline', e.target.value)} />
+                        </div>
+                    </div>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+                        <thead><tr style={{ background: '#F3F4F6' }}>
+                            <th style={{ padding: '8px 12px', textAlign: 'left', fontFamily: "'Monument', monospace", fontSize: 11 }}>#</th>
+                            <th style={{ padding: '8px 12px', textAlign: 'left', fontFamily: "'Monument', monospace", fontSize: 11 }}>ACTION STEP</th>
+                            <th style={{ padding: '8px 12px', width: 80, fontFamily: "'Monument', monospace", fontSize: 11 }}>HOURS</th>
+                            <th style={{ padding: '8px 12px', width: 100, fontFamily: "'Monument', monospace", fontSize: 11 }}>WEEK</th>
+                        </tr></thead>
+                        <tbody>
+                            {(p.steps || []).map((s, si) => (
+                                <tr key={si} style={{ borderBottom: '1px solid #E5E7EB' }}>
+                                    <td style={{ padding: '6px 12px', fontWeight: 600, color: si === 0 ? '#16A34A' : '#000' }}>{si + 1}{si === 0 && ' ★'}</td>
+                                    <td style={{ padding: 4 }}><input className="ft-input" style={{ border: 'none', height: 36, fontSize: 14 }} placeholder={si === 0 ? 'Start SIMPLE — almost too easy' : `Step ${si + 1} (gradually increase complexity)`} value={s.step} onChange={e => updateStep(si, 'step', e.target.value)} /></td>
+                                    <td style={{ padding: 4 }}><input className="ft-input" type="number" style={{ border: 'none', height: 36, textAlign: 'center', fontSize: 13 }} placeholder="hrs" value={s.hours} onChange={e => updateStep(si, 'hours', e.target.value)} /></td>
+                                    <td style={{ padding: 4 }}><input className="ft-input" style={{ border: 'none', height: 36, textAlign: 'center', fontSize: 13 }} placeholder="Wk #" value={s.week} onChange={e => updateStep(si, 'week', e.target.value)} /></td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                    {(() => {
+                        const totalAllocated = (p.steps || []).reduce((sum, s) => sum + (parseInt(s.hours) || 0), 0);
+                        const budget = parseInt(p.totalHours) || 0;
+                        return budget > 0 && (
+                            <div style={{ padding: '8px 12px', background: totalAllocated > budget ? '#FEF2F2' : '#F0FDF4', marginTop: 8, fontSize: 13 }}>
+                                <strong>{totalAllocated}h allocated</strong> of {budget}h budget {totalAllocated > budget && <span style={{ color: '#DC2626', fontWeight: 600 }}>— Over budget!</span>}
+                            </div>
+                        );
+                    })()}
+                </div>
             </div>
         );
     }
@@ -670,11 +696,12 @@
         const [submitStatus, setSubmitStatus] = useState(null);
         const [submitMessage, setSubmitMessage] = useState('');
         const [aiReviewing, setAiReviewing] = useState(false);
+        const [priorityIdx, setPriorityIdx] = useState(0);
         const autosaveRef = useRef(null);
 
         const u = (field, value) => setData(prev => ({ ...prev, [field]: value }));
         const ut = (field, value) => setTeamData(prev => ({ ...prev, [field]: value }));
-        const goToStep = (s) => { window.scrollTo({ top: 0, behavior: 'smooth' }); setStep(s); };
+        const goToStep = (s) => { window.scrollTo({ top: 0, behavior: 'smooth' }); if (s === 1) setPriorityIdx(0); setStep(s); };
 
         // AI-gated step navigation
         const handleNext = async (fromStep) => {
@@ -841,12 +868,27 @@
                         <div className="wizard-main">
                             <MobileStepBar step={step} total={4} />
                             <div className="wizard-content">
-                                {step === 1 && <Step1 d={data} u={u} />}
+                                {step === 1 && <Step1 d={data} u={u} priorityIdx={priorityIdx} setPriorityIdx={setPriorityIdx} />}
                                 {step === 2 && <Step2 d={data} u={u} />}
                                 {step === 3 && <Step3 d={data} u={u} />}
                                 {step === 4 && <Step4 d={data} u={u} />}
                             </div>
-                            <ButtonFooter onBack={() => step === 1 ? goToStep(0.5) : goToStep(step - 1)} onNext={() => handleNext(step)} nextLabel={step === 4 ? 'Review' : aiReviewing ? 'Reviewing...' : 'Next'} disabled={aiReviewing} />
+                            <ButtonFooter
+                                onBack={() => {
+                                    if (step === 1 && priorityIdx > 0) { setPriorityIdx(priorityIdx - 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+                                    else if (step === 1) goToStep(0.5);
+                                    else goToStep(step - 1);
+                                }}
+                                onNext={() => {
+                                    if (step === 1) {
+                                        const totalP = (data.priorities || [{},{},{}]).length;
+                                        if (priorityIdx < totalP - 1) { setPriorityIdx(priorityIdx + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+                                        else handleNext(step);
+                                    } else handleNext(step);
+                                }}
+                                nextLabel={step === 1 && priorityIdx < ((data.priorities || [{},{},{}]).length - 1) ? `Priority ${priorityIdx + 2} →` : step === 4 ? 'Review' : aiReviewing ? 'Reviewing...' : 'Next'}
+                                disabled={aiReviewing}
+                            />
                         </div>
                         <WizardSidebar step={step} teamUnlocked={teamToolUnlocked} onNavigate={goToStep} />
                     </div>
