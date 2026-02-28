@@ -586,6 +586,12 @@
       const [aiReviewing, setAiReviewing] = useState(false);
       const [aiMessage, setAiMessage] = useState('');
       const [submitted, setSubmitted] = useState(false);
+      const [roleIdx, setRoleIdx] = useState(0);
+
+      // Reset roleIdx when entering step 2
+      useEffect(() => {
+        if (step === 2) setRoleIdx(0);
+      }, [step]);
 
       const [data, setData] = useState({
         // Sheet 1: Current Team Assessment
@@ -1178,17 +1184,34 @@
               <div className="step-content animate-in">
                 <DependencyContext deps={deps} />
                 {step === 1 && <Step1Page data={data} updateTeamMember={updateTeamMember} addTeamMember={addTeamMember} removeTeamMember={removeTeamMember} onAdvanceStep={goNext} />}
-                {step === 2 && <Step2Page data={data} updateRole={updateRole} addRole={addRole} removeRole={removeRole} addSkill={addSkill} removeSkill={removeSkill} updateSkill={updateSkill} />}
+                {step === 2 && <Step2Page data={data} updateRole={updateRole} addRole={addRole} removeRole={removeRole} addSkill={addSkill} removeSkill={removeSkill} updateSkill={updateSkill} roleIdx={roleIdx} setRoleIdx={setRoleIdx} />}
                 {step === 3 && <Step3Page data={data} updateMatrixScore={updateMatrixScore} />}
                 {step === 4 && <Step4Page data={data} updateActionPlanItem={updateActionPlanItem} />}
                 {step === 5 && <Step5Page data={data} updatePDP={updatePDP} addCapability={addCapability} removeCapability={removeCapability} updateCapability={updateCapability} />}
               </div>
-              {step !== 1 && (
+              {step !== 1 && step !== 2 && (
                 <div className="wizard-footer" style={{flexDirection:'column',alignItems:'stretch',gap:'0'}}>
                   <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                     <button className="btn-wiz-back" onClick={goBack}>← BACK</button>
                     <button className="btn-wiz-next" disabled={!canProceed} onClick={goNext}>
                       {aiReviewing ? 'AI COACH REVIEWING...' : (nextLabels[step] || 'NEXT →')}
+                    </button>
+                  </div>
+                  {aiMessage && <div style={{color:'#dc2626',fontSize:'13px',marginTop:'8px',padding:'8px 12px',background:'#fef2f2',borderRadius:'6px'}}>{aiMessage}</div>}
+                </div>
+              )}
+              {step === 2 && (
+                <div className="wizard-footer" style={{flexDirection:'column',alignItems:'stretch',gap:'0'}}>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                    <button className="btn-wiz-back" onClick={() => {
+                      if (roleIdx > 0) { setRoleIdx(roleIdx - 1); }
+                      else { goBack(); }
+                    }}>← BACK</button>
+                    <button className="btn-wiz-next" disabled={!canProceed} onClick={() => {
+                      if (roleIdx < (data.newRoles || []).length - 1) { setRoleIdx(roleIdx + 1); }
+                      else { goNext(); }
+                    }}>
+                      {aiReviewing ? 'AI COACH REVIEWING...' : (roleIdx < (data.newRoles || []).length - 1 ? 'NEXT ROLE →' : (nextLabels[step] || 'NEXT →'))}
                     </button>
                   </div>
                   {aiMessage && <div style={{color:'#dc2626',fontSize:'13px',marginTop:'8px',padding:'8px 12px',background:'#fef2f2',borderRadius:'6px'}}>{aiMessage}</div>}
@@ -1617,15 +1640,29 @@
     }
 
     // Step 2: Define New Roles Component
-    function Step2Page({ data, updateRole, addRole, removeRole, addSkill, removeSkill, updateSkill }) {
+    function Step2Page({ data, updateRole, addRole, removeRole, addSkill, removeSkill, updateSkill, roleIdx, setRoleIdx }) {
+      const roles = data.newRoles || [];
+      const role = roles[roleIdx];
+      const criticalityLabel = role ? getCriticalityLabel(role.criticality || 5) : '';
+
+      const handleAddRole = () => {
+        addRole();
+        setTimeout(() => setRoleIdx(roles.length), 0);
+      };
+
+      const handleRemoveRole = (id) => {
+        removeRole(id);
+        if (roleIdx >= roles.length - 1 && roleIdx > 0) {
+          setRoleIdx(roleIdx - 1);
+        }
+      };
+
       return (
         <div>
             <div className="mb-8 animate-in">
-              <div className="numbered-section mb-4">STEP 02</div>
+              <div className="numbered-section mb-4">STEP 02 &middot; Role {roleIdx + 1} of {roles.length}</div>
 
-              {/* Fast Track Insight */}
-
-              {(data.newRoles[0]?.roleTitle || '').length >= 5 && (
+              {(roles[0]?.roleTitle || '').length >= 5 && (
                   <div className="ft-reveal">
                       <div className="ft-reveal-label">FAST TRACK SCIENCE</div>
                       <p className="ft-reveal-text">Research on organizational design shows that optimal span of control is 5-7 direct reports for complex knowledge work and up to 15-20 for routine operational roles (Mintzberg, "The Structuring of Organizations"). The Scorecard Method from "Who" by Geoff Smart demonstrates that roles defined by specific outcomes and competencies lead to 90% hiring success rates versus 50% for traditional job descriptions. Criticality-based role prioritization ensures A-player talent is concentrated where it creates maximum leverage.</p>
@@ -1641,102 +1678,114 @@
               </div>
             </div>
 
-            {/* Roles */}
-            <div className="space-y-6 mb-8">
-              {(data.newRoles || []).map((role, index) => {
-                const criticalityLabel = getCriticalityLabel(role.criticality || 5);
-
+            {/* Role Navigator */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '24px', alignItems: 'center' }}>
+              {roles.map((r, i) => {
+                const isCurrent = i === roleIdx;
+                const isFilled = (r.roleTitle || '').trim().length >= 2 && (r.requiredSkills || []).filter(s => (s || '').trim().length > 0).length >= 3;
                 return (
-                  <div key={role.id} className="border-4 border-black p-6 animate-in" style={{animationDelay: `${index * 0.1}s`}}>
-                    <div className="flex justify-between items-start mb-4">
-                      <h3 className="plaak text-3xl">ROLE {index + 1}</h3>
-                      {(data.newRoles || []).length > 1 && (
-                        <button
-                          onClick={() => removeRole(role.id)}
-                          className="btn-remove"
-                        >
-                          REMOVE
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="mb-6">
-                      <label className="monument text-sm block mb-2">ROLE TITLE</label>
-                      <input
-                        type="text"
-                        value={role.roleTitle || ''}
-                        onChange={(e) => updateRole(role.id, 'roleTitle', e.target.value)}
-                        placeholder="E.g., Head of Operations"
-                        className="w-full"
-                      />
-                    </div>
-
-                    <div className="mb-6">
-                      <label className="monument text-sm block mb-2">CRITICALITY (1-10): {role.criticality || 5}</label>
-                      <div className="flex items-center gap-4">
-                        <span className="text-sm">1</span>
-                        <input
-                          type="range"
-                          min="1"
-                          max="10"
-                          step="1"
-                          value={role.criticality || 5}
-                          onChange={(e) => updateRole(role.id, 'criticality', parseInt(e.target.value))}
-                          className="flex-1"
-                        />
-                        <span className="text-sm">10</span>
-                      </div>
-                      <div className="mt-2 text-center">
-                        <span className="inline-block px-4 py-2 bg-black text-white monument text-sm">
-                          {criticalityLabel}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="mb-4">
-                      <label className="monument text-sm block mb-2">REQUIRED SKILLS (3-7)</label>
-                      <div className="space-y-3">
-                        {(role.requiredSkills || []).map((skill, skillIndex) => (
-                          <div key={skillIndex} className="flex gap-2">
-                            <input
-                              type="text"
-                              value={skill || ''}
-                              onChange={(e) => updateSkill(role.id, skillIndex, e.target.value)}
-                              placeholder={`Skill ${skillIndex + 1}`}
-                              className="flex-1"
-                            />
-                            {(role.requiredSkills || []).length > 3 && (
-                              <button
-                                onClick={() => removeSkill(role.id, skillIndex)}
-                                className="btn-remove"
-                              >
-                                X
-                              </button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                      {(role.requiredSkills || []).length < 7 && (
-                        <button
-                          onClick={() => addSkill(role.id)}
-                          className="btn-secondary mt-3 w-full"
-                        >
-                          + ADD SKILL
-                        </button>
-                      )}
-                    </div>
-                  </div>
+                  <button key={r.id} onClick={() => setRoleIdx(i)} style={{
+                    width: '40px', height: '40px', borderRadius: '50%', border: '2px solid #000', cursor: 'pointer',
+                    fontFamily: "'Monument', monospace", fontSize: '13px', fontWeight: 'bold',
+                    background: isCurrent ? '#000' : isFilled ? '#D1D5DB' : '#fff',
+                    color: isCurrent ? '#FFF469' : '#000',
+                    transition: 'all 0.2s ease'
+                  }}>
+                    {i + 1}
+                  </button>
                 );
               })}
+              <button onClick={handleAddRole} style={{
+                height: '40px', padding: '0 16px', borderRadius: '20px', border: '2px dashed #000',
+                background: '#fff', cursor: 'pointer', fontFamily: "'Monument', monospace", fontSize: '11px',
+                fontWeight: 'bold', letterSpacing: '0.05em', transition: 'all 0.2s ease'
+              }}>
+                + ADD ROLE
+              </button>
             </div>
 
-            {/* Add Role Button */}
-            <button
-              onClick={addRole}
-              className="btn-add w-full mb-8 py-4 text-xl"
-            >
-              + ADD ROLE
-            </button>
+            {/* Single Role Card */}
+            {role && (
+              <div key={roleIdx} className="border-4 border-black p-6 animate-in mb-8">
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="plaak text-3xl">ROLE {roleIdx + 1}</h3>
+                  {roles.length > 1 && (
+                    <button
+                      onClick={() => handleRemoveRole(role.id)}
+                      className="btn-remove"
+                    >
+                      REMOVE
+                    </button>
+                  )}
+                </div>
+
+                <div className="mb-6">
+                  <label className="monument text-sm block mb-2">ROLE TITLE</label>
+                  <input
+                    type="text"
+                    value={role.roleTitle || ''}
+                    onChange={(e) => updateRole(role.id, 'roleTitle', e.target.value)}
+                    placeholder="E.g., Head of Operations"
+                    className="w-full"
+                  />
+                </div>
+
+                <div className="mb-6">
+                  <label className="monument text-sm block mb-2">CRITICALITY (1-10): {role.criticality || 5}</label>
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm">1</span>
+                    <input
+                      type="range"
+                      min="1"
+                      max="10"
+                      step="1"
+                      value={role.criticality || 5}
+                      onChange={(e) => updateRole(role.id, 'criticality', parseInt(e.target.value))}
+                      className="flex-1"
+                    />
+                    <span className="text-sm">10</span>
+                  </div>
+                  <div className="mt-2 text-center">
+                    <span className="inline-block px-4 py-2 bg-black text-white monument text-sm">
+                      {criticalityLabel}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mb-4">
+                  <label className="monument text-sm block mb-2">REQUIRED SKILLS (3-7)</label>
+                  <div className="space-y-3">
+                    {(role.requiredSkills || []).map((skill, skillIndex) => (
+                      <div key={skillIndex} className="flex gap-2">
+                        <input
+                          type="text"
+                          value={skill || ''}
+                          onChange={(e) => updateSkill(role.id, skillIndex, e.target.value)}
+                          placeholder={'Skill ' + (skillIndex + 1)}
+                          className="flex-1"
+                        />
+                        {(role.requiredSkills || []).length > 3 && (
+                          <button
+                            onClick={() => removeSkill(role.id, skillIndex)}
+                            className="btn-remove"
+                          >
+                            X
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  {(role.requiredSkills || []).length < 7 && (
+                    <button
+                      onClick={() => addSkill(role.id)}
+                      className="btn-secondary mt-3 w-full"
+                    >
+                      + ADD SKILL
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
 
         </div>
       );

@@ -330,6 +330,9 @@
       const [aiReviewing, setAiReviewing] = useState(false);
       const [submitStatus, setSubmitStatus] = useState(null);
       const [submitMessage, setSubmitMessage] = useState('');
+      const [traitIdx, setTraitIdx] = useState(0);
+      const [pillarIdx, setPillarIdx] = useState(0);
+      const [actionIdx, setActionIdx] = useState(0);
 
       const [data, setData] = useState({
         // Step 1: Brand Promise
@@ -392,6 +395,13 @@
                 loadDeps();
             }, []);
 
+      // Reset card indices when entering a step
+      useEffect(() => {
+        if (step === 2) setTraitIdx(0);
+        if (step === 4) setPillarIdx(0);
+        if (step === 5) setActionIdx(0);
+      }, [step]);
+
       // Load from localStorage
       useEffect(() => {
         const saved = localStorage.getItem('brand-marketing-data');
@@ -420,6 +430,7 @@
       const addTrait = () => {
         const newTrait = { id: Date.now(), trait: '', description: '', example: '' };
         updateData('personalityTraits', [...data.personalityTraits, newTrait]);
+        setTraitIdx(data.personalityTraits.length);
       };
 
       const removeTrait = (id) => {
@@ -436,6 +447,7 @@
       const addPillar = () => {
         const newPillar = { id: Date.now(), pillar: '', rationale: '', channels: '' };
         updateData('messagingPillars', [...(data.messagingPillars || []), newPillar]);
+        setPillarIdx((data.messagingPillars || []).length);
       };
 
       const removePillar = (id) => {
@@ -452,6 +464,7 @@
       const addAction = () => {
         const newAction = { id: Date.now(), action: '', owner: '', deadline: '', expectedImpact: '' };
         updateData('marketingActions', [...(data.marketingActions || []), newAction]);
+        setActionIdx((data.marketingActions || []).length);
       };
 
       const removeAction = (id) => {
@@ -689,10 +702,10 @@
               <div className="wizard-content animate-in">
                 <DependencyContext deps={deps} />
                 {step === 1 && <Step1Page data={data} updateData={updateData} />}
-                {step === 2 && <Step2Page data={data} updateData={updateData} updateTrait={updateTrait} addTrait={addTrait} removeTrait={removeTrait} />}
+                {step === 2 && <Step2Page data={data} updateData={updateData} updateTrait={updateTrait} addTrait={addTrait} removeTrait={removeTrait} traitIdx={traitIdx} setTraitIdx={setTraitIdx} />}
                 {step === 3 && <Step3Page data={data} updateData={updateData} />}
-                {step === 4 && <Step4Page data={data} updateData={updateData} updatePillar={updatePillar} addPillar={addPillar} removePillar={removePillar} />}
-                {step === 5 && <Step5Page data={data} updateData={updateData} updateAction={updateAction} addAction={addAction} removeAction={removeAction} />}
+                {step === 4 && <Step4Page data={data} updateData={updateData} updatePillar={updatePillar} addPillar={addPillar} removePillar={removePillar} pillarIdx={pillarIdx} setPillarIdx={setPillarIdx} />}
+                {step === 5 && <Step5Page data={data} updateData={updateData} updateAction={updateAction} addAction={addAction} removeAction={removeAction} actionIdx={actionIdx} setActionIdx={setActionIdx} />}
               </div>
               <div className="wizard-footer">
                 <button className="btn-wiz-back" onClick={goBack}>← BACK</button>
@@ -974,12 +987,18 @@
     }
 
     // Step 2: Brand Personality
-    function Step2Page({ data, updateData, updateTrait, addTrait, removeTrait }) {
+    function Step2Page({ data, updateData, updateTrait, addTrait, removeTrait, traitIdx, setTraitIdx }) {
+      const traits = data.personalityTraits || [];
+      const idx = Math.min(traitIdx, traits.length - 1);
+      const trait = traits[idx];
+      const hasFilledTrait = (i) => {
+        const t = traits[i];
+        return t && t.trait.trim().length >= 5 && t.description.trim().length >= 20 && t.example.trim().length >= 20;
+      };
+
       return (
         <div>
             <div className="numbered-section mb-8 animate-in">02. BRAND PERSONALITY</div>
-
-            {/* Fast Track Insight */}
 
             {(data.brandVoice || '').length >= 20 && (
                 <div className="ft-reveal">
@@ -987,7 +1006,6 @@
                     <p className="ft-reveal-text">Jungian archetype theory, applied to branding by Margaret Mark and Carol Pearson in <em>The Hero and the Outlaw</em>, demonstrates that brands aligned to a universal archetype achieve 97% higher emotional engagement than those without clear personality frameworks. Neumeier's "Brand Gap" research confirms: people don't remember ads — they remember patterns. Repetition of consistent personality traits creates trust, and trust creates pricing power (Mark &amp; Pearson, 2001; Neumeier, 2003).</p>
                 </div>
             )}
-
 
             <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
               Define who you are in the customer&apos;s story
@@ -1005,14 +1023,33 @@
 
             <div className="space-y-8 mb-12">
               <div>
-                <h4 className="riforma-bold text-3xl mb-4">Personality Traits</h4>
-                {(data.personalityTraits || []).map((trait, index) => (
-                  <div key={trait.id} className="bg-gray-50 border-2 border-gray-200 p-6 mb-6 animate-in" style={{animationDelay: `${0.15 + index * 0.05}s`}}>
+                <h4 className="riforma-bold text-3xl mb-2">Personality Traits</h4>
+                <div style={{ fontSize: 13, color: '#888', fontFamily: "'Monument', monospace", letterSpacing: '0.04em', marginBottom: 12 }}>TRAIT {idx + 1} OF {traits.length}</div>
+
+                {/* Navigator buttons */}
+                <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+                  {traits.map((_, i) => (
+                    <button key={i} onClick={() => setTraitIdx(i)} style={{
+                      width: 44, height: 44, border: '2px solid ' + (idx === i ? '#000' : hasFilledTrait(i) ? '#000' : '#E5E7EB'),
+                      background: idx === i ? '#000' : hasFilledTrait(i) ? '#F0F0F0' : '#fff',
+                      color: idx === i ? '#FFF469' : hasFilledTrait(i) ? '#000' : '#999',
+                      fontFamily: "'Monument', monospace", fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s'
+                    }}>{String(i + 1).padStart(2, '0')}</button>
+                  ))}
+                  <button onClick={addTrait} style={{
+                    width: 44, height: 44, border: '2px dashed #D1D5DB', background: '#fff', color: '#999',
+                    fontFamily: "'Monument', monospace", fontSize: 18, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s'
+                  }}>+</button>
+                </div>
+
+                {/* Single trait card */}
+                {trait && (
+                  <div key={trait.id} className="bg-gray-50 border-2 border-gray-200 p-6 mb-6 animate-in">
                     <div className="flex justify-between items-start mb-4">
-                      <h5 className="riforma-bold text-2xl">Trait {index + 1}</h5>
-                      {(data.personalityTraits || []).length > 1 && (
+                      <h5 className="riforma-bold text-2xl">Trait {idx + 1}</h5>
+                      {traits.length > 1 && (
                         <button
-                          onClick={() => removeTrait(trait.id)}
+                          onClick={() => { removeTrait(trait.id); setTraitIdx(Math.max(0, idx - 1)); }}
                           className="text-red-600 hover:text-red-800 text-sm"
                         >
                           REMOVE
@@ -1058,8 +1095,7 @@
                       </div>
                     </div>
                   </div>
-                ))}
-                <button onClick={addTrait} className="btn-secondary text-sm w-full">+ ADD TRAIT</button>
+                )}
               </div>
 
               <div className="bg-gray-50 border-2 border-gray-200 p-6 animate-in" style={{animationDelay: '0.3s'}}>
@@ -1215,12 +1251,18 @@
     }
 
     // Step 4: Marketing Strategy
-    function Step4Page({ data, updateData, updatePillar, addPillar, removePillar }) {
+    function Step4Page({ data, updateData, updatePillar, addPillar, removePillar, pillarIdx, setPillarIdx }) {
+      const pillars = data.messagingPillars || [];
+      const idx = Math.min(pillarIdx, pillars.length - 1);
+      const pillar = pillars[idx];
+      const hasFilledPillar = (i) => {
+        const p = pillars[i];
+        return p && p.pillar.trim().length >= 10 && p.rationale.trim().length >= 30 && p.channels.trim().length >= 20;
+      };
+
       return (
         <div>
             <div className="numbered-section mb-8 animate-in">04. MARKETING STRATEGY</div>
-
-            {/* Fast Track Insight */}
 
             {(data.targetSegmentPain || '').length >= 20 && (
                 <div className="ft-reveal">
@@ -1228,7 +1270,6 @@
                     <p className="ft-reveal-text">Content Marketing Institute research shows that companies with a documented content strategy are 3x more likely to report success than those without one. Les Binet and Peter Field's landmark IPA study of 996 campaigns found that brand-building messaging drives 60% of long-term business effects, while short-term activation drives only 40%. Organizations that balance brand and activation messaging achieve 2-3x the market share growth of those focused on performance marketing alone (CMI, 2023; Binet &amp; Field, 2013).</p>
                 </div>
             )}
-
 
             <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
               Create marketing that converts through strategic messaging
@@ -1259,14 +1300,33 @@
               </div>
 
               <div>
-                <h4 className="riforma-bold text-3xl mb-4">Messaging Pillars (3-5 core themes)</h4>
-                {(data.messagingPillars || []).map((pillar, index) => (
-                  <div key={pillar.id} className="bg-gray-50 border-2 border-gray-200 p-6 mb-6 animate-in" style={{animationDelay: `${0.2 + index * 0.05}s`}}>
+                <h4 className="riforma-bold text-3xl mb-2">Messaging Pillars (3-5 core themes)</h4>
+                <div style={{ fontSize: 13, color: '#888', fontFamily: "'Monument', monospace", letterSpacing: '0.04em', marginBottom: 12 }}>PILLAR {idx + 1} OF {pillars.length}</div>
+
+                {/* Navigator buttons */}
+                <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+                  {pillars.map((_, i) => (
+                    <button key={i} onClick={() => setPillarIdx(i)} style={{
+                      width: 44, height: 44, border: '2px solid ' + (idx === i ? '#000' : hasFilledPillar(i) ? '#000' : '#E5E7EB'),
+                      background: idx === i ? '#000' : hasFilledPillar(i) ? '#F0F0F0' : '#fff',
+                      color: idx === i ? '#FFF469' : hasFilledPillar(i) ? '#000' : '#999',
+                      fontFamily: "'Monument', monospace", fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s'
+                    }}>{String(i + 1).padStart(2, '0')}</button>
+                  ))}
+                  <button onClick={addPillar} style={{
+                    width: 44, height: 44, border: '2px dashed #D1D5DB', background: '#fff', color: '#999',
+                    fontFamily: "'Monument', monospace", fontSize: 18, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s'
+                  }}>+</button>
+                </div>
+
+                {/* Single pillar card */}
+                {pillar && (
+                  <div key={pillar.id} className="bg-gray-50 border-2 border-gray-200 p-6 mb-6 animate-in">
                     <div className="flex justify-between items-start mb-4">
-                      <h5 className="riforma-bold text-2xl">Pillar {index + 1}</h5>
-                      {(data.messagingPillars || []).length > 1 && (
+                      <h5 className="riforma-bold text-2xl">Pillar {idx + 1}</h5>
+                      {pillars.length > 1 && (
                         <button
-                          onClick={() => removePillar(pillar.id)}
+                          onClick={() => { removePillar(pillar.id); setPillarIdx(Math.max(0, idx - 1)); }}
                           className="text-red-600 hover:text-red-800 text-sm"
                         >
                           REMOVE
@@ -1312,8 +1372,7 @@
                       </div>
                     </div>
                   </div>
-                ))}
-                <button onClick={addPillar} className="btn-secondary text-sm w-full">+ ADD PILLAR</button>
+                )}
               </div>
 
               <div className="bg-gray-50 border-2 border-gray-200 p-6 animate-in" style={{animationDelay: '0.4s'}}>
@@ -1335,12 +1394,18 @@
     }
 
     // Step 5: Implementation
-    function Step5Page({ data, updateData, updateAction, addAction, removeAction }) {
+    function Step5Page({ data, updateData, updateAction, addAction, removeAction, actionIdx, setActionIdx }) {
+      const actions = data.marketingActions || [];
+      const idx = Math.min(actionIdx, actions.length - 1);
+      const action = actions[idx];
+      const hasFilledAction = (i) => {
+        const a = actions[i];
+        return a && a.action.trim().length >= 20 && a.owner.trim().length >= 5 && a.deadline.trim().length >= 5 && a.expectedImpact.trim().length >= 20;
+      };
+
       return (
         <div>
             <div className="numbered-section mb-8 animate-in">05. IMPLEMENTATION PLAN</div>
-
-            {/* Fast Track Insight */}
 
             {(data.successMetrics || '').length >= 20 && (
                 <div className="ft-reveal">
@@ -1348,7 +1413,6 @@
                     <p className="ft-reveal-text">McKinsey's brand strength research across 1,200 companies found that brands with documented consistency guidelines achieve 33% faster revenue growth than those without. Godin's <em>Purple Cow</em> framework demonstrates that remarkable brands need implementation systems, not just ideas — the companies that build brand review checklists and audit touchpoints quarterly sustain 60% higher alignment scores over three years. The difference between a strong brand and a forgotten one is disciplined, measurable execution (McKinsey, 2021; Godin, 2003).</p>
                 </div>
             )}
-
 
             <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
               First 3 high-impact marketing actions to put brand in motion
@@ -1362,13 +1426,32 @@
 
             <div className="space-y-8 mb-12">
               <div>
-                <h4 className="riforma-bold text-3xl mb-4">Marketing Actions</h4>
-                {(data.marketingActions || []).map((action, index) => (
-                  <div key={action.id} className="bg-gray-50 border-2 border-gray-200 p-4 mb-4 animate-in" style={{animationDelay: `${0.15 + index * 0.03}s`}}>
+                <h4 className="riforma-bold text-3xl mb-2">Marketing Actions</h4>
+                <div style={{ fontSize: 13, color: '#888', fontFamily: "'Monument', monospace", letterSpacing: '0.04em', marginBottom: 12 }}>ACTION {idx + 1} OF {actions.length}</div>
+
+                {/* Navigator buttons */}
+                <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+                  {actions.map((_, i) => (
+                    <button key={i} onClick={() => setActionIdx(i)} style={{
+                      width: 44, height: 44, border: '2px solid ' + (idx === i ? '#000' : hasFilledAction(i) ? '#000' : '#E5E7EB'),
+                      background: idx === i ? '#000' : hasFilledAction(i) ? '#F0F0F0' : '#fff',
+                      color: idx === i ? '#FFF469' : hasFilledAction(i) ? '#000' : '#999',
+                      fontFamily: "'Monument', monospace", fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s'
+                    }}>{String(i + 1).padStart(2, '0')}</button>
+                  ))}
+                  <button onClick={addAction} style={{
+                    width: 44, height: 44, border: '2px dashed #D1D5DB', background: '#fff', color: '#999',
+                    fontFamily: "'Monument', monospace", fontSize: 18, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s'
+                  }}>+</button>
+                </div>
+
+                {/* Single action card */}
+                {action && (
+                  <div key={action.id} className="bg-gray-50 border-2 border-gray-200 p-4 mb-4 animate-in">
                     <div className="flex justify-between items-center mb-3">
-                      <span className="monument text-xs">ACTION {index + 1}</span>
-                      {(data.marketingActions || []).length > 1 && (
-                        <button onClick={() => removeAction(action.id)} className="text-red-600 text-sm">REMOVE</button>
+                      <span className="monument text-xs">ACTION {idx + 1}</span>
+                      {actions.length > 1 && (
+                        <button onClick={() => { removeAction(action.id); setActionIdx(Math.max(0, idx - 1)); }} className="text-red-600 text-sm">REMOVE</button>
                       )}
                     </div>
                     <div className="space-y-3">
@@ -1420,8 +1503,7 @@
                       </div>
                     </div>
                   </div>
-                ))}
-                <button onClick={addAction} className="btn-secondary text-sm w-full">+ ADD ACTION</button>
+                )}
               </div>
 
               <div className="bg-gray-50 border-2 border-gray-200 p-6 animate-in" style={{animationDelay: '0.3s'}}>

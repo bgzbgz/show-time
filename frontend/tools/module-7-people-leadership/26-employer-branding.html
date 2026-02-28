@@ -534,6 +534,7 @@
       const [step, setStep] = useState(0);
       const [aiReviewing, setAiReviewing] = useState(false);
       const [aiMessage, setAiMessage] = useState('');
+      const [truthIdx, setTruthIdx] = useState(0);
       const totalSteps = 5;
 
       const [data, setData] = useState({
@@ -597,6 +598,9 @@
           }
         }
       });
+
+            // Reset truthIdx when entering step 4
+            useEffect(() => { if (step === 4) setTruthIdx(0); }, [step]);
 
             useEffect(() => {
                 async function loadDeps() {
@@ -881,6 +885,10 @@
       };
       const goBack = () => {
         if (step === 1) { setStep(0.5); }
+        else if (step === 4) {
+          if (truthIdx > 0) { setTruthIdx(i => i - 1); return; }
+          setStep(3);
+        }
         else if (step >= 2) { setStep(step - 1); }
       };
 
@@ -1264,62 +1272,84 @@
                   Real, lived elements that support your EVP. What insiders say when recommending your workplace. Minimum 3 truths required.
                 </p>
 
-                <div className="space-y-6">
-                  {truths.map((truth, index) => (
-                    <div key={truth.id} className="border-2 border-gray-200 p-6">
-                      <div className="flex justify-between items-start mb-4">
-                        <h4 className="monument text-sm">TRUTH #{index + 1}</h4>
-                        {truths.length > 1 && (
-                          <button
-                            onClick={() => removeInternalTruth(truth.id)}
-                            className="btn-remove"
-                          >
-                            Remove
-                          </button>
-                        )}
+                {(() => {
+                  const idx = truthIdx;
+                  const hasFilled = (i) => {
+                    const t = truths[i];
+                    return t && (t.truth || '').length >= 20 && (t.evidence || '').length >= 20;
+                  };
+                  const truth = truths[idx];
+                  if (!truth) return null;
+                  return (
+                    <div>
+                      <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+                        {truths.map((_, i) => (
+                          <button key={i} onClick={() => setTruthIdx(i)} style={{
+                            width: 44, height: 44, border: `2px solid ${idx === i ? '#000' : hasFilled(i) ? '#000' : '#E5E7EB'}`,
+                            background: idx === i ? '#000' : hasFilled(i) ? '#F0F0F0' : '#fff',
+                            color: idx === i ? '#FFF469' : hasFilled(i) ? '#000' : '#999',
+                            fontFamily: "'Monument', monospace", fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s'
+                          }}>{String(i + 1).padStart(2, '0')}</button>
+                        ))}
                       </div>
 
-                      <div className="space-y-4">
-                        <div>
-                          <label className="text-sm font-bold mb-2 block">
-                            The Truth
-                          </label>
-                          <textarea
-                            value={truth.truth || ''}
-                            onChange={(e) => updateInternalTruth(truth.id, 'truth', e.target.value)}
-                            placeholder="e.g., Average tenure of technicians is 8+ years"
-                            className="w-full min-h-[80px]"
-                          />
-                          <div className={`char-counter ${(truth.truth || '').length < 20 ? 'invalid' : ''}`}>
-                            {(truth.truth || '').length} / 20 minimum
-                          </div>
+                      <div key={idx} className="animate-in border-2 border-gray-200 p-6 mb-4">
+                        <div className="flex justify-between items-start mb-4">
+                          <h4 className="monument text-sm">TRUTH #{idx + 1}</h4>
+                          {truths.length > 1 && (
+                            <button
+                              onClick={() => { removeInternalTruth(truth.id); if (idx > 0) setTruthIdx(idx - 1); }}
+                              className="btn-remove"
+                            >
+                              Remove
+                            </button>
+                          )}
                         </div>
 
-                        <div>
-                          <label className="text-sm font-bold mb-2 block">
-                            Evidence
-                          </label>
-                          <textarea
-                            value={truth.evidence || ''}
-                            onChange={(e) => updateInternalTruth(truth.id, 'evidence', e.target.value)}
-                            placeholder="What proves this is true? Data, examples, testimonials"
-                            className="w-full min-h-[80px]"
-                          />
-                          <div className={`char-counter ${(truth.evidence || '').length < 20 ? 'invalid' : ''}`}>
-                            {(truth.evidence || '').length} / 20 minimum
+                        <div className="space-y-4">
+                          <div>
+                            <label className="text-sm font-bold mb-2 block">
+                              The Truth
+                            </label>
+                            <textarea
+                              value={truth.truth || ''}
+                              onChange={(e) => updateInternalTruth(truth.id, 'truth', e.target.value)}
+                              placeholder="e.g., Average tenure of technicians is 8+ years"
+                              className="w-full min-h-[80px]"
+                            />
+                            <div className={`char-counter ${(truth.truth || '').length < 20 ? 'invalid' : ''}`}>
+                              {(truth.truth || '').length} / 20 minimum
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="text-sm font-bold mb-2 block">
+                              Evidence
+                            </label>
+                            <textarea
+                              value={truth.evidence || ''}
+                              onChange={(e) => updateInternalTruth(truth.id, 'evidence', e.target.value)}
+                              placeholder="What proves this is true? Data, examples, testimonials"
+                              className="w-full min-h-[80px]"
+                            />
+                            <div className={`char-counter ${(truth.evidence || '').length < 20 ? 'invalid' : ''}`}>
+                              {(truth.evidence || '').length} / 20 minimum
+                            </div>
                           </div>
                         </div>
                       </div>
+
+                      {hasFilled(idx) && idx === truths.length - 1 && (
+                        <button
+                          onClick={() => { addInternalTruth(); setTruthIdx(truths.length); }}
+                          className="btn-secondary mt-4"
+                        >
+                          Add Internal Truth
+                        </button>
+                      )}
                     </div>
-                  ))}
-                </div>
-
-                <button
-                  onClick={addInternalTruth}
-                  className="btn-secondary mt-4"
-                >
-                  Add Internal Truth
-                </button>
+                  );
+                })()}
               </div>
 
               {/* Anti-EVP */}
@@ -1898,7 +1928,27 @@
           {renderTransitionScreen(step, CONFIG, totalSteps, setStep)}
           {step >= 1 && step <= 5 && (() => {
             const stepLabels = ['Segment Target', 'Needs Ranking', 'EVP Formulation', 'EVP Testing', 'Campaign & Recruitment'];
-            const nextLabels = { 1: 'NEXT: NEEDS RANKING →', 2: 'NEXT: EVP FORMULATION →', 3: 'NEXT: EVP TESTING →', 4: 'NEXT: CAMPAIGN PLANNING →', 5: 'VIEW CANVAS →' };
+            const defaultNextLabels = { 1: 'NEXT: NEEDS RANKING →', 2: 'NEXT: EVP FORMULATION →', 3: 'NEXT: EVP TESTING →', 4: 'NEXT: CAMPAIGN PLANNING →', 5: 'VIEW CANVAS →' };
+            let nextLabel, onNextFn, isDisabled;
+            if (step === 4) {
+              const truths = ((data.evpTesting || {}).internalTruths || []);
+              const isLast = truthIdx >= truths.length - 1;
+              const curTruth = truths[truthIdx];
+              const curFilled = curTruth && (curTruth.truth || '').length >= 20 && (curTruth.evidence || '').length >= 20;
+              if (isLast) {
+                nextLabel = aiReviewing ? 'AI COACH REVIEWING...' : 'NEXT: CAMPAIGN PLANNING →';
+                onNextFn = goNext;
+                isDisabled = aiReviewing || !canProceed();
+              } else {
+                nextLabel = 'NEXT TRUTH →';
+                onNextFn = () => setTruthIdx(i => i + 1);
+                isDisabled = !curFilled;
+              }
+            } else {
+              nextLabel = aiReviewing ? 'AI COACH REVIEWING...' : (defaultNextLabels[step] || 'NEXT →');
+              onNextFn = goNext;
+              isDisabled = aiReviewing || !canProceed();
+            }
             return (
               <div className="wizard-layout">
                 <div className="wizard-main">
@@ -1912,8 +1962,8 @@
                   <div className="wizard-footer" style={{flexDirection:'column',alignItems:'stretch',gap:'0'}}>
                     <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                       <button className="btn-wiz-back" onClick={goBack}>← BACK</button>
-                      <button className="btn-wiz-next" disabled={aiReviewing || !canProceed()} onClick={goNext}>
-                        {aiReviewing ? 'AI COACH REVIEWING...' : (nextLabels[step] || 'NEXT →')}
+                      <button className="btn-wiz-next" disabled={isDisabled} onClick={onNextFn}>
+                        {nextLabel}
                       </button>
                     </div>
                     {aiMessage && <div style={{color:'#dc2626',fontSize:'13px',marginTop:'8px',padding:'8px 12px',background:'#fef2f2',borderRadius:'6px'}}>{aiMessage}</div>}

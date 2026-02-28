@@ -806,6 +806,7 @@
             const [step, setStep] = useState(0);
             const [aiReviewing, setAiReviewing] = useState(false);
             const [aiMessage, setAiMessage] = useState('');
+            const [elephantIdx, setElephantIdx] = useState(0);
             const [formData, setFormData] = useState({
                 ideas: Array(20).fill(null).map(() => ({
                     idea: '',
@@ -1007,6 +1008,7 @@
 
             const goToStep = (s) => {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
+                if (s === 3) setElephantIdx(0);
                 setStep(s);
             };
 
@@ -1373,67 +1375,83 @@
                     'Final milestone'
                 ];
 
+                if (formData.elephants.length === 0) {
+                    return (
+                        <div>
+                            <div className="step-indicator"><span>Step 3 of 5</span><span className="step-time">~15 min</span></div>
+                            <h2 className="step-heading">Cut the Elephant</h2>
+                            <div style={{ textAlign: 'center', padding: 48, color: '#999' }}>
+                                <p>No priorities loaded. Go back to Step 2 to generate your priority list.</p>
+                            </div>
+                        </div>
+                    );
+                }
+
+                const safeIdx = Math.min(elephantIdx, formData.elephants.length - 1);
+                const elephant = formData.elephants[safeIdx];
+                const hasFilled = (idx) => {
+                    const el = formData.elephants[idx];
+                    return el && el.steps && el.steps[0] && el.steps[0].action && el.steps[0].action.trim().length > 0;
+                };
+
                 return (
-                    <div>
+                    <div key={safeIdx}>
                         <div className="step-indicator">
-                            <span>Step 3 of 5</span>
+                            <span>Step 3 of 5 · Priority {safeIdx + 1} of {formData.elephants.length}</span>
                             <span className="step-time">~15 min</span>
                         </div>
                         <h2 className="step-heading">Cut the Elephant</h2>
                         <p className="step-hint">Break each top priority into 5 incremental steps. Start absurdly simple, then gradually increase complexity. Every step gets a non-negotiable deadline.</p>
 
-                        {(formData.elephants[0] && (formData.elephants[0].steps[0].action || '').length >= 20) && (
+                        {/* Priority navigator */}
+                        <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+                            {formData.elephants.map((_, i) => (
+                                <button key={i} onClick={() => setElephantIdx(i)} style={{
+                                    width: 44, height: 44, border: `2px solid ${safeIdx === i ? '#000' : hasFilled(i) ? '#000' : '#E5E7EB'}`,
+                                    background: safeIdx === i ? '#000' : hasFilled(i) ? '#F0F0F0' : '#fff',
+                                    color: safeIdx === i ? '#FFF469' : hasFilled(i) ? '#000' : '#999',
+                                    fontFamily: "'Monument', monospace", fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s'
+                                }}>{String(i + 1).padStart(2, '0')}</button>
+                            ))}
+                        </div>
+
+                        {safeIdx === 0 && (formData.elephants[0].steps[0].action || '').length >= 20 && (
                             <div className="ft-reveal">
                                 <div className="ft-reveal-label">FAST TRACK INSIGHT</div>
                                 <p className="ft-reveal-text">Research shows that breaking goals into specific sub-tasks increases completion rates by 44%. Teams that define the first step as "embarrassingly easy" start 3x faster than those who plan complex rollouts from the outset.</p>
                             </div>
                         )}
 
-
-                        {formData.elephants.length === 0 ? (
-                            <div style={{ textAlign: 'center', padding: 48, color: '#999' }}>
-                                <p>No priorities loaded. Go back to Step 2 to generate your priority list.</p>
-                            </div>
-                        ) : (
-                            formData.elephants.map((elephant, eIdx) => (
-                                <div key={eIdx} className="elephant-card">
-                                    <div className="elephant-card-header">
-                                        <div>
-                                            <span className="monument" style={{ fontSize: 10, color: '#FFF469', marginRight: 12 }}>PRIORITY {eIdx + 1}</span>
-                                            <span style={{ fontSize: 15, fontWeight: 600 }}>{elephant.idea}</span>
-                                        </div>
-                                        <span className={`score-badge ${getScoreClass(elephant.score)}`}>{elephant.score}</span>
-                                    </div>
-                                    <div className="elephant-card-body">
-                                        {elephant.steps.map((s, sIdx) => (
-                                            <div key={sIdx} className="elephant-step-row">
-                                                <div className="elephant-step-num">{sIdx + 1}</div>
-                                                <div className="elephant-step-fields">
-                                                    <input
-                                                        className="ft-input"
-                                                        placeholder={stepLabels[sIdx]}
-                                                        value={s.action}
-                                                        onChange={(e) => updateElephantStep(eIdx, sIdx, 'action', e.target.value)}
-                                                    />
-                                                    <input
-                                                        type="date"
-                                                        value={s.deadline}
-                                                        onChange={(e) => updateElephantStep(eIdx, sIdx, 'deadline', e.target.value)}
-                                                        title="Deadline"
-                                                    />
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
+                        <div className="elephant-card animate-in">
+                            <div className="elephant-card-header">
+                                <div>
+                                    <span className="monument" style={{ fontSize: 10, color: '#FFF469', marginRight: 12 }}>PRIORITY {safeIdx + 1}</span>
+                                    <span style={{ fontSize: 15, fontWeight: 600 }}>{elephant.idea}</span>
                                 </div>
-                            ))
-                        )}
-
-                        {!validateStep3() && formData.elephants.length > 0 && (
-                            <p className="ft-error-msg" style={{ marginTop: 16, textAlign: 'right' }}>
-                                At least 1 priority must have Step 1 action + deadline filled
-                            </p>
-                        )}
+                                <span className={`score-badge ${getScoreClass(elephant.score)}`}>{elephant.score}</span>
+                            </div>
+                            <div className="elephant-card-body">
+                                {elephant.steps.map((s, sIdx) => (
+                                    <div key={sIdx} className="elephant-step-row">
+                                        <div className="elephant-step-num">{sIdx + 1}</div>
+                                        <div className="elephant-step-fields">
+                                            <input
+                                                className="ft-input"
+                                                placeholder={stepLabels[sIdx]}
+                                                value={s.action}
+                                                onChange={(e) => updateElephantStep(safeIdx, sIdx, 'action', e.target.value)}
+                                            />
+                                            <input
+                                                type="date"
+                                                value={s.deadline}
+                                                onChange={(e) => updateElephantStep(safeIdx, sIdx, 'deadline', e.target.value)}
+                                                title="Deadline"
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 );
             };
@@ -1756,14 +1774,22 @@
                             />
                         );
                     case 3:
+                        const eTotal = formData.elephants.length;
+                        const eIsLast = elephantIdx >= eTotal - 1;
                         return (
                             <>
                                 {aiMessage && <div style={{color:'#dc2626',fontSize:'13px',marginTop:'8px',padding:'8px 12px',background:'#fef2f2',borderRadius:'6px'}}>{aiMessage}</div>}
                                 <ButtonFooter
-                                    onBack={() => goToStep(2)}
-                                    onNext={() => handleNext(3, 3.5)}
-                                    disabled={!validateStep3() || aiReviewing}
-                                    nextLabel={aiReviewing ? 'Reviewing...' : 'Accountability Check'}
+                                    onBack={() => {
+                                        if (elephantIdx > 0) { setElephantIdx(elephantIdx - 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+                                        else goToStep(2);
+                                    }}
+                                    onNext={() => {
+                                        if (!eIsLast) { setElephantIdx(elephantIdx + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+                                        else handleNext(3, 3.5);
+                                    }}
+                                    disabled={eIsLast ? (!validateStep3() || aiReviewing) : false}
+                                    nextLabel={!eIsLast ? `Priority ${elephantIdx + 2} →` : aiReviewing ? 'Reviewing...' : 'Accountability Check'}
                                     showBack={true}
                                 />
                             </>

@@ -423,6 +423,43 @@
         return <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>;
     }
 
+    function ItemNavigator({ items, currentIdx, setIdx, onAdd, addLabel, isFilled }) {
+        return (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 20 }}>
+                {items.map((_, i) => {
+                    const filled = isFilled ? isFilled(items[i]) : false;
+                    const active = i === currentIdx;
+                    return (
+                        <button key={i} onClick={() => setIdx(i)}
+                            style={{
+                                width: 36, height: 36,
+                                border: active ? '2px solid #000' : '2px solid #D1D5DB',
+                                background: active ? '#000' : filled ? '#E5E7EB' : '#fff',
+                                color: active ? '#FFF469' : filled ? '#374151' : '#9CA3AF',
+                                fontFamily: "'Monument', monospace", fontSize: 13, fontWeight: 700,
+                                cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                transition: 'all 0.15s ease'
+                            }}
+                        >{i + 1}</button>
+                    );
+                })}
+                {onAdd && (
+                    <button onClick={onAdd}
+                        style={{
+                            height: 36, padding: '0 14px',
+                            border: '2px dashed #D1D5DB', background: '#fff', color: '#6B7280',
+                            fontFamily: "'Monument', monospace", fontSize: 11, fontWeight: 700,
+                            cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4,
+                            transition: 'all 0.15s ease'
+                        }}
+                        onMouseOver={e => { e.currentTarget.style.borderColor = '#000'; e.currentTarget.style.color = '#000'; }}
+                        onMouseOut={e => { e.currentTarget.style.borderColor = '#D1D5DB'; e.currentTarget.style.color = '#6B7280'; }}
+                    >{addLabel || '+ ADD'}</button>
+                )}
+            </div>
+        );
+    }
+
     function ButtonFooter({ onBack, onNext, nextLabel = 'Next', showBack = true, disabled = false }) {
         return (
             <div className="btn-footer no-print">
@@ -566,6 +603,9 @@
       const [aiMessage, setAiMessage] = useState('');
       const [submitStatus, setSubmitStatus] = useState(null);
       const [submitMessage, setSubmitMessage] = useState('');
+      const [featureIdx, setFeatureIdx] = useState(0);
+      const [tierIdx, setTierIdx] = useState(0);
+      const [actionIdx, setActionIdx] = useState(0);
 
       const [data, setData] = useState({
         // Step 1: Feature Classification
@@ -650,12 +690,16 @@
 
       const addFeature = () => {
         const newFeature = { id: Date.now(), name: '', category: 'must-have', wtpImpact: '', rationale: '' };
-        updateData('features', [...data.features, newFeature]);
+        const updated = [...data.features, newFeature];
+        updateData('features', updated);
+        setFeatureIdx(updated.length - 1);
       };
 
       const removeFeature = (id) => {
         if (data.features.length > 1) {
-          updateData('features', data.features.filter(f => f.id !== id));
+          const updated = data.features.filter(f => f.id !== id);
+          updateData('features', updated);
+          setFeatureIdx(prev => Math.min(prev, updated.length - 1));
         }
       };
 
@@ -667,13 +711,17 @@
       const addTier = () => {
         if (data.tiers.length < 3) {
           const newTier = { id: Date.now(), name: '', price: '', features: '', targetCustomer: '', margin: '' };
-          updateData('tiers', [...data.tiers, newTier]);
+          const updated = [...data.tiers, newTier];
+          updateData('tiers', updated);
+          setTierIdx(updated.length - 1);
         }
       };
 
       const removeTier = (id) => {
         if (data.tiers.length > 1) {
-          updateData('tiers', data.tiers.filter(t => t.id !== id));
+          const updated = data.tiers.filter(t => t.id !== id);
+          updateData('tiers', updated);
+          setTierIdx(prev => Math.min(prev, updated.length - 1));
         }
       };
 
@@ -684,12 +732,16 @@
 
       const addAction = () => {
         const newAction = { id: Date.now(), action: '', owner: '', deadline: '', expectedImpact: '' };
-        updateData('pricingActions', [...data.pricingActions, newAction]);
+        const updated = [...data.pricingActions, newAction];
+        updateData('pricingActions', updated);
+        setActionIdx(updated.length - 1);
       };
 
       const removeAction = (id) => {
         if (data.pricingActions.length > 1) {
-          updateData('pricingActions', data.pricingActions.filter(a => a.id !== id));
+          const updated = data.pricingActions.filter(a => a.id !== id);
+          updateData('pricingActions', updated);
+          setActionIdx(prev => Math.min(prev, updated.length - 1));
         }
       };
 
@@ -860,7 +912,7 @@
 
             {/* Step 0.5: Intro */}
             {step === 0.5 && (
-              <IntroPage onNext={() => setStep(1)} />
+              <IntroPage onNext={() => { setFeatureIdx(0); setStep(1); }} />
             )}
 
             {/* Steps 1-5: Wizard */}
@@ -870,29 +922,49 @@
                   <MobileStepBar currentStep={step} totalSteps={5} />
 
                   <div className="wizard-content animate-in">
-                    {step === 1 && <><DependencyContext deps={deps} /><Step1Page data={data} updateFeature={updateFeature} addFeature={addFeature} removeFeature={removeFeature} /></>}
+                    {step === 1 && <><DependencyContext deps={deps} /><Step1Page data={data} updateFeature={updateFeature} addFeature={addFeature} removeFeature={removeFeature} featureIdx={featureIdx} setFeatureIdx={setFeatureIdx} /></>}
                     {step === 2 && <Step2Page data={data} updateData={updateData} />}
-                    {step === 3 && <Step3Page data={data} updateTier={updateTier} addTier={addTier} removeTier={removeTier} />}
+                    {step === 3 && <Step3Page data={data} updateTier={updateTier} addTier={addTier} removeTier={removeTier} tierIdx={tierIdx} setTierIdx={setTierIdx} />}
                     {step === 4 && <Step4Page data={data} updateData={updateData} />}
-                    {step === 5 && <Step5Page data={data} updateData={updateData} updateAction={updateAction} addAction={addAction} removeAction={removeAction} />}
+                    {step === 5 && <Step5Page data={data} updateData={updateData} updateAction={updateAction} addAction={addAction} removeAction={removeAction} actionIdx={actionIdx} setActionIdx={setActionIdx} />}
                   </div>
 
                   <ButtonFooter
-                    onBack={() => setStep(step === 1 ? 0 : step - 1)}
+                    onBack={() => {
+                      if (step === 1) {
+                        if (featureIdx > 0) { setFeatureIdx(featureIdx - 1); }
+                        else { setStep(0); }
+                      } else if (step === 2) {
+                        setStep(1); setFeatureIdx(data.features.length - 1);
+                      } else if (step === 3) {
+                        if (tierIdx > 0) { setTierIdx(tierIdx - 1); }
+                        else { setStep(2); }
+                      } else if (step === 4) {
+                        setStep(3); setTierIdx(data.tiers.length - 1);
+                      } else if (step === 5) {
+                        if (actionIdx > 0) { setActionIdx(actionIdx - 1); }
+                        else { setStep(4); }
+                      } else {
+                        setStep(step - 1);
+                      }
+                    }}
                     onNext={() => {
                       if (step === 1) {
+                        if (featureIdx < data.features.length - 1) { setFeatureIdx(featureIdx + 1); return; }
                         if (!isStep1Valid()) return;
                         handleStepNext(1.5, { features: data.features }, 'Feature Classification');
                       } else if (step === 2) {
                         if (!isStep2Valid()) return;
                         handleStepNext(2.5, { anchorType: data.anchorType, targetSegment: data.targetSegment, competitorBenchmark: data.competitorBenchmark, anchorPrice: data.anchorPrice, anchorRationale: data.anchorRationale }, 'Price Anchor Selection');
                       } else if (step === 3) {
+                        if (tierIdx < data.tiers.length - 1) { setTierIdx(tierIdx + 1); return; }
                         if (!isStep3Valid()) return;
                         handleStepNext(3.5, { tiers: data.tiers }, 'Tier Bundle Design');
                       } else if (step === 4) {
                         if (!isStep4Valid()) return;
                         handleStepNext(4.5, { mustHaveFeatures: data.mustHaveFeatures, niceToHaveFeatures: data.niceToHaveFeatures, killerFeatures: data.killerFeatures, valueProposition: data.valueProposition }, 'Price-to-Value Alignment');
                       } else if (step === 5) {
+                        if (actionIdx < data.pricingActions.length - 1) { setActionIdx(actionIdx + 1); return; }
                         if (!isStep5Valid()) return;
                         handleStepNext(5.5, { pricingActions: data.pricingActions, pilotPlan: data.pilotPlan, successMetrics: data.successMetrics }, 'Implementation Plan');
                       }
@@ -903,7 +975,12 @@
                   />
                   {aiMessage && <div style={{color:'#dc2626', fontSize:'13px', marginTop:'8px', padding:'8px 12px 8px 32px', background:'#fef2f2', borderRadius:'6px'}}>{aiMessage}</div>}
                 </div>
-                <WizardSidebar currentStep={step} data={data} onNavigate={setStep} />
+                <WizardSidebar currentStep={step} data={data} onNavigate={(s) => {
+                  if (s === 1) setFeatureIdx(0);
+                  if (s === 3) setTierIdx(0);
+                  if (s === 5) setActionIdx(0);
+                  setStep(s);
+                }} />
               </div>
             )}
 
@@ -932,7 +1009,12 @@
                     </div>
 
                     <button
-                      onClick={() => setStep(nextStep)}
+                      onClick={() => {
+                        if (nextStep === 1) setFeatureIdx(0);
+                        if (nextStep === 3) setTierIdx(0);
+                        if (nextStep === 5) setActionIdx(0);
+                        setStep(nextStep);
+                      }}
                       style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 48px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s ease' }}
                       onMouseOver={e => { e.target.style.background = '#FFF469'; }}
                       onMouseOut={e => { e.target.style.background = '#fff'; }}
@@ -1068,10 +1150,12 @@
     }
 
     // Step 1: Feature Classification
-    function Step1Page({ data, updateFeature, addFeature, removeFeature }) {
+    function Step1Page({ data, updateFeature, addFeature, removeFeature, featureIdx, setFeatureIdx }) {
+      const feature = data.features[featureIdx] || data.features[0];
+      const idx = data.features.indexOf(feature);
       return (
         <>
-            <div className="step-indicator"><span>STEP 01</span><span className="step-time">~8 min</span></div>
+            <div className="step-indicator"><span>STEP 01 OF 5 &middot; FEATURE {featureIdx + 1} OF {data.features.length}</span><span className="step-time">~8 min</span></div>
             <h2 className="step-heading">FEATURE CLASSIFICATION</h2>
             <p className="step-hint">Classify 5+ features by willingness to pay: Must-Have, Nice-to-Have, or Killer.</p>
 
@@ -1101,12 +1185,21 @@
               Use your WTP data from Sprint 17 to classify features. Focus on what customers will actually pay for, not internal assumptions about value.
             </p>
 
-            {/* Features List */}
+            {/* Feature Navigator */}
+            <ItemNavigator
+              items={data.features}
+              currentIdx={featureIdx}
+              setIdx={setFeatureIdx}
+              onAdd={addFeature}
+              addLabel="+ ADD FEATURE"
+              isFilled={(f) => f.name.trim().length >= 2}
+            />
+
+            {/* Single Feature Card */}
             <div className="mb-12">
-              {data.features.map((feature, index) => (
-                <div key={feature.id} className="bg-gray-50 border-2 border-gray-200 p-6 mb-6 animate-in" style={{animationDelay: `${0.15 + index * 0.05}s`}}>
+                <div key={feature.id} className="bg-gray-50 border-2 border-gray-200 p-6 mb-6 animate-in">
                   <div className="flex justify-between items-start mb-4">
-                    <h4 className="riforma-bold text-2xl">Feature {index + 1}</h4>
+                    <h4 className="riforma-bold text-2xl">Feature {featureIdx + 1}</h4>
                     {data.features.length > 1 && (
                       <button
                         onClick={() => removeFeature(feature.id)}
@@ -1178,8 +1271,6 @@
                     </div>
                   </div>
                 </div>
-              ))}
-              <button onClick={addFeature} className="btn-back" style={{ width: '100%', textAlign: 'center' }}>+ ADD FEATURE</button>
             </div>
         </>
       );
@@ -1284,10 +1375,11 @@
     }
 
     // Step 3: Tier Bundle Design
-    function Step3Page({ data, updateTier, addTier, removeTier }) {
+    function Step3Page({ data, updateTier, addTier, removeTier, tierIdx, setTierIdx }) {
+      const tier = data.tiers[tierIdx] || data.tiers[0];
       return (
         <>
-            <div className="step-indicator"><span>STEP 03</span><span className="step-time">~8 min</span></div>
+            <div className="step-indicator"><span>STEP 03 OF 5 &middot; TIER {tierIdx + 1} OF {data.tiers.length}</span><span className="step-time">~8 min</span></div>
             <h2 className="step-heading">TIER BUNDLE DESIGN</h2>
             <p className="step-hint">Create 2-3 pricing tiers with bundled features for different customer segments.</p>
 
@@ -1312,11 +1404,20 @@
               </p>
             </div>
 
+            {/* Tier Navigator */}
+            <ItemNavigator
+              items={data.tiers}
+              currentIdx={tierIdx}
+              setIdx={setTierIdx}
+              onAdd={data.tiers.length < 3 ? addTier : null}
+              addLabel="+ ADD TIER"
+              isFilled={(t) => t.name.trim().length >= 5}
+            />
+
             <div className="mb-12">
-              {data.tiers.map((tier, index) => (
-                <div key={tier.id} className="bg-gray-50 border-2 border-gray-200 p-6 mb-6 animate-in" style={{animationDelay: `${0.15 + index * 0.05}s`}}>
+                <div key={tier.id} className="bg-gray-50 border-2 border-gray-200 p-6 mb-6 animate-in">
                   <div className="flex justify-between items-start mb-4">
-                    <h4 className="riforma-bold text-2xl">Tier {index + 1}</h4>
+                    <h4 className="riforma-bold text-2xl">Tier {tierIdx + 1}</h4>
                     {data.tiers.length > 1 && (
                       <button
                         onClick={() => removeTier(tier.id)}
@@ -1390,10 +1491,6 @@
                     </div>
                   </div>
                 </div>
-              ))}
-              {data.tiers.length < 3 && (
-                <button onClick={addTier} className="btn-back" style={{ width: '100%', textAlign: 'center' }}>+ ADD TIER (Max 3)</button>
-              )}
             </div>
         </>
       );
@@ -1486,10 +1583,11 @@
     }
 
     // Step 5: Implementation Plan
-    function Step5Page({ data, updateData, updateAction, addAction, removeAction }) {
+    function Step5Page({ data, updateData, updateAction, addAction, removeAction, actionIdx, setActionIdx }) {
+      const action = data.pricingActions[actionIdx] || data.pricingActions[0];
       return (
         <>
-            <div className="step-indicator"><span>STEP 05</span><span className="step-time">~8 min</span></div>
+            <div className="step-indicator"><span>STEP 05 OF 5 &middot; ACTION {actionIdx + 1} OF {data.pricingActions.length}</span><span className="step-time">~8 min</span></div>
             <h2 className="step-heading">IMPLEMENTATION PLAN</h2>
             <p className="step-hint">Define actions, pilots, and success metrics to execute your pricing strategy.</p>
 
@@ -1517,10 +1615,20 @@
             <div className="space-y-8 mb-12">
               <div>
                 <h4 className="riforma-bold text-3xl mb-4">Pricing Actions</h4>
-                {data.pricingActions.map((action, index) => (
-                  <div key={action.id} className="bg-gray-50 border-2 border-gray-200 p-4 mb-4 animate-in" style={{animationDelay: `${0.15 + index * 0.03}s`}}>
+
+                {/* Action Navigator */}
+                <ItemNavigator
+                  items={data.pricingActions}
+                  currentIdx={actionIdx}
+                  setIdx={setActionIdx}
+                  onAdd={addAction}
+                  addLabel="+ ADD ACTION"
+                  isFilled={(a) => a.action.trim().length >= 20}
+                />
+
+                  <div key={action.id} className="bg-gray-50 border-2 border-gray-200 p-4 mb-4 animate-in">
                     <div className="flex justify-between items-center mb-3">
-                      <span className="monument text-xs">ACTION {index + 1}</span>
+                      <span className="monument text-xs">ACTION {actionIdx + 1}</span>
                       {data.pricingActions.length > 1 && (
                         <button onClick={() => removeAction(action.id)} className="text-red-600 text-sm">REMOVE</button>
                       )}
@@ -1574,8 +1682,6 @@
                       </div>
                     </div>
                   </div>
-                ))}
-                <button onClick={addAction} className="btn-back" style={{ width: '100%', textAlign: 'center' }}>+ ADD ACTION</button>
               </div>
 
               <div className="bg-gray-50 border-2 border-gray-200 p-6 animate-in" style={{animationDelay: '0.3s'}}>

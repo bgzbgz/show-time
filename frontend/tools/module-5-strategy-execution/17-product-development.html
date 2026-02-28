@@ -134,6 +134,20 @@
     .char-counter { font-size: 14px; color: #666; margin-top: 4px; }
     .char-counter.invalid { color: #EF4444; }
     textarea::placeholder { white-space: pre-line; }
+
+    /* === ITEM NAVIGATOR === */
+    .item-nav { display: flex; align-items: center; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+    .item-nav-btn { width: 36px; height: 36px; border-radius: 50%; border: 2px solid #000; background: #fff; color: #000; font-family: 'Monument', monospace; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s ease; padding: 0; }
+    .item-nav-btn.active { background: #000; color: #FFF469; border-color: #000; }
+    .item-nav-btn.filled { background: #E5E7EB; border-color: #9CA3AF; color: #000; }
+    .item-nav-btn.empty { background: #fff; border-color: #D1D5DB; color: #9CA3AF; }
+    .item-nav-btn:hover:not(.active) { border-color: #000; background: #F3F4F6; }
+    .item-nav-add { height: 36px; border-radius: 18px; border: 2px dashed #9CA3AF; background: #fff; color: #6B7280; font-family: 'Monument', monospace; font-size: 11px; cursor: pointer; padding: 0 14px; display: flex; align-items: center; justify-content: center; transition: all 0.15s ease; }
+    .item-nav-add:hover { border-color: #000; color: #000; background: #F3F4F6; }
+    .section-nav { display: flex; gap: 8px; margin-bottom: 20px; }
+    .section-nav-btn { padding: 8px 16px; border: 2px solid #E5E7EB; background: #fff; font-family: 'Monument', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; transition: all 0.15s ease; color: #6B7280; }
+    .section-nav-btn.active { border-color: #000; background: #000; color: #FFF469; }
+    .section-nav-btn:hover:not(.active) { border-color: #000; color: #000; }
   </style>
 </head>
 <body>
@@ -335,6 +349,10 @@
       const [aiMessage, setAiMessage] = useState('');
       const [submitStatus, setSubmitStatus] = useState(null);
       const [submitMessage, setSubmitMessage] = useState('');
+      const [featureIdx, setFeatureIdx] = useState(0);
+      const [wtpIdx, setWtpIdx] = useState(0);
+      const [portfolioSection, setPortfolioSection] = useState(0);
+      const [portfolioIdx, setPortfolioIdx] = useState(0);
 
       const [data, setData] = useState({
         // Step 1: Feature Identification
@@ -430,6 +448,7 @@
       const addFeature = () => {
         const newFeature = { id: Date.now(), name: '', description: '', currentState: '' };
         updateData('features', [...data.features, newFeature]);
+        setFeatureIdx(data.features.length);
       };
 
       const removeFeature = (id) => {
@@ -444,6 +463,7 @@
       const addPortfolioItem = (category) => {
         const newItem = { id: Date.now(), product: '', reason: '', targetPercentage: '' };
         updateData(category, [...data[category], newItem]);
+        setPortfolioIdx(data[category].length);
       };
 
       const removePortfolioItem = (category, id) => {
@@ -605,7 +625,7 @@
             )}
 
             {/* Step 0.5: Intro */}
-            {step === 0.5 && <IntroPage onNext={() => setStep(1)} />}
+            {step === 0.5 && <IntroPage onNext={() => { setFeatureIdx(0); setStep(1); }} />}
 
             {/* Steps 1-5: Wizard */}
             {[1,2,3,4,5].includes(step) && (
@@ -613,20 +633,56 @@
                 <div className="wizard-main">
                   <MobileStepBar currentStep={step} totalSteps={5} />
                   <div className="wizard-content animate-in">
-                    {step === 1 && <><DependencyContext deps={deps} /><Step1Page data={data} updateFeature={updateFeature} addFeature={addFeature} removeFeature={removeFeature} /></>}
+                    {step === 1 && <><DependencyContext deps={deps} /><Step1Page data={data} updateFeature={updateFeature} addFeature={addFeature} removeFeature={removeFeature} featureIdx={featureIdx} setFeatureIdx={setFeatureIdx} /></>}
                     {step === 2 && <Step2Page data={data} updateData={updateData} />}
-                    {step === 3 && <Step3Page data={data} updateWTPResult={updateWTPResult} />}
-                    {step === 4 && <Step4Page data={data} updatePortfolioItem={updatePortfolioItem} addPortfolioItem={addPortfolioItem} removePortfolioItem={removePortfolioItem} />}
+                    {step === 3 && <Step3Page data={data} updateWTPResult={updateWTPResult} wtpIdx={wtpIdx} setWtpIdx={setWtpIdx} />}
+                    {step === 4 && <Step4Page data={data} updatePortfolioItem={updatePortfolioItem} addPortfolioItem={addPortfolioItem} removePortfolioItem={removePortfolioItem} portfolioSection={portfolioSection} setPortfolioSection={setPortfolioSection} portfolioIdx={portfolioIdx} setPortfolioIdx={setPortfolioIdx} />}
                     {step === 5 && <Step5Page data={data} updateData={updateData} />}
                   </div>
                   <ButtonFooter
-                    onBack={() => setStep(step === 1 ? 0 : step - 1)}
+                    onBack={() => {
+                      if (step === 1) {
+                        if (featureIdx > 0) { setFeatureIdx(featureIdx - 1); }
+                        else { setStep(0); }
+                      } else if (step === 3) {
+                        if (wtpIdx > 0) { setWtpIdx(wtpIdx - 1); }
+                        else { setStep(2); }
+                      } else if (step === 4) {
+                        const cats = ['storytellers', 'topLineContributors', 'profitContributors'];
+                        if (portfolioIdx > 0) { setPortfolioIdx(portfolioIdx - 1); }
+                        else if (portfolioSection > 0) {
+                          const prevSec = portfolioSection - 1;
+                          setPortfolioSection(prevSec);
+                          setPortfolioIdx(Math.max(0, data[cats[prevSec]].length - 1));
+                        } else { setStep(3); }
+                      } else {
+                        setStep(step - 1);
+                      }
+                    }}
                     onNext={() => {
-                      if (step === 1) { if (!isStep1Valid()) return; handleStepNext(1.5, { feature_list: data.features }, 'Feature Identification'); }
-                      else if (step === 2) { if (!isStep2Valid()) return; handleStepNext(2.5, { targetCustomers: data.targetCustomers, numberOfInterviews: data.numberOfInterviews, interviewFormat: data.interviewFormat, keyQuestions: data.keyQuestions }, 'Interview Setup'); }
-                      else if (step === 3) { if (!isStep3Valid()) return; handleStepNext(3.5, { wtpResults: data.wtpResults }, 'WTP Testing Results'); }
-                      else if (step === 4) { if (!isStep4Valid()) return; handleStepNext(4.5, { portfolio: { storytellers: data.storytellers, topLineContributors: data.topLineContributors, profitContributors: data.profitContributors } }, 'Product Portfolio'); }
-                      else if (step === 5) { if (!isStep5Valid()) return; handleStepNext(5.5, { quickWins: data.quickWins, resourceAllocation: data.resourceAllocation, timeline: data.timeline, successMetrics: data.successMetrics }, 'Implementation Plan'); }
+                      if (step === 1) {
+                        if (featureIdx < data.features.length - 1) { setFeatureIdx(featureIdx + 1); return; }
+                        if (!isStep1Valid()) return;
+                        handleStepNext(1.5, { feature_list: data.features }, 'Feature Identification');
+                      } else if (step === 2) {
+                        if (!isStep2Valid()) return;
+                        setWtpIdx(0);
+                        handleStepNext(2.5, { targetCustomers: data.targetCustomers, numberOfInterviews: data.numberOfInterviews, interviewFormat: data.interviewFormat, keyQuestions: data.keyQuestions }, 'Interview Setup');
+                      } else if (step === 3) {
+                        if (wtpIdx < data.wtpResults.length - 1) { setWtpIdx(wtpIdx + 1); return; }
+                        if (!isStep3Valid()) return;
+                        setPortfolioSection(0); setPortfolioIdx(0);
+                        handleStepNext(3.5, { wtpResults: data.wtpResults }, 'WTP Testing Results');
+                      } else if (step === 4) {
+                        const cats = ['storytellers', 'topLineContributors', 'profitContributors'];
+                        if (portfolioIdx < data[cats[portfolioSection]].length - 1) { setPortfolioIdx(portfolioIdx + 1); return; }
+                        if (portfolioSection < 2) { setPortfolioSection(portfolioSection + 1); setPortfolioIdx(0); return; }
+                        if (!isStep4Valid()) return;
+                        handleStepNext(4.5, { portfolio: { storytellers: data.storytellers, topLineContributors: data.topLineContributors, profitContributors: data.profitContributors } }, 'Product Portfolio');
+                      } else if (step === 5) {
+                        if (!isStep5Valid()) return;
+                        handleStepNext(5.5, { quickWins: data.quickWins, resourceAllocation: data.resourceAllocation, timeline: data.timeline, successMetrics: data.successMetrics }, 'Implementation Plan');
+                      }
                     }}
                     disabled={aiReviewing}
                     nextLabel={aiReviewing ? 'AI Coach Reviewing...' : step === 5 ? 'View Canvas' : 'Next'}
@@ -791,24 +847,32 @@
     /* TransitionScreen is now inline in WTPApp render using TRANSITION_CONTENT */
 
     // Step 1: Feature Identification
-    function Step1Page({ data, updateFeature, addFeature, removeFeature }) {
+    function Step1Page({ data, updateFeature, addFeature, removeFeature, featureIdx, setFeatureIdx }) {
+      const feature = data.features[featureIdx] || data.features[0];
+      const idx = Math.min(featureIdx, data.features.length - 1);
+      const isFilled = (i) => { const f = data.features[i]; return f && f.name && f.name.trim().length >= 2; };
+
       return (
         <>
-            <div className="step-indicator"><span>STEP 01</span><span className="step-time">~5 min</span></div>
+            <div className="step-indicator"><span>STEP 01 OF 5 &middot; Feature {idx + 1} of {data.features.length}</span><span className="step-time">~5 min</span></div>
             <h2 className="step-heading">FEATURE IDENTIFICATION</h2>
-            <p className="step-hint">List 10–15 features that could differentiate your offering. Test these with customers to find what they'll actually pay for.</p>
+            <p className="step-hint">List 10-15 features that could differentiate your offering. Test these with customers to find what they'll actually pay for.</p>
+
+            {/* Item Navigator */}
+            <div className="item-nav">
+              {data.features.map((f, i) => (
+                <button key={f.id} className={`item-nav-btn ${i === idx ? 'active' : isFilled(i) ? 'filled' : 'empty'}`} onClick={() => setFeatureIdx(i)}>{i + 1}</button>
+              ))}
+              <button className="item-nav-add" onClick={addFeature}>+ ADD</button>
+            </div>
 
             {/* Fast Track Insight */}
-
             {(data.features[0].description || '').length >= 20 && (
                 <div className="ft-reveal">
                     <div className="ft-reveal-label">FAST TRACK SCIENCE</div>
                     <p className="ft-reveal-text">70% of new products fail to meet revenue or market share expectations due to misalignment with customer needs (Product Development and Management Association, 2023). Companies that actively engage customers in product development are 30% more likely to launch successful products. Research by Madhavan Ramanujam at Simon-Kucher &amp; Partners found that determining willingness to pay before building -- not after -- is the single most predictive factor of product success.</p>
                 </div>
             )}
-
-            {/* Common Mistake */}
-
 
             <div className="border-l-4 border-yellow-400 pl-6 mb-8 animate-in" style={{animationDelay: '0.05s'}}>
               <p className="text-lg italic text-gray-700">
@@ -817,15 +881,14 @@
               <p className="text-sm text-gray-500 mt-2">— Walter Landor</p>
             </div>
 
-            {/* Features List */}
-            <div className="mb-12">
-              {data.features.map((feature, index) => (
-                <div key={feature.id} className="bg-gray-50 border-2 border-gray-200 p-6 mb-6 animate-in feature-box" style={{animationDelay: `${0.15 + index * 0.05}s`}}>
+            {/* Single Feature Card */}
+            <div className="mb-12" key={idx}>
+                <div className="bg-gray-50 border-2 border-gray-200 p-6 mb-6 animate-in feature-box">
                   <div className="flex justify-between items-start mb-4">
-                    <h4 className="riforma-bold text-2xl">Feature {index + 1}</h4>
+                    <h4 className="riforma-bold text-2xl">Feature {idx + 1}</h4>
                     {data.features.length > 1 && (
                       <button
-                        onClick={() => removeFeature(feature.id)}
+                        onClick={() => { removeFeature(feature.id); if (idx >= data.features.length - 1) setFeatureIdx(Math.max(0, data.features.length - 2)); }}
                         className="text-red-600 hover:text-red-800 text-sm"
                       >
                         REMOVE
@@ -849,7 +912,7 @@
                     </div>
 
                     <div>
-                      <label className="monument text-sm block mb-2">DESCRIPTION & VALUE <span className="text-red-500">*</span></label>
+                      <label className="monument text-sm block mb-2">DESCRIPTION &amp; VALUE <span className="text-red-500">*</span></label>
                       <ScienceBookmarkIcon>
                           Companies optimizing their product portfolios annually report 25% higher profit margins on average. Describe the customer outcome, not just the technical capability (Harvard Business Review, 2022).
                       </ScienceBookmarkIcon>
@@ -883,9 +946,6 @@
                     </div>
                   </div>
                 </div>
-              ))}
-
-              <button onClick={addFeature} className="btn-back" style={{ textAlign: 'center', marginTop: 8 }}>+ ADD ANOTHER FEATURE</button>
             </div>
         </>
       );
@@ -982,15 +1042,27 @@
     }
 
     // Step 3: WTP Testing Results
-    function Step3Page({ data, updateWTPResult }) {
+    function Step3Page({ data, updateWTPResult, wtpIdx, setWtpIdx }) {
+      const idx = Math.min(wtpIdx, Math.max(0, data.wtpResults.length - 1));
+      const result = data.wtpResults[idx];
+      const isFilled = (i) => { const r = data.wtpResults[i]; return r && r.customerValue && r.customerValue.length >= 20 && r.willingnessToPay && r.willingnessToPay.length >= 5 && r.priorityScore; };
+
+      if (!result) return <div className="step-hint">No features to score yet. Go back and add features in Step 1.</div>;
+
       return (
         <>
-            <div className="step-indicator"><span>STEP 03</span><span className="step-time">~10 min</span></div>
+            <div className="step-indicator"><span>STEP 03 OF 5 &middot; Feature {idx + 1} of {data.wtpResults.length}</span><span className="step-time">~10 min</span></div>
             <h2 className="step-heading">WTP TESTING RESULTS</h2>
             <p className="step-hint">Document what customers said about each feature's value and willingness to pay.</p>
 
-            {/* Fast Track Insight */}
+            {/* Item Navigator */}
+            <div className="item-nav">
+              {data.wtpResults.map((r, i) => (
+                <button key={r.featureId} className={`item-nav-btn ${i === idx ? 'active' : isFilled(i) ? 'filled' : 'empty'}`} onClick={() => setWtpIdx(i)}>{i + 1}</button>
+              ))}
+            </div>
 
+            {/* Fast Track Insight */}
             {(data.wtpResults[0]?.customerValue || '').length >= 20 && (
                 <div className="ft-reveal">
                     <div className="ft-reveal-label">FAST TRACK SCIENCE</div>
@@ -998,22 +1070,16 @@
                 </div>
             )}
 
-
-            <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
-              Document what customers said about each feature
-            </h3>
-
-            <div className="border-l-4 border-yellow-400 pl-6 mb-12 animate-in" style={{animationDelay: '0.1s'}}>
-              <p className="text-2xl italic">
+            <div className="border-l-4 border-yellow-400 pl-6 mb-8 animate-in" style={{animationDelay: '0.05s'}}>
+              <p className="text-lg italic text-gray-700">
                 &quot;What customers say they value and what they&apos;ll actually pay for are different. Document both to make informed product decisions.&quot;
               </p>
             </div>
 
-            <div className="mb-12">
-              {data.wtpResults.map((result, index) => (
-                <div key={result.featureId} className="bg-gray-50 border-2 border-gray-200 p-6 mb-6 animate-in feature-box" style={{animationDelay: `${0.15 + index * 0.05}s`}}>
+            <div className="mb-12" key={idx}>
+                <div className="bg-gray-50 border-2 border-gray-200 p-6 mb-6 animate-in feature-box">
                   <h4 className="riforma-bold text-2xl mb-4">
-                    {data.features.find(f => f.id === result.featureId)?.name || `Feature ${index + 1}`}
+                    {data.features.find(f => f.id === result.featureId)?.name || ('Feature ' + (idx + 1))}
                   </h4>
 
                   <div className="space-y-4">
@@ -1083,7 +1149,6 @@
                     </div>
                   </div>
                 </div>
-              ))}
             </div>
 
         </>
@@ -1091,15 +1156,35 @@
     }
 
     // Step 4: Product Portfolio Design
-    function Step4Page({ data, updatePortfolioItem, addPortfolioItem, removePortfolioItem }) {
+    function Step4Page({ data, updatePortfolioItem, addPortfolioItem, removePortfolioItem, portfolioSection, setPortfolioSection, portfolioIdx, setPortfolioIdx }) {
+      const cats = ['storytellers', 'topLineContributors', 'profitContributors'];
+      const catLabels = ['Storytellers', 'Top Line', 'Profit'];
+      const catDescriptions = [
+        'Products that manifest your strategy and differentiate your brand. May not be profitable but critical for positioning.',
+        'High-volume products. Aggressively priced to win market share. These drive revenue growth.',
+        'Premium products with unique features customers will pay for. Protect these margins. Fund innovation with these profits.'
+      ];
+      const catSubtitles = ['<10% of portfolio', '70-80% of sales', 'High margin'];
+      const currentCat = cats[portfolioSection];
+      const items = data[currentCat];
+      const itemIdx = Math.min(portfolioIdx, Math.max(0, items.length - 1));
+      const item = items[itemIdx];
+      const isItemFilled = (cat, i) => { const it = data[cat][i]; return it && it.product && it.product.trim().length >= 3; };
+
       return (
         <>
-            <div className="step-indicator"><span>STEP 04</span><span className="step-time">~8 min</span></div>
+            <div className="step-indicator"><span>STEP 04 OF 5 &middot; {catLabels[portfolioSection]} {itemIdx + 1} of {items.length}</span><span className="step-time">~8 min</span></div>
             <h2 className="step-heading">PORTFOLIO DESIGN</h2>
             <p className="step-hint">Categorize products into storytellers, top-line contributors, and profit contributors.</p>
 
-            {/* Fast Track Insight */}
+            {/* Section Navigator */}
+            <div className="section-nav">
+              {catLabels.map((label, i) => (
+                <button key={i} className={`section-nav-btn ${i === portfolioSection ? 'active' : ''}`} onClick={() => { setPortfolioSection(i); setPortfolioIdx(0); }}>{label}</button>
+              ))}
+            </div>
 
+            {/* Fast Track Insight */}
             {(data.storytellers[0]?.product || '').length >= 5 && (
                 <div className="ft-reveal">
                     <div className="ft-reveal-label">FAST TRACK SCIENCE</div>
@@ -1107,134 +1192,72 @@
                 </div>
             )}
 
-
-            <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
-              Categorize products into strategic roles
-            </h3>
-
-            <div className="border-l-4 border-yellow-400 pl-6 mb-12 animate-in" style={{animationDelay: '0.1s'}}>
-              <p className="text-2xl italic">
+            <div className="border-l-4 border-yellow-400 pl-6 mb-8 animate-in" style={{animationDelay: '0.05s'}}>
+              <p className="text-lg italic text-gray-700">
                 &quot;Like a gardener&apos;s strategy: some plants for beauty (storytellers), some for harvest volume (top line), some for premium herbs (profit).&quot;
               </p>
             </div>
 
-            <div className="space-y-10">
-              {/* Storytellers */}
-              <div className="animate-in" style={{animationDelay: '0.15s'}}>
-                <h3 className="riforma-bold text-3xl mb-2">Storytellers (&lt;10% of portfolio)</h3>
-                <p className="text-lg text-gray-600 mb-4">Products that manifest your strategy and differentiate your brand. May not be profitable but critical for positioning.</p>
+            <h3 className="riforma-bold text-2xl mb-2">{catLabels[portfolioSection]} ({catSubtitles[portfolioSection]})</h3>
+            <p className="text-base text-gray-600 mb-4">{catDescriptions[portfolioSection]}</p>
 
-                {data.storytellers.map((item, index) => (
-                  <div key={item.id} className="bg-gray-50 border-2 border-gray-200 p-4 mb-3">
-                    <div className="flex justify-between items-center mb-3">
-                      <span className="monument text-xs">STORYTELLER {index + 1}</span>
-                      {data.storytellers.length > 1 && (
-                        <button onClick={() => removePortfolioItem('storytellers', item.id)} className="text-red-600 text-sm">REMOVE</button>
-                      )}
-                    </div>
-                    <div className="space-y-3">
-                      <input
-                        type="text"
-                        value={item.product}
-                        onChange={(e) => updatePortfolioItem('storytellers', item.id, 'product', e.target.value)}
-                        placeholder="Real-time inventory sync"
-                        className="w-full"
-                      />
-                      <textarea
-                        value={item.reason}
-                        onChange={(e) => updatePortfolioItem('storytellers', item.id, 'reason', e.target.value)}
-                        placeholder="Shows we&apos;re the innovation leader. Competitors don&apos;t have this. Gets us in the door with enterprise clients even though margins are thin."
-                        rows={2}
-                        className="w-full"
-                      />
-                    </div>
-                  </div>
-                ))}
-                <button onClick={() => addPortfolioItem('storytellers')} className="btn-secondary text-sm">+ ADD STORYTELLER</button>
-              </div>
-
-              {/* Top Line Contributors */}
-              <div className="animate-in" style={{animationDelay: '0.2s'}}>
-                <h3 className="riforma-bold text-3xl mb-2">Top Line Contributors (70-80% of sales)</h3>
-                <p className="text-lg text-gray-600 mb-4">High-volume products. Aggressively priced to win market share. These drive revenue growth.</p>
-
-                {data.topLineContributors.map((item, index) => (
-                  <div key={item.id} className="bg-gray-50 border-2 border-gray-200 p-4 mb-3">
-                    <div className="flex justify-between items-center mb-3">
-                      <span className="monument text-xs">TOP LINE CONTRIBUTOR {index + 1}</span>
-                      {data.topLineContributors.length > 1 && (
-                        <button onClick={() => removePortfolioItem('topLineContributors', item.id)} className="text-red-600 text-sm">REMOVE</button>
-                      )}
-                    </div>
-                    <div className="space-y-3">
-                      <input
-                        type="text"
-                        value={item.product}
-                        onChange={(e) => updatePortfolioItem('topLineContributors', item.id, 'product', e.target.value)}
-                        placeholder="Basic inventory management"
-                        className="w-full"
-                      />
-                      <textarea
-                        value={item.features}
-                        onChange={(e) => updatePortfolioItem('topLineContributors', item.id, 'features', e.target.value)}
-                        placeholder="Standard tracking, reporting, alerts. Everything customers expect. Priced 20% below competitor X to gain market share."
-                        rows={2}
-                        className="w-full"
-                      />
-                      <input
-                        type="text"
-                        value={item.pricingStrategy}
-                        onChange={(e) => updatePortfolioItem('topLineContributors', item.id, 'pricingStrategy', e.target.value)}
-                        placeholder="$299/month, 15% margin, volume play"
-                        className="w-full"
-                      />
-                    </div>
-                  </div>
-                ))}
-                <button onClick={() => addPortfolioItem('topLineContributors')} className="btn-secondary text-sm">+ ADD TOP LINE CONTRIBUTOR</button>
-              </div>
-
-              {/* Profit Contributors */}
-              <div className="animate-in" style={{animationDelay: '0.25s'}}>
-                <h3 className="riforma-bold text-3xl mb-2">Profit Contributors (high margin)</h3>
-                <p className="text-lg text-gray-600 mb-4">Premium products with unique features customers will pay for. Protect these margins. Fund innovation with these profits.</p>
-
-                {data.profitContributors.map((item, index) => (
-                  <div key={item.id} className="bg-gray-50 border-2 border-gray-200 p-4 mb-3">
-                    <div className="flex justify-between items-center mb-3">
-                      <span className="monument text-xs">PROFIT CONTRIBUTOR {index + 1}</span>
-                      {data.profitContributors.length > 1 && (
-                        <button onClick={() => removePortfolioItem('profitContributors', item.id)} className="text-red-600 text-sm">REMOVE</button>
-                      )}
-                    </div>
-                    <div className="space-y-3">
-                      <input
-                        type="text"
-                        value={item.product}
-                        onChange={(e) => updatePortfolioItem('profitContributors', item.id, 'product', e.target.value)}
-                        placeholder="Enterprise API integration"
-                        className="w-full"
-                      />
-                      <textarea
-                        value={item.uniqueFeatures}
-                        onChange={(e) => updatePortfolioItem('profitContributors', item.id, 'uniqueFeatures', e.target.value)}
-                        placeholder="Custom ERP integrations, dedicated support, SLA guarantees. Only we offer this level of integration."
-                        rows={2}
-                        className="w-full"
-                      />
-                      <input
-                        type="text"
-                        value={item.marginTarget}
-                        onChange={(e) => updatePortfolioItem('profitContributors', item.id, 'marginTarget', e.target.value)}
-                        placeholder="$2,500/month, 60% margin"
-                        className="w-full"
-                      />
-                    </div>
-                  </div>
-                ))}
-                <button onClick={() => addPortfolioItem('profitContributors')} className="btn-secondary text-sm">+ ADD PROFIT CONTRIBUTOR</button>
-              </div>
+            {/* Item Navigator */}
+            <div className="item-nav">
+              {items.map((it, i) => (
+                <button key={it.id} className={`item-nav-btn ${i === itemIdx ? 'active' : isItemFilled(currentCat, i) ? 'filled' : 'empty'}`} onClick={() => setPortfolioIdx(i)}>{i + 1}</button>
+              ))}
+              <button className="item-nav-add" onClick={() => addPortfolioItem(currentCat)}>+ ADD</button>
             </div>
+
+            {/* Single Item Card */}
+            {item && (
+            <div className="mb-12" key={currentCat + '-' + itemIdx}>
+              {portfolioSection === 0 && (
+                <div className="bg-gray-50 border-2 border-gray-200 p-4 mb-3 animate-in">
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="monument text-xs">STORYTELLER {itemIdx + 1}</span>
+                      {items.length > 1 && (
+                        <button onClick={() => { removePortfolioItem('storytellers', item.id); if (itemIdx >= items.length - 1) setPortfolioIdx(Math.max(0, items.length - 2)); }} className="text-red-600 text-sm">REMOVE</button>
+                      )}
+                    </div>
+                    <div className="space-y-3">
+                      <input type="text" value={item.product} onChange={(e) => updatePortfolioItem('storytellers', item.id, 'product', e.target.value)} placeholder="Real-time inventory sync" className="w-full" />
+                      <textarea value={item.reason} onChange={(e) => updatePortfolioItem('storytellers', item.id, 'reason', e.target.value)} placeholder="Shows we're the innovation leader. Competitors don't have this. Gets us in the door with enterprise clients even though margins are thin." rows={2} className="w-full" />
+                    </div>
+                </div>
+              )}
+              {portfolioSection === 1 && (
+                <div className="bg-gray-50 border-2 border-gray-200 p-4 mb-3 animate-in">
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="monument text-xs">TOP LINE CONTRIBUTOR {itemIdx + 1}</span>
+                      {items.length > 1 && (
+                        <button onClick={() => { removePortfolioItem('topLineContributors', item.id); if (itemIdx >= items.length - 1) setPortfolioIdx(Math.max(0, items.length - 2)); }} className="text-red-600 text-sm">REMOVE</button>
+                      )}
+                    </div>
+                    <div className="space-y-3">
+                      <input type="text" value={item.product} onChange={(e) => updatePortfolioItem('topLineContributors', item.id, 'product', e.target.value)} placeholder="Basic inventory management" className="w-full" />
+                      <textarea value={item.features} onChange={(e) => updatePortfolioItem('topLineContributors', item.id, 'features', e.target.value)} placeholder="Standard tracking, reporting, alerts. Everything customers expect. Priced 20% below competitor X to gain market share." rows={2} className="w-full" />
+                      <input type="text" value={item.pricingStrategy} onChange={(e) => updatePortfolioItem('topLineContributors', item.id, 'pricingStrategy', e.target.value)} placeholder="$299/month, 15% margin, volume play" className="w-full" />
+                    </div>
+                </div>
+              )}
+              {portfolioSection === 2 && (
+                <div className="bg-gray-50 border-2 border-gray-200 p-4 mb-3 animate-in">
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="monument text-xs">PROFIT CONTRIBUTOR {itemIdx + 1}</span>
+                      {items.length > 1 && (
+                        <button onClick={() => { removePortfolioItem('profitContributors', item.id); if (itemIdx >= items.length - 1) setPortfolioIdx(Math.max(0, items.length - 2)); }} className="text-red-600 text-sm">REMOVE</button>
+                      )}
+                    </div>
+                    <div className="space-y-3">
+                      <input type="text" value={item.product} onChange={(e) => updatePortfolioItem('profitContributors', item.id, 'product', e.target.value)} placeholder="Enterprise API integration" className="w-full" />
+                      <textarea value={item.uniqueFeatures} onChange={(e) => updatePortfolioItem('profitContributors', item.id, 'uniqueFeatures', e.target.value)} placeholder="Custom ERP integrations, dedicated support, SLA guarantees. Only we offer this level of integration." rows={2} className="w-full" />
+                      <input type="text" value={item.marginTarget} onChange={(e) => updatePortfolioItem('profitContributors', item.id, 'marginTarget', e.target.value)} placeholder="$2,500/month, 60% margin" className="w-full" />
+                    </div>
+                </div>
+              )}
+            </div>
+            )}
 
         </>
       );

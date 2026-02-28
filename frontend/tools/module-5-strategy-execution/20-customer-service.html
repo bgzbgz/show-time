@@ -363,6 +363,7 @@
       const [wowIndex, setWowIndex] = useState(0);
       const [betterIndex, setBetterIndex] = useState(0);
       const [implIndex, setImplIndex] = useState(0);
+      const [ownershipIdx, setOwnershipIdx] = useState(0);
 
       const [data, setData] = useState({
         // Step 1: Journey Mapping
@@ -581,7 +582,7 @@
         // reset sub-indices for the next step
         if (fromStep === 1) setWowIndex(0);
         if (fromStep === 2) setBetterIndex(0);
-        if (fromStep === 3) { /* ownership has no sub-index */ }
+        if (fromStep === 3) { setOwnershipIdx(0); }
         if (fromStep === 4) setImplIndex(0);
       };
 
@@ -644,6 +645,7 @@
           if (betterIndex > 0) { setBetterIndex(i => i - 1); return; }
           setStep(2);
         } else if (step === 4) {
+          if (ownershipIdx > 0) { setOwnershipIdx(i => i - 1); return; }
           setStep(3);
         } else if (step === 5) {
           if (implIndex > 0) { setImplIndex(i => i - 1); return; }
@@ -789,9 +791,18 @@
             onNext = () => setBetterIndex(i => i + 1);
           }
         } else if (step === 4) {
-          canProceed = !aiReviewing && isStep4Valid();
-          nextLabel = aiReviewing ? 'AI COACH REVIEWING...' : 'NEXT: IMPLEMENTATION →';
-          onNext = () => handleNext(4);
+          const ownershipItems = data.ownership || [];
+          const currentOwn = ownershipItems[ownershipIdx];
+          const isLast = ownershipIdx === ownershipItems.length - 1;
+          const isCurrentFilled = currentOwn && (currentOwn.owner || '').length >= 5 && (currentOwn.kpi || '').length >= 15 && (currentOwn.deadline || '').length >= 8;
+          canProceed = isCurrentFilled && (!isLast || (!aiReviewing && isStep4Valid()));
+          if (isLast) {
+            nextLabel = aiReviewing ? 'AI COACH REVIEWING...' : 'NEXT: IMPLEMENTATION →';
+            onNext = () => handleNext(4);
+          } else {
+            nextLabel = 'NEXT TOUCHPOINT →';
+            onNext = () => setOwnershipIdx(i => i + 1);
+          }
         } else if (step === 5) {
           const isLast = implIndex === implFields.length - 1;
           canProceed = !aiReviewing && isImplFieldValid(implIndex);
@@ -840,7 +851,7 @@
                     isBetterValid={isBetterValid}
                   />
                 )}
-                {step === 4 && <Step4Page data={data} updateOwnership={updateOwnership} />}
+                {step === 4 && <Step4Page data={data} updateOwnership={updateOwnership} ownershipIdx={ownershipIdx} setOwnershipIdx={setOwnershipIdx} />}
                 {step === 5 && (
                   <Step5Page
                     data={data}
@@ -1396,16 +1407,25 @@
     // ─────────────────────────────────────────────
     // Step 4: Ownership & Metrics (unchanged — all items shown)
     // ─────────────────────────────────────────────
-    function Step4Page({ data, updateOwnership }) {
-      return (
-        <div>
-            <div className="numbered-section mb-8 animate-in">04. OWNERSHIP & METRICS</div>
+    function Step4Page({ data, updateOwnership, ownershipIdx, setOwnershipIdx }) {
+      const items = data.ownership || [];
+      const item = items[ownershipIdx];
+      const hasFilled = (i) => {
+        const o = items[i];
+        return o && (o.owner || '').length >= 5 && (o.kpi || '').length >= 15 && (o.deadline || '').length >= 8;
+      };
 
-            <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
+      if (!item) return null;
+
+      return (
+        <div key={ownershipIdx} className="animate-in">
+            <div className="numbered-section mb-8">04. OWNERSHIP & METRICS</div>
+
+            <h3 className="riforma-bold text-5xl mb-8" style={{animationDelay: '0.05s'}}>
               Assign clear accountability for every touchpoint
             </h3>
 
-            <div className="border-l-4 border-yellow-400 pl-6 mb-12 animate-in" style={{animationDelay: '0.1s'}}>
+            <div className="border-l-4 border-yellow-400 pl-6 mb-12" style={{animationDelay: '0.1s'}}>
               <p className="text-2xl italic">
                 &quot;Operational excellence in service is about repeatable systems, not heroics. Every touchpoint must have one owner.&quot; — Frances Frei
               </p>
@@ -1415,50 +1435,57 @@
               Assign clear ownership and performance indicators for each of your 6 strategic touchpoints. Without accountability and measurement, service excellence becomes vague aspiration. One owner per touchpoint, never split responsibility.
             </p>
 
-            <div className="space-y-8 mb-12">
-              {(data.ownership || []).map((item, index) => (
-                <div key={item.id} className="bg-gray-50 border-2 border-gray-200 p-6 animate-in" style={{animationDelay: `${0.15 + index * 0.02}s`}}>
-                  <h4 className="riforma-bold text-2xl mb-4">{item.touchpoint}</h4>
-
-                  <div className="space-y-4">
-                    <div>
-                      <label className="monument text-sm block mb-2">RESPONSIBLE OWNER (TEAM OR PERSON) <span className="text-red-500">*</span></label>
-                      <input
-                        type="text"
-                        value={item.owner}
-                        onChange={(e) => updateOwnership(item.id, 'owner', e.target.value)}
-                        placeholder="Maria Rodriguez, Head of Customer Experience"
-                        className="w-full"
-                      />
-                      <div className="char-counter">{item.owner.length}/200 (min 5)</div>
-                    </div>
-
-                    <div>
-                      <label className="monument text-sm block mb-2">PERFORMANCE INDICATOR (KPI) <span className="text-red-500">*</span></label>
-                      <textarea
-                        value={item.kpi}
-                        onChange={(e) => updateOwnership(item.id, 'kpi', e.target.value)}
-                        placeholder="Primary: NPS score for this touchpoint (target: 9+). Secondary: Response time (target: under 2 hours). Tertiary: Customer sentiment analysis (target: 85% positive)."
-                        className="w-full"
-                        rows={3}
-                      />
-                      <div className="char-counter">{item.kpi.length}/500 (min 15)</div>
-                    </div>
-
-                    <div>
-                      <label className="monument text-sm block mb-2">DEADLINE FOR IMPLEMENTATION <span className="text-red-500">*</span></label>
-                      <input
-                        type="text"
-                        value={item.deadline}
-                        onChange={(e) => updateOwnership(item.id, 'deadline', e.target.value)}
-                        placeholder="March 15, 2024 (60 days from now)"
-                        className="w-full"
-                      />
-                      <div className="char-counter">{item.deadline.length}/200 (min 8)</div>
-                    </div>
-                  </div>
-                </div>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+              {items.map((_, i) => (
+                <button key={i} onClick={() => setOwnershipIdx(i)} style={{
+                  width: 44, height: 44, border: `2px solid ${ownershipIdx === i ? '#000' : hasFilled(i) ? '#000' : '#E5E7EB'}`,
+                  background: ownershipIdx === i ? '#000' : hasFilled(i) ? '#F0F0F0' : '#fff',
+                  color: ownershipIdx === i ? '#FFF469' : hasFilled(i) ? '#000' : '#999',
+                  fontFamily: "'Monument', monospace", fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s'
+                }}>{String(i + 1).padStart(2, '0')}</button>
               ))}
+            </div>
+
+            <div className="bg-gray-50 border-2 border-gray-200 p-6 mb-12">
+              <h4 className="riforma-bold text-2xl mb-4">{item.touchpoint}</h4>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="monument text-sm block mb-2">RESPONSIBLE OWNER (TEAM OR PERSON) <span className="text-red-500">*</span></label>
+                  <input
+                    type="text"
+                    value={item.owner}
+                    onChange={(e) => updateOwnership(item.id, 'owner', e.target.value)}
+                    placeholder="Maria Rodriguez, Head of Customer Experience"
+                    className="w-full"
+                  />
+                  <div className="char-counter">{item.owner.length}/200 (min 5)</div>
+                </div>
+
+                <div>
+                  <label className="monument text-sm block mb-2">PERFORMANCE INDICATOR (KPI) <span className="text-red-500">*</span></label>
+                  <textarea
+                    value={item.kpi}
+                    onChange={(e) => updateOwnership(item.id, 'kpi', e.target.value)}
+                    placeholder="Primary: NPS score for this touchpoint (target: 9+). Secondary: Response time (target: under 2 hours). Tertiary: Customer sentiment analysis (target: 85% positive)."
+                    className="w-full"
+                    rows={3}
+                  />
+                  <div className="char-counter">{item.kpi.length}/500 (min 15)</div>
+                </div>
+
+                <div>
+                  <label className="monument text-sm block mb-2">DEADLINE FOR IMPLEMENTATION <span className="text-red-500">*</span></label>
+                  <input
+                    type="text"
+                    value={item.deadline}
+                    onChange={(e) => updateOwnership(item.id, 'deadline', e.target.value)}
+                    placeholder="March 15, 2024 (60 days from now)"
+                    className="w-full"
+                  />
+                  <div className="char-counter">{item.deadline.length}/200 (min 8)</div>
+                </div>
+              </div>
             </div>
 
         </div>

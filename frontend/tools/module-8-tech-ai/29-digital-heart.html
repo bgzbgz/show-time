@@ -693,6 +693,9 @@
       const [step, setStep] = useState(0);
       const [aiReviewing, setAiReviewing] = useState(false);
       const [aiMessage, setAiMessage] = useState('');
+      const [decisionIdx, setDecisionIdx] = useState(0);
+      const [sourceIdx, setSourceIdx] = useState(0);
+      const [techIdx, setTechIdx] = useState(0);
 
       const [data, setData] = useState({
         decisions: [
@@ -823,10 +826,31 @@
         return true;
       };
 
+      const getItemCount = (s) => {
+        if (s === 1) return (data.decisions || []).length;
+        if (s === 2) return (data.dataSources || []).length;
+        if (s === 3) return (data.technology || []).length;
+        return 0;
+      };
+
+      const getIdx = (s) => {
+        if (s === 1) return decisionIdx;
+        if (s === 2) return sourceIdx;
+        if (s === 3) return techIdx;
+        return 0;
+      };
+
+      const setIdx = (s, v) => {
+        if (s === 1) setDecisionIdx(v);
+        else if (s === 2) setSourceIdx(v);
+        else if (s === 3) setTechIdx(v);
+      };
+
       const nextStep = async () => {
         if (step === 0) { setStep(0.5); return; }
         if (step === 0.5) {
           setStep(1);
+          setDecisionIdx(0);
           const decisions = data.decisions || [];
           if ((data.dataSources || []).length === 0) {
             setData(prev => ({
@@ -843,6 +867,17 @@
           }
           return;
         }
+
+        // For steps 1-3 with pagination: advance item index first
+        if (step >= 1 && step <= 3) {
+          const count = getItemCount(step);
+          const idx = getIdx(step);
+          if (idx < count - 1) {
+            setIdx(step, idx + 1);
+            return;
+          }
+        }
+
         if (step >= 1 && step <= 4) {
           const userId = localStorage.getItem('ft_user_id');
           if (userId) {
@@ -886,6 +921,7 @@
                 }))
               }));
             }
+            setSourceIdx(0);
           } else if (step === 2) {
             const decisions = data.decisions || [];
             if ((data.apis || []).length === 0) {
@@ -903,6 +939,7 @@
                 }))
               }));
             }
+            setTechIdx(0);
           }
 
           if (step < 4) {
@@ -914,8 +951,26 @@
       };
 
       const prevStep = () => {
-        if (step === 0.5) setStep(0);
-        else if (step > 1) setStep(step - 1);
+        if (step === 0.5) { setStep(0); return; }
+
+        // For steps 1-3 with pagination: go back through items first
+        if (step >= 1 && step <= 3) {
+          const curIdx = getIdx(step);
+          if (curIdx > 0) {
+            setIdx(step, curIdx - 1);
+            return;
+          }
+        }
+
+        if (step > 1) {
+          const prevS = step - 1;
+          // When going back to a paginated step, jump to last item
+          if (prevS >= 1 && prevS <= 3) {
+            const count = getItemCount(prevS);
+            if (count > 0) setIdx(prevS, count - 1);
+          }
+          setStep(prevS);
+        }
         else if (step === 1) setStep(0.5);
       };
 
@@ -935,9 +990,9 @@
               <div className="wizard-layout">
                 <div className="wizard-main">
                   <div className="wizard-content animate-in">
-                    {step === 1 && <><DependencyContext deps={deps} /><Step1Decisions data={data} setData={setData} /></>}
-                    {step === 2 && <Step2DataSources data={data} setData={setData} />}
-                    {step === 3 && <Step3Technology data={data} setData={setData} />}
+                    {step === 1 && <><DependencyContext deps={deps} /><Step1Decisions data={data} setData={setData} idx={decisionIdx} setIdx={setDecisionIdx} /></>}
+                    {step === 2 && <Step2DataSources data={data} setData={setData} idx={sourceIdx} setIdx={setSourceIdx} />}
+                    {step === 3 && <Step3Technology data={data} setData={setData} idx={techIdx} setIdx={setTechIdx} />}
                     {step === 4 && <Step4APIs data={data} setData={setData} />}
                   </div>
                   <div className="wizard-footer" style={{flexDirection:'column',alignItems:'stretch',gap:'0'}}>
@@ -1139,31 +1194,28 @@
     }
 
     // Step 1: Core Decisions to Digitalize
-    function Step1Decisions({ data, setData }) {
+    function Step1Decisions({ data, setData, idx, setIdx }) {
       const decisions = data.decisions || [];
 
       const addDecision = () => {
         const newId = Math.max(0, ...decisions.map(d => d.id)) + 1;
-        setData({
-          ...data,
-          decisions: [...decisions, {
-            id: newId,
-            decisionName: '',
-            frequency: '',
-            impactLevel: '',
-            currentProcess: '',
-            dataNeededDescription: '',
-            priority: 5
-          }]
-        });
+        const updated = [...decisions, {
+          id: newId,
+          decisionName: '',
+          frequency: '',
+          impactLevel: '',
+          currentProcess: '',
+          dataNeededDescription: '',
+          priority: 5
+        }];
+        setData({ ...data, decisions: updated });
+        setIdx(updated.length - 1);
       };
 
       const removeDecision = (id) => {
         if (decisions.length > 1) {
-          setData({
-            ...data,
-            decisions: decisions.filter(d => d.id !== id)
-          });
+          setData({ ...data, decisions: decisions.filter(d => d.id !== id) });
+          if (idx >= decisions.length - 1) setIdx(Math.max(0, decisions.length - 2));
         }
       };
 
@@ -1176,12 +1228,20 @@
         });
       };
 
+      const hasFilled = (i) => {
+        const d = decisions[i];
+        return d && ((d.decisionName || '').length > 0 || d.frequency || d.impactLevel);
+      };
+
+      const decision = decisions[idx] || decisions[0];
+      if (!decision) return null;
+
       const sortedDecisions = [...decisions].sort((a, b) => b.priority - a.priority);
 
       return (
         <div>
             <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
-              STEP 1 OF 5
+              STEP 1 OF 5 &mdash; DECISION {idx + 1} OF {decisions.length}
             </div>
 
             <h1 className="plaak text-5xl mb-4">
@@ -1197,157 +1257,162 @@
               <p className="text-gray-700">For each decision, describe what it is, how it's currently made, and what data would improve it. Then prioritize all decisions from 1-10.</p>
             </div>
 
-            <div className="space-y-6 mb-8">
-              {decisions.map((decision, index) => (
-                <div key={decision.id} className={`decision-card ${decision.priority >= 8 ? 'priority-high' : ''}`}>
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="numbered-section" style={{ fontSize: '20px' }}>
-                      {String(index + 1).padStart(2, '0')}
-                    </div>
+            {/* Navigator */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap', alignItems: 'center' }}>
+              {decisions.map((_, i) => (
+                <button key={i} onClick={() => setIdx(i)} style={{
+                  width: 44, height: 44, border: `2px solid ${idx === i ? '#000' : hasFilled(i) ? '#000' : '#E5E7EB'}`,
+                  background: idx === i ? '#000' : hasFilled(i) ? '#F0F0F0' : '#fff',
+                  color: idx === i ? '#FFF469' : hasFilled(i) ? '#000' : '#999',
+                  fontFamily: "'Monument', monospace", fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s'
+                }}>{String(i + 1).padStart(2, '0')}</button>
+              ))}
+              <button onClick={addDecision} style={{
+                width: 44, height: 44, border: '2px dashed #E5E7EB', background: '#fff', color: '#999',
+                fontFamily: "'Monument', monospace", fontSize: 18, cursor: 'pointer', transition: 'all 0.2s'
+              }}>+</button>
+            </div>
 
-                    {/* Fast Track Insight */}
+            <div key={idx} className="animate-in">
+              <div className={`decision-card ${decision.priority >= 8 ? 'priority-high' : ''}`}>
+                <div className="flex justify-between items-start mb-4">
+                  <div className="numbered-section" style={{ fontSize: '20px' }}>
+                    {String(idx + 1).padStart(2, '0')}
+                  </div>
 
-                    {/* The Science */}
-                    {(data.decisions || '').length >= 20 && (
+                  {(data.decisions || '').length >= 20 && (
   <div className="ft-reveal-science">
     <div className="ft-reveal-label">SCIENCE BEHIND IT</div>
     <p className="ft-reveal-text">Research from MIT Sloan Management Review (2023) found that companies with a clearly defined "digital core" -- a single source of truth connecting operational data to decision-making -- outperformed peers by 26% in revenue growth and 21% in profit margins. A McKinsey Global Survey (2022) showed that organizations prioritizing data-driven decision-making were 23 times more likely to acquire customers and 19 times more likely to be profitable. The key driver: writing down which decisions matter most forces executive teams to confront data gaps they would otherwise ignore.</p>
   </div>
 )}
 
-                    {/* Common Mistake */}
+                  {decisions.length > 1 && (
+                    <button
+                      className="btn-remove"
+                      onClick={() => removeDecision(decision.id)}
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
 
-                    {decisions.length > 1 && (
-                      <button
-                        className="btn-remove"
-                        onClick={() => removeDecision(decision.id)}
-                      >
-                        Remove
-                      </button>
-                    )}
+                <div className="space-y-4">
+                  <div>
+                    <label className="monument text-sm block mb-2">Decision Name</label>
+                    <ScienceBookmarkIcon>
+                        Bain &amp; Company found that companies which explicitly name and rank their top decisions grow revenue 5-6% faster than competitors who leave decision authority ambiguous.
+                    </ScienceBookmarkIcon>
+                    <input
+                      type="text"
+                      value={decision.decisionName || ''}
+                      onChange={(e) => updateDecision(decision.id, 'decisionName', e.target.value)}
+                      placeholder="e.g., Product pricing strategy for new market segments"
+                    />
+                    <div className={`char-counter ${(decision.decisionName || '').length < 50 ? 'invalid' : ''}`}>
+                      {(decision.decisionName || '').length} / 50 characters minimum
+                    </div>
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="monument text-sm block mb-2">Decision Name</label>
+                      <label className="monument text-sm block mb-2">Frequency</label>
                       <ScienceBookmarkIcon>
-                          Bain &amp; Company found that companies which explicitly name and rank their top decisions grow revenue 5-6% faster than competitors who leave decision authority ambiguous.
+                          High-frequency decisions (daily/weekly) benefit most from digitalization. BCG research shows automating these yields 3-5x more ROI than digitalizing infrequent strategic decisions.
                       </ScienceBookmarkIcon>
+                      <select
+                        value={decision.frequency || ''}
+                        onChange={(e) => updateDecision(decision.id, 'frequency', e.target.value)}
+                      >
+                        <option value="">Select frequency</option>
+                        <option value="Daily">Daily</option>
+                        <option value="Weekly">Weekly</option>
+                        <option value="Monthly">Monthly</option>
+                        <option value="Quarterly">Quarterly</option>
+                        <option value="Annually">Annually</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="monument text-sm block mb-2">Impact Level</label>
+                      <ScienceBookmarkIcon>
+                          McKinsey found that high-impact decisions -- those affecting revenue, cost, or customer experience -- account for 20% of all business decisions but determine 80% of value creation.
+                      </ScienceBookmarkIcon>
+                      <select
+                        value={decision.impactLevel || ''}
+                        onChange={(e) => updateDecision(decision.id, 'impactLevel', e.target.value)}
+                      >
+                        <option value="">Select impact</option>
+                        <option value="High">High</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Low">Low</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="monument text-sm block mb-2">Current Process</label>
+                    <textarea
+                      value={decision.currentProcess || ''}
+                      onChange={(e) => updateDecision(decision.id, 'currentProcess', e.target.value)}
+                      placeholder="Describe how this decision is currently made. Who makes it? What information do they use? What are the challenges?"
+                    />
+                    <div className={`char-counter ${(decision.currentProcess || '').length < 100 ? 'invalid' : ''}`}>
+                      {(decision.currentProcess || '').length} / 100 characters minimum
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="monument text-sm block mb-2">Data Needed Description</label>
+                    <textarea
+                      value={decision.dataNeededDescription || ''}
+                      onChange={(e) => updateDecision(decision.id, 'dataNeededDescription', e.target.value)}
+                      placeholder="What data would help make this decision better? What insights would you like to have? What questions would you like the data to answer?"
+                    />
+                    <div className={`char-counter ${(decision.dataNeededDescription || '').length < 100 ? 'invalid' : ''}`}>
+                      {(decision.dataNeededDescription || '').length} / 100 characters minimum
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="monument text-sm block mb-2">Priority (1-10)</label>
+                    <div className="flex items-center gap-4">
                       <input
-                        type="text"
-                        value={decision.decisionName || ''}
-                        onChange={(e) => updateDecision(decision.id, 'decisionName', e.target.value)}
-                        placeholder="e.g., Product pricing strategy for new market segments"
+                        type="range"
+                        min="1"
+                        max="10"
+                        value={decision.priority || 5}
+                        onChange={(e) => updateDecision(decision.id, 'priority', parseInt(e.target.value))}
                       />
-                      <div className={`char-counter ${(decision.decisionName || '').length < 50 ? 'invalid' : ''}`}>
-                        {(decision.decisionName || '').length} / 50 characters minimum
-                      </div>
+                      <span className="text-2xl riforma-bold" style={{ minWidth: '40px' }}>
+                        {decision.priority || 5}
+                      </span>
                     </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="monument text-sm block mb-2">Frequency</label>
-                        <ScienceBookmarkIcon>
-                            High-frequency decisions (daily/weekly) benefit most from digitalization. BCG research shows automating these yields 3-5x more ROI than digitalizing infrequent strategic decisions.
-                        </ScienceBookmarkIcon>
-                        <select
-                          value={decision.frequency || ''}
-                          onChange={(e) => updateDecision(decision.id, 'frequency', e.target.value)}
-                        >
-                          <option value="">Select frequency</option>
-                          <option value="Daily">Daily</option>
-                          <option value="Weekly">Weekly</option>
-                          <option value="Monthly">Monthly</option>
-                          <option value="Quarterly">Quarterly</option>
-                          <option value="Annually">Annually</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="monument text-sm block mb-2">Impact Level</label>
-                        <ScienceBookmarkIcon>
-                            McKinsey found that high-impact decisions -- those affecting revenue, cost, or customer experience -- account for 20% of all business decisions but determine 80% of value creation.
-                        </ScienceBookmarkIcon>
-                        <select
-                          value={decision.impactLevel || ''}
-                          onChange={(e) => updateDecision(decision.id, 'impactLevel', e.target.value)}
-                        >
-                          <option value="">Select impact</option>
-                          <option value="High">High</option>
-                          <option value="Medium">Medium</option>
-                          <option value="Low">Low</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="monument text-sm block mb-2">Current Process</label>
-                      <textarea
-                        value={decision.currentProcess || ''}
-                        onChange={(e) => updateDecision(decision.id, 'currentProcess', e.target.value)}
-                        placeholder="Describe how this decision is currently made. Who makes it? What information do they use? What are the challenges?"
-                      />
-                      <div className={`char-counter ${(decision.currentProcess || '').length < 100 ? 'invalid' : ''}`}>
-                        {(decision.currentProcess || '').length} / 100 characters minimum
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="monument text-sm block mb-2">Data Needed Description</label>
-                      <textarea
-                        value={decision.dataNeededDescription || ''}
-                        onChange={(e) => updateDecision(decision.id, 'dataNeededDescription', e.target.value)}
-                        placeholder="What data would help make this decision better? What insights would you like to have? What questions would you like the data to answer?"
-                      />
-                      <div className={`char-counter ${(decision.dataNeededDescription || '').length < 100 ? 'invalid' : ''}`}>
-                        {(decision.dataNeededDescription || '').length} / 100 characters minimum
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="monument text-sm block mb-2">Priority (1-10)</label>
-                      <div className="flex items-center gap-4">
-                        <input
-                          type="range"
-                          min="1"
-                          max="10"
-                          value={decision.priority || 5}
-                          onChange={(e) => updateDecision(decision.id, 'priority', parseInt(e.target.value))}
-                        />
-                        <span className="text-2xl riforma-bold" style={{ minWidth: '40px' }}>
-                          {decision.priority || 5}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-600 mt-2">
-                        1 = Low priority, 10 = Highest priority
-                      </p>
-                    </div>
+                    <p className="text-sm text-gray-600 mt-2">
+                      1 = Low priority, 10 = Highest priority
+                    </p>
                   </div>
                 </div>
-              ))}
+              </div>
             </div>
 
-            <button className="btn-secondary mb-12" onClick={addDecision}>
-              + Add Another Decision
-            </button>
-
             {decisions.length >= 3 && (
-              <div className="highlight-box">
+              <div className="highlight-box" style={{ marginTop: 32 }}>
                 <h3 className="plaak text-2xl mb-4">PRIORITY RANKING</h3>
                 <div className="space-y-3">
-                  {sortedDecisions.map((decision, index) => (
-                    <div key={decision.id} className="flex items-center gap-4 p-3 bg-white border-2 border-black">
+                  {sortedDecisions.map((d, index) => (
+                    <div key={d.id} className="flex items-center gap-4 p-3 bg-white border-2 border-black" style={{ cursor: 'pointer' }} onClick={() => setIdx(decisions.indexOf(d))}>
                       <div className="riforma-bold text-2xl" style={{ minWidth: '40px' }}>
                         #{index + 1}
                       </div>
                       <div className="flex-1">
-                        <div className="riforma-bold text-lg">{decision.decisionName || 'Unnamed decision'}</div>
+                        <div className="riforma-bold text-lg">{d.decisionName || 'Unnamed decision'}</div>
                         <div className="text-sm text-gray-600">
-                          {decision.frequency} • {decision.impactLevel} Impact
+                          {d.frequency} • {d.impactLevel} Impact
                         </div>
                       </div>
                       <div className="text-3xl riforma-bold">
-                        {decision.priority}
+                        {d.priority}
                       </div>
                     </div>
                   ))}
@@ -1359,7 +1424,7 @@
     }
 
     // Step 2: Data Sources
-    function Step2DataSources({ data, setData }) {
+    function Step2DataSources({ data, setData, idx, setIdx }) {
       const decisions = data.decisions || [];
       const dataSources = data.dataSources || [];
 
@@ -1476,10 +1541,18 @@
         });
       };
 
+      const hasFilled = (i) => {
+        const ds = dataSources[i];
+        return ds && ((ds.internalSources || []).some(s => s.source) || ds.dataQuality);
+      };
+
+      const ds = dataSources[idx];
+      if (!ds) return null;
+
       return (
         <div>
             <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
-              STEP 2 OF 5
+              STEP 2 OF 5 &mdash; DECISION {idx + 1} OF {dataSources.length}
             </div>
 
             <h1 className="plaak text-5xl mb-4">
@@ -1500,184 +1573,190 @@
               </ul>
             </div>
 
-            <div className="space-y-12">
-              {dataSources.map((ds, index) => (
-                <div key={ds.decisionId} className="decision-card">
-                  <div className="numbered-section mb-4" style={{ fontSize: '20px' }}>
-                    {String(index + 1).padStart(2, '0')}
-                  </div>
+            {/* Navigator */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+              {dataSources.map((_, i) => (
+                <button key={i} onClick={() => setIdx(i)} style={{
+                  width: 44, height: 44, border: `2px solid ${idx === i ? '#000' : hasFilled(i) ? '#000' : '#E5E7EB'}`,
+                  background: idx === i ? '#000' : hasFilled(i) ? '#F0F0F0' : '#fff',
+                  color: idx === i ? '#FFF469' : hasFilled(i) ? '#000' : '#999',
+                  fontFamily: "'Monument', monospace", fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s'
+                }}>{String(i + 1).padStart(2, '0')}</button>
+              ))}
+            </div>
 
-                  {/* Fast Track Insight */}
+            <div key={idx} className="animate-in">
+              <div className="decision-card">
+                <div className="numbered-section mb-4" style={{ fontSize: '20px' }}>
+                  {String(idx + 1).padStart(2, '0')}
+                </div>
 
-                  {/* The Science */}
-                  {/* TODO: add field condition */}
 <div className="ft-reveal-science">
     <div className="ft-reveal-label">SCIENCE BEHIND IT</div>
     <p className="ft-reveal-text">A Harvard Business Review study (2023) on 1,500 enterprises found that companies with well-mapped data sources made decisions 2.5x faster and with 30% fewer errors than those relying on ad-hoc data gathering. Gartner reports that through 2025, 80% of organizations seeking to scale digital business will fail because they do not take a modern approach to data management. The critical factor: knowing exactly where your data lives, its quality, and its gaps before building any technology platform.</p>
   </div>
 
 
-                  <h3 className="riforma-bold text-2xl mb-6">
-                    {ds.decisionName || 'Decision Name'}
-                  </h3>
+                <h3 className="riforma-bold text-2xl mb-6">
+                  {ds.decisionName || 'Decision Name'}
+                </h3>
 
-                  {/* Internal Sources */}
-                  <div className="mb-6">
-                    <h4 className="monument text-lg mb-4 flex items-center gap-2">
-                      <span className="data-tag internal">INTERNAL SOURCES</span>
-                    </h4>
+                {/* Internal Sources */}
+                <div className="mb-6">
+                  <h4 className="monument text-lg mb-4 flex items-center gap-2">
+                    <span className="data-tag internal">INTERNAL SOURCES</span>
+                  </h4>
 
-                    <div className="space-y-4 mb-4">
-                      {(ds.internalSources || []).map((source, idx) => (
-                        <div key={source.id} className="border border-gray-300 p-4 bg-gray-50">
-                          <div className="flex justify-between items-start mb-3">
-                            <span className="monument text-sm">Internal Source {idx + 1}</span>
-                            {(ds.internalSources || []).length > 1 && (
-                              <button
-                                className="btn-remove"
-                                onClick={() => removeInternalSource(ds.decisionId, source.id)}
-                              >
-                                Remove
-                              </button>
-                            )}
+                  <div className="space-y-4 mb-4">
+                    {(ds.internalSources || []).map((source, si) => (
+                      <div key={source.id} className="border border-gray-300 p-4 bg-gray-50">
+                        <div className="flex justify-between items-start mb-3">
+                          <span className="monument text-sm">Internal Source {si + 1}</span>
+                          {(ds.internalSources || []).length > 1 && (
+                            <button
+                              className="btn-remove"
+                              onClick={() => removeInternalSource(ds.decisionId, source.id)}
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="space-y-3">
+                          <div>
+                            <label className="monument text-xs block mb-1">Source Name</label>
+                            <input
+                              type="text"
+                              value={source.source || ''}
+                              onChange={(e) => updateInternalSource(ds.decisionId, source.id, 'source', e.target.value)}
+                              placeholder="e.g., CRM System (Salesforce), ERP (SAP), Financial Database"
+                            />
                           </div>
 
-                          <div className="space-y-3">
-                            <div>
-                              <label className="monument text-xs block mb-1">Source Name</label>
-                              <input
-                                type="text"
-                                value={source.source || ''}
-                                onChange={(e) => updateInternalSource(ds.decisionId, source.id, 'source', e.target.value)}
-                                placeholder="e.g., CRM System (Salesforce), ERP (SAP), Financial Database"
-                              />
-                            </div>
+                          <div>
+                            <label className="monument text-xs block mb-1">Description</label>
+                            <textarea
+                              value={source.description || ''}
+                              onChange={(e) => updateInternalSource(ds.decisionId, source.id, 'description', e.target.value)}
+                              placeholder="What data does this source contain? How is it relevant to the decision?"
+                              style={{ minHeight: '80px' }}
+                            />
+                          </div>
 
-                            <div>
-                              <label className="monument text-xs block mb-1">Description</label>
-                              <textarea
-                                value={source.description || ''}
-                                onChange={(e) => updateInternalSource(ds.decisionId, source.id, 'description', e.target.value)}
-                                placeholder="What data does this source contain? How is it relevant to the decision?"
-                                style={{ minHeight: '80px' }}
-                              />
-                            </div>
-
-                            <div>
-                              <label className="monument text-xs block mb-1">Availability</label>
-                              <input
-                                type="text"
-                                value={source.availability || ''}
-                                onChange={(e) => updateInternalSource(ds.decisionId, source.id, 'availability', e.target.value)}
-                                placeholder="e.g., Real-time API access, Daily exports, Manual reports"
-                              />
-                            </div>
+                          <div>
+                            <label className="monument text-xs block mb-1">Availability</label>
+                            <input
+                              type="text"
+                              value={source.availability || ''}
+                              onChange={(e) => updateInternalSource(ds.decisionId, source.id, 'availability', e.target.value)}
+                              placeholder="e.g., Real-time API access, Daily exports, Manual reports"
+                            />
                           </div>
                         </div>
-                      ))}
-                    </div>
-
-                    <button
-                      className="btn-small"
-                      onClick={() => addInternalSource(ds.decisionId)}
-                    >
-                      + Add Internal Source
-                    </button>
+                      </div>
+                    ))}
                   </div>
 
-                  {/* External Sources */}
-                  <div className="mb-6">
-                    <h4 className="monument text-lg mb-4 flex items-center gap-2">
-                      <span className="data-tag external">EXTERNAL SOURCES</span>
-                    </h4>
+                  <button
+                    className="btn-small"
+                    onClick={() => addInternalSource(ds.decisionId)}
+                  >
+                    + Add Internal Source
+                  </button>
+                </div>
 
-                    <div className="space-y-4 mb-4">
-                      {(ds.externalSources || []).map((source, idx) => (
-                        <div key={source.id} className="border border-gray-300 p-4 bg-gray-50">
-                          <div className="flex justify-between items-start mb-3">
-                            <span className="monument text-sm">External Source {idx + 1}</span>
-                            {(ds.externalSources || []).length > 1 && (
-                              <button
-                                className="btn-remove"
-                                onClick={() => removeExternalSource(ds.decisionId, source.id)}
-                              >
-                                Remove
-                              </button>
-                            )}
+                {/* External Sources */}
+                <div className="mb-6">
+                  <h4 className="monument text-lg mb-4 flex items-center gap-2">
+                    <span className="data-tag external">EXTERNAL SOURCES</span>
+                  </h4>
+
+                  <div className="space-y-4 mb-4">
+                    {(ds.externalSources || []).map((source, si) => (
+                      <div key={source.id} className="border border-gray-300 p-4 bg-gray-50">
+                        <div className="flex justify-between items-start mb-3">
+                          <span className="monument text-sm">External Source {si + 1}</span>
+                          {(ds.externalSources || []).length > 1 && (
+                            <button
+                              className="btn-remove"
+                              onClick={() => removeExternalSource(ds.decisionId, source.id)}
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="space-y-3">
+                          <div>
+                            <label className="monument text-xs block mb-1">Source Name</label>
+                            <input
+                              type="text"
+                              value={source.source || ''}
+                              onChange={(e) => updateExternalSource(ds.decisionId, source.id, 'source', e.target.value)}
+                              placeholder="e.g., Market Research (Gartner), Social Media Analytics, Industry Reports"
+                            />
                           </div>
 
-                          <div className="space-y-3">
-                            <div>
-                              <label className="monument text-xs block mb-1">Source Name</label>
-                              <input
-                                type="text"
-                                value={source.source || ''}
-                                onChange={(e) => updateExternalSource(ds.decisionId, source.id, 'source', e.target.value)}
-                                placeholder="e.g., Market Research (Gartner), Social Media Analytics, Industry Reports"
-                              />
-                            </div>
+                          <div>
+                            <label className="monument text-xs block mb-1">Description</label>
+                            <textarea
+                              value={source.description || ''}
+                              onChange={(e) => updateExternalSource(ds.decisionId, source.id, 'description', e.target.value)}
+                              placeholder="What insights does this source provide? Why is it valuable?"
+                              style={{ minHeight: '80px' }}
+                            />
+                          </div>
 
-                            <div>
-                              <label className="monument text-xs block mb-1">Description</label>
-                              <textarea
-                                value={source.description || ''}
-                                onChange={(e) => updateExternalSource(ds.decisionId, source.id, 'description', e.target.value)}
-                                placeholder="What insights does this source provide? Why is it valuable?"
-                                style={{ minHeight: '80px' }}
-                              />
-                            </div>
-
-                            <div>
-                              <label className="monument text-xs block mb-1">Cost Estimate</label>
-                              <input
-                                type="text"
-                                value={source.cost || ''}
-                                onChange={(e) => updateExternalSource(ds.decisionId, source.id, 'cost', e.target.value)}
-                                placeholder="e.g., $5,000/year subscription, Free, $500/month"
-                              />
-                            </div>
+                          <div>
+                            <label className="monument text-xs block mb-1">Cost Estimate</label>
+                            <input
+                              type="text"
+                              value={source.cost || ''}
+                              onChange={(e) => updateExternalSource(ds.decisionId, source.id, 'cost', e.target.value)}
+                              placeholder="e.g., $5,000/year subscription, Free, $500/month"
+                            />
                           </div>
                         </div>
-                      ))}
-                    </div>
-
-                    <button
-                      className="btn-small"
-                      onClick={() => addExternalSource(ds.decisionId)}
-                    >
-                      + Add External Source
-                    </button>
+                      </div>
+                    ))}
                   </div>
 
-                  {/* Data Quality & Gaps */}
-                  <div className="space-y-4 mt-6">
-                    <div>
-                      <label className="monument text-sm block mb-2">Data Quality Assessment</label>
-                      <textarea
-                        value={ds.dataQuality || ''}
-                        onChange={(e) => updateDataSource(ds.decisionId, 'dataQuality', e.target.value)}
-                        placeholder="Assess the current quality of available data. Is it accurate? Complete? Timely? What are the quality issues?"
-                      />
-                    </div>
+                  <button
+                    className="btn-small"
+                    onClick={() => addExternalSource(ds.decisionId)}
+                  >
+                    + Add External Source
+                  </button>
+                </div>
 
-                    <div>
-                      <label className="monument text-sm block mb-2">Data Gaps</label>
-                      <textarea
-                        value={ds.dataGaps || ''}
-                        onChange={(e) => updateDataSource(ds.decisionId, 'dataGaps', e.target.value)}
-                        placeholder="What data is missing? What additional information would be valuable? What are the blind spots?"
-                      />
-                    </div>
+                {/* Data Quality & Gaps */}
+                <div className="space-y-4 mt-6">
+                  <div>
+                    <label className="monument text-sm block mb-2">Data Quality Assessment</label>
+                    <textarea
+                      value={ds.dataQuality || ''}
+                      onChange={(e) => updateDataSource(ds.decisionId, 'dataQuality', e.target.value)}
+                      placeholder="Assess the current quality of available data. Is it accurate? Complete? Timely? What are the quality issues?"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="monument text-sm block mb-2">Data Gaps</label>
+                    <textarea
+                      value={ds.dataGaps || ''}
+                      onChange={(e) => updateDataSource(ds.decisionId, 'dataGaps', e.target.value)}
+                      placeholder="What data is missing? What additional information would be valuable? What are the blind spots?"
+                    />
                   </div>
                 </div>
-              ))}
+              </div>
             </div>
         </div>
       );
     }
 
     // Step 3: Technology Platform & Algorithms
-    function Step3Technology({ data, setData }) {
+    function Step3Technology({ data, setData, idx, setIdx }) {
       const decisions = data.decisions || [];
       const technology = data.technology || [];
 
@@ -1742,10 +1821,18 @@
         });
       };
 
+      const hasFilled = (i) => {
+        const t = technology[i];
+        return t && (t.collectionMethod || t.storageSystem || t.processingFrequency);
+      };
+
+      const tech = technology[idx];
+      if (!tech) return null;
+
       return (
         <div>
             <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
-              STEP 3 OF 5
+              STEP 3 OF 5 &mdash; DECISION {idx + 1} OF {technology.length}
             </div>
 
             <h1 className="plaak text-5xl mb-4">
@@ -1768,185 +1855,191 @@
               </ul>
             </div>
 
-            <div className="space-y-12">
-              {technology.map((tech, index) => (
-                <div key={tech.decisionId} className="decision-card">
-                  <div className="numbered-section mb-4" style={{ fontSize: '20px' }}>
-                    {String(index + 1).padStart(2, '0')}
-                  </div>
+            {/* Navigator */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+              {technology.map((_, i) => (
+                <button key={i} onClick={() => setIdx(i)} style={{
+                  width: 44, height: 44, border: `2px solid ${idx === i ? '#000' : hasFilled(i) ? '#000' : '#E5E7EB'}`,
+                  background: idx === i ? '#000' : hasFilled(i) ? '#F0F0F0' : '#fff',
+                  color: idx === i ? '#FFF469' : hasFilled(i) ? '#000' : '#999',
+                  fontFamily: "'Monument', monospace", fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s'
+                }}>{String(i + 1).padStart(2, '0')}</button>
+              ))}
+            </div>
 
-                  {/* Fast Track Insight */}
+            <div key={idx} className="animate-in">
+              <div className="decision-card">
+                <div className="numbered-section mb-4" style={{ fontSize: '20px' }}>
+                  {String(idx + 1).padStart(2, '0')}
+                </div>
 
-                  {/* The Science */}
-                  {/* TODO: add field condition */}
 <div className="ft-reveal-science">
     <div className="ft-reveal-label">SCIENCE BEHIND IT</div>
     <p className="ft-reveal-text">A Deloitte meta-analysis of 200+ digital transformation initiatives (2023) found that organizations which documented their technology architecture before implementation had 35% higher execution rates and 40% lower cost overruns. MIT CISR research shows that companies with a well-designed data platform generate 32% more revenue from their data assets. The key insight: choosing algorithms and processing frequencies upfront prevents the most expensive mistake in digitalization -- building technology that does not match how decisions are actually made.</p>
   </div>
 
 
-                  <h3 className="riforma-bold text-2xl mb-6">
-                    {tech.decisionName || 'Decision Name'}
-                  </h3>
+                <h3 className="riforma-bold text-2xl mb-6">
+                  {tech.decisionName || 'Decision Name'}
+                </h3>
 
-                  <div className="space-y-6">
-                    <div>
-                      <label className="monument text-sm block mb-2">Collection Method</label>
-                      <textarea
-                        value={tech.collectionMethod || ''}
-                        onChange={(e) => updateTechnology(tech.decisionId, 'collectionMethod', e.target.value)}
-                        placeholder="How will data be collected? (e.g., API integrations, automated scraping, manual uploads, IoT sensors, webhooks)"
-                        style={{ minHeight: '100px' }}
-                      />
-                    </div>
+                <div className="space-y-6">
+                  <div>
+                    <label className="monument text-sm block mb-2">Collection Method</label>
+                    <textarea
+                      value={tech.collectionMethod || ''}
+                      onChange={(e) => updateTechnology(tech.decisionId, 'collectionMethod', e.target.value)}
+                      placeholder="How will data be collected? (e.g., API integrations, automated scraping, manual uploads, IoT sensors, webhooks)"
+                      style={{ minHeight: '100px' }}
+                    />
+                  </div>
 
-                    <div>
-                      <label className="monument text-sm block mb-2">Storage System</label>
-                      <div className="space-y-2">
-                        <label className="flex items-center gap-3 p-3 border border-gray-300 cursor-pointer hover:bg-gray-50">
-                          <input
-                            type="radio"
-                            name={`storage-${tech.decisionId}`}
-                            value="Cloud"
-                            checked={tech.storageSystem === 'Cloud'}
-                            onChange={(e) => updateTechnology(tech.decisionId, 'storageSystem', e.target.value)}
-                          />
-                          <div>
-                            <div className="riforma-bold">Cloud-based</div>
-                            <div className="text-sm text-gray-600">AWS, Azure, Google Cloud, Snowflake</div>
-                          </div>
-                        </label>
+                  <div>
+                    <label className="monument text-sm block mb-2">Storage System</label>
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-3 p-3 border border-gray-300 cursor-pointer hover:bg-gray-50">
+                        <input
+                          type="radio"
+                          name={`storage-${tech.decisionId}`}
+                          value="Cloud"
+                          checked={tech.storageSystem === 'Cloud'}
+                          onChange={(e) => updateTechnology(tech.decisionId, 'storageSystem', e.target.value)}
+                        />
+                        <div>
+                          <div className="riforma-bold">Cloud-based</div>
+                          <div className="text-sm text-gray-600">AWS, Azure, Google Cloud, Snowflake</div>
+                        </div>
+                      </label>
 
-                        <label className="flex items-center gap-3 p-3 border border-gray-300 cursor-pointer hover:bg-gray-50">
-                          <input
-                            type="radio"
-                            name={`storage-${tech.decisionId}`}
-                            value="On-Premise"
-                            checked={tech.storageSystem === 'On-Premise'}
-                            onChange={(e) => updateTechnology(tech.decisionId, 'storageSystem', e.target.value)}
-                          />
-                          <div>
-                            <div className="riforma-bold">On-Premise</div>
-                            <div className="text-sm text-gray-600">Local servers, data center</div>
-                          </div>
-                        </label>
+                      <label className="flex items-center gap-3 p-3 border border-gray-300 cursor-pointer hover:bg-gray-50">
+                        <input
+                          type="radio"
+                          name={`storage-${tech.decisionId}`}
+                          value="On-Premise"
+                          checked={tech.storageSystem === 'On-Premise'}
+                          onChange={(e) => updateTechnology(tech.decisionId, 'storageSystem', e.target.value)}
+                        />
+                        <div>
+                          <div className="riforma-bold">On-Premise</div>
+                          <div className="text-sm text-gray-600">Local servers, data center</div>
+                        </div>
+                      </label>
 
-                        <label className="flex items-center gap-3 p-3 border border-gray-300 cursor-pointer hover:bg-gray-50">
-                          <input
-                            type="radio"
-                            name={`storage-${tech.decisionId}`}
-                            value="Hybrid"
-                            checked={tech.storageSystem === 'Hybrid'}
-                            onChange={(e) => updateTechnology(tech.decisionId, 'storageSystem', e.target.value)}
-                          />
-                          <div>
-                            <div className="riforma-bold">Hybrid</div>
-                            <div className="text-sm text-gray-600">Combination of cloud and on-premise</div>
-                          </div>
-                        </label>
-                      </div>
-                    </div>
-
-                    {/* Algorithms */}
-                    <div>
-                      <label className="monument text-sm block mb-3">Algorithms & Processing Logic</label>
-
-                      <div className="space-y-4 mb-4">
-                        {(tech.algorithms || []).map((alg, idx) => (
-                          <div key={alg.id} className="border border-gray-300 p-4 bg-gray-50">
-                            <div className="flex justify-between items-start mb-3">
-                              <span className="monument text-sm">Algorithm {idx + 1}</span>
-                              {(tech.algorithms || []).length > 1 && (
-                                <button
-                                  className="btn-remove"
-                                  onClick={() => removeAlgorithm(tech.decisionId, alg.id)}
-                                >
-                                  Remove
-                                </button>
-                              )}
-                            </div>
-
-                            <div className="space-y-3">
-                              <div>
-                                <label className="monument text-xs block mb-1">Algorithm Name/Type</label>
-                                <input
-                                  type="text"
-                                  value={alg.algorithm || ''}
-                                  onChange={(e) => updateAlgorithm(tech.decisionId, alg.id, 'algorithm', e.target.value)}
-                                  placeholder="e.g., Linear Regression, Classification Model, Clustering, Recommendation Engine"
-                                />
-                              </div>
-
-                              <div>
-                                <label className="monument text-xs block mb-1">Purpose</label>
-                                <textarea
-                                  value={alg.purpose || ''}
-                                  onChange={(e) => updateAlgorithm(tech.decisionId, alg.id, 'purpose', e.target.value)}
-                                  placeholder="What does this algorithm do? What insights does it generate?"
-                                  style={{ minHeight: '70px' }}
-                                />
-                              </div>
-
-                              <div>
-                                <label className="monument text-xs block mb-1">Complexity Level</label>
-                                <select
-                                  value={alg.complexity || ''}
-                                  onChange={(e) => updateAlgorithm(tech.decisionId, alg.id, 'complexity', e.target.value)}
-                                >
-                                  <option value="">Select complexity</option>
-                                  <option value="Simple">Simple (basic calculations, aggregations)</option>
-                                  <option value="Moderate">Moderate (statistical analysis, simple ML)</option>
-                                  <option value="Complex">Complex (advanced ML, deep learning, AI)</option>
-                                </select>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-
-                      <button
-                        className="btn-small"
-                        onClick={() => addAlgorithm(tech.decisionId)}
-                      >
-                        + Add Algorithm
-                      </button>
-                    </div>
-
-                    <div>
-                      <label className="monument text-sm block mb-2">Processing Frequency</label>
-                      <select
-                        value={tech.processingFrequency || ''}
-                        onChange={(e) => updateTechnology(tech.decisionId, 'processingFrequency', e.target.value)}
-                      >
-                        <option value="">Select frequency</option>
-                        <option value="Real-time">Real-time (continuous processing)</option>
-                        <option value="Hourly">Hourly</option>
-                        <option value="Daily">Daily</option>
-                        <option value="Weekly">Weekly</option>
-                        <option value="On-demand">On-demand</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="monument text-sm block mb-2">Data Integration Approach</label>
-                      <textarea
-                        value={tech.dataIntegration || ''}
-                        onChange={(e) => updateTechnology(tech.decisionId, 'dataIntegration', e.target.value)}
-                        placeholder="How will different data sources be combined and integrated? What are the integration challenges? How will you ensure data consistency?"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="monument text-sm block mb-2">Security Requirements</label>
-                      <textarea
-                        value={tech.securityRequirements || ''}
-                        onChange={(e) => updateTechnology(tech.decisionId, 'securityRequirements', e.target.value)}
-                        placeholder="What security measures are needed? (e.g., encryption, access controls, data privacy, compliance requirements like GDPR)"
-                      />
+                      <label className="flex items-center gap-3 p-3 border border-gray-300 cursor-pointer hover:bg-gray-50">
+                        <input
+                          type="radio"
+                          name={`storage-${tech.decisionId}`}
+                          value="Hybrid"
+                          checked={tech.storageSystem === 'Hybrid'}
+                          onChange={(e) => updateTechnology(tech.decisionId, 'storageSystem', e.target.value)}
+                        />
+                        <div>
+                          <div className="riforma-bold">Hybrid</div>
+                          <div className="text-sm text-gray-600">Combination of cloud and on-premise</div>
+                        </div>
+                      </label>
                     </div>
                   </div>
+
+                  {/* Algorithms */}
+                  <div>
+                    <label className="monument text-sm block mb-3">Algorithms & Processing Logic</label>
+
+                    <div className="space-y-4 mb-4">
+                      {(tech.algorithms || []).map((alg, ai) => (
+                        <div key={alg.id} className="border border-gray-300 p-4 bg-gray-50">
+                          <div className="flex justify-between items-start mb-3">
+                            <span className="monument text-sm">Algorithm {ai + 1}</span>
+                            {(tech.algorithms || []).length > 1 && (
+                              <button
+                                className="btn-remove"
+                                onClick={() => removeAlgorithm(tech.decisionId, alg.id)}
+                              >
+                                Remove
+                              </button>
+                            )}
+                          </div>
+
+                          <div className="space-y-3">
+                            <div>
+                              <label className="monument text-xs block mb-1">Algorithm Name/Type</label>
+                              <input
+                                type="text"
+                                value={alg.algorithm || ''}
+                                onChange={(e) => updateAlgorithm(tech.decisionId, alg.id, 'algorithm', e.target.value)}
+                                placeholder="e.g., Linear Regression, Classification Model, Clustering, Recommendation Engine"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="monument text-xs block mb-1">Purpose</label>
+                              <textarea
+                                value={alg.purpose || ''}
+                                onChange={(e) => updateAlgorithm(tech.decisionId, alg.id, 'purpose', e.target.value)}
+                                placeholder="What does this algorithm do? What insights does it generate?"
+                                style={{ minHeight: '70px' }}
+                              />
+                            </div>
+
+                            <div>
+                              <label className="monument text-xs block mb-1">Complexity Level</label>
+                              <select
+                                value={alg.complexity || ''}
+                                onChange={(e) => updateAlgorithm(tech.decisionId, alg.id, 'complexity', e.target.value)}
+                              >
+                                <option value="">Select complexity</option>
+                                <option value="Simple">Simple (basic calculations, aggregations)</option>
+                                <option value="Moderate">Moderate (statistical analysis, simple ML)</option>
+                                <option value="Complex">Complex (advanced ML, deep learning, AI)</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <button
+                      className="btn-small"
+                      onClick={() => addAlgorithm(tech.decisionId)}
+                    >
+                      + Add Algorithm
+                    </button>
+                  </div>
+
+                  <div>
+                    <label className="monument text-sm block mb-2">Processing Frequency</label>
+                    <select
+                      value={tech.processingFrequency || ''}
+                      onChange={(e) => updateTechnology(tech.decisionId, 'processingFrequency', e.target.value)}
+                    >
+                      <option value="">Select frequency</option>
+                      <option value="Real-time">Real-time (continuous processing)</option>
+                      <option value="Hourly">Hourly</option>
+                      <option value="Daily">Daily</option>
+                      <option value="Weekly">Weekly</option>
+                      <option value="On-demand">On-demand</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="monument text-sm block mb-2">Data Integration Approach</label>
+                    <textarea
+                      value={tech.dataIntegration || ''}
+                      onChange={(e) => updateTechnology(tech.decisionId, 'dataIntegration', e.target.value)}
+                      placeholder="How will different data sources be combined and integrated? What are the integration challenges? How will you ensure data consistency?"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="monument text-sm block mb-2">Security Requirements</label>
+                    <textarea
+                      value={tech.securityRequirements || ''}
+                      onChange={(e) => updateTechnology(tech.decisionId, 'securityRequirements', e.target.value)}
+                      placeholder="What security measures are needed? (e.g., encryption, access controls, data privacy, compliance requirements like GDPR)"
+                    />
+                  </div>
                 </div>
-              ))}
+              </div>
             </div>
         </div>
       );

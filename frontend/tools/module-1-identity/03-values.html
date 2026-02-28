@@ -570,6 +570,9 @@
             const [userEmail, setUserEmail] = useState('');
             const [aiReviewing, setAiReviewing] = useState(false);
             const [aiMessage, setAiMessage] = useState('');
+            const [behaviorIdx, setBehaviorIdx] = useState(0);
+            const prevStepRef = useRef(step);
+            useEffect(() => { if (step === 3 && prevStepRef.current !== 3) setBehaviorIdx(0); prevStepRef.current = step; }, [step]);
             const [formData, setFormData] = useState({
                 // Section 1: Company Values
                 behaviors: Array(10).fill(''),
@@ -974,14 +977,17 @@
                             <div className="wizard-content animate-in">
                                 {step === 1 && <Step1 formData={formData} updateArrayField={updateArrayField} />}
                                 {step === 2 && <Step2 formData={formData} updateField={updateField} dreamLoaded={dreamLoaded} />}
-                                {step === 3 && <Step3 formData={formData} updateObjectField={updateObjectField} />}
+                                {step === 3 && <Step3 formData={formData} updateObjectField={updateObjectField} behaviorIdx={behaviorIdx} setBehaviorIdx={setBehaviorIdx} />}
                                 {step === 4 && <Step4 formData={formData} updateArrayField={updateArrayField} />}
                                 {step === 5 && <Step5 formData={formData} updateArrayField={updateArrayField} />}
                                 {step === 6 && <Step6 formData={formData} updateObjectField={updateObjectField} />}
                             </div>
 
                             <ButtonFooter
-                                onBack={() => setStep(step === 1 ? 0.5 : step === 3 ? 2.5 : step - 1)}
+                                onBack={() => {
+                                    if (step === 3 && behaviorIdx > 0) { setBehaviorIdx(behaviorIdx - 1); return; }
+                                    setStep(step === 1 ? 0.5 : step === 3 ? 2.5 : step - 1);
+                                }}
                                 onNext={() => {
                                     if (step === 1) {
                                         if (!validateStep1()) return;
@@ -991,6 +997,11 @@
                                         submitIndividualPhase();
                                         handleStepNext(2.5, { values_gap: { dream: formData.dream, requiredValues: formData.requiredValues, gap: formData.gap } }, 'Values Gap');
                                     } else if (step === 3) {
+                                        const lastFilledIdx = formData.valuesBehaviors.reduce((max, v, i) => (v.value.trim() || v.cool.trim() || v.notCool.trim()) ? i : max, -1);
+                                        if (behaviorIdx < Math.min(lastFilledIdx, 4) || (behaviorIdx < 4 && (formData.valuesBehaviors[behaviorIdx].value.trim() || formData.valuesBehaviors[behaviorIdx].cool.trim() || formData.valuesBehaviors[behaviorIdx].notCool.trim()))) {
+                                            setBehaviorIdx(behaviorIdx + 1);
+                                            return;
+                                        }
                                         if (!validateStep3()) return;
                                         handleStepNext(3.5, { cool_not_cool: formData.valuesBehaviors }, 'Values Behaviors');
                                     } else if (step === 4) {
@@ -1164,80 +1175,90 @@
         }
 
         // STEP 3: VALUES INTO BEHAVIORS
-        function Step3({ formData, updateObjectField }) {
+        function Step3({ formData, updateObjectField, behaviorIdx, setBehaviorIdx }) {
+            const valuePlaceholders = [
+                'e.g., Accountability',
+                'e.g., Transparency',
+                'e.g., Excellence',
+                'e.g., Collaboration',
+                'e.g., Innovation'
+            ];
+            const coolPlaceholders = [
+                'e.g., Taking ownership when things go wrong, proactively communicating delays, following through on commitments without reminders',
+                'e.g., Sharing information openly in meetings, admitting mistakes immediately, keeping everyone informed of changes',
+                'e.g., Delivering work that exceeds expectations, constantly seeking to improve, taking pride in every detail',
+                'e.g., Asking for help when needed, sharing credit generously, making time to support teammates',
+                'e.g., Experimenting with new approaches, challenging the status quo respectfully, turning failures into learning'
+            ];
+            const notCoolPlaceholders = [
+                'e.g., Blaming others when projects fail, making excuses for missed deadlines, waiting to be chased for updates',
+                'e.g., Keeping information to themselves, hiding problems until they explode, surprising people with bad news',
+                'e.g., Delivering "good enough" work consistently, resisting feedback, cutting corners to save time',
+                'e.g., Working in silos, hoarding knowledge, taking all the credit for team wins',
+                'e.g., Responding to new ideas with "we tried that before", sticking to old ways, punishing failed experiments'
+            ];
+
+            const items = formData.valuesBehaviors;
+            const item = items[behaviorIdx];
+            const hasFilled = (i) => items[i].value.trim() || items[i].cool.trim() || items[i].notCool.trim();
+
             return (
                 <div>
                     <div className="step-indicator"><span>TEAM PHASE — STEP 1 OF 4</span><span className="step-time">~10 min</span></div>
                     <h2 className="step-heading">Values Into Behaviors</h2>
                     <p className="step-hint">For each value, describe what "cool" and "not cool" behaviors look like.</p>
 
-                    {/* Fast Track Insight */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                        <span className="monument" style={{ fontSize: 12, color: '#666', letterSpacing: '0.05em' }}>Value {behaviorIdx + 1} of {items.length}</span>
+                    </div>
 
+                    <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+                        {items.map((_, i) => (
+                            <button key={i} onClick={() => setBehaviorIdx(i)} style={{
+                                width: 44, height: 44, border: `2px solid ${behaviorIdx === i ? '#000' : hasFilled(i) ? '#000' : '#E5E7EB'}`,
+                                background: behaviorIdx === i ? '#000' : hasFilled(i) ? '#F0F0F0' : '#fff',
+                                color: behaviorIdx === i ? '#FFF469' : hasFilled(i) ? '#000' : '#999',
+                                fontFamily: "'Monument', monospace", fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s'
+                            }}>{String(i + 1).padStart(2, '0')}</button>
+                        ))}
+                    </div>
 
-                    {(formData.valuesBehaviors[0] && (formData.valuesBehaviors[0].value || '').length >= 20) && (
+                    {(items[0] && (items[0].value || '').length >= 20) && (
                         <div className="ft-reveal">
                             <div className="ft-reveal-label">FAST TRACK INSIGHT</div>
                             <p className="ft-reveal-text">A meta-analysis of 200+ organizations found that defining values as explicit behavioral pairs (desired vs. undesired) increases cultural consistency by 35% compared to values stated as single words. Written behavioral commitments create psychological accountability that abstract principles cannot.</p>
                         </div>
                     )}
 
-                    <div className="space-y-8 mb-8">
-                        {formData.valuesBehaviors.map((item, i) => {
-                            const valuePlaceholders = [
-                                'e.g., Accountability',
-                                'e.g., Transparency', 
-                                'e.g., Excellence',
-                                'e.g., Collaboration',
-                                'e.g., Innovation'
-                            ];
-                            
-                            const coolPlaceholders = [
-                                'e.g., Taking ownership when things go wrong, proactively communicating delays, following through on commitments without reminders',
-                                'e.g., Sharing information openly in meetings, admitting mistakes immediately, keeping everyone informed of changes',
-                                'e.g., Delivering work that exceeds expectations, constantly seeking to improve, taking pride in every detail',
-                                'e.g., Asking for help when needed, sharing credit generously, making time to support teammates',
-                                'e.g., Experimenting with new approaches, challenging the status quo respectfully, turning failures into learning'
-                            ];
-                            
-                            const notCoolPlaceholders = [
-                                'e.g., Blaming others when projects fail, making excuses for missed deadlines, waiting to be chased for updates',
-                                'e.g., Keeping information to themselves, hiding problems until they explode, surprising people with bad news',
-                                'e.g., Delivering "good enough" work consistently, resisting feedback, cutting corners to save time',
-                                'e.g., Working in silos, hoarding knowledge, taking all the credit for team wins',
-                                'e.g., Responding to new ideas with "we tried that before", sticking to old ways, punishing failed experiments'
-                            ];
-                            
-                            return (
-                                <div key={i} className="border-2 border-gray-300 p-6 rounded">
-                                    <input
-                                        className="ft-input text-xl font-bold mb-4"
-                                        placeholder={valuePlaceholders[i]}
-                                        value={item.value}
-                                        onChange={(e) => updateObjectField('valuesBehaviors', i, 'value', e.target.value)}
+                    <div className="mb-8">
+                        <div className="border-2 border-gray-300 p-6 rounded">
+                            <input
+                                className="ft-input text-xl font-bold mb-4"
+                                placeholder={valuePlaceholders[behaviorIdx]}
+                                value={item.value}
+                                onChange={(e) => updateObjectField('valuesBehaviors', behaviorIdx, 'value', e.target.value)}
+                            />
+                            <div className="grid grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block font-bold mb-2 text-black">Cool Behavior</label>
+                                    <textarea
+                                        className="ft-input min-h-[100px] border-black"
+                                        placeholder={coolPlaceholders[behaviorIdx]}
+                                        value={item.cool}
+                                        onChange={(e) => updateObjectField('valuesBehaviors', behaviorIdx, 'cool', e.target.value)}
                                     />
-                                    <div className="grid grid-cols-2 gap-6">
-                                        <div>
-                                            <label className="block font-bold mb-2 text-black">Cool Behavior</label>
-                                            <textarea
-                                                className="ft-input min-h-[100px] border-black"
-                                                placeholder={coolPlaceholders[i]}
-                                                value={item.cool}
-                                                onChange={(e) => updateObjectField('valuesBehaviors', i, 'cool', e.target.value)}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block font-bold mb-2 text-red-600">Not Cool Behavior</label>
-                                            <textarea
-                                                className="ft-input min-h-[100px] border-red-600"
-                                                placeholder={notCoolPlaceholders[i]}
-                                                value={item.notCool}
-                                                onChange={(e) => updateObjectField('valuesBehaviors', i, 'notCool', e.target.value)}
-                                            />
-                                        </div>
-                                    </div>
                                 </div>
-                            );
-                        })}
+                                <div>
+                                    <label className="block font-bold mb-2 text-red-600">Not Cool Behavior</label>
+                                    <textarea
+                                        className="ft-input min-h-[100px] border-red-600"
+                                        placeholder={notCoolPlaceholders[behaviorIdx]}
+                                        value={item.notCool}
+                                        onChange={(e) => updateObjectField('valuesBehaviors', behaviorIdx, 'notCool', e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                 </div>

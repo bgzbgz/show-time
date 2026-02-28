@@ -448,6 +448,7 @@
       const [step, setStep] = useState(0);
       const [aiReviewing, setAiReviewing] = useState(false);
       const [submitted, setSubmitted] = useState(false);
+      const [abcIdx, setAbcIdx] = useState(0);
 
       const [data, setData] = useState({
         teamMembers: [
@@ -501,6 +502,9 @@
                 }
                 loadDeps();
             }, []);
+
+      // Reset abcIdx when entering step 3
+      useEffect(() => { if (step === 3) setAbcIdx(0); }, [step]);
 
       // Load from localStorage
       useEffect(() => {
@@ -608,6 +612,9 @@
       const goBack = () => {
         if (step === 5) {
           setStep(4);
+        } else if (step === 3) {
+          if (abcIdx > 0) { setAbcIdx(i => i - 1); return; }
+          setStep(2);
         } else if (step > 1) {
           setStep(step - 1);
         } else if (step === 1) {
@@ -766,9 +773,26 @@
       if (step >= 1 && step <= 4) {
         const stepLabels = ['Team Members', 'FIT Analysis', 'ABC Classification', 'Action Plans'];
         // Step 2 uses internal navigation — footer shows only Back
-        const isValid = step === 1 ? isStep1Valid() : step === 2 ? true : step === 3 ? isStep3Valid() : isStep4Valid();
+        let isValid, nextLabel, onNextOverride;
+        if (step === 3) {
+          const members = data.teamMembers || [];
+          const cur = members[abcIdx];
+          const curFilled = cur && (cur.abcRating || '').length >= 1 && (cur.abcReasoning || '').length >= 50;
+          const isLast = abcIdx === members.length - 1;
+          isValid = curFilled && (!isLast || isStep3Valid());
+          if (isLast) {
+            nextLabel = aiReviewing ? 'AI COACH REVIEWING...' : 'NEXT: ACTION PLANS →';
+            onNextOverride = goNext;
+          } else {
+            nextLabel = 'NEXT MEMBER →';
+            onNextOverride = () => setAbcIdx(i => i + 1);
+          }
+        } else {
+          isValid = step === 1 ? isStep1Valid() : step === 2 ? true : isStep4Valid();
+          nextLabel = aiReviewing ? 'AI COACH REVIEWING...' : ({ 1: 'NEXT: FIT ANALYSIS →', 4: 'VIEW CANVAS →' }[step] || 'NEXT →');
+          onNextOverride = goNext;
+        }
         const canProceed = !aiReviewing && isValid;
-        const nextLabels = { 1: 'NEXT: FIT ANALYSIS →', 3: 'NEXT: ACTION PLANS →', 4: 'VIEW CANVAS →' };
         return (
           <div className="wizard-layout">
             <div className="wizard-main">
@@ -776,14 +800,14 @@
                 <DependencyContext deps={deps} />
                 {step === 1 && <Step1Page data={data} updateTeamMember={updateTeamMember} addTeamMember={addTeamMember} removeTeamMember={removeTeamMember} />}
                 {step === 2 && <Step2Page data={data} updateTeamMember={updateTeamMember} onAdvanceStep={goNext} />}
-                {step === 3 && <Step3Page data={data} updateTeamMember={updateTeamMember} />}
+                {step === 3 && <Step3Page data={data} updateTeamMember={updateTeamMember} abcIdx={abcIdx} setAbcIdx={setAbcIdx} />}
                 {step === 4 && <Step4Page data={data} updateTeamMember={updateTeamMember} />}
               </div>
               {step !== 2 && (
                 <div className="wizard-footer">
                   <button className="btn-wiz-back" onClick={goBack}>← BACK</button>
-                  <button className="btn-wiz-next" disabled={!canProceed} onClick={goNext}>
-                    {aiReviewing ? 'AI COACH REVIEWING...' : (nextLabels[step] || 'NEXT →')}
+                  <button className="btn-wiz-next" disabled={!canProceed} onClick={onNextOverride}>
+                    {nextLabel}
                   </button>
                 </div>
               )}
@@ -1292,22 +1316,25 @@
     }
 
     // Step 3: ABC Classification
-    function Step3Page({ data, updateTeamMember }) {
+    function Step3Page({ data, updateTeamMember, abcIdx, setAbcIdx }) {
+      const members = data.teamMembers || [];
+      const member = members[abcIdx];
+      const hasFilled = (i) => {
+        const m = members[i];
+        return m && (m.abcRating || '').length >= 1 && (m.abcReasoning || '').length >= 50;
+      };
+
+      if (!member) return null;
+
       return (
-        <div>
-            <div className="numbered-section mb-8 animate-in">03. ABC CLASSIFICATION</div>
+        <div key={abcIdx} className="animate-in">
+            <div className="numbered-section mb-8">03. ABC CLASSIFICATION</div>
 
-            {/* Fast Track Insight */}
-
-            {/* The Science */}
-            
-
-
-            <h3 className="riforma-bold text-5xl mb-8 animate-in" style={{animationDelay: '0.05s'}}>
+            <h3 className="riforma-bold text-5xl mb-8">
               Classify each team member as A, B, or C player
             </h3>
 
-            <div className="border-l-4 border-yellow-400 pl-6 mb-12 animate-in" style={{animationDelay: '0.1s'}}>
+            <div className="border-l-4 border-yellow-400 pl-6 mb-12">
               <p className="text-2xl italic">
                 "A-players drive results AND culture. B-players are good but not great. C-players are low performers or cultural misfits. Be brutally honest, not sentimental."
               </p>
@@ -1331,99 +1358,106 @@
               </div>
             </div>
 
-            <div className="space-y-8 mb-12">
-              {(data.teamMembers || []).map((member, index) => (
-                <div key={member.id} className="border-4 border-gray-200 p-6 animate-in" style={{animationDelay: `${0.15 + index * 0.05}s`}}>
-                  <h4 className="riforma-bold text-3xl mb-6">
-                    {(member.name || 'Team Member').substring(0, 50)} - {(member.role || 'Role').substring(0, 50)}
-                  </h4>
-
-                  <div className="mb-6">
-                    <p className="text-lg mb-2 text-gray-500">
-                      FIT Scores: Energy {member.energyScore || 0} | Skill {member.skillScore || 0} | Values {member.valuesScore || 0} | Impact {member.impactScore || 0}
-                    </p>
-                  </div>
-
-                  {/* ABC Rating */}
-                  <div className="mb-6">
-                    <label className="monument text-sm block mb-3">ABC CLASSIFICATION <span className="text-red-500">*</span></label>
-                    <div className="flex gap-4">
-                      <button
-                        type="button"
-                        onClick={() => updateTeamMember(member.id, 'abcRating', 'A')}
-                        className={`abc-badge a ${(member.abcRating || '') === 'A' ? 'selected' : ''}`}
-                      >
-                        A PLAYER
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => updateTeamMember(member.id, 'abcRating', 'B')}
-                        className={`abc-badge b ${(member.abcRating || '') === 'B' ? 'selected' : ''}`}
-                      >
-                        B PLAYER
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => updateTeamMember(member.id, 'abcRating', 'C')}
-                        className={`abc-badge c ${(member.abcRating || '') === 'C' ? 'selected' : ''}`}
-                      >
-                        C PLAYER
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Reasoning */}
-                  <div className="bg-gray-50 border-2 border-gray-200 p-6 mb-4">
-                    <label className="monument text-sm block mb-2">ABC REASONING <span className="text-red-500">*</span></label>
-                    <p className="text-sm text-gray-500 mb-2">Why did you classify them this way? Be specific about performance, culture fit, and potential.</p>
-                    <textarea
-                      value={member.abcReasoning || ''}
-                      onChange={(e) => updateTeamMember(member.id, 'abcReasoning', e.target.value)}
-                      placeholder="Example: 'Classified as B player because performance is solid (delivers on time, meets targets) but lacks strategic thinking needed for next level. Cultural fit is strong, aligns with values. Limited growth potential in current role—may need lateral move to stay engaged.'"
-                      className="w-full"
-                      rows={4}
-                    />
-                    <div className="char-counter">{(member.abcReasoning || '').length}/1000 (min 50)</div>
-                  </div>
-
-                  {/* Additional Notes */}
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <label className="monument text-xs block mb-2">PERFORMANCE NOTES</label>
-                      <textarea
-                        value={member.performanceNotes || ''}
-                        onChange={(e) => updateTeamMember(member.id, 'performanceNotes', e.target.value)}
-                        placeholder="Specific results and contributions"
-                        className="w-full text-sm"
-                        rows={3}
-                      />
-                      <div className="char-counter text-xs">{(member.performanceNotes || '').length}/500</div>
-                    </div>
-                    <div>
-                      <label className="monument text-xs block mb-2">CULTURE NOTES</label>
-                      <textarea
-                        value={member.cultureNotes || ''}
-                        onChange={(e) => updateTeamMember(member.id, 'cultureNotes', e.target.value)}
-                        placeholder="Values alignment and behavior"
-                        className="w-full text-sm"
-                        rows={3}
-                      />
-                      <div className="char-counter text-xs">{(member.cultureNotes || '').length}/500</div>
-                    </div>
-                    <div>
-                      <label className="monument text-xs block mb-2">POTENTIAL NOTES</label>
-                      <textarea
-                        value={member.potentialNotes || ''}
-                        onChange={(e) => updateTeamMember(member.id, 'potentialNotes', e.target.value)}
-                        placeholder="Future growth and development capacity"
-                        className="w-full text-sm"
-                        rows={3}
-                      />
-                      <div className="char-counter text-xs">{(member.potentialNotes || '').length}/500</div>
-                    </div>
-                  </div>
-                </div>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+              {members.map((_, i) => (
+                <button key={i} onClick={() => setAbcIdx(i)} style={{
+                  width: 44, height: 44, border: `2px solid ${abcIdx === i ? '#000' : hasFilled(i) ? '#000' : '#E5E7EB'}`,
+                  background: abcIdx === i ? '#000' : hasFilled(i) ? '#F0F0F0' : '#fff',
+                  color: abcIdx === i ? '#FFF469' : hasFilled(i) ? '#000' : '#999',
+                  fontFamily: "'Monument', monospace", fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s'
+                }}>{String(i + 1).padStart(2, '0')}</button>
               ))}
+            </div>
+
+            <div className="border-4 border-gray-200 p-6 mb-12">
+              <h4 className="riforma-bold text-3xl mb-6">
+                {(member.name || 'Team Member').substring(0, 50)} - {(member.role || 'Role').substring(0, 50)}
+              </h4>
+
+              <div className="mb-6">
+                <p className="text-lg mb-2 text-gray-500">
+                  FIT Scores: Energy {member.energyScore || 0} | Skill {member.skillScore || 0} | Values {member.valuesScore || 0} | Impact {member.impactScore || 0}
+                </p>
+              </div>
+
+              {/* ABC Rating */}
+              <div className="mb-6">
+                <label className="monument text-sm block mb-3">ABC CLASSIFICATION <span className="text-red-500">*</span></label>
+                <div className="flex gap-4">
+                  <button
+                    type="button"
+                    onClick={() => updateTeamMember(member.id, 'abcRating', 'A')}
+                    className={`abc-badge a ${(member.abcRating || '') === 'A' ? 'selected' : ''}`}
+                  >
+                    A PLAYER
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateTeamMember(member.id, 'abcRating', 'B')}
+                    className={`abc-badge b ${(member.abcRating || '') === 'B' ? 'selected' : ''}`}
+                  >
+                    B PLAYER
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateTeamMember(member.id, 'abcRating', 'C')}
+                    className={`abc-badge c ${(member.abcRating || '') === 'C' ? 'selected' : ''}`}
+                  >
+                    C PLAYER
+                  </button>
+                </div>
+              </div>
+
+              {/* Reasoning */}
+              <div className="bg-gray-50 border-2 border-gray-200 p-6 mb-4">
+                <label className="monument text-sm block mb-2">ABC REASONING <span className="text-red-500">*</span></label>
+                <p className="text-sm text-gray-500 mb-2">Why did you classify them this way? Be specific about performance, culture fit, and potential.</p>
+                <textarea
+                  value={member.abcReasoning || ''}
+                  onChange={(e) => updateTeamMember(member.id, 'abcReasoning', e.target.value)}
+                  placeholder="Example: 'Classified as B player because performance is solid (delivers on time, meets targets) but lacks strategic thinking needed for next level. Cultural fit is strong, aligns with values. Limited growth potential in current role—may need lateral move to stay engaged.'"
+                  className="w-full"
+                  rows={4}
+                />
+                <div className="char-counter">{(member.abcReasoning || '').length}/1000 (min 50)</div>
+              </div>
+
+              {/* Additional Notes */}
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="monument text-xs block mb-2">PERFORMANCE NOTES</label>
+                  <textarea
+                    value={member.performanceNotes || ''}
+                    onChange={(e) => updateTeamMember(member.id, 'performanceNotes', e.target.value)}
+                    placeholder="Specific results and contributions"
+                    className="w-full text-sm"
+                    rows={3}
+                  />
+                  <div className="char-counter text-xs">{(member.performanceNotes || '').length}/500</div>
+                </div>
+                <div>
+                  <label className="monument text-xs block mb-2">CULTURE NOTES</label>
+                  <textarea
+                    value={member.cultureNotes || ''}
+                    onChange={(e) => updateTeamMember(member.id, 'cultureNotes', e.target.value)}
+                    placeholder="Values alignment and behavior"
+                    className="w-full text-sm"
+                    rows={3}
+                  />
+                  <div className="char-counter text-xs">{(member.cultureNotes || '').length}/500</div>
+                </div>
+                <div>
+                  <label className="monument text-xs block mb-2">POTENTIAL NOTES</label>
+                  <textarea
+                    value={member.potentialNotes || ''}
+                    onChange={(e) => updateTeamMember(member.id, 'potentialNotes', e.target.value)}
+                    placeholder="Future growth and development capacity"
+                    className="w-full text-sm"
+                    rows={3}
+                  />
+                  <div className="char-counter text-xs">{(member.potentialNotes || '').length}/500</div>
+                </div>
+              </div>
             </div>
 
         </div>

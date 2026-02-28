@@ -500,6 +500,9 @@
       const [step, setStep] = useState(0);
       const [aiReviewing, setAiReviewing] = useState(false);
       const [aiMessage, setAiMessage] = useState('');
+      const [decisionIdx, setDecisionIdx] = useState(0);
+      const [processIdx, setProcessIdx] = useState(0);
+      const [toolIdx, setToolIdx] = useState(0);
 
       const [data, setData] = useState({
         toolType: '', // 'individual' or 'team'
@@ -843,9 +846,23 @@
         if (step === 0) {
           setStep(0.5);
         } else if (step === 0.5) {
+          setDecisionIdx(0); setProcessIdx(0); setToolIdx(0);
           setStep(1);
         } else if (data.toolType === 'individual') {
           if (step >= 1 && step <= 3) {
+            // Paginate through items before advancing step
+            if (step === 1) {
+              const decisions = data.individual.decisions || [];
+              if (decisionIdx < decisions.length - 1) { setDecisionIdx(decisionIdx + 1); return; }
+            }
+            if (step === 2) {
+              const processes = data.individual.processes || [];
+              if (processIdx < processes.length - 1) { setProcessIdx(processIdx + 1); return; }
+            }
+            if (step === 3) {
+              const tools = data.individual.implementation?.aiTools || [];
+              if (toolIdx < tools.length - 1) { setToolIdx(toolIdx + 1); return; }
+            }
             const userId = localStorage.getItem('ft_user_id');
             if (userId) {
               setAiReviewing(true);
@@ -876,6 +893,8 @@
               }
             }
             if (step < 3) {
+              if (step === 1) setProcessIdx(0);
+              if (step === 2) setToolIdx(0);
               setStep(step + 0.5);
             } else if (step === 3) {
               setStep(4);
@@ -925,9 +944,19 @@
       };
 
       const goBack = () => {
+        if (data.toolType === 'individual') {
+          if (step === 1 && decisionIdx > 0) { setDecisionIdx(decisionIdx - 1); return; }
+          if (step === 2 && processIdx > 0) { setProcessIdx(processIdx - 1); return; }
+          if (step === 3 && toolIdx > 0) { setToolIdx(toolIdx - 1); return; }
+        }
         if (step === 4 || step === 5) {
           setStep(step - 1);
         } else if (step > 1) {
+          // Reset idx to last item of previous step
+          if (data.toolType === 'individual') {
+            if (step === 2) setDecisionIdx(Math.max(0, (data.individual.decisions || []).length - 1));
+            if (step === 3) setProcessIdx(Math.max(0, (data.individual.processes || []).length - 1));
+          }
           setStep(step - 1);
         } else if (step === 1) {
           setStep(0.5);
@@ -1115,9 +1144,9 @@
           <div className="wizard-layout">
             <div className="wizard-main">
               <div className="wizard-content animate-in">
-                {step === 1 && <><DependencyContext deps={deps} /><IndividualStep1 data={data} updateDecision={updateDecision} addDecision={addDecision} removeDecision={removeDecision} /></>}
-                {step === 2 && <IndividualStep2 data={data} updateProcess={updateProcess} addProcess={addProcess} removeProcess={removeProcess} />}
-                {step === 3 && <IndividualStep3 data={data} setData={setData} updateAITool={updateAITool} addAITool={addAITool} removeAITool={removeAITool} />}
+                {step === 1 && <><DependencyContext deps={deps} /><IndividualStep1 data={data} updateDecision={updateDecision} addDecision={addDecision} removeDecision={removeDecision} idx={decisionIdx} setIdx={setDecisionIdx} /></>}
+                {step === 2 && <IndividualStep2 data={data} updateProcess={updateProcess} addProcess={addProcess} removeProcess={removeProcess} idx={processIdx} setIdx={setProcessIdx} />}
+                {step === 3 && <IndividualStep3 data={data} setData={setData} updateAITool={updateAITool} addAITool={addAITool} removeAITool={removeAITool} idx={toolIdx} setIdx={setToolIdx} />}
               </div>
               <div className="wizard-footer" style={{flexDirection:'column',alignItems:'stretch',gap:'0'}}>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
@@ -1331,354 +1360,242 @@
     }
 
     // Individual Step 1: Top 3 Decisions Analysis
-    function IndividualStep1({ data, updateDecision, addDecision, removeDecision }) {
-      const helpContent = (
-        <div>
-          <h2 className="plaak text-4xl mb-6">TOP 3 DECISIONS EXAMPLES</h2>
-
-          <div className="mb-6">
-            <h3 className="riforma-bold text-2xl mb-3">SALES MANAGER EXAMPLE</h3>
-            <div className="border-l-4 border-black pl-4">
-              <p className="mb-2"><strong>Decision:</strong> Which leads to prioritize for follow-up calls each day</p>
-              <p className="mb-2"><strong>Frequency:</strong> Daily</p>
-              <p className="mb-2"><strong>Impact:</strong> High</p>
-              <p className="mb-2"><strong>Data Needed:</strong> Lead engagement score, company size, budget indicators, decision timeline, competitive pressure, past interaction history, industry trends</p>
-              <p className="mb-2"><strong>Current Data Source:</strong> CRM system, email engagement tracking, LinkedIn insights</p>
-              <p className="mb-2"><strong>AI Opportunity:</strong> AI analyzes all lead data and provides daily prioritized list with probability scores and recommended talking points based on recent activities</p>
-              <p><strong>AI Tool:</strong> Salesforce Einstein or HubSpot AI</p>
-            </div>
-          </div>
-
-          <div className="mb-6">
-            <h3 className="riforma-bold text-2xl mb-3">OPERATIONS MANAGER EXAMPLE</h3>
-            <div className="border-l-4 border-black pl-4">
-              <p className="mb-2"><strong>Decision:</strong> How to allocate staff across shifts to meet demand without overtime costs</p>
-              <p className="mb-2"><strong>Frequency:</strong> Weekly</p>
-              <p className="mb-2"><strong>Impact:</strong> High</p>
-              <p className="mb-2"><strong>Data Needed:</strong> Historical demand patterns, employee availability, skill levels, labor costs, productivity metrics, seasonal trends, special events calendar</p>
-              <p className="mb-2"><strong>Current Data Source:</strong> Scheduling software, HR system, production logs</p>
-              <p className="mb-2"><strong>AI Opportunity:</strong> AI predicts demand patterns and automatically generates optimal staff schedules that balance service levels with labor costs</p>
-              <p><strong>AI Tool:</strong> Deputy AI or When I Work</p>
-            </div>
-          </div>
-
-          <div className="mb-6">
-            <h3 className="riforma-bold text-2xl mb-3">PRODUCT MANAGER EXAMPLE</h3>
-            <div className="border-l-4 border-black pl-4">
-              <p className="mb-2"><strong>Decision:</strong> Which product features to prioritize in next development sprint</p>
-              <p className="mb-2"><strong>Frequency:</strong> Monthly</p>
-              <p className="mb-2"><strong>Impact:</strong> High</p>
-              <p className="mb-2"><strong>Data Needed:</strong> Customer feedback volume, feature request frequency, competitive analysis, development effort estimates, revenue impact potential, user engagement metrics</p>
-              <p className="mb-2"><strong>Current Data Source:</strong> Support tickets, user surveys, product analytics, competitor monitoring</p>
-              <p className="mb-2"><strong>AI Opportunity:</strong> AI aggregates all customer signals, competitive moves, and business metrics to recommend feature priorities with impact scores and rationale</p>
-              <p><strong>AI Tool:</strong> Productboard AI or Aha! AI</p>
-            </div>
-          </div>
-        </div>
-      );
+    function IndividualStep1({ data, updateDecision, addDecision, removeDecision, idx, setIdx }) {
+      const decisions = data.individual.decisions || [];
+      const decision = decisions[idx] || decisions[0];
+      const hasFilled = (i) => {
+        const d = decisions[i];
+        return d && ((d.decisionName || '').length > 0 || (d.dataNeeded || '').length > 0);
+      };
 
       return (
         <div>
             <div className="mb-8">
               <div className="numbered-section">01</div>
-
               <h1 className="plaak text-6xl mt-4 mb-4">TOP 3 DECISIONS ANALYSIS</h1>
               <p className="text-2xl text-gray-300">
                 Identify your three most important decisions that AI can optimize for speed and accuracy. You must have exactly 3 decisions.
               </p>
             </div>
 
-            <div className="mb-8">
-              {(data.individual.decisions || []).map((decision, index) => (
-                <div key={decision.id} className="item-card">
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="plaak text-2xl">DECISION {index + 1}</h3>
-                    {(data.individual.decisions || []).length > 1 && (
-                      <button
-                        onClick={() => removeDecision(decision.id)}
-                        className="btn-remove"
-                      >
-                        REMOVE
-                      </button>
-                    )}
-                  </div>
+            <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#999', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 12 }}>
+              DECISION {idx + 1} OF {decisions.length}
+            </div>
 
-                  <div className="space-y-4">
-                    <div>
-                      <label className="monument text-sm block mb-2">DECISION NAME</label>
-                      <ScienceBookmarkIcon>
-                          Naming decisions precisely is critical. Iansiti &amp; Lakhani (Competing in the Age of AI) show that AI-driven organizations outperform because they operate on specific data flows, not vague goals. Define the exact decision, not the category.
-                      </ScienceBookmarkIcon>
-                      <input
-                        type="text"
-                        value={decision.decisionName || ''}
-                        onChange={(e) => updateDecision(decision.id, 'decisionName', e.target.value)}
-                        placeholder="What specific decision do you make regularly?"
-                      />
-                      <CharCounter current={(decision.decisionName || '').length} min={50} />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="monument text-sm block mb-2">FREQUENCY</label>
-                        <ScienceBookmarkIcon>
-                            High-frequency decisions yield the fastest AI ROI. Daugherty &amp; Wilson (Human + Machine) found that deploying AI on repetitive, high-volume tasks first delivers the quickest payback \u2014 daily decisions should be prioritized over monthly ones.
-                        </ScienceBookmarkIcon>
-                        <select
-                          value={decision.frequency || ''}
-                          onChange={(e) => updateDecision(decision.id, 'frequency', e.target.value)}
-                        >
-                          <option value="">Select frequency</option>
-                          <option value="daily">Daily</option>
-                          <option value="weekly">Weekly</option>
-                          <option value="monthly">Monthly</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="monument text-sm block mb-2">IMPACT</label>
-                        <ScienceBookmarkIcon>
-                            Focus on high-impact decisions first. McKinsey (2023) reports that AI applied to high-impact business decisions delivers 3x the ROI compared to low-impact automation. Rank by revenue effect, customer impact, or strategic value.
-                        </ScienceBookmarkIcon>
-                        <select
-                          value={decision.impact || ''}
-                          onChange={(e) => updateDecision(decision.id, 'impact', e.target.value)}
-                        >
-                          <option value="">Select impact</option>
-                          <option value="low">Low</option>
-                          <option value="medium">Medium</option>
-                          <option value="high">High</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="monument text-sm block mb-2">DATA NEEDED</label>
-                      <textarea
-                        value={decision.dataNeeded || ''}
-                        onChange={(e) => updateDecision(decision.id, 'dataNeeded', e.target.value)}
-                        placeholder="What data would make this decision faster and more accurate?"
-                      />
-                      <CharCounter current={(decision.dataNeeded || '').length} min={100} />
-                    </div>
-
-                    <div>
-                      <label className="monument text-sm block mb-2">CURRENT DATA SOURCE</label>
-                      <input
-                        type="text"
-                        value={decision.currentDataSource || ''}
-                        onChange={(e) => updateDecision(decision.id, 'currentDataSource', e.target.value)}
-                        placeholder="Where does this data exist today?"
-                      />
-                      <CharCounter current={(decision.currentDataSource || '').length} min={50} />
-                    </div>
-
-                    <div>
-                      <label className="monument text-sm block mb-2">AI OPPORTUNITY</label>
-                      <textarea
-                        value={decision.aiOpportunity || ''}
-                        onChange={(e) => updateDecision(decision.id, 'aiOpportunity', e.target.value)}
-                        placeholder="How could AI collect, analyze, and present insights to improve this decision?"
-                      />
-                      <CharCounter current={(decision.aiOpportunity || '').length} min={100} />
-                    </div>
-
-                    <div>
-                      <label className="monument text-sm block mb-2">SPECIFIC AI TOOL</label>
-                      <input
-                        type="text"
-                        value={decision.aiTool || ''}
-                        onChange={(e) => updateDecision(decision.id, 'aiTool', e.target.value)}
-                        placeholder="Which AI tool would you use? (e.g., ChatGPT, Salesforce Einstein, custom solution)"
-                      />
-                      <CharCounter current={(decision.aiTool || '').length} min={10} />
-                    </div>
-                  </div>
-                </div>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+              {decisions.map((_, i) => (
+                <button key={i} onClick={() => setIdx(i)} style={{
+                  width: 44, height: 44, border: `2px solid ${idx === i ? '#000' : hasFilled(i) ? '#000' : '#E5E7EB'}`,
+                  background: idx === i ? '#000' : hasFilled(i) ? '#F0F0F0' : '#fff',
+                  color: idx === i ? '#FFF469' : hasFilled(i) ? '#000' : '#999',
+                  fontFamily: "'Monument', monospace", fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s'
+                }}>{String(i + 1).padStart(2, '0')}</button>
               ))}
-
-              {(data.individual.decisions || []).length < 3 && (
-                <button onClick={addDecision} className="btn-secondary w-full">
-                  ADD DECISION
-                </button>
+              {decisions.length < 3 && (
+                <button onClick={() => { addDecision(); setTimeout(() => setIdx(decisions.length), 0); }} style={{
+                  width: 44, height: 44, border: '2px dashed #E5E7EB', background: '#fff', color: '#999',
+                  fontFamily: "'Monument', monospace", fontSize: 11, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s'
+                }}>+</button>
               )}
             </div>
+
+            {decision && (
+            <div key={idx} className="animate-in">
+              <div className="item-card">
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="plaak text-2xl">DECISION {idx + 1}</h3>
+                  {decisions.length > 1 && (
+                    <button onClick={() => { removeDecision(decision.id); if (idx >= decisions.length - 1) setIdx(Math.max(0, idx - 1)); }} className="btn-remove">REMOVE</button>
+                  )}
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="monument text-sm block mb-2">DECISION NAME</label>
+                    <ScienceBookmarkIcon>
+                        Naming decisions precisely is critical. Iansiti &amp; Lakhani (Competing in the Age of AI) show that AI-driven organizations outperform because they operate on specific data flows, not vague goals. Define the exact decision, not the category.
+                    </ScienceBookmarkIcon>
+                    <input type="text" value={decision.decisionName || ''} onChange={(e) => updateDecision(decision.id, 'decisionName', e.target.value)} placeholder="What specific decision do you make regularly?" />
+                    <CharCounter current={(decision.decisionName || '').length} min={50} />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="monument text-sm block mb-2">FREQUENCY</label>
+                      <ScienceBookmarkIcon>
+                          High-frequency decisions yield the fastest AI ROI. Daugherty &amp; Wilson (Human + Machine) found that deploying AI on repetitive, high-volume tasks first delivers the quickest payback — daily decisions should be prioritized over monthly ones.
+                      </ScienceBookmarkIcon>
+                      <select value={decision.frequency || ''} onChange={(e) => updateDecision(decision.id, 'frequency', e.target.value)}>
+                        <option value="">Select frequency</option>
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="monument text-sm block mb-2">IMPACT</label>
+                      <ScienceBookmarkIcon>
+                          Focus on high-impact decisions first. McKinsey (2023) reports that AI applied to high-impact business decisions delivers 3x the ROI compared to low-impact automation. Rank by revenue effect, customer impact, or strategic value.
+                      </ScienceBookmarkIcon>
+                      <select value={decision.impact || ''} onChange={(e) => updateDecision(decision.id, 'impact', e.target.value)}>
+                        <option value="">Select impact</option>
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="monument text-sm block mb-2">DATA NEEDED</label>
+                    <textarea value={decision.dataNeeded || ''} onChange={(e) => updateDecision(decision.id, 'dataNeeded', e.target.value)} placeholder="What data would make this decision faster and more accurate?" />
+                    <CharCounter current={(decision.dataNeeded || '').length} min={100} />
+                  </div>
+
+                  <div>
+                    <label className="monument text-sm block mb-2">CURRENT DATA SOURCE</label>
+                    <input type="text" value={decision.currentDataSource || ''} onChange={(e) => updateDecision(decision.id, 'currentDataSource', e.target.value)} placeholder="Where does this data exist today?" />
+                    <CharCounter current={(decision.currentDataSource || '').length} min={50} />
+                  </div>
+
+                  <div>
+                    <label className="monument text-sm block mb-2">AI OPPORTUNITY</label>
+                    <textarea value={decision.aiOpportunity || ''} onChange={(e) => updateDecision(decision.id, 'aiOpportunity', e.target.value)} placeholder="How could AI collect, analyze, and present insights to improve this decision?" />
+                    <CharCounter current={(decision.aiOpportunity || '').length} min={100} />
+                  </div>
+
+                  <div>
+                    <label className="monument text-sm block mb-2">SPECIFIC AI TOOL</label>
+                    <input type="text" value={decision.aiTool || ''} onChange={(e) => updateDecision(decision.id, 'aiTool', e.target.value)} placeholder="Which AI tool would you use? (e.g., ChatGPT, Salesforce Einstein, custom solution)" />
+                    <CharCounter current={(decision.aiTool || '').length} min={10} />
+                  </div>
+                </div>
+              </div>
+            </div>
+            )}
         </div>
       );
     }
 
     // Individual Step 2: Top 3 Processes Analysis
-    function IndividualStep2({ data, updateProcess, addProcess, removeProcess }) {
-      const helpContent = (
-        <div>
-          <h2 className="plaak text-4xl mb-6">TOP 3 PROCESSES EXAMPLES</h2>
-
-          <div className="mb-6">
-            <h3 className="riforma-bold text-2xl mb-3">MARKETING MANAGER EXAMPLE</h3>
-            <div className="border-l-4 border-black pl-4">
-              <p className="mb-2"><strong>Process:</strong> Weekly social media content creation and scheduling across all platforms</p>
-              <p className="mb-2"><strong>Time Consumed:</strong> 8 hours per week</p>
-              <p className="mb-2"><strong>Repetition:</strong> Weekly</p>
-              <p className="mb-2"><strong>Current Steps:</strong> Research trending topics, brainstorm content ideas, write copy for each platform, create or source images, schedule posts in Buffer, track engagement metrics, respond to comments, compile weekly report</p>
-              <p className="mb-2"><strong>Automation Opportunity:</strong> AI generates content suggestions based on trending topics and brand voice, creates platform-optimized copy variations, suggests optimal posting times, auto-schedules content, monitors engagement, flags comments needing response, generates weekly performance reports</p>
-              <p className="mb-2"><strong>KPIs:</strong> Time saved (target 6 hours), engagement rate improvement (target 25%), content consistency (5 posts per platform weekly), response time to comments (under 2 hours)</p>
-              <p><strong>AI Tool:</strong> Jasper AI + Hootsuite AI</p>
-            </div>
-          </div>
-
-          <div className="mb-6">
-            <h3 className="riforma-bold text-2xl mb-3">FINANCE MANAGER EXAMPLE</h3>
-            <div className="border-l-4 border-black pl-4">
-              <p className="mb-2"><strong>Process:</strong> Monthly financial reporting and variance analysis</p>
-              <p className="mb-2"><strong>Time Consumed:</strong> 16 hours per month</p>
-              <p className="mb-2"><strong>Repetition:</strong> Monthly</p>
-              <p className="mb-2"><strong>Current Steps:</strong> Export data from accounting system, clean and format data in Excel, create pivot tables, calculate variances, identify anomalies, investigate unusual items, create PowerPoint presentation, write executive summary, present to leadership team</p>
-              <p className="mb-2"><strong>Automation Opportunity:</strong> AI automatically pulls data, cleans and standardizes it, calculates all metrics and variances, flags anomalies with root cause analysis, generates visualizations, creates narrative explanations, drafts executive summary with recommendations</p>
-              <p className="mb-2"><strong>KPIs:</strong> Time reduction (target 12 hours saved), report delivery speed (5 days to 1 day), accuracy improvement (zero calculation errors), insights quality (leadership identifies 3+ actionable items per report)</p>
-              <p><strong>AI Tool:</strong> Power BI with AI features or Tableau AI</p>
-            </div>
-          </div>
-
-          <div className="mb-6">
-            <h3 className="riforma-bold text-2xl mb-3">CUSTOMER SUCCESS MANAGER EXAMPLE</h3>
-            <div className="border-l-4 border-black pl-4">
-              <p className="mb-2"><strong>Process:</strong> Customer onboarding and initial setup for new accounts</p>
-              <p className="mb-2"><strong>Time Consumed:</strong> 6 hours per customer</p>
-              <p className="mb-2"><strong>Repetition:</strong> Daily (2-3 new customers per week)</p>
-              <p className="mb-2"><strong>Current Steps:</strong> Send welcome email, schedule kickoff call, conduct product walkthrough, configure account settings, create custom documentation, provide training materials, answer setup questions, follow up on first week usage</p>
-              <p className="mb-2"><strong>Automation Opportunity:</strong> AI sends personalized welcome sequence based on customer type, provides interactive product walkthrough, auto-configures standard settings, generates custom documentation from templates, answers common questions via chatbot, monitors usage and triggers proactive outreach, identifies at-risk customers early</p>
-              <p className="mb-2"><strong>KPIs:</strong> Onboarding time reduction (6 hours to 2 hours), time to first value (7 days to 3 days), customer satisfaction score (target 4.5/5), activation rate (target 85%), early churn reduction (50% decrease)</p>
-              <p><strong>AI Tool:</strong> Intercom AI + Gainsight AI</p>
-            </div>
-          </div>
-        </div>
-      );
+    function IndividualStep2({ data, updateProcess, addProcess, removeProcess, idx, setIdx }) {
+      const processes = data.individual.processes || [];
+      const process = processes[idx] || processes[0];
+      const hasFilled = (i) => {
+        const p = processes[i];
+        return p && ((p.processName || '').length > 0 || (p.currentSteps || '').length > 0);
+      };
 
       return (
         <div>
             <div className="mb-8">
               <div className="numbered-section">02</div>
-
               <h1 className="plaak text-6xl mt-4 mb-4">TOP 3 PROCESSES ANALYSIS</h1>
               <p className="text-2xl text-gray-300">
                 Identify your three most time-consuming processes that AI can automate. You must have exactly 3 processes.
               </p>
             </div>
 
-            <div className="mb-8">
-              {(data.individual.processes || []).map((process, index) => (
-                <div key={process.id} className="item-card">
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="plaak text-2xl">PROCESS {index + 1}</h3>
-                    {(data.individual.processes || []).length > 1 && (
-                      <button
-                        onClick={() => removeProcess(process.id)}
-                        className="btn-remove"
-                      >
-                        REMOVE
-                      </button>
-                    )}
-                  </div>
+            <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#999', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 12 }}>
+              PROCESS {idx + 1} OF {processes.length}
+            </div>
 
-                  <div className="space-y-4">
-                    <div>
-                      <label className="monument text-sm block mb-2">PROCESS NAME</label>
-                      <input
-                        type="text"
-                        value={process.processName || ''}
-                        onChange={(e) => updateProcess(process.id, 'processName', e.target.value)}
-                        placeholder="What repetitive process consumes your time?"
-                      />
-                      <CharCounter current={(process.processName || '').length} min={50} />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="monument text-sm block mb-2">TIME CONSUMED (hours per week)</label>
-                        <input
-                          type="number"
-                          value={process.timeConsumed || ''}
-                          onChange={(e) => updateProcess(process.id, 'timeConsumed', e.target.value)}
-                          placeholder="Hours per week"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="monument text-sm block mb-2">REPETITION</label>
-                        <select
-                          value={process.repetition || ''}
-                          onChange={(e) => updateProcess(process.id, 'repetition', e.target.value)}
-                        >
-                          <option value="">Select frequency</option>
-                          <option value="daily">Daily</option>
-                          <option value="weekly">Weekly</option>
-                          <option value="monthly">Monthly</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="monument text-sm block mb-2">CURRENT STEPS</label>
-                      <textarea
-                        value={process.currentSteps || ''}
-                        onChange={(e) => updateProcess(process.id, 'currentSteps', e.target.value)}
-                        placeholder="Describe how you complete this process today, step by step..."
-                        rows={6}
-                      />
-                      <CharCounter current={(process.currentSteps || '').length} min={200} />
-                    </div>
-
-                    <div>
-                      <label className="monument text-sm block mb-2">AUTOMATION OPPORTUNITY</label>
-                      <textarea
-                        value={process.automationOpportunity || ''}
-                        onChange={(e) => updateProcess(process.id, 'automationOpportunity', e.target.value)}
-                        placeholder="Which steps could AI automate? How would it work?"
-                      />
-                      <CharCounter current={(process.automationOpportunity || '').length} min={150} />
-                    </div>
-
-                    <div>
-                      <label className="monument text-sm block mb-2">KEY PERFORMANCE INDICATORS (KPIs)</label>
-                      <textarea
-                        value={process.kpis || ''}
-                        onChange={(e) => updateProcess(process.id, 'kpis', e.target.value)}
-                        placeholder="How will you measure improvement? (time saved, accuracy, speed, quality, etc.)"
-                      />
-                      <CharCounter current={(process.kpis || '').length} min={100} />
-                    </div>
-
-                    <div>
-                      <label className="monument text-sm block mb-2">SPECIFIC AI TOOL</label>
-                      <input
-                        type="text"
-                        value={process.aiTool || ''}
-                        onChange={(e) => updateProcess(process.id, 'aiTool', e.target.value)}
-                        placeholder="Which AI tool would you use? (e.g., Zapier, Make, Monday.com AI)"
-                      />
-                      <CharCounter current={(process.aiTool || '').length} min={10} />
-                    </div>
-                  </div>
-                </div>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+              {processes.map((_, i) => (
+                <button key={i} onClick={() => setIdx(i)} style={{
+                  width: 44, height: 44, border: `2px solid ${idx === i ? '#000' : hasFilled(i) ? '#000' : '#E5E7EB'}`,
+                  background: idx === i ? '#000' : hasFilled(i) ? '#F0F0F0' : '#fff',
+                  color: idx === i ? '#FFF469' : hasFilled(i) ? '#000' : '#999',
+                  fontFamily: "'Monument', monospace", fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s'
+                }}>{String(i + 1).padStart(2, '0')}</button>
               ))}
-
-              {(data.individual.processes || []).length < 3 && (
-                <button onClick={addProcess} className="btn-secondary w-full">
-                  ADD PROCESS
-                </button>
+              {processes.length < 3 && (
+                <button onClick={() => { addProcess(); setTimeout(() => setIdx(processes.length), 0); }} style={{
+                  width: 44, height: 44, border: '2px dashed #E5E7EB', background: '#fff', color: '#999',
+                  fontFamily: "'Monument', monospace", fontSize: 11, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s'
+                }}>+</button>
               )}
             </div>
+
+            {process && (
+            <div key={idx} className="animate-in">
+              <div className="item-card">
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="plaak text-2xl">PROCESS {idx + 1}</h3>
+                  {processes.length > 1 && (
+                    <button onClick={() => { removeProcess(process.id); if (idx >= processes.length - 1) setIdx(Math.max(0, idx - 1)); }} className="btn-remove">REMOVE</button>
+                  )}
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="monument text-sm block mb-2">PROCESS NAME</label>
+                    <input type="text" value={process.processName || ''} onChange={(e) => updateProcess(process.id, 'processName', e.target.value)} placeholder="What repetitive process consumes your time?" />
+                    <CharCounter current={(process.processName || '').length} min={50} />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="monument text-sm block mb-2">TIME CONSUMED (hours per week)</label>
+                      <input type="number" value={process.timeConsumed || ''} onChange={(e) => updateProcess(process.id, 'timeConsumed', e.target.value)} placeholder="Hours per week" />
+                    </div>
+
+                    <div>
+                      <label className="monument text-sm block mb-2">REPETITION</label>
+                      <select value={process.repetition || ''} onChange={(e) => updateProcess(process.id, 'repetition', e.target.value)}>
+                        <option value="">Select frequency</option>
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="monument text-sm block mb-2">CURRENT STEPS</label>
+                    <textarea value={process.currentSteps || ''} onChange={(e) => updateProcess(process.id, 'currentSteps', e.target.value)} placeholder="Describe how you complete this process today, step by step..." rows={6} />
+                    <CharCounter current={(process.currentSteps || '').length} min={200} />
+                  </div>
+
+                  <div>
+                    <label className="monument text-sm block mb-2">AUTOMATION OPPORTUNITY</label>
+                    <textarea value={process.automationOpportunity || ''} onChange={(e) => updateProcess(process.id, 'automationOpportunity', e.target.value)} placeholder="Which steps could AI automate? How would it work?" />
+                    <CharCounter current={(process.automationOpportunity || '').length} min={150} />
+                  </div>
+
+                  <div>
+                    <label className="monument text-sm block mb-2">KEY PERFORMANCE INDICATORS (KPIs)</label>
+                    <textarea value={process.kpis || ''} onChange={(e) => updateProcess(process.id, 'kpis', e.target.value)} placeholder="How will you measure improvement? (time saved, accuracy, speed, quality, etc.)" />
+                    <CharCounter current={(process.kpis || '').length} min={100} />
+                  </div>
+
+                  <div>
+                    <label className="monument text-sm block mb-2">SPECIFIC AI TOOL</label>
+                    <input type="text" value={process.aiTool || ''} onChange={(e) => updateProcess(process.id, 'aiTool', e.target.value)} placeholder="Which AI tool would you use? (e.g., Zapier, Make, Monday.com AI)" />
+                    <CharCounter current={(process.aiTool || '').length} min={10} />
+                  </div>
+                </div>
+              </div>
+            </div>
+            )}
         </div>
       );
     }
 
     // Individual Step 3: AI Implementation Plan
-    function IndividualStep3({ data, setData, updateAITool, addAITool, removeAITool }) {
+    function IndividualStep3({ data, setData, updateAITool, addAITool, removeAITool, idx, setIdx }) {
+      const aiTools = data.individual.implementation?.aiTools || [];
+      const tool = aiTools[idx] || aiTools[0];
+      const hasFilled = (i) => {
+        const t = aiTools[i];
+        return t && ((t.tool || '').length > 0 || (t.purpose || '').length > 0);
+      };
+
       return (
         <div>
             <div className="mb-8">
               <div className="numbered-section">03</div>
-
               <h1 className="plaak text-6xl mt-4 mb-4">AI IMPLEMENTATION PLAN</h1>
               <p className="text-2xl text-gray-300">
                 Create your action plan for implementing AI tools and measuring success.
@@ -1691,71 +1608,63 @@
                 List all AI tools you will implement, including purpose, cost, and timeline.
               </p>
 
-              {(data.individual.implementation?.aiTools || []).map((tool, index) => (
-                <div key={tool.id} className="item-card">
+              <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#999', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 12 }}>
+                TOOL {idx + 1} OF {aiTools.length}
+              </div>
+
+              <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+                {aiTools.map((_, i) => (
+                  <button key={i} onClick={() => setIdx(i)} style={{
+                    width: 44, height: 44, border: `2px solid ${idx === i ? '#000' : hasFilled(i) ? '#000' : '#E5E7EB'}`,
+                    background: idx === i ? '#000' : hasFilled(i) ? '#F0F0F0' : '#fff',
+                    color: idx === i ? '#FFF469' : hasFilled(i) ? '#000' : '#999',
+                    fontFamily: "'Monument', monospace", fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s'
+                  }}>{String(i + 1).padStart(2, '0')}</button>
+                ))}
+                <button onClick={() => { addAITool(); setTimeout(() => setIdx(aiTools.length), 0); }} style={{
+                  width: 44, height: 44, border: '2px dashed #E5E7EB', background: '#fff', color: '#999',
+                  fontFamily: "'Monument', monospace", fontSize: 11, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s'
+                }}>+</button>
+              </div>
+
+              {tool && (
+              <div key={idx} className="animate-in">
+                <div className="item-card">
                   <div className="flex justify-between items-start mb-4">
-                    <h3 className="plaak text-xl">TOOL {index + 1}</h3>
-                    {(data.individual.implementation?.aiTools || []).length > 1 && (
-                      <button
-                        onClick={() => removeAITool(tool.id)}
-                        className="btn-remove"
-                      >
-                        REMOVE
-                      </button>
+                    <h3 className="plaak text-xl">TOOL {idx + 1}</h3>
+                    {aiTools.length > 1 && (
+                      <button onClick={() => { removeAITool(tool.id); if (idx >= aiTools.length - 1) setIdx(Math.max(0, idx - 1)); }} className="btn-remove">REMOVE</button>
                     )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="monument text-sm block mb-2">TOOL NAME</label>
-                      <input
-                        type="text"
-                        value={tool.tool || ''}
-                        onChange={(e) => updateAITool(tool.id, 'tool', e.target.value)}
-                        placeholder="AI tool name"
-                      />
+                      <input type="text" value={tool.tool || ''} onChange={(e) => updateAITool(tool.id, 'tool', e.target.value)} placeholder="AI tool name" />
                       <CharCounter current={(tool.tool || '').length} min={5} />
                     </div>
 
                     <div>
                       <label className="monument text-sm block mb-2">PURPOSE</label>
-                      <input
-                        type="text"
-                        value={tool.purpose || ''}
-                        onChange={(e) => updateAITool(tool.id, 'purpose', e.target.value)}
-                        placeholder="What will it do?"
-                      />
+                      <input type="text" value={tool.purpose || ''} onChange={(e) => updateAITool(tool.id, 'purpose', e.target.value)} placeholder="What will it do?" />
                       <CharCounter current={(tool.purpose || '').length} min={20} />
                     </div>
 
                     <div>
                       <label className="monument text-sm block mb-2">COST ESTIMATE</label>
-                      <input
-                        type="text"
-                        value={tool.cost || ''}
-                        onChange={(e) => updateAITool(tool.id, 'cost', e.target.value)}
-                        placeholder="Monthly cost"
-                      />
+                      <input type="text" value={tool.cost || ''} onChange={(e) => updateAITool(tool.id, 'cost', e.target.value)} placeholder="Monthly cost" />
                       <CharCounter current={(tool.cost || '').length} min={5} />
                     </div>
 
                     <div>
                       <label className="monument text-sm block mb-2">TIMELINE</label>
-                      <input
-                        type="text"
-                        value={tool.timeline || ''}
-                        onChange={(e) => updateAITool(tool.id, 'timeline', e.target.value)}
-                        placeholder="When to implement"
-                      />
+                      <input type="text" value={tool.timeline || ''} onChange={(e) => updateAITool(tool.id, 'timeline', e.target.value)} placeholder="When to implement" />
                       <CharCounter current={(tool.timeline || '').length} min={10} />
                     </div>
                   </div>
                 </div>
-              ))}
-
-              <button onClick={addAITool} className="btn-secondary w-full">
-                ADD AI TOOL
-              </button>
+              </div>
+              )}
             </div>
 
             <div className="mb-8 space-y-6">

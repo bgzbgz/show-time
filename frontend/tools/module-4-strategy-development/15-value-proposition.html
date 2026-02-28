@@ -640,6 +640,7 @@
             const [submitMessage, setSubmitMessage] = useState('');
             const [aiReviewing, setAiReviewing] = useState(false);
             const [aiMessage, setAiMessage] = useState('');
+            const [competitorIdx, setCompetitorIdx] = useState(0);
 
             /* ── Data state ── */
             const [data, setData] = useState({
@@ -698,6 +699,11 @@
                 }
                 loadDeps();
             }, []);
+
+            /* ── Reset competitorIdx when entering step 2 ── */
+            useEffect(() => {
+                if (step === 2) setCompetitorIdx(0);
+            }, [step]);
 
             /* ── Auto-generate VP from components ── */
             useEffect(() => {
@@ -983,42 +989,64 @@
 
 
                                             <div className="questions-grid">
-                                                {/* Competitor cards — 3 per row */}
-                                                <div className="competitors-grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginBottom: 24 }}>
-                                                    {data.competitors.map((comp, idx) => (
-                                                        <div key={idx} style={{ border: '1px solid #E0E0E0', padding: 20, background: '#FAFAFA' }}>
-                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                                                                <span className="monument" style={{ fontSize: 10, textTransform: 'uppercase', color: '#666' }}>COMPETITOR {idx + 1}</span>
-                                                                {data.competitors.length > 1 && (
-                                                                    <button onClick={() => removeCompetitor(idx)} style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: '#999', lineHeight: 1 }}>&times;</button>
+                                                {/* Competitor navigator */}
+                                                {(() => {
+                                                    const comp = data.competitors[competitorIdx] || { name: '', strength: '', weakness: '', differentiation: '' };
+                                                    const hasFilled = (i) => {
+                                                        const c = data.competitors[i];
+                                                        return c && (c.name.length > 0 || c.strength.length > 0 || c.weakness.length > 0 || c.differentiation.length > 0);
+                                                    };
+                                                    return (
+                                                        <>
+                                                            <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap', alignItems: 'center' }}>
+                                                                {data.competitors.map((_, i) => (
+                                                                    <button key={i} onClick={() => setCompetitorIdx(i)} style={{
+                                                                        width: 44, height: 44, border: `2px solid ${competitorIdx === i ? '#000' : hasFilled(i) ? '#000' : '#E5E7EB'}`,
+                                                                        background: competitorIdx === i ? '#000' : hasFilled(i) ? '#F0F0F0' : '#fff',
+                                                                        color: competitorIdx === i ? '#FFF469' : hasFilled(i) ? '#000' : '#999',
+                                                                        fontFamily: "'Monument', monospace", fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s'
+                                                                    }}>{String(i + 1).padStart(2, '0')}</button>
+                                                                ))}
+                                                                {data.competitors.length < 5 && (
+                                                                    <button onClick={() => { addCompetitor(); setCompetitorIdx(data.competitors.length); }} style={{
+                                                                        height: 44, padding: '0 16px', border: '2px dashed #E5E7EB', background: '#fff',
+                                                                        fontFamily: "'Monument', monospace", fontSize: 12, fontWeight: 700, cursor: 'pointer', color: '#666', transition: 'all 0.2s'
+                                                                    }}>+ ADD</button>
                                                                 )}
                                                             </div>
-                                                            <div style={{ marginBottom: 12 }}>
-                                                                <label className="field-label" style={{ fontSize: 13 }}>Name</label>
-                                                                <input type="text" className="field-input" style={{ padding: '8px 12px', fontSize: 14 }} value={comp.name} onChange={e => updateCompetitor(idx, 'name', e.target.value)} placeholder="Competitor name" />
-                                                            </div>
-                                                            <div style={{ marginBottom: 12 }}>
-                                                                <label className="field-label" style={{ fontSize: 13 }}>Their Strength</label>
-                                                                <input type="text" className="field-input" style={{ padding: '8px 12px', fontSize: 14 }} value={comp.strength} onChange={e => updateCompetitor(idx, 'strength', e.target.value)} placeholder="What do they do well?" />
-                                                            </div>
-                                                            <div style={{ marginBottom: 12 }}>
-                                                                <label className="field-label" style={{ fontSize: 13 }}>Their Weakness</label>
-                                                                <textarea className="field-textarea" style={{ minHeight: 48, fontSize: 14, padding: '8px 12px' }} value={comp.weakness} onChange={e => updateCompetitor(idx, 'weakness', e.target.value)} placeholder="Where do they fall short?" />
-                                                                <p className="field-help">{comp.weakness.length} (min 10)</p>
-                                                            </div>
-                                                            <div>
-                                                                <label className="field-label" style={{ fontSize: 13 }}>How We're Different</label>
-                                                                <textarea className="field-textarea" style={{ minHeight: 48, fontSize: 14, padding: '8px 12px' }} value={comp.differentiation} onChange={e => updateCompetitor(idx, 'differentiation', e.target.value)} placeholder="What do we do that they can't?" />
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
 
-                                                {data.competitors.length < 5 && (
-                                                    <button onClick={addCompetitor} style={{ width: '100%', padding: '12px 0', border: '2px dashed #E0E0E0', background: 'none', fontSize: 14, cursor: 'pointer', color: '#666', marginBottom: 32 }}>
-                                                        + Add Competitor ({data.competitors.length}/5)
-                                                    </button>
-                                                )}
+                                                            <div className="monument" style={{ fontSize: 11, color: '#6B7280', marginBottom: 16, letterSpacing: '0.05em' }}>
+                                                                COMPETITOR {competitorIdx + 1} OF {data.competitors.length}
+                                                            </div>
+
+                                                            <div style={{ border: '1px solid #E0E0E0', padding: 20, background: '#FAFAFA', marginBottom: 24 }} className="animate-in" key={'comp-' + competitorIdx}>
+                                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                                                                    <span className="monument" style={{ fontSize: 10, textTransform: 'uppercase', color: '#666' }}>COMPETITOR {competitorIdx + 1}</span>
+                                                                    {data.competitors.length > 1 && (
+                                                                        <button onClick={() => { removeCompetitor(competitorIdx); setCompetitorIdx(Math.max(0, competitorIdx - 1)); }} style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: '#999', lineHeight: 1 }}>&times;</button>
+                                                                    )}
+                                                                </div>
+                                                                <div style={{ marginBottom: 12 }}>
+                                                                    <label className="field-label" style={{ fontSize: 13 }}>Name</label>
+                                                                    <input type="text" className="field-input" style={{ padding: '8px 12px', fontSize: 14 }} value={comp.name} onChange={e => updateCompetitor(competitorIdx, 'name', e.target.value)} placeholder="Competitor name" />
+                                                                </div>
+                                                                <div style={{ marginBottom: 12 }}>
+                                                                    <label className="field-label" style={{ fontSize: 13 }}>Their Strength</label>
+                                                                    <input type="text" className="field-input" style={{ padding: '8px 12px', fontSize: 14 }} value={comp.strength} onChange={e => updateCompetitor(competitorIdx, 'strength', e.target.value)} placeholder="What do they do well?" />
+                                                                </div>
+                                                                <div style={{ marginBottom: 12 }}>
+                                                                    <label className="field-label" style={{ fontSize: 13 }}>Their Weakness</label>
+                                                                    <textarea className="field-textarea" style={{ minHeight: 48, fontSize: 14, padding: '8px 12px' }} value={comp.weakness} onChange={e => updateCompetitor(competitorIdx, 'weakness', e.target.value)} placeholder="Where do they fall short?" />
+                                                                    <p className="field-help">{comp.weakness.length} (min 10)</p>
+                                                                </div>
+                                                                <div>
+                                                                    <label className="field-label" style={{ fontSize: 13 }}>How We're Different</label>
+                                                                    <textarea className="field-textarea" style={{ minHeight: 48, fontSize: 14, padding: '8px 12px' }} value={comp.differentiation} onChange={e => updateCompetitor(competitorIdx, 'differentiation', e.target.value)} placeholder="What do we do that they can't?" />
+                                                                </div>
+                                                            </div>
+                                                        </>
+                                                    );
+                                                })()}
 
                                                 {/* Unique Value + Why Switch */}
                                                 <div className="fields-row fields-row-2">
@@ -1214,12 +1242,21 @@
                                     </div>{/* end step-content */}
                                     {aiMessage && <div className="ai-message">{aiMessage}</div>}
                                     <div className="wizard-footer no-print">
-                                        <button className="btn-wiz-back" onClick={() => setStep(step === 1 ? 0.5 : step - 1)}>← Back</button>
-                                        <button className="btn-wiz-next"
-                                            disabled={!(!aiReviewing && (step === 1 ? canProceedStep1 : step === 2 ? canProceedStep2 : step === 3 ? canProceedStep3 : canProceedStep4))}
-                                            onClick={handleNext}>
-                                            {aiReviewing ? 'AI Coach Reviewing...' : step === totalSteps ? 'See Your Canvas' : 'Complete Step ' + step} →
-                                        </button>
+                                        <button className="btn-wiz-back" onClick={() => {
+                                            if (step === 2 && competitorIdx > 0) { setCompetitorIdx(competitorIdx - 1); }
+                                            else { setStep(step === 1 ? 0.5 : step - 1); }
+                                        }}>{step === 2 && competitorIdx > 0 ? '← Prev Competitor' : '← Back'}</button>
+                                        {step === 2 && competitorIdx < data.competitors.length - 1 ? (
+                                            <button className="btn-wiz-next" onClick={() => setCompetitorIdx(competitorIdx + 1)}>
+                                                Next Competitor →
+                                            </button>
+                                        ) : (
+                                            <button className="btn-wiz-next"
+                                                disabled={!(!aiReviewing && (step === 1 ? canProceedStep1 : step === 2 ? canProceedStep2 : step === 3 ? canProceedStep3 : canProceedStep4))}
+                                                onClick={handleNext}>
+                                                {aiReviewing ? 'AI Coach Reviewing...' : step === totalSteps ? 'See Your Canvas' : 'Complete Step ' + step} →
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                                 <WizardSidebar currentStep={step} steps={CONFIG.STEPS} />
