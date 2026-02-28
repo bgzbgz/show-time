@@ -1,0 +1,43 @@
+name: Backend Checks
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'tests/backend/**'
+      - '.github/workflows/backend-checks.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'tests/backend/**'
+
+jobs:
+  build-and-test:
+    name: Build & Route Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install backend dependencies
+        run: npm install --ignore-scripts
+        working-directory: backend
+
+      # ── Blocking checks (fail the build) ──
+      - name: Route structure check
+        run: node tests/backend/check-route-exports.js
+
+      # ── Non-blocking checks (report only) ──
+      - name: TypeScript compile check
+        run: npx tsc --noEmit --skipLibCheck || true
+        working-directory: backend
+
+      - name: Unit tests
+        run: npx vitest run --reporter=verbose || true
+        working-directory: backend
