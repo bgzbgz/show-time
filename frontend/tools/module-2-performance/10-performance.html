@@ -174,46 +174,80 @@
     }
 
     /* === STEP 1: GOAL SETTING & PERFORMANCE MONITORING === */
-    function Step1({ d, u }) {
+    function Step1({ d, u, goalIndex, setGoalIndex }) {
         const goals = d.goals || Array(5).fill(null).map(() => ({ goal: '', kpi: '', countermeasure: '', q1: '', q2: '', q3: '', q4: '' }));
         const updateGoal = (i, f, v) => { const next = [...goals]; next[i] = { ...next[i], [f]: v }; u('goals', next); };
+        const i = goalIndex;
+        const g = goals[i] || { goal: '', kpi: '', countermeasure: '', q1: '', q2: '', q3: '', q4: '' };
+        const filledCount = goals.filter(gl => (gl.goal || '').trim()).length;
+
         return (
-            <div className="animate-in">
-                <div className="step-indicator"><span>Step 1 of 6</span><span className="step-time">~10 min</span></div>
+            <div className="animate-in" key={i}>
+                <div className="step-indicator"><span>Step 1 of 6 · Goal {i + 1} of 5</span><span className="step-time">~2 min each</span></div>
                 <h2 className="step-heading">GOAL SETTING & MONITORING</h2>
-                <p className="step-hint">Define 5 specific, measurable goals for the year. Break each into quarterly deliverables with clear KPIs and owners.</p>
-                <div className="ft-example">Example: "Increase revenue by 20%, but maintain gross margins above 40%." The countermeasure (margin target) prevents chasing revenue at any cost.</div>
-                {goals.map((g, i) => (
-                    <div key={i} style={{ border: '2px solid #000', padding: 24, marginBottom: 24 }}>
-                        <div className="numbered-section" style={{ marginBottom: 16 }}>GOAL {i + 1}</div>
-                        <div className="ft-field-group">
-                            <label className="ft-label">NUMERIC GOAL <span className="ft-required">*</span></label>
-                            <input className="ft-input" placeholder="e.g. Increase monthly revenue to €100K" value={g.goal} onChange={e => updateGoal(i, 'goal', e.target.value)} />
-                        </div>
-                        <div className="ft-field-group">
-                            <label className="ft-label">KPI (HOW YOU'LL MEASURE)</label>
-                            <input className="ft-input" placeholder="e.g. Monthly revenue dashboard" value={g.kpi} onChange={e => updateGoal(i, 'kpi', e.target.value)} />
-                        </div>
-                        <div className="ft-field-group">
-                            <label className="ft-label">COUNTERMEASURE</label>
-                            <input className="ft-input" placeholder="e.g. Maintain gross margin above 40%" value={g.countermeasure} onChange={e => updateGoal(i, 'countermeasure', e.target.value)} />
-                            <div className="ft-help">What safeguard prevents over-focus on this goal at the expense of other priorities?</div>
-                        </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8, marginTop: 16 }}>
-                            {['q1', 'q2', 'q3', 'q4'].map(q => (
-                                <div key={q}>
-                                    <label className="ft-label" style={{ fontSize: 11 }}>{q.toUpperCase()} TARGET</label>
-                                    <input className="ft-input" style={{ fontSize: 14 }} placeholder="Quarterly deliverable" value={g[q]} onChange={e => updateGoal(i, q, e.target.value)} />
-                                </div>
-                            ))}
-                        </div>
+                <p className="step-hint">Define specific, measurable goals for the year. Break each into quarterly deliverables with clear KPIs.</p>
+
+                {/* Goal progress dots */}
+                <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
+                    {goals.map((gl, idx) => (
+                        <button key={idx} onClick={() => setGoalIndex(idx)}
+                            style={{
+                                width: 36, height: 36, borderRadius: '50%', border: idx === i ? '2px solid #000' : '2px solid #E5E7EB',
+                                background: (gl.goal || '').trim() ? (idx === i ? '#000' : '#E5E7EB') : (idx === i ? '#000' : 'transparent'),
+                                color: idx === i ? '#fff' : (gl.goal || '').trim() ? '#374151' : '#9CA3AF',
+                                fontWeight: 600, fontSize: 14, cursor: 'pointer', fontFamily: "'Monument', monospace",
+                                display: 'flex', alignItems: 'center', justifyContent: 'center'
+                            }}>
+                            {idx + 1}
+                        </button>
+                    ))}
+                </div>
+
+                <div style={{ border: '2px solid #000', padding: 24, marginBottom: 24 }}>
+                    <div className="numbered-section" style={{ marginBottom: 16 }}>GOAL {i + 1}</div>
+                    {i === 0 && (
+                        <div className="ft-example" style={{ marginBottom: 16 }}>Example: "Increase revenue by 20%, but maintain gross margins above 40%." The countermeasure (margin target) prevents chasing revenue at any cost.</div>
+                    )}
+                    <div className="ft-field-group">
+                        <label className="ft-label">NUMERIC GOAL {i === 0 && <span className="ft-required">*</span>}</label>
+                        <input className="ft-input" placeholder="e.g. Increase monthly revenue to €100K" value={g.goal} onChange={e => updateGoal(i, 'goal', e.target.value)} />
                     </div>
-                ))}
-                {/* TODO: add field condition */}
-<div className="ft-reveal-science">
-    <div className="ft-reveal-label">SCIENCE BEHIND IT</div>
-    <p className="ft-reveal-text">Research by Locke & Latham (2002) shows that specific, challenging goals lead to higher performance 90% of the time. Quarterly breakdowns increase goal attainment by 33% (Harvard Business Review).</p>
-  </div>
+                    <div className="ft-field-group">
+                        <label className="ft-label">KPI (HOW YOU'LL MEASURE)</label>
+                        <input className="ft-input" placeholder="e.g. Monthly revenue dashboard" value={g.kpi} onChange={e => updateGoal(i, 'kpi', e.target.value)} />
+                    </div>
+                    <div className="ft-field-group">
+                        <label className="ft-label">COUNTERMEASURE</label>
+                        <input className="ft-input" placeholder="e.g. Maintain gross margin above 40%" value={g.countermeasure} onChange={e => updateGoal(i, 'countermeasure', e.target.value)} />
+                        <div className="ft-help">What safeguard prevents over-focus on this goal at the expense of other priorities?</div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8, marginTop: 16 }}>
+                        {['q1', 'q2', 'q3', 'q4'].map(q => (
+                            <div key={q}>
+                                <label className="ft-label" style={{ fontSize: 11 }}>{q.toUpperCase()} TARGET</label>
+                                <input className="ft-input" style={{ fontSize: 14 }} placeholder="Quarterly deliverable" value={g[q]} onChange={e => updateGoal(i, q, e.target.value)} />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Navigation between goals */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                    <button onClick={() => i > 0 && setGoalIndex(i - 1)}
+                        style={{ background: 'none', border: '2px solid #E5E7EB', padding: '8px 20px', cursor: i > 0 ? 'pointer' : 'not-allowed', opacity: i > 0 ? 1 : 0.3, fontFamily: "'Monument', monospace", fontSize: 12 }}>
+                        ← PREV GOAL
+                    </button>
+                    <span style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#6B7280' }}>{filledCount} of 5 goals defined</span>
+                    <button onClick={() => i < 4 && setGoalIndex(i + 1)}
+                        style={{ background: i < 4 ? '#000' : '#E5E7EB', color: i < 4 ? '#fff' : '#9CA3AF', border: 'none', padding: '8px 20px', cursor: i < 4 ? 'pointer' : 'not-allowed', fontFamily: "'Monument', monospace", fontSize: 12 }}>
+                        NEXT GOAL →
+                    </button>
+                </div>
+
+                <div className="ft-reveal-science">
+                    <div className="ft-reveal-label">SCIENCE BEHIND IT</div>
+                    <p className="ft-reveal-text">Research by Locke & Latham (2002) shows that specific, challenging goals lead to higher performance 90% of the time. Quarterly breakdowns increase goal attainment by 33% (Harvard Business Review).</p>
+                </div>
             </div>
         );
     }
@@ -593,6 +627,7 @@
         const [submitStatus, setSubmitStatus] = useState(null);
         const [submitMessage, setSubmitMessage] = useState('');
         const [aiReviewing, setAiReviewing] = useState(false);
+        const [goalIndex, setGoalIndex] = useState(0);
         const autosaveRef = useRef(null);
 
         const u = (field, value) => setData(prev => ({ ...prev, [field]: value }));
@@ -764,7 +799,7 @@
                         <div className="wizard-main">
                             <MobileStepBar step={step} total={6} />
                             <div className="wizard-content">
-                                {step === 1 && <Step1 d={data} u={u} />}
+                                {step === 1 && <Step1 d={data} u={u} goalIndex={goalIndex} setGoalIndex={setGoalIndex} />}
                                 {step === 2 && <Step2 d={data} u={u} />}
                                 {step === 3 && <Step3 d={data} u={u} />}
                                 {step === 4 && <Step4 d={data} u={u} />}
