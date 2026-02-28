@@ -1,7 +1,10 @@
 import { Router, type Request, type Response } from 'express';
 import { supabase } from '../config/supabase.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
+import { optionalAuthenticate } from '../middleware/auth.js';
+import { generateAccessToken } from '../middleware/auth.js';
 import { sendSuccess, sendError } from '../utils/response.js';
+import type { Role } from '../types/index.js';
 
 const router = Router();
 
@@ -51,12 +54,18 @@ router.get(
 
 router.get(
   '/load',
+  optionalAuthenticate,
   asyncHandler(async (req: Request, res: Response) => {
     const toolSlug = req.query.tool_slug as string;
     const userId = req.query.user_id as string;
 
     if (!toolSlug || !userId) {
       return sendError(res, 'tool_slug and user_id query params required', undefined, 400);
+    }
+
+    // Ownership check: authenticated user can only load their own data
+    if (req.user && req.user.id !== userId) {
+      return sendError(res, 'Forbidden: user_id mismatch', undefined, 403);
     }
 
     const start = Date.now();
@@ -118,12 +127,17 @@ router.get(
 
 router.get(
   '/dependency',
+  optionalAuthenticate,
   asyncHandler(async (req: Request, res: Response) => {
     const referenceKey = req.query.reference_key as string;
     const userId = req.query.user_id as string;
 
     if (!referenceKey || !userId) {
       return sendError(res, 'reference_key and user_id query params required', undefined, 400);
+    }
+
+    if (req.user && req.user.id !== userId) {
+      return sendError(res, 'Forbidden: user_id mismatch', undefined, 403);
     }
 
     const start = Date.now();
@@ -172,13 +186,13 @@ router.post(
       return sendError(res, 'lw_user_id or lw_email required', undefined, 400);
     }
 
-    let user: { id: string; learnworlds_user_id: string | null } | null = null;
+    let user: { id: string; learnworlds_user_id: string | null; email?: string; role?: string; organization_id?: string | null } | null = null;
 
     // 1. Look up by learnworlds_user_id
     if (lw_user_id) {
       const { data } = await supabase
         .from('users')
-        .select('id, learnworlds_user_id')
+        .select('id, learnworlds_user_id, email, role, organization_id')
         .eq('learnworlds_user_id', lw_user_id)
         .single();
       user = data;
@@ -188,7 +202,7 @@ router.post(
     if (!user && lw_email) {
       const { data } = await supabase
         .from('users')
-        .select('id, learnworlds_user_id')
+        .select('id, learnworlds_user_id, email, role, organization_id')
         .eq('email', lw_email.toLowerCase())
         .single();
 
@@ -221,16 +235,43 @@ router.post(
           role: 'participant',
           last_login: new Date().toISOString(),
         })
-        .select('id')
+        .select('id, email, role, organization_id')
         .single();
 
       if (error || !newUser) {
         return sendError(res, 'Failed to create user', undefined, 500);
       }
-      user = newUser;
+      user = { id: newUser.id, learnworlds_user_id: lw_user_id || null, email: newUser.email, role: newUser.role, organization_id: newUser.organization_id };
     }
 
-    return sendSuccess(res, { user_id: user.id });
+    // Fetch full user record for JWT payload (if we only have id so far)
+    if (!user.email) {
+      const { data: fullUser } = await supabase
+        .from('users')
+        .select('email, role, organization_id')
+        .eq('id', user.id)
+        .single();
+      if (fullUser) {
+        user.email = fullUser.email;
+        user.role = fullUser.role;
+        user.organization_id = fullUser.organization_id;
+      }
+    }
+
+    // Issue JWT access token
+    const access_token = generateAccessToken({
+      id: user.id,
+      email: user.email || '',
+      role: (user.role as Role) || 'user',
+      organization_id: user.organization_id || null,
+    });
+
+    return sendSuccess(res, {
+      user_id: user.id,
+      access_token,
+      token_type: 'Bearer',
+      expires_in: 86400,
+    });
   })
 );
 
@@ -242,11 +283,16 @@ router.post(
 
 router.post(
   '/save',
+  optionalAuthenticate,
   asyncHandler(async (req: Request, res: Response) => {
     const { user_id, responses } = req.body;
 
     if (!user_id || !Array.isArray(responses) || responses.length === 0) {
       return sendError(res, 'user_id and responses[] required', undefined, 400);
+    }
+
+    if (req.user && req.user.id !== user_id) {
+      return sendError(res, 'Forbidden: user_id mismatch', undefined, 403);
     }
 
     // Validate user exists
@@ -288,11 +334,16 @@ router.post(
 
 router.post(
   '/complete',
+  optionalAuthenticate,
   asyncHandler(async (req: Request, res: Response) => {
     const { user_id, tool_slug } = req.body;
 
     if (!user_id || !tool_slug) {
       return sendError(res, 'user_id and tool_slug required', undefined, 400);
+    }
+
+    if (req.user && req.user.id !== user_id) {
+      return sendError(res, 'Forbidden: user_id mismatch', undefined, 403);
     }
 
     // Validate user exists
@@ -326,12 +377,17 @@ router.post(
 
 router.get(
   '/team-unlock',
+  optionalAuthenticate,
   asyncHandler(async (req: Request, res: Response) => {
     const toolSlug = req.query.tool_slug as string;
     const userId = req.query.user_id as string;
 
     if (!toolSlug || !userId) {
       return sendError(res, 'tool_slug and user_id query params required', undefined, 400);
+    }
+
+    if (req.user && req.user.id !== userId) {
+      return sendError(res, 'Forbidden: user_id mismatch', undefined, 403);
     }
 
     // 1. Get user's organization_id
@@ -423,11 +479,16 @@ router.get(
 
 router.get(
   '/completions',
+  optionalAuthenticate,
   asyncHandler(async (req: Request, res: Response) => {
     const userId = req.query.user_id as string;
 
     if (!userId) {
       return sendError(res, 'user_id query param required', undefined, 400);
+    }
+
+    if (req.user && req.user.id !== userId) {
+      return sendError(res, 'Forbidden: user_id mismatch', undefined, 403);
     }
 
     const { data, error } = await supabase

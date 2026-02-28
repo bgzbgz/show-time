@@ -32,6 +32,7 @@ const envSchema = z.object({
   // Supabase
   SUPABASE_URL: z.string().url(),
   SUPABASE_ANON_KEY: z.string().min(1),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
 
   // LearnWorlds SSO
   LEARNWORLDS_API_URL: z.string().url().default('https://api.learnworlds.com/v2'),

@@ -42,6 +42,24 @@
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1dHp6ZmFlZGtic21ib2Jtcnp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MDA0MDQsImV4cCI6MjA4NjM3NjQwNH0.o2gJba85vDl4NLS-C8Mq3OudWKxet-b0IqO9kazqb8U';
     const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    const API_BASE = 'https://backend-production-639c.up.railway.app';
+    let adminToken = null;
+
+    function adminHeaders() {
+      return adminToken ? { 'Authorization': 'Bearer ' + adminToken, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
+    }
+
+    async function adminFetch(path, opts = {}) {
+      opts.headers = Object.assign({}, opts.headers || {}, adminHeaders());
+      const res = await fetch(API_BASE + path, opts);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `Request failed: ${res.status}`);
+      }
+      const json = await res.json();
+      return json.data;
+    }
+
     const ALL_TOOLS = ['woop','know-thyself','dream','values','team','fit','cash','energy','goals','focus','performance','meeting-rhythm','market-size','segmentation-target-market','target-segment-deep-dive','value-proposition','value-proposition-testing','product-development','pricing','brand-marketing','customer-service','route-to-market','core-activities','processes-decisions','fit-abc-analysis','org-redesign','employer-branding','agile-teams','digitalization','digital-heart'];
 
     // ─── Helpers ───────────────────────────────────────────────────────────────
@@ -252,32 +270,16 @@
       async function loadData() {
         setLoading(true);
         try {
-          const since24h = new Date(Date.now() - 86400000).toISOString();
-
-          const [
-            { count: totalUsers },
-            { data: activeRows },
-            { count: totalCompletions },
-            { count: totalOrgs },
-            { count: aiToday },
-            { count: errorCount },
-            { data: feedRows }
-          ] = await Promise.all([
-            db.from('users').select('*', { count: 'exact', head: true }),
-            db.from('user_responses').select('user_id').gt('updated_at', since24h),
-            db.from('tool_completions').select('*', { count: 'exact', head: true }),
-            db.from('organizations').select('*', { count: 'exact', head: true }),
-            db.from('ai_challenge_log').select('*', { count: 'exact', head: true }).gt('created_at', since24h),
-            db.from('webhook_events').select('*', { count: 'exact', head: true }).not('error_message', 'is', null),
-            db.from('user_responses')
-              .select('updated_at, user_id, users(full_name, organization_name), tool_questions(tool_slug)')
-              .order('updated_at', { ascending: false })
-              .limit(20)
-          ]);
-
-          const activeUsers = activeRows ? new Set(activeRows.map(r => r.user_id)).size : 0;
-          setStats({ totalUsers, activeUsers, totalCompletions, totalOrgs, aiToday, errorCount });
-          setFeed(feedRows || []);
+          const data = await adminFetch('/api/admin/stats');
+          setStats({
+            totalUsers: data.totalUsers,
+            activeUsers: data.activeUsers24h,
+            totalCompletions: data.totalCompletions,
+            totalOrgs: data.totalOrgs,
+            aiToday: data.aiLogs24h,
+            errorCount: data.webhookErrors
+          });
+          setFeed(data.recentActivity || []);
         } catch (err) {
           console.error('Overview load error:', err);
         }
@@ -356,27 +358,14 @@
       async function loadData() {
         setLoading(true);
         try {
-          const [
-            { data: orgsData },
-            { data: usersData },
-            { data: compData },
-            { data: actData },
-            { data: gaData }
-          ] = await Promise.all([
-            db.from('organizations').select('*').order('name'),
-            db.from('users').select('id, full_name, email, organization_id, last_login, created_at, role').order('full_name'),
-            db.from('tool_completions').select('user_id, tool_slug, completed_at'),
-            db.from('user_responses').select('user_id, updated_at').order('updated_at', { ascending: false }),
-            db.from('guru_assignments').select('id, user_id, organization_id, tool_slug')
-          ]);
-
-          setOrgs(orgsData || []);
-          setUsers(usersData || []);
-          setCompletions(compData || []);
-          setGuruAssignments(gaData || []);
+          const data = await adminFetch('/api/admin/organizations');
+          setOrgs(data.organizations || []);
+          setUsers(data.users || []);
+          setCompletions(data.completions || []);
+          setGuruAssignments(data.guruAssignments || []);
 
           const la = {};
-          (actData || []).forEach(r => {
+          (data.responses || []).forEach(r => {
             if (!la[r.user_id]) la[r.user_id] = r.updated_at;
           });
           setLastActivity(la);
@@ -388,12 +377,23 @@
 
       async function saveOrg() {
         setOrgSaving(true);
-        if (orgModal.mode === 'new') {
-          const { data } = await db.from('organizations').insert({ name: orgModal.name, learnworlds_tag: orgModal.tag || null }).select().single();
-          if (data) setOrgs(prev => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)));
-        } else {
-          await db.from('organizations').update({ name: orgModal.name, learnworlds_tag: orgModal.tag || null }).eq('id', orgModal.id);
-          setOrgs(prev => prev.map(o => o.id === orgModal.id ? { ...o, name: orgModal.name, learnworlds_tag: orgModal.tag || null } : o));
+        try {
+          if (orgModal.mode === 'new') {
+            const data = await adminFetch('/api/admin/organizations', {
+              method: 'POST',
+              body: JSON.stringify({ name: orgModal.name, learnworlds_tag: orgModal.tag || null })
+            });
+            if (data) setOrgs(prev => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)));
+          } else {
+            await adminFetch('/api/admin/organizations/' + orgModal.id, {
+              method: 'PUT',
+              body: JSON.stringify({ name: orgModal.name, learnworlds_tag: orgModal.tag || null })
+            });
+            setOrgs(prev => prev.map(o => o.id === orgModal.id ? { ...o, name: orgModal.name, learnworlds_tag: orgModal.tag || null } : o));
+          }
+        } catch (err) {
+          console.error('Save org error:', err);
+          alert('Failed to save: ' + err.message);
         }
         setOrgSaving(false);
         setOrgModal(null);
@@ -401,9 +401,14 @@
 
       async function deleteOrg(orgId, orgName) {
         if (!window.confirm(`Delete "${orgName}"? Members will lose their org assignment.`)) return;
-        await db.from('organizations').delete().eq('id', orgId);
-        setOrgs(prev => prev.filter(o => o.id !== orgId));
-        setExpanded(null);
+        try {
+          await adminFetch('/api/admin/organizations/' + orgId, { method: 'DELETE' });
+          setOrgs(prev => prev.filter(o => o.id !== orgId));
+          setExpanded(null);
+        } catch (err) {
+          console.error('Delete org error:', err);
+          alert('Failed to delete: ' + err.message);
+        }
       }
 
       async function assignGuru(orgId, toolSlug, newUserId) {
@@ -413,33 +418,30 @@
 
           if (!newUserId) {
             if (oldAssignment) {
-              await db.from('guru_assignments').delete().eq('id', oldAssignment.id);
+              await adminFetch('/api/admin/guru-assignments/' + oldAssignment.id, { method: 'DELETE' });
               const remaining = guruAssignments.filter(g => g.user_id === oldUserId && g.id !== oldAssignment.id);
               if (remaining.length === 0) {
-                await db.from('users').update({ role: 'participant' }).eq('id', oldUserId);
                 setUsers(prev => prev.map(u => u.id === oldUserId ? { ...u, role: 'participant' } : u));
               }
               setGuruAssignments(prev => prev.filter(g => g.id !== oldAssignment.id));
             }
           } else {
-            const { data: upserted } = await db.from('guru_assignments')
-              .upsert({ organization_id: orgId, tool_slug: toolSlug, user_id: newUserId }, { onConflict: 'organization_id,tool_slug' })
-              .select().single();
-            await db.from('users').update({ role: 'guru' }).eq('id', newUserId);
+            await adminFetch('/api/admin/guru-assignments', {
+              method: 'PUT',
+              body: JSON.stringify({ organization_id: orgId, tool_slug: toolSlug, user_id: newUserId })
+            });
             setUsers(prev => prev.map(u => u.id === newUserId ? { ...u, role: 'guru' } : u));
             if (oldUserId && oldUserId !== newUserId) {
               const otherRemaining = guruAssignments.filter(g => g.user_id === oldUserId && !(g.organization_id === orgId && g.tool_slug === toolSlug));
               if (otherRemaining.length === 0) {
-                await db.from('users').update({ role: 'participant' }).eq('id', oldUserId);
                 setUsers(prev => prev.map(u => u.id === oldUserId ? { ...u, role: 'participant' } : u));
               }
             }
-            if (upserted) {
-              setGuruAssignments(prev => {
-                const without = prev.filter(g => !(g.organization_id === orgId && g.tool_slug === toolSlug));
-                return [...without, upserted];
-              });
-            }
+            // Refresh guru assignments to get the upserted row
+            setGuruAssignments(prev => {
+              const without = prev.filter(g => !(g.organization_id === orgId && g.tool_slug === toolSlug));
+              return [...without, { organization_id: orgId, tool_slug: toolSlug, user_id: newUserId, id: oldAssignment?.id || 'temp-' + Date.now() }];
+            });
           }
         } catch (err) {
           console.error('Assign guru error:', err);
@@ -703,25 +705,12 @@
       async function loadUserData() {
         setLoading(true);
         try {
-          const [{ data: respData }, { data: chalData }, { data: orgsData }, { data: notesData }, { data: unlockData }] = await Promise.all([
-            db.from('user_responses')
-              .select('id, response_value, response_data, created_at, updated_at, tool_questions(tool_slug, question_text, question_key)')
-              .eq('user_id', user.id)
-              .order('created_at', { ascending: true }),
-            db.from('ai_challenge_log')
-              .select('tool_slug, user_action, tokens_used, response_time_ms, created_at')
-              .eq('user_id', user.id)
-              .order('created_at', { ascending: false })
-              .limit(5),
-            db.from('organizations').select('id, name').order('name'),
-            db.from('admin_notes').select('note').eq('target_type', 'user').eq('target_id', user.id).maybeSingle(),
-            db.from('tool_completions').select('tool_slug').eq('user_id', user.id).eq('source', 'admin_unlock')
-          ]);
-          setResponses(respData || []);
-          setChallenges(chalData || []);
-          setOrgs(orgsData || []);
-          setNotes(notesData?.note || '');
-          setAdminUnlocks((unlockData || []).map(r => r.tool_slug));
+          const data = await adminFetch('/api/admin/users/' + user.id + '/detail');
+          setResponses(data.responses || []);
+          setChallenges(data.aiLogs || []);
+          setOrgs(data.organizations || []);
+          setNotes(data.notes?.note || '');
+          setAdminUnlocks((data.adminUnlocks || []).map(r => r.tool_slug));
         } catch (err) {
           console.error('User drawer error:', err);
         }
@@ -730,23 +719,30 @@
 
       async function saveUser() {
         setSaving(true);
-        const { error } = await db.from('users').update({
-          full_name: editName, email: editEmail, organization_id: editOrgId || null
-        }).eq('id', user.id);
-        if (!error) {
+        try {
+          await adminFetch('/api/admin/users/' + user.id, {
+            method: 'PUT',
+            body: JSON.stringify({ full_name: editName, email: editEmail, organization_id: editOrgId || null })
+          });
           setEditMode(false);
           if (onUserUpdate) onUserUpdate({ ...user, full_name: editName, email: editEmail, organization_id: editOrgId || null, organization_name: orgs.find(o => o.id === editOrgId)?.name || user.organization_name });
+        } catch (err) {
+          console.error('Save user error:', err);
+          alert('Failed to save: ' + err.message);
         }
         setSaving(false);
       }
 
       async function saveNotes() {
         setSavingNotes(true);
-        const { data: existing } = await db.from('admin_notes').select('id').eq('target_type', 'user').eq('target_id', user.id).maybeSingle();
-        if (existing) {
-          await db.from('admin_notes').update({ note: notes, updated_at: new Date().toISOString() }).eq('id', existing.id);
-        } else {
-          await db.from('admin_notes').insert({ target_type: 'user', target_id: user.id, note: notes });
+        try {
+          await adminFetch('/api/admin/notes/user/' + user.id, {
+            method: 'PUT',
+            body: JSON.stringify({ note: notes })
+          });
+        } catch (err) {
+          console.error('Save notes error:', err);
+          alert('Failed to save notes: ' + err.message);
         }
         setSavingNotes(false);
       }
@@ -755,11 +751,16 @@
         if (unlocking) return;
         if (!window.confirm(`Unlock "${toolSlug}" for ${user.full_name || user.email}?`)) return;
         setUnlocking(toolSlug);
-        await db.from('tool_completions').insert({
-          user_id: user.id, tool_slug: toolSlug,
-          completed_at: new Date().toISOString(), source: 'admin_unlock'
-        });
-        setAdminUnlocks(prev => [...prev, toolSlug]);
+        try {
+          await adminFetch('/api/admin/users/' + user.id + '/unlock-tool', {
+            method: 'POST',
+            body: JSON.stringify({ tool_slug: toolSlug })
+          });
+          setAdminUnlocks(prev => [...prev, toolSlug]);
+        } catch (err) {
+          console.error('Unlock tool error:', err);
+          alert('Failed to unlock: ' + err.message);
+        }
         setUnlocking(null);
       }
 
@@ -1026,32 +1027,29 @@
       async function toggleGuru(user, e) {
         e.stopPropagation();
         const newRole = user.role === 'guru' ? 'participant' : 'guru';
-        await db.from('users').update({ role: newRole }).eq('id', user.id);
-        setUsers(prev => prev.map(u => u.id === user.id ? { ...u, role: newRole } : u));
+        try {
+          await adminFetch('/api/admin/users/' + user.id + '/role', {
+            method: 'PUT',
+            body: JSON.stringify({ role: newRole })
+          });
+          setUsers(prev => prev.map(u => u.id === user.id ? { ...u, role: newRole } : u));
+        } catch (err) {
+          console.error('Toggle role error:', err);
+          alert('Failed to update role: ' + err.message);
+        }
       }
 
       async function loadData() {
         setLoading(true);
         try {
-          const [
-            { data: usersData },
-            { data: compData },
-            { data: actData }
-          ] = await Promise.all([
-            db.from('users').select('*').order('full_name'),
-            db.from('tool_completions').select('user_id, tool_slug, completed_at'),
-            db.from('user_responses')
-              .select('user_id, updated_at, tool_questions(tool_slug)')
-              .order('updated_at', { ascending: false })
-          ]);
-
-          setUsers(usersData || []);
-          setCompletions(compData || []);
+          const data = await adminFetch('/api/admin/users');
+          setUsers(data.users || []);
+          setCompletions(data.completions || []);
 
           const la = {}, ct = {};
-          (actData || []).forEach(r => {
+          (data.responses || []).forEach(r => {
             if (!la[r.user_id]) la[r.user_id] = r.updated_at;
-            if (!ct[r.user_id]) ct[r.user_id] = r.tool_questions?.tool_slug || null;
+            if (!ct[r.user_id]) ct[r.user_id] = r.tool_questions?.tool_slug || r.tool_slug || null;
           });
           setLastActivity(la);
           setCurrentTool(ct);
@@ -1204,15 +1202,9 @@
       async function loadData() {
         setLoading(true);
         try {
-          const [{ data: webhookData }, { data: chalData }] = await Promise.all([
-            db.from('webhook_events')
-              .select('id, source, event_type, error_message, payload, created_at')
-              .order('created_at', { ascending: false })
-              .limit(200),
-            db.from('ai_challenge_log')
-              .select('user_id, tool_slug, user_action, tokens_used, response_time_ms, created_at')
-              .order('created_at', { ascending: false })
-              .limit(500)
+          const [webhookData, chalData] = await Promise.all([
+            adminFetch('/api/admin/webhook-events'),
+            adminFetch('/api/admin/ai-logs')
           ]);
           setErrors(webhookData || []);
           setChallenges(chalData || []);
@@ -1542,6 +1534,16 @@
             .single();
 
           if (data) {
+            // Get backend JWT for admin API calls
+            try {
+              const authRes = await adminFetch('/api/admin/auth', {
+                method: 'POST',
+                body: JSON.stringify({ supabase_user_id: authUser.id, email: authUser.email })
+              });
+              adminToken = authRes.access_token;
+            } catch (tokenErr) {
+              console.warn('Backend admin auth failed, some features may not work:', tokenErr);
+            }
             setUser(authUser);
             setAdminUser(data);
             setAuthState('logged_in');
@@ -1565,6 +1567,7 @@
       }
 
       async function handleLogout() {
+        adminToken = null;
         await db.auth.signOut();
       }
 

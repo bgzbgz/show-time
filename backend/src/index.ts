@@ -1,6 +1,7 @@
 import express, { type Express } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import { config } from './config/env.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { requestLogger } from './middleware/logger.js';
@@ -22,6 +23,9 @@ app.use(
     credentials: config.CORS_CREDENTIALS,
   })
 );
+
+// Cookie parsing (used by /api/auth/refresh)
+app.use(cookieParser());
 
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
@@ -54,6 +58,8 @@ import guruRoutes from './routes/guru.js';
 import learnworldsRoutes from './routes/learnworlds.js';
 import webhookRoutes from './routes/webhooks.js';
 import toolSaveRoutes from './routes/toolsave.js';
+import dashboardRoutes from './routes/dashboard.js';
+import adminRoutes from './routes/admin.js';
 
 // Mount routes
 app.use('/api/auth', authRoutes);
@@ -63,6 +69,8 @@ app.use('/api/user', userRoutes);
 app.use('/api/data', dataRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/guru', guruRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api/learnworlds', learnworldsRoutes);
 app.use('/api/webhooks', webhookRoutes);
 

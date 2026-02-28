@@ -11,6 +11,39 @@ const ToolDB = (function() {
     let toolSlug = null;
     let questionCache = {}; // { question_key: { id, question_type, reference_key } }
     let initPromise = null;
+    let _retrying = false; // guard against infinite retry loops
+
+    /**
+     * Build Authorization header if a token exists.
+     */
+    function _authHeaders() {
+        const token = localStorage.getItem('ft_access_token');
+        return token ? { 'Authorization': 'Bearer ' + token } : {};
+    }
+
+    /**
+     * Fetch wrapper that attaches the JWT and retries once on 401 (re-identify).
+     */
+    async function _fetchWithAuth(url, opts = {}) {
+        opts.headers = Object.assign({}, opts.headers || {}, _authHeaders());
+        const res = await fetch(url, opts);
+
+        if (res.status === 401 && !_retrying) {
+            _retrying = true;
+            try {
+                // Token expired or invalid — re-identify to get a fresh one
+                localStorage.removeItem('ft_access_token');
+                await identifyUser();
+                opts.headers = Object.assign({}, opts.headers || {}, _authHeaders());
+                const retry = await fetch(url, opts);
+                return retry;
+            } finally {
+                _retrying = false;
+            }
+        }
+
+        return res;
+    }
 
     /**
      * Initialize for a specific tool — fetches and caches question IDs.
@@ -81,7 +114,7 @@ const ToolDB = (function() {
             return { saved: 0 };
         }
 
-        const res = await fetch(`${API_BASE}/api/toolsave/save`, {
+        const res = await _fetchWithAuth(`${API_BASE}/api/toolsave/save`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ user_id: userId, responses: rows })
@@ -108,7 +141,7 @@ const ToolDB = (function() {
         if (Object.keys(questionCache).length === 0) return {};
 
         try {
-            const res = await fetch(
+            const res = await _fetchWithAuth(
                 `${API_BASE}/api/toolsave/load?tool_slug=${encodeURIComponent(toolSlug)}&user_id=${encodeURIComponent(userId)}`
             );
             if (!res.ok) {
@@ -133,7 +166,7 @@ const ToolDB = (function() {
         if (!userId || !referenceKey) return null;
 
         try {
-            const res = await fetch(
+            const res = await _fetchWithAuth(
                 `${API_BASE}/api/toolsave/dependency?reference_key=${encodeURIComponent(referenceKey)}&user_id=${encodeURIComponent(userId)}`
             );
             if (!res.ok) return null;
@@ -173,6 +206,9 @@ const ToolDB = (function() {
                     const { data } = await res.json();
                     if (data?.user_id) {
                         localStorage.setItem('ft_user_id', data.user_id);
+                        if (data.access_token) {
+                            localStorage.setItem('ft_access_token', data.access_token);
+                        }
                         console.log(`[ToolDB] Identified user via backend: ${data.user_id}`);
                         return data.user_id;
                     }
@@ -214,7 +250,7 @@ const ToolDB = (function() {
         if (!userId || !toolSlug) return;
 
         try {
-            const res = await fetch(`${API_BASE}/api/toolsave/complete`, {
+            const res = await _fetchWithAuth(`${API_BASE}/api/toolsave/complete`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ user_id: userId, tool_slug: toolSlug })

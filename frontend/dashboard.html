@@ -16,8 +16,7 @@
   <!-- Babel Standalone for JSX -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  <!-- Supabase -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Supabase CDN removed — all data flows through backend API -->
 
   <style>
     /* Fast Track Brand Fonts */
@@ -141,10 +140,24 @@
   <script type="text/babel">
     const { useState, useEffect, useMemo, memo, useCallback } = React;
 
-    // ── Supabase Client ──
-    const SUPABASE_URL = 'https://lutzzfaedkbsmbobmrzx.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1dHp6ZmFlZGtic21ib2Jtcnp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MDA0MDQsImV4cCI6MjA4NjM3NjQwNH0.o2gJba85vDl4NLS-C8Mq3OudWKxet-b0IqO9kazqb8U';
-    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // ── Backend API ──
+    const API_BASE = 'https://backend-production-639c.up.railway.app';
+
+    function _authHeaders() {
+      const token = localStorage.getItem('ft_access_token');
+      return token ? { 'Authorization': 'Bearer ' + token } : {};
+    }
+
+    async function _fetchWithAuth(url, opts = {}) {
+      opts.headers = Object.assign({}, opts.headers || {}, _authHeaders());
+      const res = await fetch(url, opts);
+      if (res.status === 401) {
+        // Token expired — clear and force re-identify
+        localStorage.removeItem('ft_access_token');
+        return res;
+      }
+      return res;
+    }
 
     // ── LearnWorlds Config ──
     const LEARNWORLDS_URL = 'https://fasttrack.learnworlds.com';
@@ -242,87 +255,74 @@
         window.history.replaceState({}, document.title, window.location.pathname);
       }
 
-      // 1. Try LearnWorlds params from URL (auto-identify, no login needed)
+      // 1. Try LearnWorlds params from URL — resolve via backend /identify
       if (lwUserId || lwEmail) {
-        // Try by LearnWorlds user ID first
-        if (lwUserId) {
-          const { data: existing } = await sb
-            .from('users')
-            .select('id, full_name, email, learnworlds_user_id, organization_id, organization_name, role')
-            .eq('learnworlds_user_id', lwUserId)
-            .single();
-
-          if (existing) {
-            const updates = { last_login: new Date().toISOString() };
-            if (lwName && (!existing.full_name || existing.full_name === existing.email.split('@')[0])) {
-              updates.full_name = lwName;
+        try {
+          const res = await fetch(`${API_BASE}/api/toolsave/identify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ lw_user_id: lwUserId, lw_email: lwEmail, lw_name: lwName })
+          });
+          if (res.ok) {
+            const { data } = await res.json();
+            if (data?.user_id) {
+              localStorage.setItem('ft_user_id', data.user_id);
+              if (data.access_token) localStorage.setItem('ft_access_token', data.access_token);
+              // Fetch full user profile for display
+              const user = await fetchUserProfile(data.user_id);
+              if (user) {
+                storeSession(user);
+                return { user, isGuru: user.role === 'guru' };
+              }
             }
-            await sb.from('users').update(updates).eq('id', existing.id);
-            if (updates.full_name) existing.full_name = updates.full_name;
-            storeSession(existing);
-            return { user: existing, isGuru: existing.role === 'guru' };
           }
-        }
-
-        // Try by email
-        if (lwEmail) {
-          const { data: byEmail } = await sb
-            .from('users')
-            .select('id, full_name, email, learnworlds_user_id, organization_id, organization_name, role')
-            .eq('email', lwEmail.toLowerCase())
-            .single();
-
-          if (byEmail) {
-            const updates = { last_login: new Date().toISOString() };
-            if (lwUserId && !byEmail.learnworlds_user_id) updates.learnworlds_user_id = lwUserId;
-            if (lwName && (!byEmail.full_name || byEmail.full_name === byEmail.email.split('@')[0])) updates.full_name = lwName;
-            await sb.from('users').update(updates).eq('id', byEmail.id);
-            if (updates.learnworlds_user_id) byEmail.learnworlds_user_id = lwUserId;
-            if (updates.full_name) byEmail.full_name = updates.full_name;
-            storeSession(byEmail);
-            return { user: byEmail, isGuru: byEmail.role === 'guru' };
-          }
-        }
-
-        // Create new user from LearnWorlds data
-        const email = lwEmail ? lwEmail.toLowerCase() : `${lwUserId}@learnworlds.user`;
-        const { data: newUser } = await sb
-          .from('users')
-          .insert({
-            email,
-            learnworlds_user_id: lwUserId || null,
-            full_name: lwName || (lwEmail ? lwEmail.split('@')[0] : 'Fast Track User'),
-            role: 'participant',
-            last_login: new Date().toISOString()
-          })
-          .select('id, full_name, email, learnworlds_user_id, organization_id, organization_name, role')
-          .single();
-
-        if (newUser) {
-          storeSession(newUser);
-          return { user: newUser, isGuru: newUser.role === 'guru' };
+        } catch (err) {
+          console.error('Dashboard identify error:', err);
         }
       }
 
       // 2. Try stored session (same browser tab)
       const stored = getStoredSession();
-      if (stored) return { user: stored, isGuru: stored.role === 'guru' };
+      if (stored && localStorage.getItem('ft_access_token')) {
+        return { user: stored, isGuru: stored.role === 'guru' };
+      }
 
-      // 3. Try ft_user_id from localStorage (persists across tabs/sessions)
+      // 3. Try ft_user_id from localStorage — re-identify to get a fresh token
       const storedUserId = localStorage.getItem('ft_user_id');
       if (storedUserId) {
-        const { data: storedUser } = await sb
-          .from('users')
-          .select('id, full_name, email, learnworlds_user_id, organization_id, organization_name, role')
-          .eq('id', storedUserId)
-          .single();
-        if (storedUser) {
-          storeSession(storedUser);
-          return { user: storedUser, isGuru: storedUser.role === 'guru' };
+        // Try stored session if we have a token
+        if (stored) return { user: stored, isGuru: stored.role === 'guru' };
+        // Otherwise try to re-identify using stored email
+        const storedSession = getStoredSession();
+        if (storedSession?.email) {
+          try {
+            const res = await fetch(`${API_BASE}/api/toolsave/identify`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ lw_email: storedSession.email })
+            });
+            if (res.ok) {
+              const { data } = await res.json();
+              if (data?.access_token) localStorage.setItem('ft_access_token', data.access_token);
+              return { user: storedSession, isGuru: storedSession.role === 'guru' };
+            }
+          } catch (err) {
+            console.error('Dashboard re-identify error:', err);
+          }
         }
       }
 
       return { user: null, isGuru: false };
+    }
+
+    // Fetch user profile from a lightweight backend endpoint
+    async function fetchUserProfile(userId) {
+      // We already have the user_id — use the stored session data or build minimal profile
+      // The /identify endpoint returns user_id + token. For display, we use stored session or fallback.
+      const stored = getStoredSession();
+      if (stored && stored.id === userId) return stored;
+      // Minimal fallback — will be populated on next identify
+      return { id: userId, full_name: 'Fast Track User', email: '', role: 'participant' };
     }
 
     function storeSession(user) {
@@ -340,9 +340,9 @@
 
     // ── Data Fetching ──
     async function fetchToolProgress(userId) {
-      // Preview mode: all tools unlocked, no Supabase queries needed
+      // Preview mode: all tools unlocked, no backend queries needed
       if (PREVIEW_MODE) {
-        return TOOLS.map((tool, index) => ({
+        return TOOLS.map((tool) => ({
           ...tool,
           id: tool.slug,
           status: 'unlocked',
@@ -351,65 +351,44 @@
         }));
       }
 
-      // 1. Get completions
-      const { data: completions } = await sb
-        .from('tool_completions')
-        .select('tool_slug, completed_at')
-        .eq('user_id', userId);
-
-      const completedSlugs = new Set((completions || []).map(c => c.tool_slug));
-      const completionMap = {};
-      (completions || []).forEach(c => { completionMap[c.tool_slug] = c.completed_at; });
-
-      // 2. Get all question IDs grouped by tool_slug
-      const { data: questions } = await sb
-        .from('tool_questions')
-        .select('id, tool_slug')
-        .in('tool_slug', TOOLS.map(t => t.slug));
-
-      const questionsByTool = {};
-      (questions || []).forEach(q => {
-        if (!questionsByTool[q.tool_slug]) questionsByTool[q.tool_slug] = [];
-        questionsByTool[q.tool_slug].push(q.id);
-      });
-
-      // 3. Get user's responses
-      const allQuestionIds = (questions || []).map(q => q.id);
-      const { data: responses } = await sb
-        .from('user_responses')
-        .select('question_id')
-        .eq('user_id', userId)
-        .in('question_id', allQuestionIds);
-
-      const answeredIds = new Set((responses || []).map(r => r.question_id));
-
-      // 4. Build tool list with status
-      return TOOLS.map((tool, index) => {
-        const totalQ = (questionsByTool[tool.slug] || []).length;
-        const answeredQ = (questionsByTool[tool.slug] || []).filter(qid => answeredIds.has(qid)).length;
-
-        let status;
-        let progress = 0;
-
-        if (completedSlugs.has(tool.slug)) {
-          status = 'completed';
-          progress = 100;
-        } else if (answeredQ > 0) {
-          status = 'in_progress';
-          progress = totalQ > 0 ? Math.round((answeredQ / totalQ) * 100) : 0;
-        } else {
-          // All tools always unlocked — no prerequisites required
-          status = 'unlocked';
+      try {
+        const res = await _fetchWithAuth(`${API_BASE}/api/dashboard/progress`);
+        if (!res.ok) {
+          console.error('[Dashboard] fetchToolProgress error:', res.status);
+          return TOOLS.map(t => ({ ...t, id: t.slug, status: 'unlocked', progress: 0, completedAt: null }));
         }
+        const { data } = await res.json();
 
-        return {
-          ...tool,
-          id: tool.slug,
-          status,
-          progress,
-          completedAt: completionMap[tool.slug] || null,
-        };
-      });
+        // Merge backend progress into TOOLS array
+        const progressMap = {};
+        (data || []).forEach(p => { progressMap[p.slug] = p; });
+
+        return TOOLS.map(tool => {
+          const p = progressMap[tool.slug] || {};
+          return {
+            ...tool,
+            id: tool.slug,
+            status: p.status || 'unlocked',
+            progress: p.progress || 0,
+            completedAt: p.completedAt || null,
+          };
+        });
+      } catch (err) {
+        console.error('[Dashboard] fetchToolProgress error:', err);
+        return TOOLS.map(t => ({ ...t, id: t.slug, status: 'unlocked', progress: 0, completedAt: null }));
+      }
+    }
+
+    async function fetchToolSubmission(userId, toolSlug) {
+      try {
+        const res = await _fetchWithAuth(`${API_BASE}/api/dashboard/submission?tool_slug=${encodeURIComponent(toolSlug)}`);
+        if (!res.ok) return [];
+        const { data } = await res.json();
+        return data || [];
+      } catch (err) {
+        console.error('[Dashboard] fetchToolSubmission error:', err);
+        return [];
+      }
     }
 
     // ── Launch Tool ──
@@ -786,35 +765,30 @@
         setError('');
 
         try {
-          // Look up by email
-          const { data: existing } = await sb
-            .from('users')
-            .select('id, full_name, email, learnworlds_user_id')
-            .eq('email', email.trim().toLowerCase())
-            .single();
+          // Identify via backend — creates user if not found
+          const res = await fetch(`${API_BASE}/api/toolsave/identify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ lw_email: email.trim(), lw_name: name.trim() || undefined })
+          });
 
-          if (existing) {
-            await sb.from('users').update({ last_login: new Date().toISOString() }).eq('id', existing.id);
-            storeSession(existing);
-            onLogin(existing);
-            return;
-          }
+          if (!res.ok) throw new Error('Identify failed');
+          const { data } = await res.json();
 
-          // Create new user
-          const { data: newUser, error: insertErr } = await sb
-            .from('users')
-            .insert({
-              email: email.trim().toLowerCase(),
+          if (data?.user_id) {
+            localStorage.setItem('ft_user_id', data.user_id);
+            if (data.access_token) localStorage.setItem('ft_access_token', data.access_token);
+            const user = {
+              id: data.user_id,
               full_name: name.trim() || email.split('@')[0],
+              email: email.trim().toLowerCase(),
               role: 'participant',
-              last_login: new Date().toISOString()
-            })
-            .select('id, full_name, email, learnworlds_user_id')
-            .single();
-
-          if (insertErr) throw insertErr;
-          storeSession(newUser);
-          onLogin(newUser);
+            };
+            storeSession(user);
+            onLogin(user);
+          } else {
+            throw new Error('No user_id returned');
+          }
         } catch (err) {
           console.error('Login error:', err);
           setError('Something went wrong. Try again.');
