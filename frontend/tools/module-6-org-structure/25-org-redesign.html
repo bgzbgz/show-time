@@ -448,7 +448,8 @@
     .wizard-layout { display: flex; min-height: 100vh; }
     .wizard-main { flex: 1; display: flex; flex-direction: column; min-height: 100vh; background: #fff; padding: 0 48px; }
     .wizard-content { flex: 1; padding: 40px 0; }
-    .wizard-sidebar { width: 280px; background: #1a1a1a; min-height: 100vh; padding: 48px 32px; display: flex; flex-direction: column; position: sticky; top: 0; align-self: flex-start; height: 100vh; overflow-y: auto; flex-shrink: 0; }
+    .wizard-sidebar { width: 48px; background: #1a1a1a; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 48px 0; position: sticky; top: 0; align-self: flex-start; height: 100vh; overflow-y: auto; flex-shrink: 0; }
+    .sidebar-dots { display: flex; flex-direction: column; gap: 12px; align-items: center; }
     .wizard-footer { display: flex; justify-content: space-between; align-items: center; padding: 24px 48px; border-top: 1px solid #e5e7eb; background: #fff; }
     .btn-wiz-back { background: transparent; border: 2px solid #d1d5db; color: #6b7280; padding: 12px 28px; font-family: 'Monument', monospace; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
     .btn-wiz-back:hover { border-color: #000; color: #000; }
@@ -1215,7 +1216,7 @@
                 </div>
               )}
             </div>
-            <WizardSidebar currentStep={step} stepLabels={stepLabels} totalSteps={5} />
+            <WizardSidebar currentStep={step} />
           </div>
         );
       }
@@ -1236,21 +1237,11 @@
     // Cover Page Component
     function CoverPage({ onStart }) {
       return (
-        <div style={{ position: 'relative', width: '100%', minHeight: '100vh', background: '#000', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url("https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1920&q=80")', backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.35 }} />
-          <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', padding: '0 32px', maxWidth: 800 }}>
-            <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 24 }}>SPRINT 25</div>
-            <h1 className="plaak animate-in" style={{ fontSize: 'clamp(48px, 8vw, 96px)', color: '#fff', marginBottom: 24, lineHeight: 1 }}>
-              ORGANIZATIONAL REDESIGN
-            </h1>
-            <p style={{ fontSize: 18, color: '#ccc', marginBottom: 48, lineHeight: 1.6 }} className="animate-in">
-              Transform structure into reality. Match people to roles with precision and create a 90-day implementation roadmap.
-            </p>
-            <button onClick={onStart} className="plaak animate-in"
-              style={{ background: '#FFF469', color: '#000', border: 'none', padding: '20px 56px', fontSize: 20, cursor: 'pointer', letterSpacing: '0.02em' }}>
-              START →
-            </button>
-          </div>
+        <div style={{ minHeight: '100vh', background: '#000', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: 48, color: '#fff' }} className="animate-in">
+            <div style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: '#FFF469', letterSpacing: '0.15em', marginBottom: 24, textTransform: 'uppercase' }}>SPRINT 25</div>
+            <h1 className="plaak" style={{ fontSize: 64, marginBottom: 24, textTransform: 'uppercase', lineHeight: 1.05, maxWidth: 780 }}>ORGANIZATIONAL<br/>REDESIGN &amp; PDPs</h1>
+            <p style={{ fontSize: 20, fontStyle: 'italic', color: '#ccc', marginBottom: 48, maxWidth: 600, lineHeight: 1.5 }}>"Only 12% of organisational transformations achieve their full potential — because of failures in the people side of change."</p>
+            <button onClick={onStart} style={{ background: '#FFF469', color: '#000', border: 'none', padding: '16px 40px', fontSize: 18, fontFamily: "'Monument', monospace", letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer', fontWeight: 700, alignSelf: 'flex-start' }}>START</button>
         </div>
       );
     }
@@ -1349,27 +1340,19 @@
     }
 
     // Wizard Sidebar Component
-    function WizardSidebar({ currentStep, stepLabels, totalSteps }) {
-      const canvasStep = 'canvas';
-      const allSteps = [...stepLabels.map((label, i) => ({ num: i + 1, label })), { num: canvasStep, label: 'Canvas' }];
-      return (
-        <div className="wizard-sidebar">
-          <div className="sidebar-tool-num">SPRINT 25</div>
-          <div className="sidebar-tool-title">ORG REDESIGN</div>
-          {allSteps.map(s => {
-            const isCanvas = s.num === canvasStep;
-            const isDone   = isCanvas ? false : currentStep > s.num;
-            const isActive = isCanvas ? currentStep === canvasStep : Math.floor(currentStep) === s.num;
-            const isFuture = isCanvas ? false : currentStep < s.num;
-            return (
-              <div key={s.num} className="sidebar-step" style={{ opacity: isFuture ? 0.35 : 1 }}>
-                <div className={`sidebar-step-dot ${isActive ? 'active' : isDone ? 'done' : ''}`} />
-                <span className={`sidebar-step-label ${isActive ? 'active' : isDone ? 'done' : ''}`}>{s.label}</span>
-              </div>
-            );
-          })}
-        </div>
-      );
+    function WizardSidebar({ currentStep }) {
+        const nums = [1, 2, 3, 4, 5];
+        return (
+            <div className="wizard-sidebar no-print">
+                <div className="sidebar-dots">
+                    {nums.map(n => {
+                        const effectiveStep = typeof currentStep === 'number' ? Math.ceil(currentStep) : 0;
+                        const isActive = effectiveStep === n, isDone = effectiveStep > n;
+                        return <div key={n} className={`sidebar-step-dot ${isActive ? 'active' : isDone ? 'done' : ''}`} />;
+                    })}
+                </div>
+            </div>
+        );
     }
 
     // Helper function to get FIT interpretation
