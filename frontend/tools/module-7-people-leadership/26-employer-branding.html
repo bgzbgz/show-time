@@ -406,8 +406,8 @@
 
     /* Wizard Layout */
     .wizard-layout { display: flex; min-height: 100vh; }
-    .wizard-main { flex: 1; overflow-y: auto; }
-    .wizard-content { flex: 1; padding: 48px 32px; max-width: 720px; width: 100%; margin: 0 auto; }
+    .wizard-main { flex: 1; display: flex; flex-direction: column; min-height: 100vh; background: #fff; padding: 0 48px; }
+    .wizard-content { max-width: 100%; padding: 40px 0; flex: 1; }
     .wizard-footer { display: flex; justify-content: space-between; align-items: center; padding: 24px 48px; border-top: 1px solid #E5E7EB; background: #fff; }
     .btn-wiz-back { background: transparent; border: 2px solid #d1d5db; color: #6b7280; padding: 12px 28px; font-family: 'Monument', monospace; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
     .btn-wiz-back:hover { border-color: #000; color: #000; }
@@ -415,11 +415,22 @@
     .btn-wiz-next:hover:not(:disabled) { background: #FFF469; color: #000; border-color: #FFF469; }
     .btn-wiz-next:disabled { background: #E0E0E0; color: #9CA3AF; border-color: #E0E0E0; cursor: not-allowed; }
     .opening-box { margin-bottom: 32px; }
-    .wizard-sidebar { width: 48px; background: #1a1a1a; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 48px 0; position: sticky; top: 0; align-self: flex-start; height: 100vh; overflow-y: auto; }
-    .sidebar-dots { display: flex; flex-direction: column; gap: 12px; align-items: center; }
-    .sidebar-step-dot { width: 6px; height: 6px; border-radius: 50%; background: #555; flex-shrink: 0; transition: background 0.2s; cursor: default; }
+    .wizard-sidebar { width: 280px; background: #1a1a1a; min-height: 100vh; padding: 48px 32px; display: flex; flex-direction: column; position: sticky; top: 0; align-self: flex-start; height: 100vh; overflow-y: auto; }
+    .sidebar-tool-num { font-family: 'Monument', monospace; font-size: 10px; color: #fff; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 8px; }
+    .sidebar-tool-title { font-family: 'Plaak', sans-serif; font-size: 22px; color: #fff; margin-bottom: 32px; line-height: 1.1; }
+    .sidebar-step { padding: 8px 0; border-bottom: 1px solid #2a2a2a; cursor: default; display: flex; align-items: center; gap: 8px; transition: opacity 0.2s; }
+    .sidebar-step:last-child { border-bottom: none; }
+    .sidebar-step-dot { width: 6px; height: 6px; border-radius: 50%; background: #555; flex-shrink: 0; transition: background 0.2s; }
     .sidebar-step-dot.active { background: #FFF469; }
     .sidebar-step-dot.done { background: #4ade80; }
+    .sidebar-step-label { font-family: 'Monument', monospace; font-size: 10px; letter-spacing: 0.08em; color: #555; text-transform: uppercase; transition: color 0.2s; }
+    .sidebar-step-label.active { color: #FFF469; }
+    .sidebar-step-label.done { color: #4ade80; }
+    .step-content { max-width: 100%; padding: 40px 0; flex: 1; }
+    @media (max-width: 768px) {
+        .wizard-sidebar { display: none; }
+        .wizard-main { padding: 0 24px; }
+    }
   </style>
 </head>
 <body>
@@ -491,16 +502,28 @@
         }
 
     function WizardSidebar({ currentStep }) {
-        const nums = [1, 2, 3, 4, 5];
+        const steps = [
+            { num: 1, label: 'TARGET SEGMENT' },
+            { num: 2, label: 'NEEDS RANKING' },
+            { num: 3, label: 'EVP FORMULATION' },
+            { num: 4, label: 'EVP TESTING' },
+            { num: 5, label: 'CAMPAIGN PLANNING' },
+        ];
+        const cur = typeof currentStep === 'number' ? Math.floor(currentStep) : 0;
         return (
             <div className="wizard-sidebar no-print">
-                <div className="sidebar-dots">
-                    {nums.map(n => {
-                        const effectiveStep = Math.ceil(currentStep);
-                        const isActive = effectiveStep === n, isDone = effectiveStep > n;
-                        return <div key={n} className={`sidebar-step-dot ${isActive ? 'active' : isDone ? 'done' : ''}`} />;
-                    })}
-                </div>
+                <div className="sidebar-tool-num">SPRINT 26</div>
+                <div className="sidebar-tool-title">EMPLOYER BRANDING</div>
+                {steps.map(s => {
+                    const isActive = cur === s.num;
+                    const isDone = cur > s.num;
+                    return (
+                        <div key={s.num} className="sidebar-step" style={{ opacity: isDone || isActive ? 1 : 0.5 }}>
+                            <div className={`sidebar-step-dot ${isActive ? 'active' : isDone ? 'done' : ''}`} />
+                            <span className={`sidebar-step-label ${isActive ? 'active' : isDone ? 'done' : ''}`}>{s.label}</span>
+                        </div>
+                    );
+                })}
             </div>
         );
     }
@@ -2021,7 +2044,7 @@
             return (
               <div className="wizard-layout">
                 <div className="wizard-main">
-                  <div className="wizard-content animate-in">
+                  <div style={{ flex: 1 }} className="animate-in">
                     {step === 1 && <><DependencyContext deps={deps} />{renderStep1()}</>}
                     {step === 2 && renderStep2()}
                     {step === 3 && renderStep3()}
