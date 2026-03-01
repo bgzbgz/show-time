@@ -7,7 +7,7 @@
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+
     <script src="../../shared/js/tool-db.js"></script>
     <script src="../../shared/js/ai-challenge.js"></script>
     <script src="../../shared/js/dependency-injection.js"></script>
@@ -72,26 +72,11 @@
         }
 
         /* === SIDEBAR === */
-        .wizard-sidebar { width: 280px; background: #1a1a1a; min-height: 100vh; padding: 48px 32px; display: flex; flex-direction: column; position: sticky; top: 0; align-self: flex-start; height: 100vh; overflow-y: auto; }
-        .wizard-sidebar-inner {
-            padding: 32px 24px;
-            height: 100%;
-            overflow-y: auto;
-            overflow-x: hidden;
-        }
-        .sidebar-step-item {
-            padding: 12px;
-            margin-bottom: 8px;
-            border-left: 3px solid transparent;
-            transition: all 0.2s ease;
-        }
-        .sidebar-step-item.active { border-left-color: #FFF469; background: #222; }
-        .sidebar-step-item.completed { background: #fff; color: #000; border-left-color: #fff; cursor: pointer; }
-        .sidebar-step-item.completed:hover { background: #E0E0E0; }
-        .sidebar-step-item.locked { opacity: 0.5; }
-        .sidebar-step-item .step-num { font-family: 'Riforma', sans-serif; font-size: 14px; }
-        .sidebar-step-item .step-name { font-family: 'Riforma', sans-serif; font-size: 14px; }
-        .sidebar-snippet { font-size: 12px; margin-top: 4px; opacity: 0.7; line-height: 1.3; }
+        .wizard-sidebar { width: 48px; background: #1a1a1a; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 48px 0; position: sticky; top: 0; align-self: flex-start; height: 100vh; overflow-y: auto; }
+        .sidebar-dots { display: flex; flex-direction: column; gap: 12px; align-items: center; }
+        .sidebar-step-dot { width: 6px; height: 6px; border-radius: 50%; background: #555; flex-shrink: 0; transition: background 0.2s; cursor: default; }
+        .sidebar-step-dot.active { background: #FFF469; }
+        .sidebar-step-dot.done { background: #4ade80; }
 
         /* === STEP HEADER === */
         .step-indicator {
@@ -341,10 +326,6 @@
         @media print { .no-print { display: none !important; } }
 
         /* === RESPONSIVE === */
-        @media (min-width: 769px) and (max-width: 1024px) {
-            .wizard-sidebar { width: 220px; }
-            .wizard-sidebar-inner { padding: 24px 16px; }
-        }
         @media (max-width: 768px) {
             .wizard-sidebar { display: none; }
             .mobile-step-bar { display: block; }
@@ -433,45 +414,15 @@
             );
         }
 
-        function WizardSidebar({ currentStep, marketSize, profitPool, rankedForces, onNavigate }) {
-            const steps = [
-                { num: 1, label: 'Market Size', time: '~2 min' },
-                { num: 2, label: 'Driving Forces', time: '~5 min' },
-                { num: 3, label: 'Future Impact', time: '~5 min' }
-            ];
-            const formatCurrencyShort = (v) => v >= 1000000 ? (v/1000000).toFixed(1) + 'M' : v >= 1000 ? Math.round(v/1000) + 'K' : Math.round(v);
-            const getSnippet = (n) => {
-                if (n === 1 && marketSize > 0) return 'TAM: ' + formatCurrencyShort(marketSize);
-                if (n === 2 && rankedForces.length >= 3) return rankedForces.length + ' forces ranked';
-                return null;
-            };
+        function WizardSidebar({ currentStep }) {
+            const nums = [1, 2, 3];
             return (
                 <div className="wizard-sidebar no-print">
-                    <div className="wizard-sidebar-inner">
-                        <div style={{ marginBottom: 24 }}>
-                            <div className="monument" style={{ fontSize: 12, textTransform: 'uppercase', color: '#fff', marginBottom: 4 }}>MARKET SIZE</div>
-                            <div style={{ fontSize: 13, color: '#999' }}>~12 min total</div>
-                        </div>
-                        <div style={{ marginBottom: 16, fontFamily: "'Monument', monospace", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#999' }}>Your journey</div>
-                        {steps.map(s => {
-                            const isCompleted = currentStep > s.num, isActive = currentStep === s.num, isLocked = currentStep < s.num;
-                            const snippet = isCompleted ? getSnippet(s.num) : null;
-                            return (
-                                <div key={s.num} className={`sidebar-step-item ${isCompleted ? 'completed' : ''} ${isActive ? 'active' : ''} ${isLocked ? 'locked' : ''}`}
-                                    onClick={() => isCompleted && onNavigate && onNavigate(s.num)}
-                                    title={isCompleted ? 'Click to review this step' : ''}
-                                >
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                        {isCompleted ? <CheckIcon color="#000" size={14} /> : <span className="step-num" style={{ color: isActive ? '#fff' : '#ccc' }}>{String(s.num).padStart(2, '0')}</span>}
-                                        <span className="step-name" style={{ color: isLocked ? '#666' : isCompleted ? '#000' : '#fff' }}>{s.label}</span>
-                                    </div>
-                                    {snippet && <div className="sidebar-snippet">{snippet}</div>}
-                                </div>
-                            );
+                    <div className="sidebar-dots">
+                        {nums.map(n => {
+                            const isActive = currentStep === n, isDone = typeof currentStep === 'number' && currentStep > n;
+                            return <div key={n} className={`sidebar-step-dot ${isActive ? 'active' : isDone ? 'done' : ''}`} />;
                         })}
-
-                        {/* Coach Feedback Panel */}
-                        <CoachFeedbackPanel />
                     </div>
                 </div>
             );
@@ -738,17 +689,11 @@
 
                         {/* Step 0: Cover */}
                         {step === 0 && (
-                            <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
-                                <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url("https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1920&q=80")', backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.4 }} />
-                                <div style={{ position: 'relative', textAlign: 'center', color: '#fff', padding: '0 32px' }} className="animate-in">
-                                    <h1 className="plaak" style={{ fontSize: 80, marginBottom: 16, textTransform: 'uppercase' }}>MARKET SIZE</h1>
-                                    <p style={{ fontSize: 18, color: '#ccc', marginBottom: 48 }}>Calculate your Total Addressable Market and 3-year forecast</p>
-                                    <button onClick={() => setStep(0.5)}
-                                        style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 48px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s ease', minHeight: 44 }}
-                                        onMouseOver={e => { e.target.style.background = '#FFF469'; }}
-                                        onMouseOut={e => { e.target.style.background = '#fff'; }}
-                                    >START</button>
-                                </div>
+                            <div style={{ minHeight: '100vh', background: '#000', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: 48, color: '#fff' }} className="animate-in">
+                                <div style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: '#FFF469', letterSpacing: '0.15em', marginBottom: 24, textTransform: 'uppercase' }}>SPRINT 12</div>
+                                <h1 className="plaak" style={{ fontSize: 56, marginBottom: 24, textTransform: 'uppercase', lineHeight: 1.1, maxWidth: 700 }}>MARKET SIZE</h1>
+                                <p style={{ fontSize: 20, fontStyle: 'italic', color: '#ccc', marginBottom: 48, maxWidth: 600, lineHeight: 1.5 }}>"The market is a pendulum — it swings between unsustainable optimism and unjustified pessimism."</p>
+                                <button onClick={() => setStep(0.5)} style={{ background: '#FFF469', color: '#000', border: 'none', padding: '16px 40px', fontSize: 18, fontFamily: "'Monument', monospace", letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer', fontWeight: 700, alignSelf: 'flex-start' }}>START</button>
                             </div>
                         )}
 
@@ -808,7 +753,7 @@
                                         ) : null}
                                     />
                                 </div>
-                                <WizardSidebar currentStep={step} marketSize={marketSize} profitPool={profitPool} rankedForces={rankedForces} onNavigate={(s) => { setStep(s); if (s === 1) setStep1Phase(4); if (s === 2) setStep2Phase('rank'); }} />
+                                <WizardSidebar currentStep={step} />
                             </div>
                         )}
 
@@ -1252,88 +1197,42 @@
 
         function IntroPage({ onNext }) {
           return (
-            <div className="bg-black text-white min-h-screen p-16">
-              <div className="max-w-5xl mx-auto">
-                <h1 className="plaak mb-16 animate-in" style={{fontSize: '100px'}}>
-                  BEFORE WE START
-                </h1>
-
-                {/* Sprint Info */}
-                <div className="mb-12 animate-in" style={{animationDelay: '0.08s'}}>
-                  <h2 className="plaak text-6xl mb-6" style={{color: '#FFF469'}}>SPRINT INFO</h2>
-                  <div className="bg-white text-black p-8">
-                    <p className="text-2xl font-bold mb-4">Sprint 12: Market Size</p>
-                    <p className="text-xl leading-relaxed mb-4">Calculate your Total Addressable Market and forecast how it changes over 3 years using your team's knowledge — no expensive research required. 60-70% accuracy with internal knowledge beats 100% accuracy with stale data.</p>
-                    <div className="border-l-4 border-black pl-4 italic text-lg">
-                      "The market is a pendulum that will forever swing between unsustainable optimism and unjustified pessimism."
-                    </div>
+            <div style={{ minHeight: '100vh', background: '#000', color: '#fff', padding: '64px 48px' }} className="animate-in">
+              <div style={{ maxWidth: 880, margin: '0 auto' }}>
+                <h1 className="plaak" style={{ fontSize: 56, marginBottom: 48, textTransform: 'uppercase' }}>BEFORE WE START</h1>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 48 }}>
+                  <div style={{ background: '#111', border: '1px solid #222', padding: 28 }}>
+                    <p style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#FFF469', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>SPRINT INFO</p>
+                    <p className="plaak" style={{ fontSize: 18, marginBottom: 12 }}>Sprint 12: Market Size</p>
+                    <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7 }}>Calculate your TAM and forecast how it changes over 3 years using internal knowledge — no expensive research required. 60–70% directional accuracy beats 100% accuracy with stale data.</p>
+                  </div>
+                  <div style={{ background: '#111', border: '1px solid #222', padding: 28 }}>
+                    <p style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#FFF469', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>PURPOSE</p>
+                    <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7 }}>Turn market intuition into a shared, quantified view. Identify the forces reshaping your market and forecast where it will be in 3 years — so your leadership team allocates resources around the same opportunity.</p>
+                  </div>
+                  <div style={{ background: '#111', border: '1px solid #222', padding: 28 }}>
+                    <p style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#FFF469', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>MISTAKES TO AVOID</p>
+                    {['Aiming for 100% accuracy — 60–70% directional is enough to act on.', 'Missing the top 3–5 high-impact forces reshaping your market.', 'Ignoring technology — it reshapes every market faster than expected.'].map((m, i) => (
+                      <div key={i} style={{ display: 'flex', gap: 12, marginBottom: 10 }}>
+                        <span style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', minWidth: 20 }}>{i + 1}.</span>
+                        <span style={{ fontSize: 14, color: '#ccc', lineHeight: 1.5 }}>{m}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ background: '#111', border: '1px solid #222', padding: 28 }}>
+                    <p style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#FFF469', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>THE JOURNEY</p>
+                    {[['01', 'Market Size', 'Current TAM calculation'], ['02', 'Driving Forces', 'What is reshaping the market'], ['03', 'Future Impact', '3-year market forecast']].map(([num, title, desc]) => (
+                      <div key={num} style={{ display: 'flex', gap: 12, marginBottom: 12, alignItems: 'flex-start' }}>
+                        <span style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#555', minWidth: 24 }}>{num}</span>
+                        <div>
+                          <div style={{ fontSize: 14, color: '#fff', fontWeight: 600 }}>{title}</div>
+                          <div style={{ fontSize: 13, color: '#666' }}>{desc}</div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-
-                {/* Purpose */}
-                <div className="mb-12 animate-in" style={{animationDelay: '0.1s'}}>
-                  <h2 className="plaak text-6xl mb-6">PURPOSE</h2>
-                  <div className="border-l-4 border-white pl-6 mb-6">
-                    <p className="text-3xl italic mb-2">"If you don't know where your market is going, you can't position yourself to capture it."</p>
-                    <p className="text-xl text-gray-400">— Fast Track Tools</p>
-                  </div>
-                  <p className="text-3xl leading-relaxed mb-4">Calculate your Total Addressable Market (TAM), identify the top forces reshaping it, and forecast where it will be in 3 years. This turns market intuition into a shared, quantified view that aligns your leadership team around the same opportunity.</p>
-                  <p className="text-2xl text-gray-400">Teams that quantify their TAM and forecast market forces make 2.4x better resource allocation decisions than those relying on gut feel alone.</p>
-                </div>
-
-                {/* Mistakes to Avoid */}
-                <div className="mb-12 animate-in" style={{animationDelay: '0.2s'}}>
-                  <h2 className="plaak text-6xl mb-6" style={{color: '#FFF469'}}>MISTAKES TO AVOID</h2>
-                  <ul className="text-2xl space-y-4">
-                    <li className="flex items-start">
-                      <span className="text-4xl mr-4">•</span>
-                      <span>Aiming for 100% accuracy — 60-70% directional accuracy is enough to act on.</span>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-4xl mr-4">•</span>
-                      <span>Missing the top 3-5 high-impact forces reshaping your market.</span>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-4xl mr-4">•</span>
-                      <span>Ignoring technology as a force — it reshapes every market faster than expected.</span>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-4xl mr-4">•</span>
-                      <span>Underestimating your blind spots — the biggest risk is always what you're not seeing.</span>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-4xl mr-4">•</span>
-                      <span>Setting unrealistic market share targets without grounding them in competitive data.</span>
-                    </li>
-                  </ul>
-                </div>
-
-                {/* The Journey */}
-                <div className="mb-16 animate-in" style={{animationDelay: '0.3s'}}>
-                  <h2 className="plaak text-6xl mb-8">THE JOURNEY</h2>
-                  <div className="grid grid-cols-3 gap-6 text-center">
-                    <div className="border-2 border-white p-6">
-                      <div className="text-8xl plaak mb-4">01</div>
-                      <p className="text-xl font-bold mb-2">MARKET SIZE</p>
-                      <p className="text-base text-gray-400">Current TAM calculation</p>
-                    </div>
-                    <div className="border-2 border-white p-6">
-                      <div className="text-8xl plaak mb-4">02</div>
-                      <p className="text-xl font-bold mb-2">DRIVING FORCES</p>
-                      <p className="text-base text-gray-400">What is reshaping the market</p>
-                    </div>
-                    <div className="border-2 border-white p-6">
-                      <div className="text-8xl plaak mb-4">03</div>
-                      <p className="text-xl font-bold mb-2">FUTURE IMPACT</p>
-                      <p className="text-base text-gray-400">3-year market forecast</p>
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  onClick={onNext}
-                  className="btn-primary w-full text-3xl py-8 plaak"
-                >
+                <button onClick={onNext} style={{ background: '#FFF469', color: '#000', border: 'none', padding: '16px 48px', fontSize: 18, fontFamily: "'Monument', monospace", letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer', fontWeight: 700 }}>
                   LET'S START →
                 </button>
               </div>
