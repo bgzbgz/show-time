@@ -38,17 +38,12 @@
         .wizard-layout { display: flex; min-height: 100vh; }
         .wizard-main { flex: 1; display: flex; flex-direction: column; min-height: 100vh; background: #fff; }
         .wizard-content { max-width: 720px; width: 100%; margin: 0 auto; padding: 48px 32px; flex: 1; }
-        .wizard-sidebar { width: 280px; background: #1a1a1a; min-height: 100vh; padding: 48px 32px; display: flex; flex-direction: column; position: sticky; top: 0; align-self: flex-start; height: 100vh; overflow-y: auto; }
-        .wizard-sidebar-inner { padding: 32px 24px; height: 100%; overflow-y: auto; overflow-x: hidden; }
-        .sidebar-step-item { padding: 12px; margin-bottom: 8px; border-left: 3px solid transparent; transition: all 0.2s ease; }
-        .sidebar-step-item.active { border-left-color: #FFF469; background: #222; }
-        .sidebar-step-item.completed { background: #fff; color: #000; border-left-color: #fff; cursor: pointer; }
-        .sidebar-step-item.completed:hover { background: #E0E0E0; }
-        .sidebar-step-item.locked { opacity: 0.5; }
-        .sidebar-step-item .step-num { font-family: 'Riforma', sans-serif; font-size: 14px; }
-        .sidebar-step-item .step-name { font-family: 'Riforma', sans-serif; font-size: 14px; }
-        .sidebar-snippet { font-size: 12px; margin-top: 4px; opacity: 0.7; line-height: 1.3; }
-        .sidebar-phase-header { font-family: 'Monument', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: #FFF469; padding: 8px 12px; margin-top: 16px; margin-bottom: 4px; }
+        .wizard-sidebar { width: 48px; background: #1a1a1a; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 48px 0; position: sticky; top: 0; align-self: flex-start; height: 100vh; overflow-y: auto; }
+        .sidebar-dots { display: flex; flex-direction: column; gap: 12px; align-items: center; }
+        .sidebar-step-dot { width: 6px; height: 6px; border-radius: 50%; background: #555; flex-shrink: 0; transition: background 0.2s; cursor: default; }
+        .sidebar-step-dot.active { background: #FFF469; }
+        .sidebar-step-dot.done { background: #4ade80; }
+        .sidebar-divider { width: 1px; height: 16px; background: #333; margin: 4px 0; }
         .step-indicator { font-family: 'Monument', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #6B7280; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
         .step-time { font-family: 'Monument', monospace; font-size: 11px; color: #6B7280; }
         .step-heading { font-family: 'Plaak', sans-serif; font-weight: bold; font-size: 32px; text-transform: uppercase; letter-spacing: -0.01em; line-height: 1.2; color: #000; margin-bottom: 6px; }
@@ -79,7 +74,6 @@
         @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
         .animate-in { animation: fadeSlideIn 0.3s ease-out; }
         @media print { .no-print { display: none !important; } }
-        @media (min-width: 769px) and (max-width: 1024px) { .wizard-sidebar { width: 220px; } .wizard-sidebar-inner { padding: 24px 16px; } }
         @media (max-width: 768px) { .wizard-sidebar { display: none; } .mobile-step-bar { display: block; } .wizard-content { padding: 24px 16px; } .step-heading { font-size: 24px; } .btn-footer { padding: 12px 16px; } }
         @media (max-width: 480px) { .step-heading { font-size: 20px; } .wizard-content { padding: 20px 12px; } }
     </style>
@@ -588,52 +582,20 @@
     }
 
     /* === SIDEBAR === */
-    function WizardSidebar({ step, teamUnlocked, onNavigate }) {
-        const indSteps = [
-            { num: 1, label: 'Goals & Monitoring' },
-            { num: 2, label: 'Task Tracking' },
-            { num: 3, label: '5 Whys' },
-            { num: 4, label: '80/20 Principle' },
-            { num: 5, label: 'Constraints' },
-            { num: 6, label: 'Accountability' },
-            { num: 7, label: 'Review & Submit' }
-        ];
-        const teamSteps = [
-            { num: 8, label: 'Meeting Agenda' },
-            { num: 9, label: 'Action Plan & WWW' }
-        ];
+    function WizardSidebar({ step, teamUnlocked }) {
+        const indNums = [1, 2, 3, 4, 5, 6, 7];
+        const teamNums = [8, 9];
         return (
             <div className="wizard-sidebar no-print">
-                <div className="wizard-sidebar-inner">
-                    <div style={{ marginBottom: 24 }}>
-                        <div className="monument" style={{ fontSize: 12, textTransform: 'uppercase', color: '#fff', marginBottom: 4 }}>PERFORMANCE</div>
-                        <div style={{ fontSize: 13, color: '#999' }}>Sprint 10</div>
-                    </div>
-                    <div className="sidebar-phase-header">Individual Assessment</div>
-                    {indSteps.map(s => {
-                        const isCompleted = step > s.num, isActive = step === s.num, isLocked = step < s.num;
-                        return (
-                            <div key={s.num} className={`sidebar-step-item ${isCompleted ? 'completed' : ''} ${isActive ? 'active' : ''} ${isLocked ? 'locked' : ''}`} onClick={() => isCompleted && onNavigate(s.num)}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                    {isCompleted ? <CheckIcon color="#000" size={14} /> : <span className="step-num" style={{ color: isActive ? '#fff' : '#ccc' }}>{String(s.num).padStart(2, '0')}</span>}
-                                    <span className="step-name" style={{ color: isLocked ? '#666' : isCompleted ? '#000' : '#fff' }}>{s.label}</span>
-                                </div>
-                            </div>
-                        );
+                <div className="sidebar-dots">
+                    {indNums.map(n => {
+                        const isActive = step === n, isDone = typeof step === 'number' && step > n;
+                        return <div key={n} className={`sidebar-step-dot ${isActive ? 'active' : isDone ? 'done' : ''}`} />;
                     })}
-                    <div className="sidebar-phase-header" style={{ opacity: teamUnlocked ? 1 : 0.4 }}>
-                        {teamUnlocked ? 'Team Meeting' : 'Team (Locked)'}
-                    </div>
-                    {teamSteps.map(s => {
-                        const isActive = step === s.num, isCompleted = step > s.num;
-                        return (
-                            <div key={s.num} className={`sidebar-step-item ${!teamUnlocked ? 'locked' : isActive ? 'active' : isCompleted ? 'completed' : 'locked'}`} onClick={() => teamUnlocked && isCompleted && onNavigate(s.num)}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                    {teamUnlocked && isCompleted ? <CheckIcon color="#000" size={14} /> : !teamUnlocked ? <LockIcon size={14} /> : <span className="step-num" style={{ color: isActive ? '#fff' : '#ccc' }}>{String(s.num).padStart(2, '0')}</span>}
-                                    <span className="step-name" style={{ color: !teamUnlocked ? '#666' : isActive ? '#fff' : isCompleted ? '#000' : '#ccc' }}>{s.label}</span>
-                                </div>
-                            </div>
-                        );
+                    <div className="sidebar-divider" />
+                    {teamNums.map(n => {
+                        const isActive = step === n, isDone = typeof step === 'number' && step > n;
+                        return <div key={n} className={`sidebar-step-dot ${!teamUnlocked ? '' : isActive ? 'active' : isDone ? 'done' : ''}`} style={{ opacity: teamUnlocked ? 1 : 0.3 }} />;
                     })}
                 </div>
             </div>
@@ -768,52 +730,73 @@
 
                 {/* COVER */}
                 {step === 0 && (
-                    <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
-                        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url("https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1920&q=80")', backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.3 }} />
-                        <div style={{ position: 'relative', textAlign: 'center', color: '#fff', padding: '0 32px' }} className="animate-in">
-                            <h1 className="plaak" style={{ fontSize: 64, marginBottom: 16, textTransform: 'uppercase', lineHeight: 1.1 }}>PERFORMANCE<br/>ANALYSIS</h1>
-                            <p style={{ fontSize: 18, color: '#ccc', marginBottom: 48 }}>Measure what matters. Fix what's broken. Own the outcome.</p>
-                            <button onClick={() => goToStep(0.5)} style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 48px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s ease' }} onMouseOver={e => e.target.style.background = '#FFF469'} onMouseOut={e => e.target.style.background = '#fff'}>START</button>
-                        </div>
+                    <div style={{ minHeight: '100vh', background: '#000', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: 48, color: '#fff' }} className="animate-in">
+                        <div style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: '#FFF469', letterSpacing: '0.15em', marginBottom: 24, textTransform: 'uppercase' }}>SPRINT 10</div>
+                        <h1 className="plaak" style={{ fontSize: 56, marginBottom: 24, textTransform: 'uppercase', lineHeight: 1.1, maxWidth: 700 }}>PERFORMANCE ANALYSIS &amp;<br/>ACCOUNTABILITY</h1>
+                        <p style={{ fontSize: 20, fontStyle: 'italic', color: '#ccc', marginBottom: 48, maxWidth: 600, lineHeight: 1.5 }}>"Performance is like a GPS for your business journey."</p>
+                        <button onClick={() => goToStep(0.5)} style={{ background: '#FFF469', color: '#000', border: 'none', padding: '16px 40px', fontSize: 18, fontFamily: "'Monument', monospace", letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer', fontWeight: 700, alignSelf: 'flex-start' }}>START</button>
                     </div>
                 )}
 
-                {/* INTRO / PATH CHOOSER */}
+                {/* BEFORE WE START + PATH CHOOSER */}
                 {step === 0.5 && (
-                    <div style={{ minHeight: '100vh', background: '#000', color: '#fff', padding: '64px 32px' }}>
-                        <div style={{ maxWidth: 640, margin: '0 auto' }} className="animate-in">
-                            <h1 className="plaak" style={{ fontSize: 48, marginBottom: 16, textTransform: 'uppercase' }}>CHOOSE YOUR PATH</h1>
-                            <p style={{ fontSize: 16, color: '#ccc', marginBottom: 48, lineHeight: 1.6 }}>
-                                This sprint covers performance monitoring, root cause analysis, the 80/20 principle, Theory of Constraints, and building an accountability system.
-                            </p>
-
-                            {/* Individual */}
-                            <div style={{ border: '2px solid #fff', padding: 32, marginBottom: 32 }}>
-                                <div className="monument" style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600, marginBottom: 12 }}>Individual Assessment</div>
-                                <p style={{ fontSize: 15, color: '#ccc', lineHeight: 1.6, marginBottom: 24 }}>
-                                    Complete 6 steps: Goal Setting, Task Tracking, 5 Whys, 80/20 Analysis, Theory of Constraints, and Accountability Framework.
-                                </p>
-                                <button onClick={() => goToStep(1)} style={{ background: '#fff', color: '#000', border: 'none', padding: '14px 36px', fontSize: 15, fontFamily: "'Monument', monospace", letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }} onMouseOver={e => e.target.style.background = '#FFF469'} onMouseOut={e => e.target.style.background = '#fff'}>
-                                    {individualSubmitted ? 'REVIEW INDIVIDUAL' : 'START INDIVIDUAL'}
-                                </button>
-                            </div>
-
-                            {/* Team (locked) */}
-                            <div style={{ border: '2px solid ' + (teamToolUnlocked ? '#fff' : '#555'), padding: 32, marginBottom: 32, opacity: teamToolUnlocked ? 1 : 0.7 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                                    {!teamToolUnlocked && <LockIcon size={16} />}
-                                    <div className="monument" style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Team Meeting Tool</div>
+                    <div style={{ minHeight: '100vh', background: '#000', color: '#fff', padding: '64px 48px' }} className="animate-in">
+                        <div style={{ maxWidth: 880, margin: '0 auto' }}>
+                            <h1 className="plaak" style={{ fontSize: 56, marginBottom: 48, textTransform: 'uppercase' }}>BEFORE WE START</h1>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 48 }}>
+                                <div style={{ background: '#111', border: '1px solid #222', padding: 28 }}>
+                                    <p style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#FFF469', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>SPRINT INFO</p>
+                                    <p className="plaak" style={{ fontSize: 18, marginBottom: 12 }}>Sprint 10: Performance Analysis &amp; Accountability</p>
+                                    <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7 }}>Build a performance system that gives you full visibility into what's working, what isn't, and who owns what. 6 individual steps + 2 team meeting steps.</p>
                                 </div>
-                                {teamToolUnlocked ? (
-                                    <>
-                                        <p style={{ fontSize: 15, color: '#ccc', lineHeight: 1.6, marginBottom: 24 }}>Facilitate the 60-minute team meeting to establish performance and accountability systems.</p>
-                                        <button onClick={() => goToStep(8)} style={{ background: '#fff', color: '#000', border: 'none', padding: '14px 36px', fontSize: 15, fontFamily: "'Monument', monospace", letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }} onMouseOver={e => e.target.style.background = '#FFF469'} onMouseOut={e => e.target.style.background = '#fff'}>START TEAM MEETING</button>
-                                    </>
-                                ) : (
-                                    <div onClick={(e) => { if (e.shiftKey) setTeamToolUnlocked(true); }} style={{ background: '#222', padding: '12px 16px', textAlign: 'center', color: '#666', fontFamily: "'Monument', monospace", fontSize: 12, cursor: 'default' }} title="Shift+Click to force unlock (dev only)">
-                                        {checkingTeamUnlock ? 'CHECKING...' : 'LOCKED — WAITING FOR ALL TEAM MEMBERS'}
+                                <div style={{ background: '#111', border: '1px solid #222', padding: 28 }}>
+                                    <p style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#FFF469', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>PURPOSE</p>
+                                    <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7 }}>Most companies measure activity instead of results. This sprint gives you the tools to define what really matters, find root causes using 5 Whys, apply the 80/20 principle, and build real accountability.</p>
+                                </div>
+                                <div style={{ background: '#111', border: '1px solid #222', padding: 28 }}>
+                                    <p style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#FFF469', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>MISTAKES TO AVOID</p>
+                                    {['Tasks are binary—done or not done. No gray zones.', 'Failing to capture daily learnings from gaps.', 'Dashboards without ownership frameworks.'].map((m, i) => (
+                                        <div key={i} style={{ display: 'flex', gap: 12, marginBottom: 10 }}>
+                                            <span style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', minWidth: 20 }}>{i + 1}.</span>
+                                            <span style={{ fontSize: 14, color: '#ccc', lineHeight: 1.5 }}>{m}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div style={{ background: '#111', border: '1px solid #222', padding: 28 }}>
+                                    <p style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#FFF469', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>THE JOURNEY</p>
+                                    {['Goal Setting & Monitoring', 'Performance Measurement', '5 Whys Root Cause', '80/20 Principle', 'Theory of Constraints', 'Accountability System', 'Team Meeting (2 steps)'].map((s, i) => (
+                                        <div key={i} style={{ display: 'flex', gap: 12, marginBottom: 8 }}>
+                                            <span style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#555', minWidth: 24 }}>{String(i + 1).padStart(2, '0')}</span>
+                                            <span style={{ fontSize: 14, color: '#ccc' }}>{s}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            {/* Path Chooser */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+                                <div style={{ border: '2px solid #fff', padding: 32 }}>
+                                    <div style={{ fontFamily: "'Monument', monospace", fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600, marginBottom: 12, color: '#fff' }}>Individual Assessment</div>
+                                    <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.6, marginBottom: 24 }}>Complete 6 steps: Goal Setting, Task Tracking, 5 Whys, 80/20 Analysis, Theory of Constraints, and Accountability Framework.</p>
+                                    <button onClick={() => goToStep(1)} style={{ background: '#FFF469', color: '#000', border: 'none', padding: '14px 36px', fontSize: 15, fontFamily: "'Monument', monospace", letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer', fontWeight: 700 }}>
+                                        {individualSubmitted ? 'REVIEW INDIVIDUAL' : 'START INDIVIDUAL'}
+                                    </button>
+                                </div>
+                                <div style={{ border: '2px solid ' + (teamToolUnlocked ? '#fff' : '#555'), padding: 32, opacity: teamToolUnlocked ? 1 : 0.7 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                                        {!teamToolUnlocked && <LockIcon size={16} />}
+                                        <div style={{ fontFamily: "'Monument', monospace", fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600, color: '#fff' }}>Team Meeting Tool</div>
                                     </div>
-                                )}
+                                    {teamToolUnlocked ? (
+                                        <>
+                                            <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.6, marginBottom: 24 }}>Facilitate the 60-minute team meeting to establish performance and accountability systems.</p>
+                                            <button onClick={() => goToStep(8)} style={{ background: '#FFF469', color: '#000', border: 'none', padding: '14px 36px', fontSize: 15, fontFamily: "'Monument', monospace", letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer', fontWeight: 700 }}>START TEAM MEETING</button>
+                                        </>
+                                    ) : (
+                                        <div onClick={(e) => { if (e.shiftKey) setTeamToolUnlocked(true); }} style={{ background: '#222', padding: '12px 16px', textAlign: 'center', color: '#666', fontFamily: "'Monument', monospace", fontSize: 12, cursor: 'default' }} title="Shift+Click to force unlock (dev only)">
+                                            {checkingTeamUnlock ? 'CHECKING...' : 'LOCKED — WAITING FOR ALL TEAM MEMBERS'}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
