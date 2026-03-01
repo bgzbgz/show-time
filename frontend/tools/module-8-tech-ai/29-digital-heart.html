@@ -543,7 +543,11 @@
     .btn-wiz-next { font-family: 'Monument', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; background: #000; color: #fff; border: 2px solid #000; padding: 14px 28px; cursor: pointer; }
     .btn-wiz-next:hover:not(:disabled) { background: #333; }
     .btn-wiz-next:disabled { opacity: 0.4; cursor: not-allowed; }
-    .wizard-sidebar { width: 280px; min-width: 280px; background: #1a1a1a; color: #fff; padding: 48px 32px; position: sticky; top: 0; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; }
+    .wizard-sidebar { width: 48px; background: #1a1a1a; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 48px 0; position: sticky; top: 0; align-self: flex-start; height: 100vh; overflow-y: auto; }
+    .sidebar-dots { display: flex; flex-direction: column; gap: 12px; align-items: center; }
+    .sidebar-step-dot { width: 6px; height: 6px; border-radius: 50%; background: #555; flex-shrink: 0; transition: background 0.2s; cursor: default; }
+    .sidebar-step-dot.active { background: #FFF469; }
+    .sidebar-step-dot.done { background: #4ade80; }
   </style>
 </head>
 <body>
@@ -644,39 +648,19 @@
       );
     }
 
-    function WizardSidebar({ currentStep, stepLabels, totalSteps }) {
-      return (
-        <div className="wizard-sidebar">
-          <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, letterSpacing: '0.12em', color: '#888', textTransform: 'uppercase', marginBottom: 32 }}>
-            SPRINT 29 / DIGITAL HEART
-          </div>
-          <div style={{ flex: 1 }}>
-            {stepLabels.map((label, i) => {
-              const stepNum = i + 1;
-              const isDone = currentStep > stepNum;
-              const isActive = Math.floor(currentStep) === stepNum;
-              return (
-                <div key={stepNum} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-                  <div style={{
-                    width: 28, height: 28, borderRadius: '50%', border: `2px solid ${isDone ? '#FFF469' : isActive ? '#fff' : '#444'}`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                    background: isDone ? '#FFF469' : 'transparent', color: isDone ? '#000' : isActive ? '#fff' : '#444',
-                    fontSize: 13, fontWeight: 'bold'
-                  }}>
-                    {isDone ? '✓' : stepNum}
-                  </div>
-                  <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', color: isDone ? '#FFF469' : isActive ? '#fff' : '#555' }}>
-                    {label}
-                  </span>
+    function WizardSidebar({ currentStep, totalSteps }) {
+        const nums = Array.from({ length: totalSteps }, (_, i) => i + 1);
+        return (
+            <div className="wizard-sidebar no-print">
+                <div className="sidebar-dots">
+                    {nums.map(n => {
+                        const effectiveStep = Math.ceil(currentStep);
+                        const isActive = effectiveStep === n, isDone = effectiveStep > n;
+                        return <div key={n} className={`sidebar-step-dot ${isActive ? 'active' : isDone ? 'done' : ''}`} />;
+                    })}
                 </div>
-              );
-            })}
-          </div>
-          <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#444', letterSpacing: '0.06em' }}>
-            STEP {Math.floor(currentStep)} OF {totalSteps}
-          </div>
-        </div>
-      );
+            </div>
+        );
     }
 
     // Main App Component
@@ -997,7 +981,7 @@
                     {aiMessage && <div style={{color:'#dc2626',fontSize:'13px',marginTop:'8px',padding:'8px 12px',background:'#fef2f2',borderRadius:'6px'}}>{aiMessage}</div>}
                   </div>
                 </div>
-                <WizardSidebar currentStep={step} stepLabels={stepLabels} totalSteps={4} />
+                <WizardSidebar currentStep={step} totalSteps={4} />
               </div>
             );
           })()}
@@ -1009,28 +993,11 @@
     // Cover Page
     function CoverPage({ onStart }) {
       return (
-        <div className="relative min-h-screen flex items-center justify-center bg-black">
-          <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url("https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=1920&q=80")', backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.3 }} />
-          <div className="absolute inset-0" style={{background: 'linear-gradient(to bottom, rgba(0,0,0,0.6), rgba(0,0,0,0.85))'}}></div>
-
-          <div className="relative z-10 text-center text-white px-8 max-w-5xl mx-auto">
-            <h1 className="plaak animate-in" style={{fontSize: '100px', lineHeight: '1', marginBottom: '32px'}}>
-              DIGITAL HEART
-            </h1>
-            <h2 className="plaak animate-in" style={{fontSize: '80px', lineHeight: '1', marginBottom: '32px', color: '#FFF469', animationDelay: '0.1s'}}>
-              DATA LAKE
-            </h2>
-            <p className="text-4xl mb-12 animate-in" style={{animationDelay: '0.2s'}}>
-              Create the foundation for data-driven decisions and AI transformation.
-            </p>
-            <button
-              onClick={onStart}
-              className="bg-white text-black plaak px-16 py-6 border-4 border-white hover:bg-black hover:text-white transition-all text-3xl animate-in"
-              style={{animationDelay: '0.4s'}}
-            >
-              START
-            </button>
-          </div>
+        <div style={{ minHeight: '100vh', background: '#000', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: 48, color: '#fff' }} className="animate-in">
+            <div style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: '#FFF469', letterSpacing: '0.15em', marginBottom: 24, textTransform: 'uppercase' }}>SPRINT 29</div>
+            <h1 className="plaak" style={{ fontSize: 64, marginBottom: 24, textTransform: 'uppercase', lineHeight: 1.05, maxWidth: 780 }}>INDIVIDUAL AI<br/>DECISION OPTIMIZATION</h1>
+            <p style={{ fontSize: 20, fontStyle: 'italic', color: '#ccc', marginBottom: 48, maxWidth: 600, lineHeight: 1.5 }}>"Organizations that democratize AI across every role will dominate."</p>
+            <button onClick={onStart} style={{ background: '#FFF469', color: '#000', border: 'none', padding: '16px 40px', fontSize: 18, fontFamily: "'Monument', monospace", letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer', fontWeight: 700, alignSelf: 'flex-start' }}>START</button>
         </div>
       );
     }
@@ -1038,122 +1005,47 @@
     // Introduction Page
     function IntroductionPage({ onNext, onBack }) {
       return (
-        <div className="min-h-screen bg-white p-8 md:p-16 animate-in" style={{ paddingBottom: '120px' }}>
-          <div className="max-w-4xl mx-auto">
-            <h1 className="plaak text-5xl md:text-6xl mb-8">
-              DIGITALIZATION MADE SIMPLE
-            </h1>
-
-            <div className="info-box mb-8">
-              <p className="text-xl riforma-bold mb-4">
-                The quality of a business depends to a huge extent on the quality of the decisions taken. The managers who have a vast amount of data and the ability to interpret the data are in a position to make much better and faster decisions than their counterparts.
-              </p>
-              <p className="text-xl">
-                Data is quickly becoming the ultimate fuel for speed and growth in companies.
-              </p>
-            </div>
-
-            <h2 className="plaak text-3xl mb-6">
-              THE SIX CORE ELEMENTS DETERMINING ORGANIZATIONAL SPEED
-            </h2>
-
-            <div className="space-y-6 mb-12">
-              <div className="numbered-section" style={{ fontSize: '20px', marginBottom: '12px' }}>01</div>
-              <div className="ml-8">
-                <h3 className="riforma-bold text-xl mb-2">Ability to generate ideas fast</h3>
-                <p className="text-lg text-gray-700">
-                  This usually is a function of the creativity of teams, but also the access to versatile and seemingly unrelated information. We have observed a strong correlation between how much the team members read and their ability to generate new ideas.
-                </p>
-              </div>
-
-              <div className="numbered-section" style={{ fontSize: '20px', marginBottom: '12px' }}>02</div>
-              <div className="ml-8">
-                <h3 className="riforma-bold text-xl mb-2">Ability to test ideas quickly</h3>
-                <p className="text-lg text-gray-700">
-                  Test ideas on a small scale with minimum resources before deciding.
-                </p>
-              </div>
-
-              <div className="numbered-section" style={{ fontSize: '20px', marginBottom: '12px' }}>03</div>
-              <div className="ml-8">
-                <h3 className="riforma-bold text-xl mb-2">Speed of decision-making</h3>
-                <p className="text-lg text-gray-700">
-                  Critical for staying competitive in fast-moving markets.
-                </p>
-              </div>
-
-              <div className="numbered-section" style={{ fontSize: '20px', marginBottom: '12px' }}>04</div>
-              <div className="ml-8">
-                <h3 className="riforma-bold text-xl mb-2">Ability to quickly allocate resources</h3>
-                <p className="text-lg text-gray-700">
-                  E.g. people, time, cash and other resources to support decisions taken.
-                </p>
-              </div>
-
-              <div className="numbered-section" style={{ fontSize: '20px', marginBottom: '12px' }}>05</div>
-              <div className="ml-8">
-                <h3 className="riforma-bold text-xl mb-2">Ability to adjust organizational structure</h3>
-                <p className="text-lg text-gray-700">
-                  Usually, this might require a fundamental shift in the priorities and structure of the organization, which is often the biggest impediment to moving fast.
-                </p>
-              </div>
-
-              <div className="numbered-section" style={{ fontSize: '20px', marginBottom: '12px' }}>06</div>
-              <div className="ml-8">
-                <h3 className="riforma-bold text-xl mb-2">Decentralized decision-making</h3>
-                <p className="text-lg text-gray-700">
-                  In traditional organizations decisions are taken sequentially, where information has to move from one department to another - both horizontally and vertically. The sequential process of decision-making not only slows the organizations down but dilutes responsibility and accountability and feeds the devil of bureaucracy.
-                </p>
+        <div style={{ background: '#000', color: '#fff', minHeight: '100vh', padding: '48px' }} className="animate-in">
+          <h1 className="plaak" style={{ fontSize: 56, marginBottom: 48, textTransform: 'uppercase' }}>BEFORE WE START</h1>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 48 }}>
+            <div style={{ background: '#111', border: '1px solid #333', padding: 32 }}>
+              <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 16 }}>SPRINT INFO</div>
+              <div style={{ fontSize: 15, lineHeight: 1.7, color: '#ccc' }}>
+                <strong style={{ color: '#fff' }}>Sprint 29: Individual AI Decision Optimization</strong><br/><br/>
+                Map your critical business decisions to AI opportunities, identify data sources, design your technology layer, and create APIs so every person in the organisation can access real-time insights.
               </div>
             </div>
-
-            <h2 className="plaak text-3xl mb-6">
-              THE ESSENCE OF AGILE
-            </h2>
-
-            <p className="text-lg mb-6 text-gray-700">
-              Agile is a methodology traditionally introduced and used by IT and software companies. However, this methodology has been successfully adopted and used by many multinational companies like Unilever, Johnson & Johnson, L'Oreal, etc. It has huge benefits in terms of the speed of organizational development and the ability to solve issues quickly and execute them faster.
-            </p>
-
-            <div className="highlight-box mb-12">
-              <p className="text-xl riforma-bold">
-                Agile transformation is a lengthy process that if done correctly could be a game changer in how a company operates.
-              </p>
-            </div>
-
-            <h2 className="plaak text-3xl mb-6">
-              YOUR 4-STEP DIGITALIZATION JOURNEY
-            </h2>
-
-            <div className="space-y-4">
-              <div className="flex gap-4 items-start">
-                <div className="numbered-section" style={{ fontSize: '18px' }}>1</div>
-                <p className="text-lg flex-1">
-                  Determine the core decisions that could be digitalized
-                </p>
-              </div>
-
-              <div className="flex gap-4 items-start">
-                <div className="numbered-section" style={{ fontSize: '18px' }}>2</div>
-                <p className="text-lg flex-1">
-                  Identify the sources of data (internal and external) that will facilitate decision-making
-                </p>
-              </div>
-
-              <div className="flex gap-4 items-start">
-                <div className="numbered-section" style={{ fontSize: '18px' }}>3</div>
-                <p className="text-lg flex-1">
-                  Create the technology platform and algorithms to collect and make sense of the data
-                </p>
-              </div>
-
-              <div className="flex gap-4 items-start">
-                <div className="numbered-section" style={{ fontSize: '18px' }}>4</div>
-                <p className="text-lg flex-1">
-                  Create APIs to enable people in the organization to access and use data in real-time
-                </p>
+            <div style={{ background: '#111', border: '1px solid #333', padding: 32 }}>
+              <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 16 }}>PURPOSE</div>
+              <div style={{ fontSize: 15, lineHeight: 1.7, color: '#ccc' }}>
+                The quality of decisions determines the quality of the business. Managers with access to real-time data make faster, better decisions. This sprint turns your intuition into a data-driven operating system.<br/><br/>
+                Companies that systematically digitalize decisions reduce decision time by 60–80%.
               </div>
             </div>
+            <div style={{ background: '#111', border: '1px solid #333', padding: 32 }}>
+              <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 16 }}>MISTAKES TO AVOID</div>
+              <ul style={{ fontSize: 14, lineHeight: 1.8, color: '#ccc', paddingLeft: 0, listStyle: 'none' }}>
+                <li style={{ marginBottom: 10 }}>① Treating AI as an IT-only initiative — every role must have AI in their workflow.</li>
+                <li style={{ marginBottom: 10 }}>② Ignoring simple, high-impact opportunities — start with the highest-frequency decisions.</li>
+                <li>③ Not measuring ROI — track time saved and decision accuracy from day one.</li>
+              </ul>
+            </div>
+            <div style={{ background: '#111', border: '1px solid #333', padding: 32 }}>
+              <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 16 }}>THE JOURNEY</div>
+              <div style={{ fontSize: 14, lineHeight: 1.8, color: '#ccc' }}>
+                <strong style={{ color: '#fff' }}>4 steps:</strong><br/>
+                01 — Core Decisions to Digitalize<br/>
+                02 — Data Sources Mapping<br/>
+                03 — Technology Platform Design<br/>
+                04 — APIs &amp; Access Layer
+              </div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 16 }}>
+            <button onClick={onBack} style={{ background: 'transparent', border: '2px solid #444', color: '#888', padding: '14px 28px', fontFamily: "'Monument', monospace", fontSize: 12, letterSpacing: '0.06em', cursor: 'pointer' }}>← BACK</button>
+            <button onClick={onNext} style={{ background: '#FFF469', color: '#000', border: 'none', padding: '14px 40px', fontFamily: "'Monument', monospace", fontSize: 12, letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer', fontWeight: 700 }}>
+              LET'S START →
+            </button>
           </div>
         </div>
       );
