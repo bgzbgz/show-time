@@ -263,45 +263,206 @@ When the source Excel has two columns that belong together (e.g. Brand Promise /
 
 ---
 
-## Typeform pattern (one question at a time)
+## Multi-section typeform pattern (one section at a time)
 
-Use this when a step has multiple questions that would cause excessive scrolling:
+Use when a wizard step has multiple distinct sections (e.g. from Excel sheets) that would cause excessive scrolling. Each section = its own focused screen. **Reference: `frontend/tools/module-5-strategy-execution/19-brand-marketing.html`**
+
+### Section definition arrays
 
 ```jsx
-const STEP1_QUESTIONS = [
-    { key: 'field1', label: 'Question label', hint: 'Sub-hint text', ph: 'Placeholder...', minHeight: 120 },
-    { key: 'field2', label: 'Question 2', ph: 'Placeholder...', minHeight: 100 },
+// One entry per screen within the step
+const S1_SECTIONS = [
+    { tag: 'SECTION 01', title: 'Current Employer Perception', hint: 'Be honest about both sides.' },
+    { tag: 'SECTION 02', title: 'Target Employee Profile',      hint: 'Who do you want to attract?' },
+    // ...
+];
+const S2_SECTIONS = [
+    { tag: 'SECTION 01', title: 'Core Customer Reminder', hint: 'Who are we building this brand for?' },
+    // ...
 ];
 
-function Step1({ data, updateData, subIdx }) {
-    const q = STEP1_QUESTIONS[subIdx];
-    const val = data[q.key] || '';
+// In CONFIG:
+const CONFIG = {
+    // ...
+    S1_COUNT: 7,  // must match S1_SECTIONS.length
+    S2_COUNT: 5,  // must match S2_SECTIONS.length
+};
+```
+
+### App state
+
+```jsx
+const [step, setStep] = useState(0);
+const [s1, setS1]     = useState(0);  // 0 … S1_COUNT-1
+const [s2, setS2]     = useState(0);  // 0 … S2_COUNT-1
+```
+
+### Step components — render one section based on sub-index
+
+```jsx
+function Step1Screen({ s1, data, updateData }) {
+    const sec = S1_SECTIONS[s1];
     return (
-        <div className="step-content animate-in" key={subIdx}>
-            <p className="step-indicator">STEP 1 OF {CONFIG.TOTAL_STEPS} — QUESTION {subIdx + 1} OF {STEP1_QUESTIONS.length}</p>
+        <div className="step-content animate-in" key={s1}>
+            <p className="step-indicator">STEP 1 OF {CONFIG.TOTAL_STEPS} — {sec.tag}</p>
             <div className="opening-box">
-                <h1 className="step-heading">{q.label}</h1>
-                {q.hint && <p className="step-hint">{q.hint}</p>}
+                <h1 className="step-heading">{sec.title}</h1>
+                <p className="step-hint">{sec.hint}</p>
             </div>
-            <div className="field-group">
-                <textarea className="field-textarea" value={val} onChange={e => updateData(q.key, e.target.value)} placeholder={q.ph} style={{ minHeight: q.minHeight }} />
+            {s1 === 0 && (
+                <div className="field-split">
+                    <div>
+                        <label className="field-label">+ PLUSES</label>
+                        <textarea className="field-textarea" value={data.pluses} onChange={e => updateData('pluses', e.target.value)} />
+                    </div>
+                    <div>
+                        <label className="field-label">− MINUSES</label>
+                        <textarea className="field-textarea" value={data.minuses} onChange={e => updateData('minuses', e.target.value)} />
+                    </div>
+                </div>
+            )}
+            {s1 === 1 && (
+                <div className="field-group">
+                    <textarea className="field-textarea" value={data.targetProfile} onChange={e => updateData('targetProfile', e.target.value)} />
+                </div>
+            )}
+            {/* ... one block per section ... */}
+        </div>
+    );
+}
+```
+
+### Per-screen validation
+
+```jsx
+const isScreenValid = () => {
+    const d = data;
+    if (step === 1) {
+        if (s1 === 0) return (d.pluses || '').length >= 20 && (d.minuses || '').length >= 20;
+        if (s1 === 1) return (d.targetProfile || '').length >= 30;
+        // ...
+    }
+    if (step === 2) {
+        if (s2 === 0) return (d.coreCustomer || '').length >= 30;
+        // ...
+    }
+    return false;
+};
+```
+
+### isLastScreen helper
+
+```jsx
+const isLastScreen = () => {
+    if (step === 1) return s1 === CONFIG.S1_COUNT - 1;
+    if (step === 2) return s2 === CONFIG.S2_COUNT - 1;
+    return false;
+};
+```
+
+### Dynamic Next button label
+
+```jsx
+const nextLabel = () => {
+    if (aiReviewing) return 'AI COACH REVIEWING...';
+    if (step === 1 && isLastScreen()) return 'NEXT: CUSTOMER BRAND →';
+    if (step === 2 && isLastScreen()) return 'VIEW CANVAS →';
+    return 'NEXT →';
+};
+```
+
+### handleNext — advance sub-step or trigger AI review
+
+```jsx
+const handleNext = async () => {
+    // Not the last screen — just advance
+    if (step === 1 && s1 < CONFIG.S1_COUNT - 1) { setS1(s1 + 1); return; }
+    if (step === 2 && s2 < CONFIG.S2_COUNT - 1) { setS2(s2 + 1); return; }
+
+    // Last screen — AI review then transition
+    const userId = localStorage.getItem('ft_user_id');
+    if (!userId) { alert('User not authenticated.'); return; }
+    setAiReviewing(true);
+    let canProceed = false;
+    try {
+        const stepAnswers = step === 1
+            ? { field1: data.field1, field2: data.field2 /*, ...*/ }
+            : { field3: data.field3, field4: data.field4 /*, ...*/ };
+        const stepName = step === 1 ? 'Step 1 Name' : 'Step 2 Name';
+        canProceed = await window.AIChallenge.reviewStep(userId, CONFIG.TOOL_SLUG, stepAnswers, stepName);
+    } catch { canProceed = true; }
+    finally { setAiReviewing(false); }
+    if (canProceed) setStep(step + 0.5);
+};
+```
+
+### goBack — traverses sub-steps across step boundaries
+
+```jsx
+const goBack = () => {
+    if (step === 'canvas') { setStep(2); setS2(CONFIG.S2_COUNT - 1); return; }
+    if (step === 2) {
+        if (s2 > 0) { setS2(s2 - 1); return; }
+        setStep(1); setS1(CONFIG.S1_COUNT - 1); return;  // cross-step: go to last screen of step 1
+    }
+    if (step === 1) {
+        if (s1 > 0) { setS1(s1 - 1); return; }
+        setStep(0.5); return;
+    }
+    if (step === 0.5) { setStep(0); return; }
+};
+```
+
+### onRevise in submitWithChallenge — go back to LAST sub-step, not just step
+
+```jsx
+onRevise: () => { setSubmitStatus(null); setSubmitMessage(''); setStep(2); setS2(CONFIG.S2_COUNT - 1); }
+```
+
+### Progress bar in sidebar
+
+```jsx
+function WizardSidebar({ step, s1, s2 }) {
+    const totalScreens = CONFIG.S1_COUNT + CONFIG.S2_COUNT;
+    const currentScreen = step === 1 ? s1 : step === 2 ? CONFIG.S1_COUNT + s2 : totalScreens;
+    const pct = Math.round((currentScreen / totalScreens) * 100);
+    return (
+        <div className="wizard-sidebar">
+            {/* ... tool title, step dots ... */}
+            <div style={{ marginTop: 'auto', paddingTop: 24 }}>
+                <p style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#555', letterSpacing: '0.1em', marginBottom: 6 }}>PROGRESS</p>
+                <div className="progress-bar-wrap">
+                    <div className="progress-bar-fill" style={{ width: `${pct}%` }} />
+                </div>
+                <p style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#555', marginTop: 4 }}>{pct}%</p>
             </div>
         </div>
     );
 }
+```
 
-// In App:
-const [step1SubIdx, setStep1SubIdx] = useState(0);
+```css
+.progress-bar-wrap { height: 2px; background: #E0E0E0; margin-bottom: 0; }
+.progress-bar-fill { height: 2px; background: #000; transition: width 0.3s ease; }
+```
 
-// handleNext for step 1:
-if (currentStep === 1 && step1SubIdx < STEP1_QUESTIONS.length - 1) {
-    setStep1SubIdx(i => i + 1);
-    return;
-}
-// else: AI review and advance step
+### Passing s1/s2 to sidebar and step screens
 
-// goBack for step 1:
-if (currentStep === 1 && step1SubIdx > 0) { setStep1SubIdx(i => i - 1); return; }
+```jsx
+// In wizard render — pass both s1 and s2 to sidebar
+<div className="wizard-layout">
+    <div className="wizard-main">
+        {step === 1 && <Step1Screen s1={s1} data={data} updateData={updateData} actionIdx={actionIdx} setActionIdx={setActionIdx} />}
+        {step === 2 && <Step2Screen s2={s2} data={data} updateData={updateData} />}
+        <div className="wizard-footer">
+            <button className="btn-wiz-back" onClick={goBack}>← BACK</button>
+            <button className="btn-wiz-next" disabled={!isScreenValid() || aiReviewing} onClick={handleNext}>
+                {nextLabel()}
+            </button>
+        </div>
+    </div>
+    <WizardSidebar step={step} s1={s1} s2={s2} />
+</div>
 ```
 
 ---
