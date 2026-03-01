@@ -687,15 +687,17 @@ body { font-family: 'Riforma', -apple-system, sans-serif; font-size: 16px; color
 .animate-in { animation: fadeSlideIn 0.4s ease both; }
 @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 
-/* Canvas */
-.canvas-section        { border: 1px solid #E0E0E0; margin-bottom: 24px; }
+/* Canvas — canvas-wrap uses inline style; overflow-x: hidden is required to prevent horizontal scroll */
+/* canvas-split grid overflow fix: min-width:0 on children + overflow:hidden on body/section */
+.canvas-section        { border: 1px solid #E0E0E0; margin-bottom: 24px; overflow: hidden; }
 .canvas-section-header { background: #000; color: #fff; padding: 16px 24px; }
 .canvas-section-title  { font-family: 'Plaak', sans-serif; font-size: 22px; color: #fff; }
-.canvas-body           { padding: 24px; }
+.canvas-body           { padding: 24px; overflow: hidden; }
 .canvas-split          { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
-.canvas-field          { margin-bottom: 16px; }
+.canvas-split > *      { min-width: 0; }  /* prevents grid items overflowing their column */
+.canvas-field          { margin-bottom: 16px; min-width: 0; }
 .canvas-field-label    { font-family: 'Monument', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #999; margin-bottom: 6px; }
-.canvas-field-value    { font-size: 15px; color: #000; line-height: 1.6; white-space: pre-wrap; }
+.canvas-field-value    { font-size: 15px; color: #000; line-height: 1.6; white-space: pre-wrap; overflow-wrap: break-word; word-break: break-word; }
 
 /* Dep context */
 .dep-context        { border: 1px solid #E0E0E0; margin-bottom: 24px; }
