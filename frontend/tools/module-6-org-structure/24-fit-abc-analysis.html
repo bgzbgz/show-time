@@ -303,9 +303,8 @@
     /* ── Wizard layout ── */
     .wizard-layout { display: flex; min-height: 100vh; }
     .wizard-main { flex: 1; display: flex; flex-direction: column; min-height: 100vh; background: #fff; padding: 0 48px; }
-    .wizard-content { flex: 1; padding: 40px 0; }
-    .wizard-sidebar { width: 48px; background: #1a1a1a; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 48px 0; position: sticky; top: 0; align-self: flex-start; height: 100vh; overflow-y: auto; flex-shrink: 0; }
-    .sidebar-dots { display: flex; flex-direction: column; gap: 12px; align-items: center; }
+    .wizard-content { max-width: 100%; padding: 40px 0; flex: 1; }
+    .wizard-sidebar { width: 280px; background: #1a1a1a; min-height: 100vh; padding: 48px 32px; display: flex; flex-direction: column; position: sticky; top: 0; align-self: flex-start; height: 100vh; overflow-y: auto; }
     .wizard-footer { display: flex; justify-content: space-between; align-items: center; padding: 24px 48px; border-top: 1px solid #e5e7eb; background: #fff; }
     .btn-wiz-back { background: transparent; border: 2px solid #d1d5db; color: #6b7280; padding: 12px 28px; font-family: 'Monument', monospace; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
     .btn-wiz-back:hover { border-color: #000; color: #000; }
@@ -322,7 +321,7 @@
 
     /* ── Fields ── */
     .field-group { margin-bottom: 40px; }
-    .field-label { font-weight: 600; font-size: 16px; color: #000; margin-bottom: 8px; display: block; }
+    .field-label { font-weight: 600; font-size: 16px; color: #000; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
     .field-help  { font-size: 13px; color: #666; margin-top: 4px; }
     .field-error { font-size: 13px; color: #DC2626; margin-top: 4px; }
 
@@ -332,7 +331,7 @@
     .closing-box .closing-title { font-family: 'Monument', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #000; margin-bottom: 6px; }
 
     /* ── Sidebar CSS classes ── */
-    .sidebar-tool-num { font-family: 'Monument', monospace; font-size: 10px; color: #555; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 8px; }
+    .sidebar-tool-num { font-family: 'Monument', monospace; font-size: 10px; color: #fff; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 8px; }
     .sidebar-tool-title { font-family: 'Plaak', sans-serif; font-size: 22px; color: #fff; margin-bottom: 32px; line-height: 1.1; }
     .sidebar-step { padding: 8px 0; border-bottom: 1px solid #2a2a2a; cursor: default; display: flex; align-items: center; gap: 8px; transition: opacity 0.2s; }
     .sidebar-step:last-child { border-bottom: none; }
@@ -936,16 +935,27 @@
 
     // Wizard Sidebar Component
     function WizardSidebar({ currentStep }) {
-        const nums = [1, 2, 3, 4];
+        const steps = [
+            { num: 1, label: 'Team Members' },
+            { num: 2, label: 'FIT Analysis' },
+            { num: 3, label: 'ABC Classification' },
+            { num: 4, label: 'Action Plans' },
+        ];
+        const cur = typeof currentStep === 'number' ? Math.floor(currentStep) : 0;
         return (
             <div className="wizard-sidebar no-print">
-                <div className="sidebar-dots">
-                    {nums.map(n => {
-                        const effectiveStep = typeof currentStep === 'number' ? Math.ceil(currentStep) : 0;
-                        const isActive = effectiveStep === n, isDone = effectiveStep > n;
-                        return <div key={n} className={`sidebar-step-dot ${isActive ? 'active' : isDone ? 'done' : ''}`} />;
-                    })}
-                </div>
+                <div className="sidebar-tool-num">SPRINT 24</div>
+                <div className="sidebar-tool-title">FIT &amp; ABC ANALYSIS</div>
+                {steps.map(s => {
+                    const isActive = cur === s.num;
+                    const isDone = cur > s.num;
+                    return (
+                        <div key={s.num} className="sidebar-step" style={{ opacity: isDone || isActive ? 1 : 0.5 }}>
+                            <div className={`sidebar-step-dot ${isActive ? 'active' : isDone ? 'done' : ''}`} />
+                            <span className={`sidebar-step-label ${isActive ? 'active' : isDone ? 'done' : ''}`}>{s.label}</span>
+                        </div>
+                    );
+                })}
             </div>
         );
     }
