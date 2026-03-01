@@ -362,7 +362,11 @@
     .btn-wiz-next { font-family: 'Monument', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; background: #000; color: #fff; border: 2px solid #000; padding: 14px 28px; cursor: pointer; }
     .btn-wiz-next:hover:not(:disabled) { background: #333; }
     .btn-wiz-next:disabled { opacity: 0.4; cursor: not-allowed; }
-    .wizard-sidebar { width: 280px; min-width: 280px; background: #1a1a1a; color: #fff; padding: 48px 32px; position: sticky; top: 0; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; }
+    .wizard-sidebar { width: 48px; background: #1a1a1a; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 48px 0; position: sticky; top: 0; align-self: flex-start; height: 100vh; overflow-y: auto; }
+    .sidebar-dots { display: flex; flex-direction: column; gap: 12px; align-items: center; }
+    .sidebar-step-dot { width: 6px; height: 6px; border-radius: 50%; background: #555; flex-shrink: 0; transition: background 0.2s; cursor: default; }
+    .sidebar-step-dot.active { background: #FFF469; }
+    .sidebar-step-dot.done { background: #4ade80; }
     /* Dark theme inputs */
     input[type="text"], input[type="number"], input[type="email"], textarea, select {
         background: #1a1a1a !important;
@@ -451,39 +455,19 @@
             );
         }
 
-    function WizardSidebar({ currentStep, stepLabels, totalSteps }) {
-      return (
-        <div className="wizard-sidebar">
-          <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, letterSpacing: '0.12em', color: '#888', textTransform: 'uppercase', marginBottom: 32 }}>
-            SPRINT 28 / AI DIGITALIZATION
-          </div>
-          <div style={{ flex: 1 }}>
-            {stepLabels.map((label, i) => {
-              const stepNum = i + 1;
-              const isDone = currentStep > stepNum;
-              const isActive = Math.floor(currentStep) === stepNum;
-              return (
-                <div key={stepNum} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-                  <div style={{
-                    width: 28, height: 28, borderRadius: '50%', border: `2px solid ${isDone ? '#FFF469' : isActive ? '#fff' : '#444'}`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                    background: isDone ? '#FFF469' : 'transparent', color: isDone ? '#000' : isActive ? '#fff' : '#444',
-                    fontSize: 13, fontWeight: 'bold'
-                  }}>
-                    {isDone ? '✓' : stepNum}
-                  </div>
-                  <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', color: isDone ? '#FFF469' : isActive ? '#fff' : '#555' }}>
-                    {label}
-                  </span>
+    function WizardSidebar({ currentStep, totalSteps }) {
+        const nums = Array.from({ length: totalSteps }, (_, i) => i + 1);
+        return (
+            <div className="wizard-sidebar no-print">
+                <div className="sidebar-dots">
+                    {nums.map(n => {
+                        const effectiveStep = Math.ceil(currentStep);
+                        const isActive = effectiveStep === n, isDone = effectiveStep > n;
+                        return <div key={n} className={`sidebar-step-dot ${isActive ? 'active' : isDone ? 'done' : ''}`} />;
+                    })}
                 </div>
-              );
-            })}
-          </div>
-          <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#444', letterSpacing: '0.06em' }}>
-            STEP {Math.floor(currentStep)} OF {totalSteps}
-          </div>
-        </div>
-      );
+            </div>
+        );
     }
 
     // Main App Component
@@ -1150,7 +1134,7 @@
                 {aiMessage && <div style={{color:'#dc2626',fontSize:'13px',marginTop:'8px',padding:'8px 12px',background:'#fef2f2',borderRadius:'6px'}}>{aiMessage}</div>}
               </div>
             </div>
-            <WizardSidebar currentStep={step} stepLabels={stepLabels} totalSteps={3} />
+            <WizardSidebar currentStep={step} totalSteps={3} />
           </div>
         );
       }
@@ -1180,7 +1164,7 @@
                 {aiMessage && <div style={{color:'#dc2626',fontSize:'13px',marginTop:'8px',padding:'8px 12px',background:'#fef2f2',borderRadius:'6px'}}>{aiMessage}</div>}
               </div>
             </div>
-            <WizardSidebar currentStep={step} stepLabels={stepLabels} totalSteps={4} />
+            <WizardSidebar currentStep={step} totalSteps={4} />
           </div>
         );
       }
@@ -1192,26 +1176,11 @@
     // Cover Page Component
     function CoverPage({ onStart }) {
       return (
-        <div className="relative min-h-screen flex items-center justify-center bg-black">
-          <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url("https://images.unsplash.com/photo-1518770660439-4636190af475?w=1920&q=80")', backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.3 }} />
-          <div className="relative z-10 text-center text-white px-8 max-w-5xl mx-auto">
-            <h1 className="plaak animate-in" style={{fontSize: '100px', lineHeight: '1', marginBottom: '32px'}}>
-              AI
-            </h1>
-            <h2 className="plaak animate-in" style={{fontSize: '80px', lineHeight: '1', marginBottom: '32px', color: '#FFF469', animationDelay: '0.1s'}}>
-              DIGITALIZATION
-            </h2>
-            <p className="text-4xl mb-12 animate-in" style={{animationDelay: '0.2s'}}>
-              Transform decisions. Automate processes. Dominate your market.
-            </p>
-            <button
-              onClick={onStart}
-              className="bg-white text-black plaak px-16 py-6 border-4 border-white hover:bg-black hover:text-white transition-all text-3xl animate-in"
-              style={{animationDelay: '0.4s'}}
-            >
-              START
-            </button>
-          </div>
+        <div style={{ minHeight: '100vh', background: '#000', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: 48, color: '#fff' }} className="animate-in">
+            <div style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: '#FFF469', letterSpacing: '0.15em', marginBottom: 24, textTransform: 'uppercase' }}>SPRINT 28</div>
+            <h1 className="plaak" style={{ fontSize: 64, marginBottom: 24, textTransform: 'uppercase', lineHeight: 1.05, maxWidth: 780 }}>APPLY AGGRESSIVELY<br/>TECH &amp; AI</h1>
+            <p style={{ fontSize: 20, fontStyle: 'italic', color: '#ccc', marginBottom: 48, maxWidth: 600, lineHeight: 1.5 }}>"AI is not about robots — it's about machines using data to support decision-making."</p>
+            <button onClick={onStart} style={{ background: '#FFF469', color: '#000', border: 'none', padding: '16px 40px', fontSize: 18, fontFamily: "'Monument', monospace", letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer', fontWeight: 700, alignSelf: 'flex-start' }}>START</button>
         </div>
       );
     }
@@ -1226,67 +1195,52 @@
       };
 
       return (
-        <div className="bg-black text-white min-h-screen p-16 flex items-center justify-center">
-          <div className="max-w-6xl mx-auto text-center">
-            <h1 className="plaak mb-16 animate-in" style={{fontSize: '100px'}}>
-              WHICH TOOL DO YOU NEED?
-            </h1>
-
-            <p className="text-3xl mb-16 text-gray-300 animate-in" style={{animationDelay: '0.1s'}}>
-              Choose the right tool for your AI digitalization journey:
-            </p>
-
-            <div className="flex gap-12 justify-center mb-16">
-              <div className="text-center">
-                <button
-                  onClick={() => handleChoice('individual')}
-                  className="choice-button animate-in"
-                  style={{
-                    animationDelay: '0.2s',
-                    background: selected === 'individual' ? '#FFF469' : '#FFFFFF',
-                    color: '#000000'
-                  }}
-                >
+        <div style={{ background: '#000', color: '#fff', minHeight: '100vh', padding: '48px' }} className="animate-in">
+          {/* BEFORE WE START */}
+          <h1 className="plaak" style={{ fontSize: 56, marginBottom: 48, textTransform: 'uppercase' }}>BEFORE WE START</h1>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 56 }}>
+            <div style={{ background: '#111', border: '1px solid #333', padding: 32 }}>
+              <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 16 }}>SPRINT INFO</div>
+              <div style={{ fontSize: 15, lineHeight: 1.7, color: '#ccc' }}>
+                <strong style={{ color: '#fff' }}>Sprint 28: Apply Aggressively Tech &amp; AI</strong><br/><br/>
+                Map your key decisions and processes to AI opportunities. Build an implementation roadmap that turns digitalization from a slide deck into operational reality within 90 days.
+              </div>
+            </div>
+            <div style={{ background: '#111', border: '1px solid #333', padding: 32 }}>
+              <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 16 }}>PURPOSE</div>
+              <div style={{ fontSize: 15, lineHeight: 1.7, color: '#ccc' }}>
+                Companies that systematically apply AI to their top decisions and processes achieve 40–60% reduction in manual work within the first 90 days. This sprint ensures every person and process is AI-enabled — not just IT.<br/><br/>
+                AI amplifies process quality. Bad processes become bad processes, faster.
+              </div>
+            </div>
+            <div style={{ background: '#111', border: '1px solid #333', padding: 32 }}>
+              <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 16 }}>MISTAKES TO AVOID</div>
+              <ul style={{ fontSize: 14, lineHeight: 1.8, color: '#ccc', paddingLeft: 0, listStyle: 'none' }}>
+                <li style={{ marginBottom: 10 }}>① Underestimating data quality &amp; infrastructure needs before deploying AI.</li>
+                <li style={{ marginBottom: 10 }}>② Tech knowledge without business/domain expertise — AI alone doesn't solve bad strategy.</li>
+                <li>③ Skipping pilot before full rollout — test at small scale before company-wide deployment.</li>
+              </ul>
+            </div>
+            <div style={{ background: '#111', border: '1px solid #333', padding: 32 }}>
+              <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 16 }}>CHOOSE YOUR PATH</div>
+              <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
+                <button onClick={() => handleChoice('individual')} style={{ flex: 1, padding: '16px 8px', background: selected === 'individual' ? '#FFF469' : '#fff', color: '#000', border: 'none', fontFamily: "'Monument', monospace", fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer', fontWeight: 700 }}>
                   INDIVIDUAL<br/>TOOL
                 </button>
-                <p className="text-xl mt-6 text-gray-400">For personal AI analysis and preparation</p>
-              </div>
-              <div className="text-center">
-                <button
-                  onClick={() => handleChoice('team')}
-                  className="choice-button animate-in"
-                  style={{
-                    animationDelay: '0.3s',
-                    background: selected === 'team' ? '#FFF469' : '#FFFFFF',
-                    color: '#000000'
-                  }}
-                >
+                <button onClick={() => handleChoice('team')} style={{ flex: 1, padding: '16px 8px', background: selected === 'team' ? '#FFF469' : '#fff', color: '#000', border: 'none', fontFamily: "'Monument', monospace", fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer', fontWeight: 700 }}>
                   TEAM<br/>TOOL
                 </button>
-                <p className="text-xl mt-6 text-gray-400">For collaborative team AI strategy session</p>
               </div>
+              <p style={{ fontSize: 13, color: '#888', lineHeight: 1.5 }}>
+                {selected === 'individual' ? 'Personal AI decision + process mapping (3 steps)' : selected === 'team' ? 'Collaborative team AI strategy session (4 steps)' : 'Select individual or team mode above'}
+              </p>
             </div>
-
-            <div className="flex gap-4 justify-center">
-              <button
-                onClick={onBack}
-                className="btn-secondary text-2xl py-6 px-12"
-              >
-                BACK
-              </button>
-              <button
-                onClick={onNext}
-                disabled={!canProceed}
-                className="btn-primary text-3xl py-8 plaak px-16"
-                style={{
-                  background: canProceed ? '#FFFFFF' : '#666666',
-                  color: canProceed ? '#000000' : '#333333',
-                  borderColor: canProceed ? '#FFFFFF' : '#666666'
-                }}
-              >
-                CONTINUE
-              </button>
-            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 16 }}>
+            <button onClick={onBack} style={{ background: 'transparent', border: '2px solid #444', color: '#888', padding: '14px 28px', fontFamily: "'Monument', monospace", fontSize: 12, letterSpacing: '0.06em', cursor: 'pointer' }}>← BACK</button>
+            <button onClick={onNext} disabled={!canProceed} style={{ background: canProceed ? '#FFF469' : '#333', color: canProceed ? '#000' : '#666', border: 'none', padding: '14px 40px', fontFamily: "'Monument', monospace", fontSize: 12, letterSpacing: '0.08em', textTransform: 'uppercase', cursor: canProceed ? 'pointer' : 'not-allowed', fontWeight: 700 }}>
+              CONTINUE →
+            </button>
           </div>
         </div>
       );
