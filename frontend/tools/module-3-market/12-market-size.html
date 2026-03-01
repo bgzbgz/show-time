@@ -60,23 +60,28 @@
             flex-direction: column;
             min-height: 100vh;
             background: #fff;
+            padding: 0 48px;
         }
-        .wizard-content { flex: 1; padding: 48px 32px; max-width: 720px; width: 100%; margin: 0 auto; }
+        .wizard-content { max-width: 100%; padding: 40px 0; flex: 1; }
         /* Step 3 needs wider content for side-by-side matrix */
         .wizard-content-wide {
-            max-width: 960px;
-            width: 100%;
-            margin: 0 auto;
-            padding: 48px 32px;
+            max-width: 100%;
+            padding: 40px 0;
             flex: 1;
         }
 
         /* === SIDEBAR === */
-        .wizard-sidebar { width: 48px; background: #1a1a1a; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 48px 0; position: sticky; top: 0; align-self: flex-start; height: 100vh; overflow-y: auto; }
-        .sidebar-dots { display: flex; flex-direction: column; gap: 12px; align-items: center; }
-        .sidebar-step-dot { width: 6px; height: 6px; border-radius: 50%; background: #555; flex-shrink: 0; transition: background 0.2s; cursor: default; }
+        .wizard-sidebar { width: 280px; background: #1a1a1a; min-height: 100vh; padding: 48px 32px; display: flex; flex-direction: column; position: sticky; top: 0; align-self: flex-start; height: 100vh; overflow-y: auto; }
+        .sidebar-tool-num { font-family: 'Monument', monospace; font-size: 10px; color: #fff; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 8px; }
+        .sidebar-tool-title { font-family: 'Plaak', sans-serif; font-size: 22px; color: #fff; margin-bottom: 32px; line-height: 1.1; }
+        .sidebar-step { padding: 8px 0; border-bottom: 1px solid #2a2a2a; cursor: default; display: flex; align-items: center; gap: 8px; transition: opacity 0.2s; }
+        .sidebar-step:last-child { border-bottom: none; }
+        .sidebar-step-dot { width: 6px; height: 6px; border-radius: 50%; background: #555; flex-shrink: 0; transition: background 0.2s; }
         .sidebar-step-dot.active { background: #FFF469; }
         .sidebar-step-dot.done { background: #4ade80; }
+        .sidebar-step-label { font-family: 'Monument', monospace; font-size: 10px; letter-spacing: 0.08em; color: #555; text-transform: uppercase; transition: color 0.2s; }
+        .sidebar-step-label.active { color: #FFF469; }
+        .sidebar-step-label.done { color: #4ade80; }
 
         /* === STEP HEADER === */
         .step-indicator {
@@ -137,7 +142,6 @@
         .ft-input:focus {
             outline: none;
             border-color: #000;
-            box-shadow: 0 0 0 3px #FFF469;
         }
         .ft-input.has-error { border: 2px solid #DC2626; }
 
@@ -156,7 +160,6 @@
         .ft-textarea:focus {
             outline: none;
             border-color: #000;
-            box-shadow: 0 0 0 3px #FFF469;
         }
 
         /* Small input for matrix cells */
@@ -175,7 +178,6 @@
         .ft-input-sm:focus {
             outline: none;
             border-color: #000;
-            box-shadow: 0 0 0 3px #FFF469;
         }
 
         .ft-help { font-size: 14px; color: #6B7280; margin-top: 4px; line-height: 1.5; }
@@ -295,12 +297,19 @@
         /* === PRINT === */
         @media print { .no-print { display: none !important; } }
 
+        /* === FIELD LABEL === */
+        .field-label { font-weight: 600; font-size: 16px; color: #000; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+
+        /* === STEP CONTENT === */
+        .step-content { max-width: 100%; padding: 40px 0; flex: 1; }
+
         /* === RESPONSIVE === */
         @media (max-width: 768px) {
             .wizard-sidebar { display: none; }
             .mobile-step-bar { display: block; }
-            .wizard-content { padding: 24px 16px; }
-            .wizard-content-wide { padding: 24px 16px; }
+            .wizard-main { padding: 0 24px; }
+            .wizard-content { padding: 24px 0; }
+            .wizard-content-wide { padding: 24px 0; }
             .step-heading { font-size: 24px; }
             .wizard-footer { padding: 12px 16px; }
         }
@@ -385,15 +394,26 @@
         }
 
         function WizardSidebar({ currentStep }) {
-            const nums = [1, 2, 3];
+            const steps = [
+                { num: 1, label: 'Market Size' },
+                { num: 2, label: 'Driving Forces' },
+                { num: 3, label: 'Future Impact' },
+            ];
+            const cur = typeof currentStep === 'number' ? Math.floor(currentStep) : 0;
             return (
                 <div className="wizard-sidebar no-print">
-                    <div className="sidebar-dots">
-                        {nums.map(n => {
-                            const isActive = currentStep === n, isDone = typeof currentStep === 'number' && currentStep > n;
-                            return <div key={n} className={`sidebar-step-dot ${isActive ? 'active' : isDone ? 'done' : ''}`} />;
-                        })}
-                    </div>
+                    <div className="sidebar-tool-num">SPRINT 12</div>
+                    <div className="sidebar-tool-title">MARKET SIZE</div>
+                    {steps.map(s => {
+                        const isActive = cur === s.num;
+                        const isDone = cur > s.num;
+                        return (
+                            <div key={s.num} className="sidebar-step" style={{ opacity: isDone || isActive ? 1 : 0.5 }}>
+                                <div className={`sidebar-step-dot ${isActive ? 'active' : isDone ? 'done' : ''}`} />
+                                <span className={`sidebar-step-label ${isActive ? 'active' : isDone ? 'done' : ''}`}>{s.label}</span>
+                            </div>
+                        );
+                    })}
                 </div>
             );
         }
@@ -676,7 +696,7 @@
                                 <div className="wizard-main">
                                     <MobileStepBar currentStep={step} totalSteps={3} />
 
-                                    <div className={step === 3 ? "wizard-content-wide animate-in" : "wizard-content animate-in"}>
+                                    <div style={{ flex: 1 }}>
                                         {step === 1 && <><DependencyContext deps={deps} /><Step1Content marketData={marketData} setMarketData={setMarketData} marketSize={marketSize} profitPool={profitPool} currentYear={currentYear} phase={step1Phase} setPhase={setStep1Phase} canProceedPhase1={canProceedStep1Phase1} canProceed={canProceedStep1} /></>}
                                         {step === 2 && <Step2Content drivingForces={drivingForces} setDrivingForces={setDrivingForces} rankedForces={rankedForces} topForces={topForces} phase={step2Phase} setPhase={setStep2Phase} canProceed={canProceedStep2} />}
                                         {step === 3 && <Step3Content topForces={topForces} impactData={impactData} setImpactData={setImpactData} marketData={marketData} marketSize={marketSize} profitPool={profitPool} future={future} currentYear={currentYear} futureYear={futureYear} drivingForces={drivingForces} />}
