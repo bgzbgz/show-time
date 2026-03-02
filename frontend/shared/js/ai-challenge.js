@@ -7,6 +7,7 @@ var AIChallenge = (function () {
 
     // Track review attempts per step (resets on page load)
     var stepAttempts = {};
+    var currentToolSlug = null;
 
     function getAttempt(stepKey) {
         if (!stepAttempts[stepKey]) stepAttempts[stepKey] = 0;
@@ -86,9 +87,10 @@ var AIChallenge = (function () {
             }
             modal.appendChild(body);
 
-            // Store feedback in localStorage
+            // Store feedback in localStorage (scoped by tool)
             try {
-                localStorage.setItem('ai_last_feedback', JSON.stringify({
+                var fbKey = currentToolSlug ? 'ai_last_feedback_' + currentToolSlug : 'ai_last_feedback';
+                localStorage.setItem(fbKey, JSON.stringify({
                     type: 'challenges',
                     encouragement: feedback.encouragement,
                     challenges: feedback.challenges,
@@ -146,9 +148,10 @@ var AIChallenge = (function () {
             '<button onclick="this.parentNode.remove()" style="position:absolute;top:8px;right:8px;background:none;border:none;color:#fff;font-size:18px;cursor:pointer;padding:2px 6px;line-height:1;opacity:0.7">&times;</button>';
         toast.style.position = 'fixed';
 
-        // Store approval in localStorage
+        // Store approval in localStorage (scoped by tool)
         try {
-            localStorage.setItem('ai_last_feedback', JSON.stringify({
+            var fbKey = currentToolSlug ? 'ai_last_feedback_' + currentToolSlug : 'ai_last_feedback';
+            localStorage.setItem(fbKey, JSON.stringify({
                 type: 'approved',
                 message: message || 'Strong answers! Moving on.',
                 timestamp: Date.now()
@@ -164,6 +167,7 @@ var AIChallenge = (function () {
     // Returns true if user can proceed, false if blocked.
     // Tracks attempts per stepName so re-reviews are more lenient.
     function reviewStep(userId, toolSlug, stepAnswers, stepName) {
+        currentToolSlug = toolSlug;
         var attempt = getAttempt(toolSlug + ':' + stepName);
         return review(userId, toolSlug, stepAnswers, attempt)
             .then(function (feedback) {
@@ -219,9 +223,11 @@ var AIChallenge = (function () {
         return div.innerHTML;
     }
 
-    function getLastFeedback() {
+    function getLastFeedback(toolSlug) {
         try {
-            var raw = localStorage.getItem('ai_last_feedback');
+            var slug = toolSlug || currentToolSlug;
+            var key = slug ? 'ai_last_feedback_' + slug : 'ai_last_feedback';
+            var raw = localStorage.getItem(key);
             return raw ? JSON.parse(raw) : null;
         } catch (e) {
             return null;
