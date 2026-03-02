@@ -317,6 +317,9 @@
     // Configuration
     const CONFIG = {
       TOOL_SLUG: 'pricing',
+      TOOL_TITLE: 'STRATEGY DRIVEN PRICING',
+      TOOL_SUBTITLE: 'Set pricing based on real customer value and willingness to pay.',
+      COVER_IMAGE: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=1600&q=80',
       AUTOSAVE_DELAY: 2000
     };
 
@@ -524,6 +527,7 @@
     function PricingApp() {
             const [deps, setDeps] = useState([]);
       const [step, setStep] = useState(0);
+      const [authState, setAuthState] = useState({ loading: true, authenticated: false, error: null });
       const [aiReviewing, setAiReviewing] = useState(false);
       const [aiMessage, setAiMessage] = useState('');
       const [submitStatus, setSubmitStatus] = useState(null);
@@ -587,6 +591,20 @@
                 }
                 loadDeps();
             }, []);
+
+      // Auth check
+      useEffect(() => {
+        ToolDB.whenReady().then(async () => {
+          const uid = await ToolDB.identifyUser();
+          if (!uid) {
+            setAuthState({ loading: false, authenticated: false, error: 'No active session found.' });
+            return;
+          }
+          setAuthState({ loading: false, authenticated: true, error: null });
+        }).catch(() => {
+          setAuthState({ loading: false, authenticated: false, error: 'Authentication failed.' });
+        });
+      }, []);
 
       // Load from localStorage
       useEffect(() => {
@@ -819,13 +837,41 @@
       return (
         <div className="tool-frame">
           <div className="tool-inner">
+            {/* Loading */}
+            {authState.loading && (
+              <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: '#555', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Loading…</div>
+              </div>
+            )}
+
+            {/* Auth required */}
+            {!authState.loading && !authState.authenticated && (
+              <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ textAlign: 'center', color: '#fff', padding: '0 32px', maxWidth: 640 }}>
+                  <h1 className="plaak" style={{ fontSize: 48, marginBottom: 24 }}>AUTHENTICATION REQUIRED</h1>
+                  <p style={{ fontSize: 20, marginBottom: 32 }}>Please access this tool from your LearnWorlds course.</p>
+                  <p style={{ fontSize: 16, color: '#999' }}>{authState.error || 'No active session found'}</p>
+                </div>
+              </div>
+            )}
+
             {/* Step 0: Cover */}
-            {step === 0 && (
-              <div style={{ minHeight: '100vh', background: '#000', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: 48, color: '#fff' }} className="animate-in">
-                <div style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: '#FFF469', letterSpacing: '0.15em', marginBottom: 24, textTransform: 'uppercase' }}>SPRINT 18</div>
-                <h1 className="plaak" style={{ fontSize: 56, marginBottom: 24, textTransform: 'uppercase', lineHeight: 1.1, maxWidth: 700 }}>STRATEGY DRIVEN PRICING</h1>
-                <p style={{ fontSize: 20, fontStyle: 'italic', color: '#ccc', marginBottom: 48, maxWidth: 600, lineHeight: 1.5 }}>"Set pricing based on real customer value and willingness to pay."</p>
-                <button onClick={() => setStep(0.5)} style={{ background: '#FFF469', color: '#000', border: 'none', padding: '16px 40px', fontSize: 18, fontFamily: "'Monument', monospace", letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer', fontWeight: 700, alignSelf: 'flex-start' }}>START</button>
+            {step === 0 && authState.authenticated && (
+              <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${CONFIG.COVER_IMAGE})`, backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.4 }} />
+                <div style={{ position: 'relative', textAlign: 'center', color: '#fff', padding: '0 32px' }} className="animate-in">
+                  <div style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: '#FFF469', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 24 }}>
+                    SPRINT 18 / MODULE 5 — STRATEGY &amp; EXECUTION
+                  </div>
+                  <h1 className="plaak" style={{ fontSize: 80, marginBottom: 16 }}>{CONFIG.TOOL_TITLE}</h1>
+                  <p style={{ fontSize: 18, color: '#ccc', marginBottom: 48, maxWidth: 560, margin: '0 auto 48px' }}>{CONFIG.TOOL_SUBTITLE}</p>
+                  <button onClick={() => setStep(0.5)}
+                    style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 48px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s' }}
+                    onMouseOver={e => { e.target.style.background = '#FFF469'; }}
+                    onMouseOut={e => { e.target.style.background = '#fff'; }}>
+                    START
+                  </button>
+                </div>
               </div>
             )}
 
@@ -954,42 +1000,78 @@
     // Intro Page Component
     function IntroPage({ onNext }) {
       return (
-        <div style={{ minHeight: '100vh', background: '#000', color: '#fff', padding: '64px 48px' }} className="animate-in">
-          <div style={{ maxWidth: 880, margin: '0 auto' }}>
-            <h1 className="plaak" style={{ fontSize: 56, marginBottom: 48, textTransform: 'uppercase' }}>BEFORE WE START</h1>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 48 }}>
-              <div style={{ background: '#111', border: '1px solid #222', padding: 28 }}>
-                <p style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#FFF469', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>SPRINT INFO</p>
-                <p className="plaak" style={{ fontSize: 18, marginBottom: 12 }}>Sprint 18: Strategy Driven Pricing</p>
-                <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7 }}>A 1–2% price tweak can beat extensive cost-cutting. This sprint helps you set value-based price anchors and finalize product bundles based on actual willingness to pay data.</p>
+        <div style={{ background: '#000', color: '#fff', minHeight: '100vh', padding: '64px' }}>
+          <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+            <h1 className="plaak animate-in" style={{ fontSize: '100px', marginBottom: '64px' }}>BEFORE WE START</h1>
+
+            {/* Sprint Info */}
+            <div className="animate-in" style={{ marginBottom: '48px', animationDelay: '0.08s' }}>
+              <h2 className="plaak" style={{ fontSize: '48px', color: '#FFF469', marginBottom: '24px' }}>SPRINT INFO</h2>
+              <div style={{ background: '#fff', color: '#000', padding: '32px' }}>
+                <p style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '16px' }}>Sprint 18: Strategy Driven Pricing</p>
+                <p style={{ fontSize: '18px', lineHeight: 1.6, marginBottom: '16px' }}>
+                  A 1–2% price tweak can beat extensive cost-cutting. This sprint helps you set value-based price anchors and finalize product bundles based on actual willingness to pay data.
+                </p>
+                <div style={{ borderLeft: '4px solid #000', paddingLeft: '16px', fontStyle: 'italic', fontSize: '16px' }}>
+                  Pricing is the most powerful profit lever. A 1% price increase drives ~11% profit increase on average.
+                </div>
               </div>
-              <div style={{ background: '#111', border: '1px solid #222', padding: 28 }}>
-                <p style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#FFF469', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>PURPOSE</p>
-                <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.7 }}>Most companies build products first, then set prices — leaving money on the table. Set your anchor price FIRST based on willingness to pay, then build the product around it. Price before product, always.</p>
+            </div>
+
+            {/* Purpose */}
+            <div className="animate-in" style={{ marginBottom: '48px', animationDelay: '0.1s' }}>
+              <h2 className="plaak" style={{ fontSize: '48px', marginBottom: '24px' }}>PURPOSE</h2>
+              <div style={{ borderLeft: '4px solid #fff', paddingLeft: '24px', marginBottom: '24px' }}>
+                <p style={{ fontSize: '28px', fontStyle: 'italic', marginBottom: '8px' }}>"Price before product, always."</p>
+                <p style={{ fontSize: '18px', color: '#999' }}>— Hermann Simon, Confessions of the Pricing Man</p>
               </div>
-              <div style={{ background: '#111', border: '1px solid #222', padding: 28 }}>
-                <p style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#FFF469', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>MISTAKES TO AVOID</p>
-                {['Too many tiers — keep to 2–3 max for clarity.', "Guessing price instead of using WTP data or pilot tests.", "Overcomplicating features — if it doesn't increase WTP, it's noise."].map((m, i) => (
-                  <div key={i} style={{ display: 'flex', gap: 12, marginBottom: 10 }}>
-                    <span style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', minWidth: 20 }}>{i + 1}.</span>
-                    <span style={{ fontSize: 14, color: '#ccc', lineHeight: 1.5 }}>{m}</span>
-                  </div>
+              <p style={{ fontSize: '22px', lineHeight: 1.6, marginBottom: '16px' }}>
+                Most companies build products first, then set prices — leaving money on the table. Set your anchor price FIRST based on willingness to pay, then build the product around it.
+              </p>
+              <p style={{ fontSize: '18px', color: '#999' }}>
+                McKinsey research across 1,200 companies: a 1% improvement in price generates an 8.7% increase in operating profits on average.
+              </p>
+            </div>
+
+            {/* Mistakes to Avoid */}
+            <div className="animate-in" style={{ marginBottom: '48px', animationDelay: '0.2s' }}>
+              <h2 className="plaak" style={{ fontSize: '48px', color: '#FFF469', marginBottom: '24px' }}>MISTAKES TO AVOID</h2>
+              <ul style={{ fontSize: '20px', listStyle: 'none', padding: 0 }}>
+                {[
+                  'Too many tiers — keep to 2–3 max for clarity.',
+                  'Guessing price instead of using WTP data or pilot tests.',
+                  "Overcomplicating features — if it doesn't increase WTP, it's noise."
+                ].map((item, i) => (
+                  <li key={i} style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '16px' }}>
+                    <span style={{ fontSize: '32px', marginRight: '16px', lineHeight: 1, flexShrink: 0 }}>•</span>
+                    <span>{item}</span>
+                  </li>
                 ))}
-              </div>
-              <div style={{ background: '#111', border: '1px solid #222', padding: 28 }}>
-                <p style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#FFF469', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>THE JOURNEY</p>
-                {[['01','Feature Classification','Classify by willingness to pay'],['02','Price Anchor','Set the price position'],['03','Tier Bundles','Design 2–3 bundles'],['04','Value Alignment','Map price to value delivered'],['05','Implementation','Action plan & pilot']].map(([num, title, desc]) => (
-                  <div key={num} style={{ display: 'flex', gap: 12, marginBottom: 10, alignItems: 'flex-start' }}>
-                    <span style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#555', minWidth: 24 }}>{num}</span>
-                    <div>
-                      <div style={{ fontSize: 14, color: '#fff', fontWeight: 600 }}>{title}</div>
-                      <div style={{ fontSize: 12, color: '#666' }}>{desc}</div>
-                    </div>
+              </ul>
+            </div>
+
+            {/* The Journey */}
+            <div className="animate-in" style={{ marginBottom: '64px', animationDelay: '0.3s' }}>
+              <h2 className="plaak" style={{ fontSize: '48px', marginBottom: '32px' }}>THE JOURNEY</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '16px', textAlign: 'center' }}>
+                {[
+                  ['01', 'FEATURE CLASSIFICATION', 'Classify by willingness to pay'],
+                  ['02', 'PRICE ANCHOR', 'Set the price position'],
+                  ['03', 'TIER BUNDLES', 'Design 2–3 bundles'],
+                  ['04', 'VALUE ALIGNMENT', 'Map price to value delivered'],
+                  ['05', 'IMPLEMENTATION', 'Action plan & pilot']
+                ].map(([num, title, sub]) => (
+                  <div key={num} style={{ border: '2px solid #fff', padding: '20px 12px' }}>
+                    <div className="plaak" style={{ fontSize: '52px', marginBottom: '12px' }}>{num}</div>
+                    <p style={{ fontWeight: 'bold', marginBottom: '6px', fontSize: '13px' }}>{title}</p>
+                    <p style={{ fontSize: '12px', color: '#999' }}>{sub}</p>
                   </div>
                 ))}
               </div>
             </div>
-            <button onClick={onNext} style={{ background: '#FFF469', color: '#000', border: 'none', padding: '16px 48px', fontSize: 18, fontFamily: "'Monument', monospace", letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer', fontWeight: 700 }}>
+
+            <button onClick={onNext} className="plaak"
+              style={{ width: '100%', padding: '32px', background: '#FFF469', color: '#000', border: 'none', fontSize: '28px', cursor: 'pointer', letterSpacing: '0.05em', transition: 'opacity 0.2s' }}>
               LET'S START →
             </button>
           </div>

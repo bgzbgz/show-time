@@ -375,6 +375,9 @@
 
     const CONFIG = {
         TOOL_SLUG: 'fit-abc-analysis',
+        TOOL_TITLE: 'FIT & ABC ANALYSIS',
+        TOOL_SUBTITLE: 'Evaluate team fitness and classify talent for strategic action.',
+        COVER_IMAGE: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=1600&q=80',
         AUTOSAVE_DELAY: 2000,
         TRANSITION_CONTENT: {
             1: {
@@ -438,6 +441,7 @@
     function FitAbcApp() {
             const [deps, setDeps] = useState([]);
       const [step, setStep] = useState(0);
+      const [authState, setAuthState] = useState({ loading: true, authenticated: false, error: null });
       const [aiReviewing, setAiReviewing] = useState(false);
       const [submitted, setSubmitted] = useState(false);
       const [abcIdx, setAbcIdx] = useState(0);
@@ -494,6 +498,20 @@
                 }
                 loadDeps();
             }, []);
+
+      // Auth check
+      useEffect(() => {
+        ToolDB.whenReady().then(async () => {
+          const uid = await ToolDB.identifyUser();
+          if (!uid) {
+            setAuthState({ loading: false, authenticated: false, error: 'No active session found.' });
+            return;
+          }
+          setAuthState({ loading: false, authenticated: true, error: null });
+        }).catch(() => {
+          setAuthState({ loading: false, authenticated: false, error: 'Authentication failed.' });
+        });
+      }, []);
 
       // Reset abcIdx when entering step 3
       useEffect(() => { if (step === 3) setAbcIdx(0); }, [step]);
@@ -753,11 +771,31 @@
         return window.renderTransitionScreen(step, CONFIG, 4, setStep);
       }
 
-      if (step === 0) {
+      if (authState.loading) {
+        return (
+          <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: '#555', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Loading…</div>
+          </div>
+        );
+      }
+
+      if (!authState.loading && !authState.authenticated) {
+        return (
+          <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ textAlign: 'center', color: '#fff', padding: '0 32px', maxWidth: 640 }}>
+              <h1 className="plaak" style={{ fontSize: 48, marginBottom: 24 }}>AUTHENTICATION REQUIRED</h1>
+              <p style={{ fontSize: 20, marginBottom: 32 }}>Please access this tool from your LearnWorlds course.</p>
+              <p style={{ fontSize: 16, color: '#999' }}>{authState.error || 'No active session found'}</p>
+            </div>
+          </div>
+        );
+      }
+
+      if (step === 0 && authState.authenticated) {
         return <CoverPage onStart={goNext} />;
       }
 
-      if (step === 0.5) {
+      if (step === 0.5 && authState.authenticated) {
         return <IntroPage onNext={goNext} />;
       }
 
@@ -830,11 +868,21 @@
     // Cover Page Component
     function CoverPage({ onStart }) {
       return (
-        <div style={{ minHeight: '100vh', background: '#000', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: 48, color: '#fff' }} className="animate-in">
-            <div style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: '#FFF469', letterSpacing: '0.15em', marginBottom: 24, textTransform: 'uppercase' }}>SPRINT 24</div>
-            <h1 className="plaak" style={{ fontSize: 64, marginBottom: 24, textTransform: 'uppercase', lineHeight: 1.05, maxWidth: 780 }}>FIT &amp; ABC ANALYSIS</h1>
-            <p style={{ fontSize: 20, fontStyle: 'italic', color: '#ccc', marginBottom: 48, maxWidth: 600, lineHeight: 1.5 }}>"A-players are 400% more productive than average in complex roles."</p>
-            <button onClick={onStart} style={{ background: '#FFF469', color: '#000', border: 'none', padding: '16px 40px', fontSize: 18, fontFamily: "'Monument', monospace", letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer', fontWeight: 700, alignSelf: 'flex-start' }}>START</button>
+        <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${CONFIG.COVER_IMAGE})`, backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.4 }} />
+          <div style={{ position: 'relative', textAlign: 'center', color: '#fff', padding: '0 32px' }} className="animate-in">
+            <div style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: '#FFF469', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 24 }}>
+              SPRINT 24 / MODULE 6 — ORG STRUCTURE
+            </div>
+            <h1 className="plaak" style={{ fontSize: 80, marginBottom: 16 }}>{CONFIG.TOOL_TITLE}</h1>
+            <p style={{ fontSize: 18, color: '#ccc', marginBottom: 48, maxWidth: 560, margin: '0 auto 48px' }}>{CONFIG.TOOL_SUBTITLE}</p>
+            <button onClick={onStart}
+              style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 48px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s' }}
+              onMouseOver={e => { e.target.style.background = '#FFF469'; }}
+              onMouseOut={e => { e.target.style.background = '#fff'; }}>
+              START
+            </button>
+          </div>
         </div>
       );
     }
@@ -852,7 +900,7 @@
             <div className="animate-in" style={{ marginBottom: '48px', animationDelay: '0.08s' }}>
               <h2 className="plaak" style={{ fontSize: '48px', color: '#FFF469', marginBottom: '24px' }}>SPRINT INFO</h2>
               <div style={{ background: '#fff', color: '#000', padding: '32px' }}>
-                <p style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '16px' }}>Sprint 24: FIT & ABC Analysis</p>
+                <p style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '16px' }}>Sprint 24: FIT &amp; ABC Analysis</p>
                 <p style={{ fontSize: '18px', lineHeight: 1.6, marginBottom: '16px' }}>
                   Think of your organisation as a sports team. Even the best strategy won't win if the wrong players are in the wrong positions. This sprint makes sure the right people are doing the right things — so your strategy can truly perform.
                 </p>
@@ -862,30 +910,19 @@
               </div>
             </div>
 
-            {/* Two Frameworks */}
+            {/* Purpose */}
             <div className="animate-in" style={{ marginBottom: '48px', animationDelay: '0.1s' }}>
-              <h2 className="plaak" style={{ fontSize: '48px', marginBottom: '24px' }}>TWO FRAMEWORKS</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-                <div style={{ border: '2px solid #fff', padding: '24px' }}>
-                  <h3 className="plaak" style={{ fontSize: '28px', color: '#FFF469', marginBottom: '12px' }}>FIT ANALYSIS</h3>
-                  <p style={{ fontSize: '16px', marginBottom: '12px', color: '#ccc' }}>Are people naturally energised and suited for the role?</p>
-                  <ul style={{ fontSize: '15px', listStyle: 'none', padding: 0, lineHeight: 2 }}>
-                    <li><strong>Energy:</strong> Does this role energise or drain them?</li>
-                    <li><strong>Skill:</strong> Do they have the natural talents and learned skills?</li>
-                    <li><strong>Values:</strong> Are their values aligned with company values?</li>
-                    <li><strong>Impact:</strong> Are they making a significant contribution?</li>
-                  </ul>
-                </div>
-                <div style={{ border: '2px solid #fff', padding: '24px' }}>
-                  <h3 className="plaak" style={{ fontSize: '28px', color: '#FFF469', marginBottom: '12px' }}>ABC ANALYSIS</h3>
-                  <p style={{ fontSize: '16px', marginBottom: '12px', color: '#ccc' }}>Are they delivering results and behaving in line with values?</p>
-                  <ul style={{ fontSize: '15px', listStyle: 'none', padding: 0, lineHeight: 2 }}>
-                    <li><strong>A Players:</strong> Great performance + cultural fit + high potential</li>
-                    <li><strong>B Players:</strong> Good but not great, or performing without cultural fit</li>
-                    <li><strong>C Players:</strong> Low performers or cultural misfits</li>
-                  </ul>
-                </div>
+              <h2 className="plaak" style={{ fontSize: '48px', marginBottom: '24px' }}>PURPOSE</h2>
+              <div style={{ borderLeft: '4px solid #fff', paddingLeft: '24px', marginBottom: '24px' }}>
+                <p style={{ fontSize: '28px', fontStyle: 'italic', marginBottom: '8px' }}>"A-players are 400% more productive than average in complex roles."</p>
+                <p style={{ fontSize: '18px', color: '#999' }}>— McKinsey & Company</p>
               </div>
+              <p style={{ fontSize: '22px', lineHeight: 1.6, marginBottom: '16px' }}>
+                Two frameworks work together: <strong style={{ color: '#FFF469' }}>FIT Analysis</strong> asks whether people are naturally energised and suited for their role (Energy, Skill, Values, Impact). <strong style={{ color: '#FFF469' }}>ABC Analysis</strong> classifies talent by performance and cultural alignment (A = great, B = good but not great, C = low performer or misfit).
+              </p>
+              <p style={{ fontSize: '18px', color: '#999' }}>
+                1 in 3 leaders avoid addressing people-fit issues until it's too late — costing A-players who leave and C-players who stay 18 months longer than they should.
+              </p>
             </div>
 
             {/* Mistakes to Avoid */}
@@ -925,7 +962,7 @@
             </div>
 
             <button onClick={onNext} className="plaak"
-              style={{ width: '100%', padding: '32px', background: '#FFF469', color: '#000', border: 'none', fontSize: '28px', cursor: 'pointer', letterSpacing: '0.05em' }}>
+              style={{ width: '100%', padding: '32px', background: '#FFF469', color: '#000', border: 'none', fontSize: '28px', cursor: 'pointer', letterSpacing: '0.05em', transition: 'opacity 0.2s' }}>
               LET'S START →
             </button>
           </div>
