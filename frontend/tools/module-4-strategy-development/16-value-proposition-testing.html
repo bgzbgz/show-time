@@ -114,16 +114,13 @@
 
     /* === FORM ELEMENTS === */
     .field-label {
+      font-weight: 600;
+      font-size: 16px;
+      color: #000;
+      margin-bottom: 8px;
       display: flex;
       align-items: center;
       gap: 6px;
-      font-family: 'Monument', monospace;
-      font-size: 14px;
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: #000;
-      margin-bottom: 8px;
     }
     .field-input {
       width: 100%;
@@ -139,7 +136,6 @@
     .field-input:focus {
       outline: none;
       border-color: #000;
-      box-shadow: 0 0 0 3px #FFF469;
     }
     .field-textarea {
       width: 100%;
@@ -156,7 +152,6 @@
     .field-textarea:focus {
       outline: none;
       border-color: #000;
-      box-shadow: 0 0 0 3px #FFF469;
     }
     .field-help {
       font-size: 14px;
@@ -980,7 +975,7 @@
       const [interviewIndex, setInterviewIndex] = useState(0);
       const [aiReviewing, setAiReviewing] = useState(false);
       const [aiMessage, setAiMessage] = useState('');
-      const [authState, setAuthState] = useState({ loading: false, authenticated: true });
+      const [authState, setAuthState] = useState({ loading: true, authenticated: false, error: null });
       const [submitStatus, setSubmitStatus] = useState(null);
       const [submitMessage, setSubmitMessage] = useState('');
 
@@ -1003,8 +998,18 @@
         setInterviewIndex(0);
       }, [step]);
 
-      // Load deps
+      // Load deps + auth check
       useEffect(() => {
+        // Auth check
+        (async () => {
+          try {
+            if (window.ToolDB && ToolDB.identifyUser) {
+              const user = await ToolDB.identifyUser();
+              if (user && user.id) { setAuthState({ loading: false, authenticated: true, error: null }); }
+              else { setAuthState({ loading: false, authenticated: false, error: 'No active session found' }); }
+            } else { setAuthState({ loading: false, authenticated: true, error: null }); }
+          } catch (err) { setAuthState({ loading: false, authenticated: false, error: err.message }); }
+        })();
         async function loadDeps() {
           const userId = localStorage.getItem('ft_user_id');
           if (!userId || !window.ToolDB || !window.DependencyInjection) return;
@@ -1243,17 +1248,37 @@
         <div className="tool-frame">
           <div className="tool-inner">
 
+            {/* LOADING */}
+            {authState.loading && (
+              <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: '#555', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Loading…</div>
+              </div>
+            )}
+
+            {/* AUTH REQUIRED */}
+            {!authState.loading && !authState.authenticated && (
+              <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ textAlign: 'center', color: '#fff', padding: '0 32px', maxWidth: 640 }}>
+                  <h1 className="plaak" style={{ fontSize: 48, marginBottom: 24 }}>AUTHENTICATION REQUIRED</h1>
+                  <p style={{ fontSize: 20, marginBottom: 32 }}>Please access this tool from your LearnWorlds course.</p>
+                  <p style={{ fontSize: 16, color: '#999' }}>{authState.error || 'No active session found'}</p>
+                </div>
+              </div>
+            )}
+
             {/* Cover */}
-            {step === 0 && (
+            {step === 0 && authState.authenticated && (
               <div style={{ position: 'relative', width: '100%', minHeight: '100vh', background: '#000', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url("https://images.unsplash.com/photo-1556761175-b413da4baf72?w=1920&q=80")', backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.35 }} />
+                <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url("https://images.unsplash.com/photo-1556761175-b413da4baf72?w=1920&q=80")', backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.4 }} />
                 <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', padding: '0 32px', maxWidth: 800 }} className="animate-in">
-                  <div className="monument" style={{ fontSize: 11, color: '#FFF469', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 24 }}>SPRINT 16</div>
+                  <div className="monument" style={{ fontSize: 11, color: '#FFF469', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 24 }}>SPRINT 16 / MODULE 4 — SALES</div>
                   <h1 className="plaak animate-in" style={{ fontSize: 'clamp(48px, 8vw, 96px)', color: '#fff', marginBottom: 24, lineHeight: 1 }}>VP TESTING</h1>
                   <p style={{ fontSize: 18, color: '#ccc', marginBottom: 48, lineHeight: 1.6 }}>Turn customer feedback into a bulletproof message</p>
-                  <button onClick={() => setStep(0.5)} className="plaak animate-in"
-                    style={{ background: '#FFF469', color: '#000', border: 'none', padding: '20px 56px', fontSize: 20, cursor: 'pointer' }}>
-                    START →
+                  <button onClick={() => setStep(0.5)}
+                    style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 48px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s' }}
+                    onMouseOver={e => { e.target.style.background = '#FFF469'; }}
+                    onMouseOut={e => { e.target.style.background = '#fff'; }}>
+                    START
                   </button>
                 </div>
               </div>

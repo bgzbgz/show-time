@@ -122,21 +122,18 @@
         }
 
         /* === FORM ELEMENTS === */
-        .ft-label {
+        .field-label {
             display: flex;
             align-items: center;
             gap: 6px;
-            font-family: 'Monument', monospace;
-            font-size: 14px;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
+            font-weight: 600;
+            font-size: 16px;
             color: #000;
             margin-bottom: 8px;
         }
-        .ft-required { color: #DC2626; font-weight: 700; }
+        .field-required { color: #DC2626; font-weight: 700; }
 
-        .ft-input {
+        .field-input {
             width: 100%;
             height: 44px;
             padding: 8px 16px;
@@ -147,21 +144,20 @@
             border: 1px solid #E5E7EB;
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
-        .ft-input:focus {
+        .field-input:focus {
             outline: none;
             border-color: #000;
-            box-shadow: 0 0 0 3px #FFF469;
         }
-        .ft-input.has-error {
+        .field-input.has-error {
             border: 2px solid #DC2626;
             padding-right: 40px;
         }
-        .ft-input.has-error:focus {
+        .field-input.has-error:focus {
             border-color: #DC2626;
             box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2);
         }
 
-        .ft-textarea {
+        .field-textarea {
             width: 100%;
             min-height: 120px;
             padding: 12px 16px;
@@ -173,40 +169,39 @@
             resize: none !important;
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
-        .ft-textarea:focus {
+        .field-textarea:focus {
             outline: none;
             border-color: #000;
-            box-shadow: 0 0 0 3px #FFF469;
         }
-        .ft-textarea.has-error {
+        .field-textarea.has-error {
             border: 2px solid #DC2626;
         }
-        .ft-textarea.has-error:focus {
+        .field-textarea.has-error:focus {
             border-color: #DC2626;
             box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2);
         }
 
-        .ft-help {
+        .field-help {
             font-size: 14px;
             color: #6B7280;
             margin-top: 4px;
             line-height: 1.5;
         }
-        .ft-error-msg {
+        .field-error-msg {
             font-size: 14px;
             font-weight: 600;
             color: #DC2626;
             margin-top: 4px;
             line-height: 1.4;
         }
-        .ft-field-group {
+        .field-group {
             margin-bottom: 24px;
         }
-        .ft-field-group:last-child { margin-bottom: 0; }
-        .ft-section { margin-bottom: 32px; }
+        .field-group:last-child { margin-bottom: 0; }
+        .field-section { margin-bottom: 32px; }
 
         /* === YELLOW INSIGHT BOX === */
-        .ft-insight {
+        .field-insight {
             background: #FFF469;
             border: 3px solid #000;
             padding: 16px;
@@ -214,7 +209,7 @@
         }
 
         /* === EXAMPLE BOX === */
-        .ft-example {
+        .field-example {
             background: #F3F4F6;
             padding: 16px;
             margin-bottom: 8px;
@@ -224,18 +219,18 @@
         }
 
         /* === ERROR SUMMARY === */
-        .ft-error-summary {
+        .field-error-summary {
             border: 2px solid #DC2626;
             background: #fff;
             padding: 16px;
             margin-bottom: 24px;
         }
-        .ft-error-summary a {
+        .field-error-summary a {
             color: #DC2626;
             text-decoration: underline;
             cursor: pointer;
         }
-        .ft-error-summary a:hover { text-decoration: none; }
+        .field-error-summary a:hover { text-decoration: none; }
 
         /* === BUTTON FOOTER === */
         .btn-footer {
@@ -562,6 +557,7 @@
             const [userEmail, setUserEmail] = useState('');
             const [aiReviewing, setAiReviewing] = useState(false);
             const [aiMessage, setAiMessage] = useState('');
+            const [authState, setAuthState] = useState({ loading: true, authenticated: false, error: null });
             const [behaviorIdx, setBehaviorIdx] = useState(0);
             const prevStepRef = useRef(step);
             useEffect(() => { if (step === 3 && prevStepRef.current !== 3) setBehaviorIdx(0); prevStepRef.current = step; }, [step]);
@@ -598,6 +594,16 @@
             });
 
             const [dreamLoaded, setDreamLoaded] = useState(false);
+
+            /* Auth initialization */
+            useEffect(() => {
+                const userId = localStorage.getItem('ft_user_id');
+                if (!userId) {
+                    setAuthState({ loading: false, authenticated: false, error: 'No active session found.' });
+                } else {
+                    setAuthState({ loading: false, authenticated: true, error: null });
+                }
+            }, []);
 
             // Load dream dependency from Dream tool on mount
             useEffect(() => {
@@ -781,12 +787,35 @@
                 window.location.reload();
             };
 
+            // LOADING
+            if (authState.loading) {
+                return (
+                    <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: '#555', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Loading…</div>
+                    </div>
+                );
+            }
+
+            // AUTH REQUIRED
+            if (!authState.authenticated) {
+                return (
+                    <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ textAlign: 'center', color: '#fff', padding: '0 32px', maxWidth: 640 }}>
+                            <h1 className="plaak" style={{ fontSize: 48, marginBottom: 24 }}>AUTHENTICATION REQUIRED</h1>
+                            <p style={{ fontSize: 20, marginBottom: 32 }}>Please access this tool from your LearnWorlds course.</p>
+                            <p style={{ fontSize: 16, color: '#999' }}>{authState.error || 'No active session found'}</p>
+                        </div>
+                    </div>
+                );
+            }
+
             // COVER PAGE (step 0)
             if (step === 0) {
                 return (
                     <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
-                        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url("https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1920&q=80")', backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.3 }} />
+                        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url("https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1920&q=80")', backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.4 }} />
                         <div style={{ position: 'relative', textAlign: 'center', color: '#fff', padding: '0 32px' }} className="animate-in">
+                            <div className="monument" style={{ fontSize: 12, color: '#FFF469', letterSpacing: '0.1em', marginBottom: 16 }}>SPRINT 03 / MODULE 1 — IDENTITY</div>
                             <h1 className="plaak" style={{ fontSize: 80, marginBottom: 16, textTransform: 'uppercase' }}>COMPANY VALUES</h1>
                             <p style={{ fontSize: 18, color: '#ccc', marginBottom: 48 }}>Transform your values from words into daily behaviors</p>
                             <button onClick={() => setStep(0.5)}
@@ -1039,9 +1068,9 @@
 
 
                     {(formData.behaviors[0] || '').length >= 20 && (
-                        <div className="ft-reveal">
-                            <div className="ft-reveal-label">FAST TRACK INSIGHT</div>
-                            <p className="ft-reveal-text">Deloitte research shows values-driven companies experience 30% higher innovation rates and 40% higher employee retention. Writing values as specific behaviors — not abstract words — activates deeper cognitive processing and makes them 3x more likely to be remembered and acted upon daily.</p>
+                        <div className="field-reveal">
+                            <div className="field-reveal-label">FAST TRACK INSIGHT</div>
+                            <p className="field-reveal-text">Deloitte research shows values-driven companies experience 30% higher innovation rates and 40% higher employee retention. Writing values as specific behaviors — not abstract words — activates deeper cognitive processing and makes them 3x more likely to be remembered and acted upon daily.</p>
                         </div>
                     )}
 
@@ -1071,7 +1100,7 @@
                                 return (
                                     <input
                                         key={i}
-                                        className="ft-input text-lg"
+                                        className="field-input text-lg"
                                         placeholder={placeholders[i]}
                                         value={behavior}
                                         onChange={(e) => updateArrayField('behaviors', i, e.target.value)}
@@ -1090,7 +1119,7 @@
                             {formData.top5Values.map((value, i) => (
                                 <input
                                     key={i}
-                                    className="ft-input text-lg text-center"
+                                    className="field-input text-lg text-center"
                                     placeholder={`Value ${i + 1}`}
                                     value={value}
                                     onChange={(e) => updateArrayField('top5Values', i, e.target.value)}
@@ -1115,9 +1144,9 @@
 
 
                     {(formData.requiredValues || '').length >= 20 && (
-                        <div className="ft-reveal">
-                            <div className="ft-reveal-label">FAST TRACK INSIGHT</div>
-                            <p className="ft-reveal-text">McKinsey research shows that companies with clearly articulated and gap-analyzed values make strategic decisions 2.5x faster. When employees understand the distance between current culture and aspirational culture, alignment efforts become targeted rather than scattered.</p>
+                        <div className="field-reveal">
+                            <div className="field-reveal-label">FAST TRACK INSIGHT</div>
+                            <p className="field-reveal-text">McKinsey research shows that companies with clearly articulated and gap-analyzed values make strategic decisions 2.5x faster. When employees understand the distance between current culture and aspirational culture, alignment efforts become targeted rather than scattered.</p>
                         </div>
                     )}
 
@@ -1134,7 +1163,7 @@
                                 </div>
                             )}
                             <textarea
-                                className={`ft-input min-h-[120px] text-lg ${dreamLoaded ? 'dependency-injected' : ''}`}
+                                className={`field-input min-h-[120px] text-lg ${dreamLoaded ? 'dependency-injected' : ''}`}
                                 placeholder="Copy-paste your dream reminder from Sprint 1..."
                                 value={formData.dream}
                                 onChange={(e) => updateField('dream', e.target.value)}
@@ -1144,7 +1173,7 @@
                         <div>
                             <label className="block font-bold mb-2 text-lg">Required Values for Your Dream</label>
                             <textarea
-                                className="ft-input min-h-[120px] text-lg"
+                                className="field-input min-h-[120px] text-lg"
                                 placeholder="What values MUST exist to achieve your dream?"
                                 value={formData.requiredValues}
                                 onChange={(e) => updateField('requiredValues', e.target.value)}
@@ -1154,7 +1183,7 @@
                         <div>
                             <label className="block font-bold mb-2 text-lg">The Gap</label>
                             <textarea
-                                className="ft-input min-h-[120px] text-lg"
+                                className="field-input min-h-[120px] text-lg"
                                 placeholder="What's the gap between current and required values?"
                                 value={formData.gap}
                                 onChange={(e) => updateField('gap', e.target.value)}
@@ -1216,16 +1245,16 @@
                     </div>
 
                     {(items[0] && (items[0].value || '').length >= 20) && (
-                        <div className="ft-reveal">
-                            <div className="ft-reveal-label">FAST TRACK INSIGHT</div>
-                            <p className="ft-reveal-text">A meta-analysis of 200+ organizations found that defining values as explicit behavioral pairs (desired vs. undesired) increases cultural consistency by 35% compared to values stated as single words. Written behavioral commitments create psychological accountability that abstract principles cannot.</p>
+                        <div className="field-reveal">
+                            <div className="field-reveal-label">FAST TRACK INSIGHT</div>
+                            <p className="field-reveal-text">A meta-analysis of 200+ organizations found that defining values as explicit behavioral pairs (desired vs. undesired) increases cultural consistency by 35% compared to values stated as single words. Written behavioral commitments create psychological accountability that abstract principles cannot.</p>
                         </div>
                     )}
 
                     <div className="mb-8">
                         <div className="border-2 border-gray-300 p-6 rounded">
                             <input
-                                className="ft-input text-xl font-bold mb-4"
+                                className="field-input text-xl font-bold mb-4"
                                 placeholder={valuePlaceholders[behaviorIdx]}
                                 value={item.value}
                                 onChange={(e) => updateObjectField('valuesBehaviors', behaviorIdx, 'value', e.target.value)}
@@ -1234,7 +1263,7 @@
                                 <div>
                                     <label className="block font-bold mb-2 text-black">Cool Behavior</label>
                                     <textarea
-                                        className="ft-input min-h-[100px] border-black"
+                                        className="field-input min-h-[100px] border-black"
                                         placeholder={coolPlaceholders[behaviorIdx]}
                                         value={item.cool}
                                         onChange={(e) => updateObjectField('valuesBehaviors', behaviorIdx, 'cool', e.target.value)}
@@ -1243,7 +1272,7 @@
                                 <div>
                                     <label className="block font-bold mb-2 text-red-600">Not Cool Behavior</label>
                                     <textarea
-                                        className="ft-input min-h-[100px] border-red-600"
+                                        className="field-input min-h-[100px] border-red-600"
                                         placeholder={notCoolPlaceholders[behaviorIdx]}
                                         value={item.notCool}
                                         onChange={(e) => updateObjectField('valuesBehaviors', behaviorIdx, 'notCool', e.target.value)}
@@ -1269,9 +1298,9 @@
 
 
                     {(formData.yellowLines[0] || '').length >= 20 && (
-                        <div className="ft-reveal">
-                            <div className="ft-reveal-label">FAST TRACK INSIGHT</div>
-                            <p className="ft-reveal-text">Longitudinal studies by BCG demonstrate that organizations with explicit behavioral boundaries — clear yellow and red lines — experience 60% fewer culture-related conflicts. When consequences are defined in advance, enforcement becomes fair and consistent rather than reactive and political.</p>
+                        <div className="field-reveal">
+                            <div className="field-reveal-label">FAST TRACK INSIGHT</div>
+                            <p className="field-reveal-text">Longitudinal studies by BCG demonstrate that organizations with explicit behavioral boundaries — clear yellow and red lines — experience 60% fewer culture-related conflicts. When consequences are defined in advance, enforcement becomes fair and consistent rather than reactive and political.</p>
                         </div>
                     )}
 
@@ -1283,7 +1312,7 @@
                                 {formData.yellowLines.map((line, i) => (
                                     <textarea
                                         key={i}
-                                        className="ft-input min-h-[80px] border-yellow-600"
+                                        className="field-input min-h-[80px] border-yellow-600"
                                         placeholder={`Yellow line ${i + 1}`}
                                         value={line}
                                         onChange={(e) => updateArrayField('yellowLines', i, e.target.value)}
@@ -1297,7 +1326,7 @@
                                 {formData.redLines.map((line, i) => (
                                     <textarea
                                         key={i}
-                                        className="ft-input min-h-[80px] border-red-600"
+                                        className="field-input min-h-[80px] border-red-600"
                                         placeholder={`Red line ${i + 1}`}
                                         value={line}
                                         onChange={(e) => updateArrayField('redLines', i, e.target.value)}
@@ -1323,9 +1352,9 @@
 
 
                     {(formData.recruitmentQuestions[0] || '').length >= 20 && (
-                        <div className="ft-reveal">
-                            <div className="ft-reveal-label">FAST TRACK INSIGHT</div>
-                            <p className="ft-reveal-text">Bain research confirms that companies using values-based interview techniques reduce mis-hires by 40% and see significantly faster cultural integration. Scenario-based questions that test behavioral alignment outperform generic "tell me about yourself" approaches at predicting long-term cultural fit.</p>
+                        <div className="field-reveal">
+                            <div className="field-reveal-label">FAST TRACK INSIGHT</div>
+                            <p className="field-reveal-text">Bain research confirms that companies using values-based interview techniques reduce mis-hires by 40% and see significantly faster cultural integration. Scenario-based questions that test behavioral alignment outperform generic "tell me about yourself" approaches at predicting long-term cultural fit.</p>
                         </div>
                     )}
 
@@ -1336,7 +1365,7 @@
                             {formData.recruitmentQuestions.map((q, i) => (
                                 <textarea
                                     key={i}
-                                    className="ft-input min-h-[100px] text-lg"
+                                    className="field-input min-h-[100px] text-lg"
                                     placeholder={`Question ${i + 1}: e.g., Tell me about a time when...`}
                                     value={q}
                                     onChange={(e) => updateArrayField('recruitmentQuestions', i, e.target.value)}
@@ -1374,7 +1403,7 @@
                                         <td className="p-4 font-bold">{i + 1}</td>
                                         <td className="p-4">
                                             <textarea
-                                                className="ft-input min-h-[60px]"
+                                                className="field-input min-h-[60px]"
                                                 placeholder="e.g., Weekly values spotlight in team meetings"
                                                 value={plan.idea}
                                                 onChange={(e) => updateObjectField('commPlan', i, 'idea', e.target.value)}
@@ -1382,7 +1411,7 @@
                                         </td>
                                         <td className="p-4">
                                             <input
-                                                className="ft-input"
+                                                className="field-input"
                                                 placeholder="Name/Role"
                                                 value={plan.who}
                                                 onChange={(e) => updateObjectField('commPlan', i, 'who', e.target.value)}
@@ -1390,7 +1419,7 @@
                                         </td>
                                         <td className="p-4">
                                             <input
-                                                className="ft-input"
+                                                className="field-input"
                                                 placeholder="Deadline"
                                                 value={plan.when}
                                                 onChange={(e) => updateObjectField('commPlan', i, 'when', e.target.value)}

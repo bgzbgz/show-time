@@ -526,7 +526,7 @@
 
             return (
                 <div className="wizard-sidebar no-print">
-                    <div className="sidebar-tool-num">SPRINT 05</div>
+                    <div className="sidebar-tool-num">SPRINT 05 / MODULE 1 — IDENTITY</div>
                     <div className="sidebar-tool-title">THE FIT</div>
                     {steps.map(s => {
                         const isDone = effectiveStep > s.num;
@@ -1399,6 +1399,7 @@
         function App() {
             const [step, setStep] = useState(0);
             const [mode, setMode] = useState(null); // 'individual' | 'abc' | 'team'
+            const [authState, setAuthState] = useState({ loading: true, authenticated: false, error: null });
             const [deps, setDeps] = useState([]);
             const [aiReviewing, setAiReviewing] = useState(false);
             const [aiMessage, setAiMessage] = useState('');
@@ -1483,13 +1484,23 @@
                 return () => clearTimeout(timer);
             }, [fitData, abcData, teamData, meetingNotes, step, mode]);
 
-            // Load dependencies
+            // Load dependencies + auth
             useEffect(() => {
                 const loadDeps = async () => {
                     try {
                         const userId = localStorage.getItem('ft_user_id');
-                        if (!userId || !window.ToolDB || !window.DependencyInjection) return;
+                        if (!userId || !window.ToolDB) {
+                            setAuthState({ loading: false, authenticated: false, error: 'No active session found.' });
+                            return;
+                        }
                         await ToolDB.whenReady();
+                        const uid = await ToolDB.identifyUser();
+                        if (!uid) {
+                            setAuthState({ loading: false, authenticated: false, error: 'No active session found.' });
+                            return;
+                        }
+                        setAuthState({ loading: false, authenticated: true, error: null });
+                        if (!window.DependencyInjection) return;
                         const config = DependencyInjection.getDependenciesConfig();
                         const toolConfig = config[CONFIG.TOOL_SLUG];
                         if (!toolConfig || !toolConfig.fields) return;
@@ -1503,6 +1514,7 @@
                         setDeps(loaded);
                     } catch (err) {
                         console.warn('[FIT] Failed to load dependencies:', err);
+                        setAuthState({ loading: false, authenticated: true, error: null });
                     }
                 };
                 loadDeps();
@@ -1750,18 +1762,38 @@
             // Render
             return (
                 <>
+                    {/* ===== AUTH LOADING ===== */}
+                    {authState.loading && (
+                        <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <div style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: '#555', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Loading…</div>
+                        </div>
+                    )}
+
+                    {/* ===== AUTH REQUIRED ===== */}
+                    {!authState.loading && !authState.authenticated && (
+                        <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <div style={{ textAlign: 'center', color: '#fff', padding: '0 32px', maxWidth: 640 }}>
+                                <h1 className="plaak" style={{ fontSize: 48, marginBottom: 24 }}>AUTHENTICATION REQUIRED</h1>
+                                <p style={{ fontSize: 20, marginBottom: 32 }}>Please access this tool from your LearnWorlds course.</p>
+                                <p style={{ fontSize: 16, color: '#999' }}>{authState.error || 'No active session found'}</p>
+                            </div>
+                        </div>
+                    )}
+
                     {/* ===== STEP 0: COVER SCREEN ===== */}
-                    {step === 0 && (
+                    {step === 0 && authState.authenticated && (
                         <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
-                            <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url("https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=1920&q=80")', backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.3 }} />
+                            <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url("https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=1920&q=80")', backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.4 }} />
                             <div style={{ textAlign: 'center', padding: '0 32px', position: 'relative' }} className="animate-in">
-                                <div className="monument" style={{ fontSize: 12, color: '#999', letterSpacing: '0.12em', marginBottom: 16 }}>SPRINT 05</div>
-                                <h1 className="plaak" style={{ fontSize: 72, color: '#fff', marginBottom: 12, lineHeight: 1.1 }}>THE FIT</h1>
+                                <div className="monument" style={{ fontSize: 12, color: '#999', letterSpacing: '0.12em', marginBottom: 16 }}>SPRINT 05 / MODULE 1 — IDENTITY</div>
+                                <h1 className="plaak" style={{ fontSize: 80, color: '#fff', marginBottom: 12, lineHeight: 1.1 }}>THE FIT</h1>
                                 <p style={{ fontSize: 18, color: '#999', marginBottom: 48, maxWidth: 480, margin: '0 auto 48px' }}>
                                     Evaluate your alignment with the company, job, team, and leadership
                                 </p>
                                 <button onClick={() => setStep(0.5)} className="plaak"
-                                    style={{ background: '#FFF469', color: '#000', border: 'none', padding: '18px 48px', fontSize: 18, cursor: 'pointer', letterSpacing: '0.05em', transition: 'opacity 0.2s' }}>
+                                    style={{ background: '#fff', color: '#000', border: 'none', padding: '18px 48px', fontSize: 18, cursor: 'pointer', letterSpacing: '0.05em', transition: 'all 0.2s' }}
+                                    onMouseOver={e => { e.target.style.background = '#FFF469'; }}
+                                    onMouseOut={e => { e.target.style.background = '#fff'; }}>
                                     START →
                                 </button>
                             </div>
@@ -1848,7 +1880,7 @@
                         <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <div style={{ maxWidth: 720, width: '100%', padding: '48px 32px' }} className="animate-in">
                                 <div style={{ textAlign: 'center', marginBottom: 48 }}>
-                                    <div className="monument" style={{ fontSize: 12, color: '#999', letterSpacing: '0.1em', marginBottom: 8 }}>SPRINT 05</div>
+                                    <div className="monument" style={{ fontSize: 12, color: '#999', letterSpacing: '0.1em', marginBottom: 8 }}>SPRINT 05 / MODULE 1 — IDENTITY</div>
                                     <h1 className="plaak" style={{ fontSize: 42, color: '#fff', marginBottom: 8 }}>CHOOSE YOUR PATH</h1>
                                 </div>
 
@@ -1936,7 +1968,7 @@
                             <div style={{ position: 'fixed', inset: 0, background: '#000', color: '#fff', zIndex: 200, overflowY: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '64px 32px' }}>
                                 <div style={{ maxWidth: 720, width: '100%' }} className="animate-in">
                                     <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#555', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 32 }}>
-                                        SPRINT 05 — THE FIT
+                                        SPRINT 05 / MODULE 1 — THE FIT
                                     </div>
                                     <div style={{ borderLeft: '4px solid #DC2626', paddingLeft: 24, marginBottom: 48 }}>
                                         <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#DC2626', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 12 }}>BRUTAL TRUTH</div>
@@ -2034,7 +2066,7 @@
                         <div style={{ position: 'fixed', inset: 0, background: '#000', color: '#fff', zIndex: 200, overflowY: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '64px 32px' }}>
                             <div style={{ maxWidth: 720, width: '100%' }} className="animate-in">
                                 <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#555', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 32 }}>
-                                    SPRINT 05 — ABC MATRIX
+                                    SPRINT 05 / MODULE 1 — ABC MATRIX
                                 </div>
                                 <div style={{ borderLeft: '4px solid #DC2626', paddingLeft: 24, marginBottom: 48 }}>
                                     <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#DC2626', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 12 }}>BRUTAL TRUTH</div>
@@ -2057,7 +2089,7 @@
                         <div style={{ position: 'fixed', inset: 0, background: '#000', color: '#fff', zIndex: 200, overflowY: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '64px 32px' }}>
                             <div style={{ maxWidth: 720, width: '100%' }} className="animate-in">
                                 <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#555', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 32 }}>
-                                    SPRINT 05 — TEAM MEETING
+                                    SPRINT 05 / MODULE 1 — TEAM MEETING
                                 </div>
                                 <div style={{ borderLeft: '4px solid #DC2626', paddingLeft: 24, marginBottom: 48 }}>
                                     <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#DC2626', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 12 }}>BRUTAL TRUTH</div>

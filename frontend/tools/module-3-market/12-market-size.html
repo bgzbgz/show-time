@@ -114,21 +114,18 @@
         }
 
         /* === FORM ELEMENTS === */
-        .ft-label {
+        .field-label {
+            font-weight: 600;
+            font-size: 16px;
+            color: #000;
+            margin-bottom: 8px;
             display: flex;
             align-items: center;
             gap: 6px;
-            font-family: 'Monument', monospace;
-            font-size: 14px;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #000;
-            margin-bottom: 8px;
         }
-        .ft-required { color: #DC2626; font-weight: 700; }
+        .field-required { color: #DC2626; font-weight: 700; }
 
-        .ft-input {
+        .field-input {
             width: 100%;
             height: 44px;
             padding: 8px 16px;
@@ -139,13 +136,13 @@
             border: 1px solid #E5E7EB;
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
-        .ft-input:focus {
+        .field-input:focus {
             outline: none;
             border-color: #000;
         }
-        .ft-input.has-error { border: 2px solid #DC2626; }
+        .field-input.has-error { border: 2px solid #DC2626; }
 
-        .ft-textarea {
+        .field-textarea {
             width: 100%;
             min-height: 120px;
             padding: 12px 16px;
@@ -157,13 +154,13 @@
             resize: none !important;
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
-        .ft-textarea:focus {
+        .field-textarea:focus {
             outline: none;
             border-color: #000;
         }
 
         /* Small input for matrix cells */
-        .ft-input-sm {
+        .field-input-sm {
             width: 64px;
             height: 36px;
             padding: 4px 8px;
@@ -175,15 +172,15 @@
             text-align: center;
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
-        .ft-input-sm:focus {
+        .field-input-sm:focus {
             outline: none;
             border-color: #000;
         }
 
-        .ft-help { font-size: 14px; color: #6B7280; margin-top: 4px; line-height: 1.5; }
-        .ft-field-group { margin-bottom: 24px; }
-        .ft-field-group:last-child { margin-bottom: 0; }
-        .ft-section { margin-bottom: 32px; }
+        .field-help { font-size: 14px; color: #6B7280; margin-top: 4px; line-height: 1.5; }
+        .field-group { margin-bottom: 24px; }
+        .field-group:last-child { margin-bottom: 0; }
+        .field-section { margin-bottom: 32px; }
 
         /* === YELLOW INSIGHT BOX === */
         .ft-insight {
@@ -520,6 +517,7 @@
             // userEmail removed — no longer collected
             const [aiReviewing, setAiReviewing] = useState(false);
             const [aiMessage, setAiMessage] = useState('');
+            const [authState, setAuthState] = useState({ loading: true, authenticated: false, error: null });
 
             const [marketData, setMarketData] = useState({
                 totalCustomers: '',
@@ -619,6 +617,16 @@
             };
 
             useEffect(() => {
+                // Auth check
+                (async () => {
+                    try {
+                        if (window.ToolDB && ToolDB.identifyUser) {
+                            const user = await ToolDB.identifyUser();
+                            if (user && user.id) { setAuthState({ loading: false, authenticated: true, error: null }); }
+                            else { setAuthState({ loading: false, authenticated: false, error: 'No active session found' }); }
+                        } else { setAuthState({ loading: false, authenticated: true, error: null }); }
+                    } catch (err) { setAuthState({ loading: false, authenticated: false, error: err.message }); }
+                })();
                 async function loadDeps() {
                     const userId = localStorage.getItem('ft_user_id');
                     if (!userId || !window.ToolDB || !window.DependencyInjection) return;
@@ -680,8 +688,26 @@
                 <div className="tool-frame">
                     <div className="tool-inner">
 
+                        {/* LOADING */}
+                        {authState.loading && (
+                            <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <div style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: '#555', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Loading…</div>
+                            </div>
+                        )}
+
+                        {/* AUTH REQUIRED */}
+                        {!authState.loading && !authState.authenticated && (
+                            <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <div style={{ textAlign: 'center', color: '#fff', padding: '0 32px', maxWidth: 640 }}>
+                                    <h1 className="plaak" style={{ fontSize: 48, marginBottom: 24 }}>AUTHENTICATION REQUIRED</h1>
+                                    <p style={{ fontSize: 20, marginBottom: 32 }}>Please access this tool from your LearnWorlds course.</p>
+                                    <p style={{ fontSize: 16, color: '#999' }}>{authState.error || 'No active session found'}</p>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Step 0: Cover */}
-                        {step === 0 && (
+                        {step === 0 && authState.authenticated && (
                             <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
                                 <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${CONFIG.COVER_IMAGE})`, backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.4 }} />
                                 <div style={{ position: 'relative', textAlign: 'center', color: '#fff', padding: '0 32px' }} className="animate-in">
@@ -874,20 +900,20 @@
                     {phase === 1 && (
                         <div>
                             <div className="ft-field-group">
-                                <label className="ft-label">TOTAL NUMBER OF CUSTOMERS</label>
-                                <input type="number" className="ft-input" placeholder="e.g., 10000" value={marketData.totalCustomers} onChange={(e) => setMarketData({...marketData, totalCustomers: parseFloat(e.target.value) || ''})} />
+                                <label className="field-label">TOTAL NUMBER OF CUSTOMERS</label>
+                                <input type="number" className="field-input" placeholder="e.g., 10000" value={marketData.totalCustomers} onChange={(e) => setMarketData({...marketData, totalCustomers: parseFloat(e.target.value) || ''})} />
                                 <div className="ft-help">All potential buyers in your market</div>
                             </div>
 
                             <div className="ft-field-group">
-                                <label className="ft-label">AVERAGE SPENDING PER CUSTOMER</label>
-                                <input type="number" className="ft-input" placeholder="e.g., 35000" value={marketData.avgSpending} onChange={(e) => setMarketData({...marketData, avgSpending: parseFloat(e.target.value) || ''})} />
+                                <label className="field-label">AVERAGE SPENDING PER CUSTOMER</label>
+                                <input type="number" className="field-input" placeholder="e.g., 35000" value={marketData.avgSpending} onChange={(e) => setMarketData({...marketData, avgSpending: parseFloat(e.target.value) || ''})} />
                                 <div className="ft-help">Average price per product/service</div>
                             </div>
 
                             <div className="ft-field-group">
-                                <label className="ft-label">AVERAGE PURCHASES PER YEAR</label>
-                                <input type="number" className="ft-input" placeholder="e.g., 1" value={marketData.purchasesPerYear} onChange={(e) => setMarketData({...marketData, purchasesPerYear: parseFloat(e.target.value) || ''})} />
+                                <label className="field-label">AVERAGE PURCHASES PER YEAR</label>
+                                <input type="number" className="field-input" placeholder="e.g., 1" value={marketData.purchasesPerYear} onChange={(e) => setMarketData({...marketData, purchasesPerYear: parseFloat(e.target.value) || ''})} />
                                 <div className="ft-help">Purchase frequency per customer per year</div>
                             </div>
                         </div>
@@ -909,8 +935,8 @@
                                 <div style={{ fontSize: 14, color: '#999' }}>Market Size: <span className="plaak" style={{ color: '#fff' }}>{formatCurrency(marketSize)}</span></div>
                             </div>
                             <div className="ft-field-group">
-                                <label className="ft-label">GROSS PROFIT MARGIN (%)</label>
-                                <input type="number" className="ft-input" placeholder="e.g., 15" value={marketData.grossMargin} onChange={(e) => setMarketData({...marketData, grossMargin: parseFloat(e.target.value) || ''})} />
+                                <label className="field-label">GROSS PROFIT MARGIN (%)</label>
+                                <input type="number" className="field-input" placeholder="e.g., 15" value={marketData.grossMargin} onChange={(e) => setMarketData({...marketData, grossMargin: parseFloat(e.target.value) || ''})} />
                                 <div className="ft-help">Your company's gross margin (0-100)</div>
                             </div>
                         </div>
@@ -979,7 +1005,7 @@
                                     <div style={{ width: 36, height: 36, background: '#000', color: '#fff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: 14, flexShrink: 0 }}>
                                         {index + 1}
                                     </div>
-                                    <input type="text" className="ft-input" style={{ flex: 1 }} placeholder="e.g., AI automation, new regulations, market consolidation..." value={force.name} onChange={(e) => updateForce(force.id, 'name', e.target.value)} />
+                                    <input type="text" className="field-input" style={{ flex: 1 }} placeholder="e.g., AI automation, new regulations, market consolidation..." value={force.name} onChange={(e) => updateForce(force.id, 'name', e.target.value)} />
                                     {drivingForces.length > 3 && (
                                         <button onClick={() => removeForce(force.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 24, color: '#999' }}>x</button>
                                     )}
@@ -1129,7 +1155,7 @@
                                             <td style={{ padding: '16px 16px', fontWeight: 600, background: '#F9FAFB', fontSize: 14, textTransform: 'capitalize' }}>{field}</td>
                                             {topForces.map(force => (
                                                 <td key={force.id} style={{ padding: '12px 6px', textAlign: 'center' }}>
-                                                    <input type="number" className="ft-input-sm" placeholder="0" value={impactData[force.id]?.[field] || ''} onChange={(e) => updateImpact(force.id, field, e.target.value)} style={{ width: 72, height: 44 }} />
+                                                    <input type="number" className="field-input-sm" placeholder="0" value={impactData[force.id]?.[field] || ''} onChange={(e) => updateImpact(force.id, field, e.target.value)} style={{ width: 72, height: 44 }} />
                                                     <div style={{ fontSize: 10, color: '#9CA3AF', marginTop: 4 }}>{field === 'margin' ? 'pts' : '%'}</div>
                                                 </td>
                                             ))}

@@ -129,21 +129,18 @@
         }
 
         /* === FORM ELEMENTS === */
-        .ft-label {
+        .field-label {
+            font-weight: 600;
+            font-size: 16px;
+            color: #000;
+            margin-bottom: 8px;
             display: flex;
             align-items: center;
             gap: 6px;
-            font-family: 'Monument', monospace;
-            font-size: 14px;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #000;
-            margin-bottom: 8px;
         }
         .ft-required { color: #DC2626; font-weight: 700; }
 
-        .ft-input {
+        .field-input {
             width: 100%;
             height: 44px;
             padding: 8px 16px;
@@ -154,16 +151,15 @@
             border: 1px solid #E5E7EB;
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
-        .ft-input:focus {
+        .field-input:focus {
             outline: none;
             border-color: #000;
-            box-shadow: 0 0 0 3px #FFF469;
         }
-        .ft-input.has-error {
+        .field-input.has-error {
             border: 2px solid #DC2626;
         }
 
-        .ft-textarea {
+        .field-textarea {
             width: 100%;
             min-height: 120px;
             padding: 12px 16px;
@@ -175,10 +171,9 @@
             resize: none !important;
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
-        .ft-textarea:focus {
+        .field-textarea:focus {
             outline: none;
             border-color: #000;
-            box-shadow: 0 0 0 3px #FFF469;
         }
 
         .ft-help {
@@ -401,7 +396,7 @@
             display: flex;
             gap: 12px;
         }
-        .elephant-step-fields .ft-input {
+        .elephant-step-fields .field-input {
             flex: 1;
         }
         .elephant-step-fields input[type="date"] {
@@ -419,7 +414,6 @@
         .elephant-step-fields input[type="date"]:focus {
             outline: none;
             border-color: #000;
-            box-shadow: 0 0 0 3px #FFF469;
         }
 
         /* === TOOL-SPECIFIC: Checklist Item === */
@@ -799,6 +793,7 @@
             const [aiReviewing, setAiReviewing] = useState(false);
             const [aiMessage, setAiMessage] = useState('');
             const [elephantIdx, setElephantIdx] = useState(0);
+            const [authState, setAuthState] = useState({ loading: true, authenticated: false, error: null });
             const [formData, setFormData] = useState({
                 ideas: Array(20).fill(null).map(() => ({
                     idea: '',
@@ -834,6 +829,22 @@
                     }
                 }
                 loadDeps();
+                // Auth check
+                const checkAuth = async () => {
+                    try {
+                        await ToolDB.whenReady();
+                        const id = await ToolDB.identifyUser();
+                        if (!id) {
+                            setAuthState({ loading: false, authenticated: false, error: 'No active session found.' });
+                            return;
+                        }
+                        setAuthState({ loading: false, authenticated: true, error: null });
+                    } catch (e) {
+                        console.warn('[Goals] Auth check failed:', e);
+                        setAuthState({ loading: false, authenticated: false, error: e.message || 'Authentication failed.' });
+                    }
+                };
+                checkAuth();
             }, []);
 
             // Load from localStorage
@@ -1045,6 +1056,28 @@
             };
 
             /* ============================================================
+               RENDER: AUTH SCREENS
+               ============================================================ */
+            if (authState.loading) {
+                return (
+                    <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: '#555', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Loading…</div>
+                    </div>
+                );
+            }
+            if (!authState.authenticated) {
+                return (
+                    <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ textAlign: 'center', color: '#fff', padding: '0 32px', maxWidth: 640 }}>
+                            <h1 className="plaak" style={{ fontSize: 48, marginBottom: 24 }}>AUTHENTICATION REQUIRED</h1>
+                            <p style={{ fontSize: 20, marginBottom: 32 }}>Please access this tool from your LearnWorlds course.</p>
+                            <p style={{ fontSize: 16, color: '#999' }}>{authState.error || 'No active session found'}</p>
+                        </div>
+                    </div>
+                );
+            }
+
+            /* ============================================================
                COVER PAGE (step 0)
                ============================================================ */
             if (step === 0) {
@@ -1054,6 +1087,7 @@
                             <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
                                 <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.4), rgba(0,0,0,0.7))' }} />
                                 <div style={{ position: 'relative', textAlign: 'center', color: '#fff', padding: '0 32px' }} className="animate-in">
+                                    <div className="monument" style={{ fontSize: 12, color: '#FFF469', letterSpacing: '0.1em', marginBottom: 16 }}>SPRINT 08 / MODULE 2 — PERFORMANCE</div>
                                     <h1 className="plaak" style={{ fontSize: 64, marginBottom: 16, textTransform: 'uppercase' }}>GOALS, PRIORITIES<br/>& PLANNING</h1>
                                     <p style={{ fontSize: 18, color: '#ccc', marginBottom: 48 }}>Set targets, prioritize with the Impact/Easy Matrix, and break down your biggest priorities</p>
                                     <button onClick={() => goToStep(0.5)}
@@ -1224,7 +1258,7 @@
                                             <td className="p-3 font-bold text-gray-500">{i + 1}</td>
                                             <td className="p-3" style={{ minWidth: 280 }}>
                                                 <input
-                                                    className="ft-input"
+                                                    className="field-input"
                                                     style={{ fontSize: 15, padding: '10px 12px', height: 'auto' }}
                                                     placeholder={`Idea ${i + 1}`}
                                                     value={idea.idea}
@@ -1233,7 +1267,7 @@
                                             </td>
                                             <td className="p-3 text-center">
                                                 <select
-                                                    className="ft-input text-center font-bold"
+                                                    className="field-input text-center font-bold"
                                                     style={{ minWidth: 64, fontSize: 16, padding: '8px 4px' }}
                                                     value={idea.impact}
                                                     onChange={(e) => updateIdea(i, 'impact', parseInt(e.target.value))}
@@ -1246,7 +1280,7 @@
                                             </td>
                                             <td className="p-3 text-center">
                                                 <select
-                                                    className="ft-input text-center font-bold"
+                                                    className="field-input text-center font-bold"
                                                     style={{ minWidth: 64, fontSize: 16, padding: '8px 4px' }}
                                                     value={idea.easy}
                                                     onChange={(e) => updateIdea(i, 'easy', parseInt(e.target.value))}
@@ -1428,7 +1462,7 @@
                                         <div className="elephant-step-num">{sIdx + 1}</div>
                                         <div className="elephant-step-fields">
                                             <input
-                                                className="ft-input"
+                                                className="field-input"
                                                 placeholder={stepLabels[sIdx]}
                                                 value={s.action}
                                                 onChange={(e) => updateElephantStep(safeIdx, sIdx, 'action', e.target.value)}
@@ -1509,12 +1543,12 @@
                         </div>
 
                         <div className="ft-field-group">
-                            <label className="ft-label">
+                            <label className="field-label">
                                 What one change will you make to improve accountability?
                                 <span className="ft-required">*</span>
                             </label>
                             <textarea
-                                className="ft-textarea"
+                                className="field-textarea"
                                 placeholder="Be specific. What will you start doing differently this week?"
                                 value={formData.accountabilityAction}
                                 onChange={(e) => setFormData(prev => ({ ...prev, accountabilityAction: e.target.value }))}
@@ -1591,12 +1625,12 @@
                         </div>
 
                         <div className="ft-field-group">
-                            <label className="ft-label">
+                            <label className="field-label">
                                 What one change will you make to improve alignment?
                                 <span className="ft-required">*</span>
                             </label>
                             <textarea
-                                className="ft-textarea"
+                                className="field-textarea"
                                 placeholder="Be specific. What will you start doing differently this week?"
                                 value={formData.alignmentAction}
                                 onChange={(e) => setFormData(prev => ({ ...prev, alignmentAction: e.target.value }))}

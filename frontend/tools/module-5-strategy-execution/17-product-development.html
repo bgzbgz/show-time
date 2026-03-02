@@ -81,23 +81,12 @@
     .step-hint { font-size: 16px; color: #6B7280; line-height: 1.5; margin: 0 0 32px 0; }
 
     /* === FORM ELEMENTS === */
-    .ft-label { display: flex; align-items: center; gap: 6px; font-family: 'Monument', monospace; font-size: 14px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; color: #000; margin-bottom: 8px; }
-    .ft-required { color: #DC2626; font-weight: 700; }
-    .ft-input { width: 100%; height: 44px; padding: 8px 16px; font-family: 'Riforma', sans-serif; font-size: 16px; color: #000; background: #fff; border: 1px solid #E5E7EB; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
-    .ft-input:focus { outline: none; border-color: #000; }
-    .ft-textarea { width: 100%; min-height: 120px; padding: 12px 16px; font-family: 'Riforma', sans-serif; font-size: 16px; color: #000; background: #fff; border: 1px solid #E5E7EB; resize: none !important; transition: border-color 0.2s ease, box-shadow 0.2s ease; word-wrap: break-word; white-space: pre-wrap; }
-    .feature-box { min-height: 120px; word-wrap: break-word; }
-    .feature-box textarea, .feature-box input { word-wrap: break-word; }
-    .ft-textarea:focus { outline: none; border-color: #000; }
-    .ft-help { font-size: 14px; color: #6B7280; margin-top: 4px; line-height: 1.5; }
-    .ft-field-group { margin-bottom: 24px; }
-    .ft-field-group:last-child { margin-bottom: 0; }
-    .ft-section { margin-bottom: 32px; }
-
-    /* === FIELD CLASSES (tool-22 design language) === */
+    /* === FORM ELEMENTS === */
     .field-label { font-weight: 600; font-size: 16px; color: #000; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
     .field-input:focus { outline: none; border-color: #000; }
     .field-textarea:focus { outline: none; border-color: #000; }
+    .feature-box { min-height: 120px; word-wrap: break-word; }
+    .feature-box textarea, .feature-box input { word-wrap: break-word; }
     .step-content { max-width: 100%; padding: 40px 0; flex: 1; }
 
     /* === YELLOW INSIGHT BOX === */
@@ -326,6 +315,7 @@
     // Main App Component
     function WTPApp() {
             const [deps, setDeps] = useState([]);
+      const [authState, setAuthState] = useState({ loading: true, authenticated: false, error: null });
       const [step, setStep] = useState(0);
       const [aiReviewing, setAiReviewing] = useState(false);
       const [aiMessage, setAiMessage] = useState('');
@@ -364,6 +354,16 @@
       });
 
             useEffect(() => {
+                // Auth check
+                (async () => {
+                    try {
+                        if (window.ToolDB && ToolDB.identifyUser) {
+                            const user = await ToolDB.identifyUser();
+                            if (user && user.id) { setAuthState({ loading: false, authenticated: true, error: null }); }
+                            else { setAuthState({ loading: false, authenticated: false, error: 'No active session found' }); }
+                        } else { setAuthState({ loading: false, authenticated: true, error: null }); }
+                    } catch (err) { setAuthState({ loading: false, authenticated: false, error: err.message }); }
+                })();
                 async function loadDeps() {
                     const userId = localStorage.getItem('ft_user_id');
                     if (!userId || !window.ToolDB || !window.DependencyInjection) return;
@@ -590,8 +590,26 @@
       return (
         <div className="tool-frame">
           <div className="tool-inner">
+            {/* LOADING */}
+            {authState.loading && (
+              <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: '#555', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Loading…</div>
+              </div>
+            )}
+
+            {/* AUTH REQUIRED */}
+            {!authState.loading && !authState.authenticated && (
+              <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ textAlign: 'center', color: '#fff', padding: '0 32px', maxWidth: 640 }}>
+                  <h1 className="plaak" style={{ fontSize: 48, marginBottom: 24 }}>AUTHENTICATION REQUIRED</h1>
+                  <p style={{ fontSize: 20, marginBottom: 32 }}>Please access this tool from your LearnWorlds course.</p>
+                  <p style={{ fontSize: 16, color: '#999' }}>{authState.error || 'No active session found'}</p>
+                </div>
+              </div>
+            )}
+
             {/* Step 0: Cover */}
-            {step === 0 && (
+            {step === 0 && authState.authenticated && (
               <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
                 <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${CONFIG.COVER_IMAGE})`, backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.4 }} />
                 <div style={{ position: 'relative', textAlign: 'center', color: '#fff', padding: '0 32px' }} className="animate-in">

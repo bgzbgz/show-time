@@ -218,7 +218,7 @@
         ];
         return (
             <div className="wizard-sidebar">
-                <div className="sidebar-tool-num">SPRINT 01</div>
+                <div className="sidebar-tool-num">SPRINT 01 / MODULE 1 — IDENTITY</div>
                 <div className="sidebar-tool-title">{CONFIG.TOOL_TITLE}</div>
                 {steps.map(s => {
                     const isCanvas = s.num === 'canvas';
@@ -253,7 +253,7 @@
             <div style={{ position: 'fixed', inset: 0, background: '#000', color: '#fff', zIndex: 200, overflowY: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '64px 32px' }}>
                 <div style={{ maxWidth: 720, width: '100%' }} className="animate-in">
                     <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#555', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 32 }}>
-                        SPRINT 01 — KNOW THYSELF
+                        SPRINT 01 / MODULE 1 — KNOW THYSELF
                     </div>
                     <div style={{ borderLeft: '4px solid #DC2626', paddingLeft: 24, marginBottom: 48 }}>
                         <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#DC2626', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 12 }}>BRUTAL TRUTH</div>
@@ -748,7 +748,7 @@
                 <div style={{ maxWidth: 900, margin: '0 auto' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 40 }}>
                         <div>
-                            <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#999', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 6 }}>SPRINT 01</div>
+                            <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#999', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 6 }}>SPRINT 01 / MODULE 1 — IDENTITY</div>
                             <h1 className="plaak" style={{ fontSize: 48 }}>KNOW THYSELF</h1>
                         </div>
                         <button onClick={onBack} className="btn-wiz-back">← Back to Edit</button>
@@ -877,6 +877,7 @@
     function App() {
         const [step, setStep] = useState(0);
         const [step1SubIdx, setStep1SubIdx] = useState(0);
+        const [authState, setAuthState] = useState({ loading: true, authenticated: false, error: null });
         const [userId, setUserId] = useState(null);
         const [data, setData] = useState(makeDefaultData());
         const [aiReviewing, setAiReviewing] = useState(false);
@@ -885,7 +886,12 @@
         useEffect(() => {
             ToolDB.whenReady().then(async () => {
                 const uid = await ToolDB.identifyUser();
+                if (!uid) {
+                    setAuthState({ loading: false, authenticated: false, error: 'No active session found.' });
+                    return;
+                }
                 setUserId(uid);
+                setAuthState({ loading: false, authenticated: true, error: null });
                 if (uid) {
                     const saved = await ToolDB.load(uid);
                     if (saved && Object.keys(saved).length > 0) {
@@ -980,13 +986,35 @@
             4: (data.goals || []).filter(g => g && g.goal && g.goal.trim()).length >= 2,
         };
 
+        // Loading
+        if (authState.loading) {
+            return (
+                <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: '#555', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Loading…</div>
+                </div>
+            );
+        }
+
+        // Auth required
+        if (!authState.authenticated) {
+            return (
+                <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ textAlign: 'center', color: '#fff', padding: '0 32px', maxWidth: 640 }}>
+                        <h1 className="plaak" style={{ fontSize: 48, marginBottom: 24 }}>AUTHENTICATION REQUIRED</h1>
+                        <p style={{ fontSize: 20, marginBottom: 32 }}>Please access this tool from your LearnWorlds course.</p>
+                        <p style={{ fontSize: 16, color: '#999' }}>{authState.error || 'No active session found'}</p>
+                    </div>
+                </div>
+            );
+        }
+
         // Cover
         if (step === 0) {
             return (
                 <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
-                    <div style={{ position: 'absolute', inset: 0, backgroundImage: `url("${CONFIG.COVER_IMAGE}")`, backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.3 }} />
+                    <div style={{ position: 'absolute', inset: 0, backgroundImage: `url("${CONFIG.COVER_IMAGE}")`, backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.4 }} />
                     <div style={{ position: 'relative', textAlign: 'center', color: '#fff', padding: '0 32px' }} className="animate-in">
-                        <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#555', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 16 }}>SPRINT 01</div>
+                        <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#555', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 16 }}>SPRINT 01 / MODULE 1 — IDENTITY</div>
                         <h1 className="plaak" style={{ fontSize: 80, marginBottom: 16, textTransform: 'uppercase' }}>KNOW THYSELF</h1>
                         <p style={{ fontSize: 18, color: '#ccc', marginBottom: 48 }}>The foundation of exceptional leadership</p>
                         <button onClick={() => setStep(0.5)}

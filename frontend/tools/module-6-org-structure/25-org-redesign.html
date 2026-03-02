@@ -212,6 +212,8 @@
       white-space: pre-line;
     }
 
+    .field-label { font-weight: 600; font-size: 16px; color: #000; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+
     /* Numbered Section Badge */
     .numbered-section {
       background: #000000;
@@ -577,6 +579,7 @@
     // Main App Component
     function OrganizationalRedesignApp() {
             const [deps, setDeps] = useState([]);
+      const [authState, setAuthState] = useState({ loading: true, authenticated: false, error: null });
       const [step, setStep] = useState(0);
       const [aiReviewing, setAiReviewing] = useState(false);
       const [aiMessage, setAiMessage] = useState('');
@@ -628,17 +631,22 @@
       });
 
             useEffect(() => {
-                async function loadDeps() {
-                    const userId = localStorage.getItem('ft_user_id');
-                    if (!userId || !window.ToolDB || !window.DependencyInjection) return;
+                ToolDB.whenReady().then(async () => {
+                    const uid = await ToolDB.identifyUser();
+                    if (!uid) {
+                        setAuthState({ loading: false, authenticated: false, error: 'No active session found.' });
+                        return;
+                    }
+                    setAuthState({ loading: false, authenticated: true, error: null });
+
+                    if (!window.DependencyInjection) return;
                     try {
-                        await ToolDB.whenReady();
                         const config = DependencyInjection.getDependenciesConfig();
                         const toolConfig = config[CONFIG.TOOL_SLUG];
                         if (!toolConfig || !toolConfig.fields) return;
                         const loaded = [];
                         for (const field of toolConfig.fields) {
-                            const val = await ToolDB.getDependency(userId, field.source_field);
+                            const val = await ToolDB.getDependency(uid, field.source_field);
                             if (val) {
                                 loaded.push({ label: field.display_label || field.source_field, value: window.DependencyInjection ? DependencyInjection.formatValue(val) : (typeof val === 'object' ? JSON.stringify(val, null, 2) : String(val)) });
                             }
@@ -647,8 +655,9 @@
                     } catch (err) {
                         console.warn('[' + CONFIG.TOOL_SLUG + '] Failed to load dependencies:', err);
                     }
-                }
-                loadDeps();
+                }).catch(() => {
+                    setAuthState({ loading: false, authenticated: false, error: 'Authentication failed.' });
+                });
             }, []);
 
       // Load from localStorage
@@ -1157,6 +1166,21 @@
       if ([1.5, 2.5, 3.5, 4.5, 5.5].includes(step)) {
         return window.renderTransitionScreen(step, CONFIG, 5, setStep);
       }
+
+      if (authState.loading) return (
+        <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: '#555', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Loading…</div>
+        </div>
+      );
+      if (!authState.authenticated) return (
+        <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ textAlign: 'center', color: '#fff', padding: '0 32px', maxWidth: 640 }}>
+            <h1 className="plaak" style={{ fontSize: 48, marginBottom: 24 }}>AUTHENTICATION REQUIRED</h1>
+            <p style={{ fontSize: 20, marginBottom: 32 }}>Please access this tool from your LearnWorlds course.</p>
+            <p style={{ fontSize: 16, color: '#999' }}>{authState.error || 'No active session found'}</p>
+          </div>
+        </div>
+      );
 
       if (step === 0) {
         return <CoverPage onStart={goNext} />;
