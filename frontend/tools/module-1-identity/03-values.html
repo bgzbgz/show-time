@@ -597,12 +597,21 @@
 
             /* Auth initialization */
             useEffect(() => {
-                const userId = localStorage.getItem('ft_user_id');
-                if (!userId) {
-                    setAuthState({ loading: false, authenticated: false, error: 'No active session found.' });
-                } else {
-                    setAuthState({ loading: false, authenticated: true, error: null });
+                async function checkAuth() {
+                    try {
+                        await ToolDB.whenReady();
+                        const uid = await ToolDB.identifyUser();
+                        if (!uid) {
+                            setAuthState({ loading: false, authenticated: false, error: 'No active session found.' });
+                            return;
+                        }
+                        setAuthState({ loading: false, authenticated: true, error: null });
+                    } catch (e) {
+                        console.warn('[Values] Auth check failed:', e);
+                        setAuthState({ loading: false, authenticated: false, error: e.message || 'Authentication failed.' });
+                    }
                 }
+                checkAuth();
             }, []);
 
             // Load dream dependency from Dream tool on mount

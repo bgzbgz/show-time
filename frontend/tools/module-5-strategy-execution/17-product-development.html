@@ -355,15 +355,14 @@
 
             useEffect(() => {
                 // Auth check
-                (async () => {
+                ToolDB.init(CONFIG.TOOL_SLUG);
+                ToolDB.whenReady().then(async () => {
                     try {
-                        if (window.ToolDB && ToolDB.identifyUser) {
-                            const user = await ToolDB.identifyUser();
-                            if (user && user.id) { setAuthState({ loading: false, authenticated: true, error: null }); }
-                            else { setAuthState({ loading: false, authenticated: false, error: 'No active session found' }); }
-                        } else { setAuthState({ loading: false, authenticated: true, error: null }); }
+                        const uid = await ToolDB.identifyUser();
+                        if (!uid) { setAuthState({ loading: false, authenticated: false, error: 'No active session found.' }); return; }
+                        setAuthState({ loading: false, authenticated: true, error: null });
                     } catch (err) { setAuthState({ loading: false, authenticated: false, error: err.message }); }
-                })();
+                });
                 async function loadDeps() {
                     const userId = localStorage.getItem('ft_user_id');
                     if (!userId || !window.ToolDB || !window.DependencyInjection) return;
