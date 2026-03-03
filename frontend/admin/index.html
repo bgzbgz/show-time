@@ -832,6 +832,18 @@
         setUnlocking(null);
       }
 
+      async function deleteUser() {
+        if (!window.confirm(`Delete "${user.full_name || user.email}"? This will remove all their responses, completions, and AI logs. This cannot be undone.`)) return;
+        try {
+          await adminFetch('/api/admin/users/' + user.id, { method: 'DELETE' });
+          if (onUserUpdate) onUserUpdate(null); // signal deletion
+          onClose();
+        } catch (err) {
+          console.error('Delete user error:', err);
+          alert('Failed to delete: ' + err.message);
+        }
+      }
+
       const userCompletions = useMemo(() =>
         completions
           .filter(c => c.user_id === user.id)
@@ -928,6 +940,8 @@
                 <div style={{ display: 'flex', gap: 2, marginLeft: 8, alignItems: 'center' }}>
                   <button onClick={() => setEditMode(true)} title="Edit user"
                     style={{ ...btnStyle, color: '#555', fontSize: 15, padding: '2px 6px' }}>✎</button>
+                  <button onClick={deleteUser} title="Delete user"
+                    style={{ ...btnStyle, color: '#555', fontSize: 13, padding: '2px 6px' }}>🗑</button>
                   <a href={`https://fasttracktools.up.railway.app/dashboard.html?preview_uid=${user.id}`}
                     target="_blank" rel="noopener noreferrer" title="View as user"
                     style={{ color: '#555', fontSize: 13, padding: '2px 6px', textDecoration: 'none', lineHeight: 1.5 }}>↗</a>
@@ -1253,8 +1267,13 @@
               completions={completions}
               onClose={() => onSelectUser(null)}
               onUserUpdate={updatedUser => {
-                setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
-                setSelectedUser(updatedUser);
+                if (!updatedUser) {
+                  setUsers(prev => prev.filter(u => u.id !== selectedUser.id));
+                  setSelectedUser(null);
+                } else {
+                  setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
+                  setSelectedUser(updatedUser);
+                }
               }}
             />
           )}

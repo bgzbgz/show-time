@@ -276,6 +276,30 @@ router.post(
 );
 
 // =============================================================================
+// DELETE /api/admin/users/:id
+// =============================================================================
+router.delete(
+  '/users/:id',
+  authenticate,
+  requireAdmin,
+  asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.params.id;
+
+    // Delete related data first (FK constraints)
+    await Promise.all([
+      supabase.from('user_responses').delete().eq('user_id', userId),
+      supabase.from('tool_completions').delete().eq('user_id', userId),
+      supabase.from('ai_challenge_log').delete().eq('user_id', userId),
+      supabase.from('guru_assignments').delete().eq('user_id', userId),
+    ]);
+
+    const { error } = await supabase.from('users').delete().eq('id', userId);
+    if (error) return sendError(res, 'Failed to delete user', error.message, 500);
+    return sendSuccess(res, { deleted: true });
+  })
+);
+
+// =============================================================================
 // PUT /api/admin/users/:id
 // =============================================================================
 router.put(
