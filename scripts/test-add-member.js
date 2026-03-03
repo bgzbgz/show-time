@@ -6,6 +6,13 @@
  * Usage: node scripts/test-add-member.js
  */
 
+import { createRequire } from 'module';
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
+const require = createRequire(import.meta.url);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 const API = 'https://backend-production-639c.up.railway.app';
 const ADMIN_SUPABASE_ID = '175bc76a-cee8-4d70-8605-0b4a6698a841';
 const TEST_ORG_ID = '22222222-2222-2222-2222-222222222222'; // Acme Corp
@@ -173,7 +180,7 @@ async function testAdminPanelSyntax() {
     const parser = require('@babel/parser');
 
     for (const file of ['frontend/admin/index.html', '../admin-panel-tools/index.html']) {
-      const fullPath = require('path').resolve(__dirname, '..', file);
+      const fullPath = resolve(__dirname, '..', file);
       if (!fs.existsSync(fullPath)) { log('⚠️', `Skipped ${file} (not found)`); continue; }
 
       const html = fs.readFileSync(fullPath, 'utf8');
