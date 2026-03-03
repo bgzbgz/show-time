@@ -511,11 +511,18 @@
       }
 
       function guessEmailFromFilename(filename, members) {
-        const nameFromFile = filename.replace(/\.pdf$/i, '').replace(/\s*-\s*(personality|profile|crystal|disc).*$/i, '').trim().toLowerCase();
+        // Strip extension (.pdf, .md, .txt) and common suffixes
+        const nameFromFile = filename
+          .replace(/\.(pdf|md|txt)$/i, '')
+          .replace(/\s*[-_]\s*(personality|profile|crystal|disc|alom|report).*$/i, '')
+          .replace(/_/g, ' ')
+          .trim().toLowerCase();
         const match = members.find(m => {
           if (!m.full_name) return false;
-          return m.full_name.toLowerCase() === nameFromFile ||
-            m.full_name.toLowerCase().replace(/\s+/g, '') === nameFromFile.replace(/\s+/g, '');
+          const memberName = m.full_name.toLowerCase();
+          return memberName === nameFromFile ||
+            memberName.replace(/\s+/g, '') === nameFromFile.replace(/\s+/g, '') ||
+            nameFromFile.includes(memberName.split(' ')[0]) && nameFromFile.includes(memberName.split(' ').pop());
         });
         return match ? match.email : '';
       }
@@ -671,7 +678,7 @@
                             <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                               <input
                                 type="file"
-                                accept=".pdf"
+                                accept=".pdf,.md,.txt"
                                 multiple
                                 onChange={e => {
                                   const files = Array.from(e.target.files || []);

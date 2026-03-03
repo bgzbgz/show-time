@@ -7,13 +7,18 @@ import { sendSuccess, sendError } from '../utils/response.js';
 import { crystalPdfExtractor } from '../services/CrystalPdfExtractor.js';
 import type { Role } from '../types/index.js';
 
-// Multer: memory storage, max 10 PDFs, 5MB each
+// Multer: memory storage, max 10 files (PDF or Markdown), 5MB each
+const ALLOWED_MIMES = ['application/pdf', 'text/markdown', 'text/plain'];
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024, files: 10 },
   fileFilter: (_req, file, cb) => {
-    if (file.mimetype === 'application/pdf') cb(null, true);
-    else cb(new Error('Only PDF files are allowed'));
+    // Accept PDFs and markdown/text files
+    if (ALLOWED_MIMES.includes(file.mimetype) || file.originalname.endsWith('.md')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only PDF and Markdown files are allowed'));
+    }
   },
 });
 
@@ -639,15 +644,17 @@ router.post(
 
         email = email.trim().toLowerCase();
 
-        // 2. Extract profile via Claude Vision
-        const profile = await crystalPdfExtractor.extract(file.buffer);
+        // 2. Extract profile (markdown = free local parse, PDF = text extract + optional Claude)
+        const mimeType = file.originalname.endsWith('.md') ? 'text/markdown' : file.mimetype;
+        const profile = await crystalPdfExtractor.extract(file.buffer, mimeType);
 
-        // 3. Upload PDF to Supabase Storage
-        const storagePath = `${organization_id}/${email}.pdf`;
+        // 3. Upload file to Supabase Storage
+        const ext = file.originalname.endsWith('.md') ? 'md' : 'pdf';
+        const storagePath = `${organization_id}/${email}.${ext}`;
         await supabase.storage
           .from('crystal-profiles')
           .upload(storagePath, file.buffer, {
-            contentType: 'application/pdf',
+            contentType: mimeType,
             upsert: true,
           });
 
