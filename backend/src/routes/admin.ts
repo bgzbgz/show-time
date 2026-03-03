@@ -115,7 +115,7 @@ router.get(
 
     const { data: users } = await supabase
       .from('users')
-      .select('id, full_name, email, organization_id, last_login, created_at, role')
+      .select('id, full_name, email, organization_id, last_login, created_at, role, learnworlds_user_id')
       .order('full_name');
 
     const { data: completions } = await supabase
