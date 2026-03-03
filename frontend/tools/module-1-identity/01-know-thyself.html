@@ -73,6 +73,8 @@
         .sidebar-step-label.active { color: #FFF469; }
         .sidebar-step-label.done   { color: #4ade80; }
 
+        .tool-frame { background: #fff; min-height: 100vh; }
+        .tool-inner { background: #fff; min-height: 100vh; }
         .mobile-step-bar { display: none; }
         @media (max-width: 768px) {
             .wizard-sidebar { display: none; }
@@ -205,6 +207,20 @@
                 placeholder={placeholder}
                 onInput={e => autoGrow(e.target)}
             />
+        );
+    }
+
+    function MobileStepBar({ currentStep, totalSteps }) {
+        return (
+            <div className="mobile-step-bar">
+                <span className="mobile-step-text">STEP {Math.ceil(currentStep)} OF {totalSteps}</span>
+                {Array.from({ length: totalSteps }, (_, i) => {
+                    const n = i + 1;
+                    const isDone   = currentStep > n;
+                    const isActive = Math.floor(currentStep) === n;
+                    return <div key={n} className={`mobile-step-dot ${isActive ? 'active' : isDone ? 'done' : ''}`} />;
+                })}
+            </div>
         );
     }
 
@@ -718,42 +734,33 @@
     // ────────────────────────────────────────────────────────────
     // CANVAS
     // ────────────────────────────────────────────────────────────
-    function CanvasPage({ data, userId, onBack }) {
-        const [submitStatus, setSubmitStatus] = useState(null);
-
-        const handleSubmit = async () => {
-            setSubmitStatus('saving');
-            try {
-                await ToolDB.save(userId, {
-                    birthday_story: data.birthdayStory,
-                    dream:          data.dream,
-                    activities:     data.activities,
-                    strengths:      data.strengthsList,
-                    values:         data.values,
-                    goals:          data.goals,
-                });
-                await ToolDB.markComplete(userId);
-                setSubmitStatus('done');
-            } catch(e) {
-                setSubmitStatus('error');
-            }
-        };
-
+    function CanvasStep({ data, onSubmit, submitState, aiMessage }) {
         const filledStrengths = data.strengthsList.filter(s => s && typeof s === 'string' && s.trim());
         const filledValues    = data.values.filter(v => v && v.value && v.value.trim());
         const filledGoals     = data.goals.filter(g => g && g.goal && g.goal.trim());
 
-        return (
-            <div style={{ background: '#fff', minHeight: '100vh', padding: '48px' }} className="animate-in">
-                <div style={{ maxWidth: 900, margin: '0 auto' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 40 }}>
-                        <div>
-                            <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#999', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 6 }}>SPRINT 01 / MODULE 1 — IDENTITY</div>
-                            <h1 className="plaak" style={{ fontSize: 48 }}>KNOW THYSELF</h1>
-                        </div>
-                        <button onClick={onBack} className="btn-wiz-back">← Back to Edit</button>
+        if (submitState === 'success') {
+            return (
+                <div className="step-content animate-in">
+                    <div style={{ background: '#f0fdf4', border: '1px solid #86efac', padding: 48, textAlign: 'center', marginTop: 32 }}>
+                        <div style={{ fontSize: 48, marginBottom: 16 }}>✓</div>
+                        <h2 className="plaak" style={{ fontSize: 32, marginBottom: 16 }}>SUBMITTED</h2>
+                        <p style={{ fontSize: 16, color: '#555', marginBottom: 32 }}>Your self-knowledge profile has been saved. Bring your Dream and Strengths to the team meeting.</p>
+                        <a href="/dashboard" style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: '#000', letterSpacing: '0.06em', textDecoration: 'underline' }}>← Back to Dashboard</a>
                     </div>
+                </div>
+            );
+        }
 
+        return (
+            <div className="step-content animate-in">
+                <p className="step-indicator">CANVAS</p>
+                <div className="opening-box">
+                    <h1 className="step-heading">Know Thyself Canvas</h1>
+                    <p className="step-hint">Review your complete output, then submit your answers.</p>
+                </div>
+
+                <div style={{ maxWidth: 900, margin: '0 auto' }}>
                     <div className="canvas-section">
                         <div className="canvas-section-title">MY DREAM</div>
                         <div style={{ background: '#000', color: '#FFF469', padding: '24px 28px' }}>
@@ -847,25 +854,16 @@
                         </div>
                     </div>
 
-                    {submitStatus === 'done' ? (
-                        <div className="submit-success">
-                            <div style={{ fontSize: 40, marginBottom: 8 }}>✓</div>
-                            <h2 className="plaak" style={{ fontSize: 28, marginBottom: 8 }}>SUBMITTED</h2>
-                            <p style={{ color: '#555', marginBottom: 16 }}>Your self-knowledge profile has been saved. Bring your Dream and Strengths to the team meeting.</p>
-                            <a href="/dashboard" style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#000', letterSpacing: '0.08em', textTransform: 'uppercase', textDecoration: 'none', borderBottom: '2px solid #000' }}>← Back to Dashboard</a>
-                        </div>
-                    ) : (
-                        <div style={{ textAlign: 'center', padding: '32px 0' }}>
-                            {submitStatus === 'error' && (
-                                <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', padding: '12px 16px', marginBottom: 16, fontSize: 14, color: '#DC2626' }}>
-                                    Failed to save. Please check your connection and try again.
-                                </div>
-                            )}
-                            <button onClick={handleSubmit} disabled={submitStatus === 'saving'} className="btn-wiz-next" style={{ padding: '16px 48px', fontSize: 14 }}>
-                                {submitStatus === 'saving' ? 'SAVING…' : 'SUBMIT ANSWERS'}
-                            </button>
+                    {submitState === 'error' && (
+                        <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', padding: '12px 16px', marginBottom: 16, fontSize: 14, color: '#DC2626', textAlign: 'center' }}>
+                            Failed to save. Please check your connection and try again.
                         </div>
                     )}
+                    <div style={{ textAlign: 'center', padding: '32px 0' }}>
+                        <button onClick={onSubmit} disabled={submitState === 'saving'} className="btn-wiz-next" style={{ padding: '16px 48px', fontSize: 14 }}>
+                            {submitState === 'saving' ? 'SAVING…' : 'SUBMIT ANSWERS'}
+                        </button>
+                    </div>
                 </div>
             </div>
         );
@@ -882,6 +880,7 @@
         const [data, setData] = useState(makeDefaultData());
         const [aiReviewing, setAiReviewing] = useState(false);
         const [aiMessage, setAiMessage] = useState('');
+        const [submitState, setSubmitState] = useState(null);
 
         useEffect(() => {
             ToolDB.whenReady().then(async () => {
@@ -986,115 +985,120 @@
             4: (data.goals || []).filter(g => g && g.goal && g.goal.trim()).length >= 2,
         };
 
-        // Loading
-        if (authState.loading) {
-            return (
-                <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <div style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: '#555', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Loading…</div>
-                </div>
-            );
-        }
+        // ── handleSubmit ──
+        const handleSubmit = async () => {
+            setSubmitState('saving');
+            try {
+                await ToolDB.save(userId, {
+                    birthday_story: data.birthdayStory,
+                    dream:          data.dream,
+                    activities:     data.activities,
+                    strengths:      data.strengthsList,
+                    values:         data.values,
+                    goals:          data.goals,
+                });
+                await ToolDB.markComplete(userId);
+                setSubmitState('success');
+            } catch (err) {
+                console.error('[KnowThyself] Submit error:', err);
+                setSubmitState('error');
+                setAiMessage('Submission failed. Please try again.');
+            }
+        };
 
-        // Auth required
-        if (!authState.authenticated) {
-            return (
-                <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <div style={{ textAlign: 'center', color: '#fff', padding: '0 32px', maxWidth: 640 }}>
-                        <h1 className="plaak" style={{ fontSize: 48, marginBottom: 24 }}>AUTHENTICATION REQUIRED</h1>
-                        <p style={{ fontSize: 20, marginBottom: 32 }}>Please access this tool from your LearnWorlds course.</p>
-                        <p style={{ fontSize: 16, color: '#999' }}>{authState.error || 'No active session found'}</p>
+        const isWizardStep = Number.isInteger(step) && step >= 1 && step <= CONFIG.TOTAL_STEPS;
+        const isTransition = (!Number.isInteger(step) && step > 0.5 && step !== 'canvas');
+
+        // ── Render ──
+        return (
+            <div className="tool-frame">
+                {authState.loading && (
+                    <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: '#555', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Loading…</div>
                     </div>
-                </div>
-            );
-        }
+                )}
 
-        // Cover
-        if (step === 0) {
-            return (
-                <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
-                    <div style={{ position: 'absolute', inset: 0, backgroundImage: `url("${CONFIG.COVER_IMAGE}")`, backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.4 }} />
-                    <div style={{ position: 'relative', textAlign: 'center', color: '#fff', padding: '0 32px' }} className="animate-in">
-                        <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#555', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 16 }}>SPRINT 01 / MODULE 1 — IDENTITY</div>
-                        <h1 className="plaak" style={{ fontSize: 80, marginBottom: 16, textTransform: 'uppercase' }}>KNOW THYSELF</h1>
-                        <p style={{ fontSize: 18, color: '#ccc', marginBottom: 48 }}>The foundation of exceptional leadership</p>
-                        <button onClick={() => setStep(0.5)}
-                            style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 48px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s' }}
-                            onMouseOver={e => { e.target.style.background = '#FFF469'; }}
-                            onMouseOut={e => { e.target.style.background = '#fff'; }}>
-                            START
-                        </button>
-                    </div>
-                </div>
-            );
-        }
-
-        // Intro
-        if (step === 0.5) {
-            return <IntroPage onNext={() => setStep(1)} />;
-        }
-
-        // Transitions
-        if (!Number.isInteger(step) && step > 0.5) {
-            const stepNum = Math.floor(step);
-            return <TransitionScreen stepNum={stepNum} onNext={() => setStep(stepNum + 1 > CONFIG.TOTAL_STEPS ? 'canvas' : stepNum + 1)} />;
-        }
-
-        // Canvas
-        if (step === 'canvas') {
-            return <CanvasPage data={data} userId={userId} onBack={() => setStep(CONFIG.TOTAL_STEPS)} />;
-        }
-
-        // Wizard steps 1–4
-        if (Number.isInteger(step) && step >= 1 && step <= CONFIG.TOTAL_STEPS) {
-            const stepComponents = {
-                1: <Step1 data={data} updateData={updateData} aiMessage={aiMessage} subIdx={step1SubIdx} />,
-                2: <Step2 data={data} updateData={updateData} aiMessage={aiMessage} />,
-                3: <Step3 data={data} updateData={updateData} aiMessage={aiMessage} />,
-                4: <Step4 data={data} updateData={updateData} aiMessage={aiMessage} />,
-            };
-            return (
-                <div className="wizard-layout">
-                    <div className="mobile-step-bar" style={{ display: 'none' }}>
-                        <span className="mobile-step-text">STEP {step} OF {CONFIG.TOTAL_STEPS}</span>
-                        {Array.from({ length: CONFIG.TOTAL_STEPS }, (_, i) => {
-                            const n = i + 1;
-                            return <div key={n} className={'mobile-step-dot' + (step === n ? ' active' : step > n ? ' done' : '')} />;
-                        })}
-                    </div>
-                    <WizardSidebar currentStep={step} data={data} onNavigate={s => setStep(s)} />
-                    <div className="wizard-main">
-                        <div style={{ flex: 1, padding: '0 0', overflowY: 'auto' }}>
-                            <div style={{ padding: '0 48px' }}>
-                                {stepComponents[step]}
-                            </div>
-                        </div>
-                        <div className="wizard-footer">
-                            <button className="btn-wiz-back" onClick={() => handleBack(step)}>← BACK</button>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                                {aiReviewing && (
-                                    <span style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#666', letterSpacing: '0.06em' }}>AI REVIEWING…</span>
-                                )}
-                                {step < CONFIG.TOTAL_STEPS ? (
-                                    <button className="btn-wiz-next"
-                                        disabled={!stepCanAdvance[step] || aiReviewing}
-                                        onClick={() => handleNext(step)}>
-                                        {step === 1 && step1SubIdx < STEP1_QUESTIONS.length - 1 ? 'NEXT →' : step === 1 ? 'FINISH STEP →' : 'NEXT →'}
-                                    </button>
-                                ) : (
-                                    <button className="btn-wiz-next"
-                                        disabled={!stepCanAdvance[step] || aiReviewing}
-                                        onClick={() => { setAiMessage(''); setStep('canvas'); }}>
-                                        VIEW CANVAS →
-                                    </button>
-                                )}
-                            </div>
+                {!authState.loading && !authState.authenticated && (
+                    <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ textAlign: 'center', color: '#fff', padding: '0 32px', maxWidth: 640 }}>
+                            <h1 className="plaak" style={{ fontSize: 48, marginBottom: 24 }}>AUTHENTICATION REQUIRED</h1>
+                            <p style={{ fontSize: 20, marginBottom: 32 }}>Please access this tool from your LearnWorlds course.</p>
+                            <p style={{ fontSize: 16, color: '#999' }}>{authState.error || 'No active session found'}</p>
                         </div>
                     </div>
-                </div>
-            );
-        }
+                )}
 
-        return null;
+                {step === 0 && authState.authenticated && (
+                    <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+                        <div style={{ position: 'absolute', inset: 0, backgroundImage: `url("${CONFIG.COVER_IMAGE}")`, backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.4 }} />
+                        <div style={{ position: 'relative', textAlign: 'center', color: '#fff', padding: '0 32px' }} className="animate-in">
+                            <div style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: '#FFF469', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 24 }}>
+                                SPRINT 01 / MODULE 1 — IDENTITY
+                            </div>
+                            <h1 className="plaak" style={{ fontSize: 80, marginBottom: 16, textTransform: 'uppercase' }}>KNOW THYSELF</h1>
+                            <p style={{ fontSize: 18, color: '#ccc', marginBottom: 48, maxWidth: 560, margin: '0 auto 48px' }}>The foundation of exceptional leadership</p>
+                            <button onClick={() => setStep(0.5)}
+                                style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 48px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s' }}
+                                onMouseOver={e => { e.target.style.background = '#FFF469'; }}
+                                onMouseOut={e => { e.target.style.background = '#fff'; }}>
+                                START
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {step === 0.5 && authState.authenticated && (
+                    <IntroPage onNext={() => setStep(1)} />
+                )}
+
+                {isTransition && (
+                    <TransitionScreen stepNum={Math.floor(step)} onNext={() => {
+                        const next = Math.floor(step) + 1;
+                        setStep(next > CONFIG.TOTAL_STEPS ? 'canvas' : next);
+                    }} />
+                )}
+
+                {(isWizardStep || step === 'canvas') && (
+                    <div className="tool-inner">
+                        <div className="wizard-layout">
+                            <div className="wizard-main">
+                                <MobileStepBar currentStep={typeof step === 'number' ? step : CONFIG.TOTAL_STEPS + 1} totalSteps={CONFIG.TOTAL_STEPS} />
+                                <div style={{ flex: 1 }}>
+                                    {step === 1 && <Step1 data={data} updateData={updateData} aiMessage={aiMessage} subIdx={step1SubIdx} />}
+                                    {step === 2 && <Step2 data={data} updateData={updateData} aiMessage={aiMessage} />}
+                                    {step === 3 && <Step3 data={data} updateData={updateData} aiMessage={aiMessage} />}
+                                    {step === 4 && <Step4 data={data} updateData={updateData} aiMessage={aiMessage} />}
+                                    {step === 'canvas' && <CanvasStep data={data} onSubmit={handleSubmit} submitState={submitState} aiMessage={aiMessage} />}
+                                </div>
+                                {submitState !== 'success' && step !== 'canvas' && (
+                                    <div className="wizard-footer">
+                                        <button className="btn-wiz-back" onClick={() => handleBack(step)}>← BACK</button>
+                                        {step < CONFIG.TOTAL_STEPS ? (
+                                            <button className="btn-wiz-next"
+                                                disabled={!stepCanAdvance[step] || aiReviewing}
+                                                onClick={() => handleNext(step)}>
+                                                {aiReviewing ? 'REVIEWING…' : step === 1 && step1SubIdx < STEP1_QUESTIONS.length - 1 ? 'NEXT →' : step === 1 ? 'FINISH STEP →' : 'NEXT →'}
+                                            </button>
+                                        ) : (
+                                            <button className="btn-wiz-next"
+                                                disabled={!stepCanAdvance[step] || aiReviewing}
+                                                onClick={() => { setAiMessage(''); setStep('canvas'); }}>
+                                                {aiReviewing ? 'REVIEWING…' : 'VIEW CANVAS →'}
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                            <WizardSidebar
+                                currentStep={step}
+                                data={data}
+                                onNavigate={s => { setStep(s); setAiMessage(''); }}
+                            />
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
     }
 
     ReactDOM.render(<App />, document.getElementById('root'));
