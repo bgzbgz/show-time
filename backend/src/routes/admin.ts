@@ -1,9 +1,21 @@
 import { Router, type Request, type Response } from 'express';
+import multer from 'multer';
 import { supabase } from '../config/supabase.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import { authenticate, generateAccessToken } from '../middleware/auth.js';
 import { sendSuccess, sendError } from '../utils/response.js';
+import { crystalPdfExtractor } from '../services/CrystalPdfExtractor.js';
 import type { Role } from '../types/index.js';
+
+// Multer: memory storage, max 10 PDFs, 5MB each
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024, files: 10 },
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype === 'application/pdf') cb(null, true);
+    else cb(new Error('Only PDF files are allowed'));
+  },
+});
 
 const router = Router();
 
@@ -551,6 +563,201 @@ router.get(
       .limit(500);
 
     return sendSuccess(res, data || []);
+  })
+);
+
+// =============================================================================
+// POST /api/admin/crystal-profiles/upload
+// Upload Crystal Knows PDFs → extract DISC profiles via Claude → store
+// =============================================================================
+router.post(
+  '/crystal-profiles/upload',
+  authenticate,
+  requireAdmin,
+  upload.array('files', 10),
+  asyncHandler(async (req: Request, res: Response) => {
+    const files = req.files as Express.Multer.File[];
+    if (!files || files.length === 0) {
+      return sendError(res, 'No PDF files uploaded', undefined, 400);
+    }
+
+    const { organization_id } = req.body;
+    if (!organization_id) {
+      return sendError(res, 'organization_id required', undefined, 400);
+    }
+
+    // Parse optional mapping: JSON string of { filename: email }
+    let mapping: Record<string, string> = {};
+    if (req.body.mapping) {
+      try {
+        mapping = JSON.parse(req.body.mapping);
+      } catch {
+        return sendError(res, 'Invalid mapping JSON', undefined, 400);
+      }
+    }
+
+    // Fetch org members for name→email matching
+    const { data: orgMembers } = await supabase
+      .from('users')
+      .select('email, full_name')
+      .eq('organization_id', organization_id);
+
+    const members = orgMembers || [];
+
+    const results: { filename: string; email: string; disc_type: string }[] = [];
+    const failed: { filename: string; error: string }[] = [];
+
+    for (const file of files) {
+      try {
+        // 1. Determine email
+        let email = mapping[file.originalname];
+
+        if (!email) {
+          // Try to match filename to org member name
+          // Pattern: "John Doe - Personality Profile.pdf" or "John Doe.pdf"
+          const nameFromFile = file.originalname
+            .replace(/\.pdf$/i, '')
+            .replace(/\s*-\s*(personality|profile|crystal|disc).*$/i, '')
+            .trim()
+            .toLowerCase();
+
+          const match = members.find(m => {
+            if (!m.full_name) return false;
+            return m.full_name.toLowerCase() === nameFromFile ||
+              m.full_name.toLowerCase().replace(/\s+/g, '') === nameFromFile.replace(/\s+/g, '');
+          });
+
+          if (match) {
+            email = match.email;
+          }
+        }
+
+        if (!email) {
+          failed.push({ filename: file.originalname, error: 'Could not determine email — provide mapping' });
+          continue;
+        }
+
+        email = email.trim().toLowerCase();
+
+        // 2. Extract profile via Claude Vision
+        const profile = await crystalPdfExtractor.extract(file.buffer);
+
+        // 3. Upload PDF to Supabase Storage
+        const storagePath = `${organization_id}/${email}.pdf`;
+        await supabase.storage
+          .from('crystal-profiles')
+          .upload(storagePath, file.buffer, {
+            contentType: 'application/pdf',
+            upsert: true,
+          });
+
+        // 4. Upsert into crystal_profiles table
+        const { error: dbError } = await supabase
+          .from('crystal_profiles')
+          .upsert({
+            email,
+            disc_type: profile.disc_type,
+            personality_overview: profile.personality_overview,
+            strengths: profile.strengths,
+            communication_dos: profile.communication_dos,
+            communication_donts: profile.communication_donts,
+            raw_response: profile,
+            source: 'pdf',
+            pdf_storage_path: storagePath,
+            fetched_at: new Date().toISOString(),
+          }, { onConflict: 'email' });
+
+        if (dbError) throw new Error(dbError.message);
+
+        results.push({ filename: file.originalname, email, disc_type: profile.disc_type });
+      } catch (err: any) {
+        failed.push({ filename: file.originalname, error: err.message || 'Unknown error' });
+      }
+    }
+
+    return sendSuccess(res, {
+      processed: files.length,
+      succeeded: results.length,
+      results,
+      failed,
+    });
+  })
+);
+
+// =============================================================================
+// GET /api/admin/crystal-profiles/:orgId
+// List crystal profiles for all members of an organization
+// =============================================================================
+router.get(
+  '/crystal-profiles/:orgId',
+  authenticate,
+  requireAdmin,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { orgId } = req.params;
+
+    // Get org member emails
+    const { data: members } = await supabase
+      .from('users')
+      .select('email, full_name')
+      .eq('organization_id', orgId);
+
+    if (!members || members.length === 0) {
+      return sendSuccess(res, []);
+    }
+
+    const emails = members.map(m => m.email.toLowerCase());
+
+    // Fetch profiles for these emails
+    const { data: profiles } = await supabase
+      .from('crystal_profiles')
+      .select('email, disc_type, personality_overview, source, pdf_storage_path, fetched_at')
+      .in('email', emails);
+
+    // Merge with member info
+    const merged = members.map(m => {
+      const profile = (profiles || []).find(p => p.email.toLowerCase() === m.email.toLowerCase());
+      return {
+        email: m.email,
+        full_name: m.full_name,
+        disc_type: profile?.disc_type || null,
+        personality_overview: profile?.personality_overview || null,
+        source: profile?.source || null,
+        has_pdf: !!profile?.pdf_storage_path,
+        fetched_at: profile?.fetched_at || null,
+      };
+    });
+
+    return sendSuccess(res, merged);
+  })
+);
+
+// =============================================================================
+// DELETE /api/admin/crystal-profiles/:orgId/:email
+// Delete a crystal profile + its PDF from storage
+// =============================================================================
+router.delete(
+  '/crystal-profiles/:orgId/:email',
+  authenticate,
+  requireAdmin,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { orgId, email } = req.params;
+    const normalizedEmail = decodeURIComponent(email).toLowerCase();
+
+    // Delete from DB
+    const { error: dbError } = await supabase
+      .from('crystal_profiles')
+      .delete()
+      .eq('email', normalizedEmail);
+
+    if (dbError) {
+      return sendError(res, 'Failed to delete profile', dbError.message, 500);
+    }
+
+    // Delete PDF from storage (ignore errors — file may not exist)
+    const storagePath = `${orgId}/${normalizedEmail}.pdf`;
+    await supabase.storage.from('crystal-profiles').remove([storagePath]);
+
+    return sendSuccess(res, { deleted: true });
   })
 );
 
