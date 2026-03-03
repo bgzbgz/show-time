@@ -150,8 +150,9 @@ class CrystalKnowsService {
         communication_dos: profile.communication_dos,
         communication_donts: profile.communication_donts,
         raw_response: profile,
+        source: 'api',
         fetched_at: new Date().toISOString(),
-      }, { onConflict: 'email' });
+      }, { onConflict: 'email', ignoreDuplicates: true });
 
     if (error) {
       console.error('[CrystalKnowsService] Failed to cache profile:', error);
