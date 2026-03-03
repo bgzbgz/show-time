@@ -184,9 +184,9 @@ const ToolDB = (function() {
      */
     async function identifyUser() {
         const params = new URLSearchParams(window.location.search);
-        const lwUserId = params.get('lw_user_id');
-        const lwEmail = params.get('lw_email');
-        const lwName = params.get('lw_name');
+        const lwUserId = params.get('lw_user_id') || params.get('user_id');
+        const lwEmail = params.get('lw_email') || params.get('user_email');
+        const lwName = params.get('lw_name') || params.get('user_name');
 
         // Clean URL after extracting params
         if (lwUserId || lwEmail) {
