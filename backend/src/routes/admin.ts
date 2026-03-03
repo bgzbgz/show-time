@@ -152,9 +152,11 @@ router.post(
     const { name, learnworlds_tag } = req.body;
     if (!name) return sendError(res, 'name required', undefined, 400);
 
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
     const { data, error } = await supabase
       .from('organizations')
-      .insert({ name, learnworlds_tag: learnworlds_tag || null })
+      .insert({ name, slug, learnworlds_tag: learnworlds_tag || null })
       .select()
       .single();
 
