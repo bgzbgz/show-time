@@ -234,6 +234,46 @@ router.get(
 );
 
 // =============================================================================
+// POST /api/admin/users  — pre-create a user (for company member onboarding)
+// =============================================================================
+router.post(
+  '/users',
+  authenticate,
+  requireAdmin,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { email, full_name, organization_id } = req.body;
+    if (!email) return sendError(res, 'email required', undefined, 400);
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // Check for duplicate
+    const { data: existing } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', normalizedEmail)
+      .maybeSingle();
+
+    if (existing) {
+      return sendError(res, 'A user with this email already exists', undefined, 409);
+    }
+
+    const { data, error } = await supabase
+      .from('users')
+      .insert({
+        email: normalizedEmail,
+        full_name: full_name || null,
+        organization_id: organization_id || null,
+        role: 'participant',
+      })
+      .select()
+      .single();
+
+    if (error) return sendError(res, 'Failed to create user', error.message, 500);
+    return sendSuccess(res, data, undefined, 201);
+  })
+);
+
+// =============================================================================
 // PUT /api/admin/users/:id
 // =============================================================================
 router.put(

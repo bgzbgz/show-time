@@ -352,6 +352,7 @@
       const [orgSaving, setOrgSaving] = useState(false);
       const [cohortView, setCohortView] = useState({}); // orgId -> 'members' | 'progress' | 'gurus'
       const [guruAssignments, setGuruAssignments] = useState([]);
+      const [memberModal, setMemberModal] = useState(null); // null | { orgId, orgName, email, name, saving, error }
 
       useEffect(() => { loadData(); }, []);
 
@@ -446,6 +447,25 @@
         } catch (err) {
           console.error('Assign guru error:', err);
           alert('Failed to assign guru: ' + err.message);
+        }
+      }
+
+      async function addMember() {
+        setMemberModal(m => ({ ...m, saving: true, error: null }));
+        try {
+          const data = await adminFetch('/api/admin/users', {
+            method: 'POST',
+            body: JSON.stringify({
+              email: memberModal.email.trim(),
+              full_name: memberModal.name.trim() || null,
+              organization_id: memberModal.orgId,
+            })
+          });
+          if (data) setUsers(prev => [...prev, data].sort((a, b) => (a.full_name || '').localeCompare(b.full_name || '')));
+          setMemberModal(null);
+        } catch (err) {
+          const msg = err.message || 'Failed to add member';
+          setMemberModal(m => ({ ...m, saving: false, error: msg.includes('already exists') ? 'A user with this email already exists.' : msg }));
         }
       }
 
@@ -564,6 +584,14 @@
                               })}
                             </tbody>
                           </table>
+                          <div style={{ padding: '8px 12px', borderTop: '1px solid #1a1a1a' }}>
+                            <button
+                              onClick={() => setMemberModal({ orgId: org.id, orgName: org.name, email: '', name: '', saving: false, error: null })}
+                              style={{ background: 'none', border: '1px dashed #2a2a2a', color: '#555', cursor: 'pointer', padding: '6px 14px', fontSize: 10, letterSpacing: '0.08em', fontWeight: 700 }}
+                            >
+                              + ADD MEMBER
+                            </button>
+                          </div>
                         </div>
                       ) : (cohortView[org.id] === 'gurus') ? (
                         <div style={{ overflowX: 'auto', padding: '8px 0' }}>
@@ -672,6 +700,45 @@
                     {orgSaving ? 'SAVING...' : 'SAVE'}
                   </button>
                   <button onClick={() => setOrgModal(null)}
+                    style={{ background: 'none', border: '1px solid #2a2a2a', color: '#666', cursor: 'pointer', padding: '10px 20px', fontSize: 12 }}>
+                    CANCEL
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Add Member Modal */}
+          {memberModal && (
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+              <div style={{ background: '#111', border: '1px solid #2a2a2a', padding: 28, width: 360 }}>
+                <div style={{ fontFamily: 'Plaak, sans-serif', fontSize: 16, color: '#FFF469', marginBottom: 6, letterSpacing: '0.04em' }}>
+                  ADD MEMBER
+                </div>
+                <div style={{ fontSize: 12, color: '#888', marginBottom: 20 }}>
+                  to {memberModal.orgName}
+                </div>
+                {memberModal.error && (
+                  <div style={{ background: '#2a1010', border: '1px solid #5a2020', color: '#ff6b6b', padding: '8px 12px', fontSize: 12, marginBottom: 14 }}>
+                    {memberModal.error}
+                  </div>
+                )}
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ ...S.sectionLabel, marginBottom: 6 }}>EMAIL *</div>
+                  <input value={memberModal.email} onChange={e => setMemberModal(m => ({ ...m, email: e.target.value }))}
+                    placeholder="peter@company.com" type="email" style={S.input} />
+                </div>
+                <div style={{ marginBottom: 20 }}>
+                  <div style={{ ...S.sectionLabel, marginBottom: 6 }}>FULL NAME</div>
+                  <input value={memberModal.name} onChange={e => setMemberModal(m => ({ ...m, name: e.target.value }))}
+                    placeholder="Peter Smith (optional)" style={S.input} />
+                </div>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button onClick={addMember} disabled={memberModal.saving || !memberModal.email.trim()}
+                    style={{ background: '#FFF469', color: '#000', border: 'none', cursor: 'pointer', padding: '10px 20px', fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', opacity: (!memberModal.email.trim() || memberModal.saving) ? 0.5 : 1 }}>
+                    {memberModal.saving ? 'ADDING...' : 'ADD'}
+                  </button>
+                  <button onClick={() => setMemberModal(null)}
                     style={{ background: 'none', border: '1px solid #2a2a2a', color: '#666', cursor: 'pointer', padding: '10px 20px', fontSize: 12 }}>
                     CANCEL
                   </button>
