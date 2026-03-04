@@ -557,6 +557,7 @@
             const [userEmail, setUserEmail] = useState('');
             const [aiReviewing, setAiReviewing] = useState(false);
             const [aiMessage, setAiMessage] = useState('');
+            const [validationError, setValidationError] = useState('');
             const [authState, setAuthState] = useState({ loading: true, authenticated: false, error: null });
             const [behaviorIdx, setBehaviorIdx] = useState(0);
             const prevStepRef = useRef(step);
@@ -667,50 +668,95 @@
                 }));
             };
 
-            // Validation functions
+            // Validation functions — return true if valid, set error message if not
             const validateStep1 = () => {
                 const filledBehaviors = formData.behaviors.filter(b => b.trim().length >= 50);
                 const filledValues = formData.top5Values.filter(v => v.trim().length >= 2);
-                return filledBehaviors.length >= 3 && filledValues.length >= 3;
+                if (filledBehaviors.length < 3) {
+                    setValidationError(`Please describe at least 3 behaviors in detail (50+ characters each). You have ${filledBehaviors.length} so far.`);
+                    return false;
+                }
+                if (filledValues.length < 3) {
+                    setValidationError(`Please fill in at least 3 of your top 5 values. You have ${filledValues.length} so far.`);
+                    return false;
+                }
+                setValidationError('');
+                return true;
             };
 
             const validateStep2 = () => {
-                return formData.dream.trim().length >= 50 &&
-                       formData.requiredValues.trim().length >= 50 &&
-                       formData.gap.trim().length >= 50;
+                if (formData.dream.trim().length < 50) {
+                    setValidationError('Please describe your company dream in more detail (50+ characters).');
+                    return false;
+                }
+                if (formData.requiredValues.trim().length < 50) {
+                    setValidationError('Please describe the required values for your dream in more detail (50+ characters).');
+                    return false;
+                }
+                if (formData.gap.trim().length < 50) {
+                    setValidationError('Please describe the values gap in more detail (50+ characters).');
+                    return false;
+                }
+                setValidationError('');
+                return true;
             };
 
             const validateStep3 = () => {
-                const validValues = formData.valuesBehaviors.filter(v => 
+                const validValues = formData.valuesBehaviors.filter(v =>
                     v.value.trim().length >= 2 &&
                     v.cool.trim().length >= 50 &&
                     v.notCool.trim().length >= 50
                 );
-                return validValues.length >= 3;
+                if (validValues.length < 3) {
+                    setValidationError(`Please define Cool and Not Cool behaviors for at least 3 values (50+ characters each). You have ${validValues.length} complete.`);
+                    return false;
+                }
+                setValidationError('');
+                return true;
             };
 
             const validateStep4 = () => {
                 const validYellow = formData.yellowLines.filter(l => l.trim().length >= 30);
                 const validRed = formData.redLines.filter(l => l.trim().length >= 30);
-                return validYellow.length >= 2 && validRed.length >= 2;
+                if (validYellow.length < 2) {
+                    setValidationError(`Please describe at least 2 yellow lines (30+ characters each). You have ${validYellow.length} so far.`);
+                    return false;
+                }
+                if (validRed.length < 2) {
+                    setValidationError(`Please describe at least 2 red lines (30+ characters each). You have ${validRed.length} so far.`);
+                    return false;
+                }
+                setValidationError('');
+                return true;
             };
 
             const validateStep5 = () => {
                 const validQuestions = formData.recruitmentQuestions.filter(q => q.trim().length >= 50);
-                return validQuestions.length >= 3;
+                if (validQuestions.length < 3) {
+                    setValidationError(`Please write at least 3 recruitment questions (50+ characters each). You have ${validQuestions.length} so far.`);
+                    return false;
+                }
+                setValidationError('');
+                return true;
             };
 
             const validateStep6 = () => {
-                const validPlans = formData.commPlan.filter(p => 
+                const validPlans = formData.commPlan.filter(p =>
                     p.idea.trim().length >= 30 &&
                     p.who.trim().length >= 2 &&
                     p.when.trim().length >= 2
                 );
-                return validPlans.length >= 3;
+                if (validPlans.length < 3) {
+                    setValidationError(`Please complete at least 3 communication plan items (idea 30+ chars, who and when filled). You have ${validPlans.length} complete.`);
+                    return false;
+                }
+                setValidationError('');
+                return true;
             };
 
             // AI-gated step navigation
             const handleStepNext = async (nextStepValue, stepAnswers, stepName) => {
+                setValidationError('');
                 const userId = localStorage.getItem('ft_user_id');
                 if (!userId) {
                     setAiMessage('');
@@ -1013,8 +1059,18 @@
                                 {step === 6 && <Step6 formData={formData} updateObjectField={updateObjectField} />}
                             </div>
 
+                            {validationError && (
+                                <div style={{ background: '#FEF2F2', border: '2px solid #EF4444', padding: '12px 16px', margin: '0 32px 16px', maxWidth: 720 }}>
+                                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                                        <span style={{ color: '#EF4444', fontWeight: 'bold', fontSize: 16, lineHeight: 1 }}>!</span>
+                                        <span style={{ fontFamily: "'Riforma', sans-serif", fontSize: 14, color: '#991B1B' }}>{validationError}</span>
+                                    </div>
+                                </div>
+                            )}
+
                             <ButtonFooter
                                 onBack={() => {
+                                    setValidationError('');
                                     if (step === 3 && behaviorIdx > 0) { setBehaviorIdx(behaviorIdx - 1); return; }
                                     setStep(step === 1 ? 0.5 : step === 3 ? 2.5 : step - 1);
                                 }}
