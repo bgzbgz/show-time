@@ -131,6 +131,8 @@
         /* ── Animations ── */
         .animate-in { animation: fadeSlideIn 0.35s ease both; }
         @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+    .tool-frame { background: #fff; min-height: 100vh; }
+    .tool-inner { background: #fff; min-height: 100vh; }
     </style>
 </head>
 <body>
@@ -955,6 +957,7 @@
                 const userId = localStorage.getItem('ft_user_id');
                 if (!userId || !window.ToolDB) return;
                 try { await ToolDB.save(userId, CONFIG.TOOL_SLUG, data); } catch {}
+                await ToolDB.markComplete(userId);
             }, 2000);
             return () => clearTimeout(t);
         }, [data]);
@@ -1114,6 +1117,8 @@
         );
 
         if (step >= 1 && step <= CONFIG.TOTAL_STEPS && Number.isInteger(step)) {
+            const isWizardStep = Number.isInteger(step) && step >= 1 && step <= CONFIG.TOTAL_STEPS;
+            const isTransition = !Number.isInteger(step) && step > 0.5;
             return (
                 <div className="wizard-layout">
                     <div className="wizard-main">

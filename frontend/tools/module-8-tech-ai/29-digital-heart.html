@@ -561,6 +561,20 @@
     .field-textarea:focus { outline: none; border-color: #000; }
     .step-content { max-width: 100%; padding: 40px 0; flex: 1; }
     @media (max-width: 768px) { .wizard-sidebar { display: none; } .wizard-main { padding: 0 24px; } }
+    .tool-frame { background: #fff; min-height: 100vh; }
+    .tool-inner { background: #fff; min-height: 100vh; }
+    .step-indicator { font-family: 'Monument', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #666; margin-bottom: 8px; }
+    .mobile-step-bar { display: none; }
+    @media (max-width: 768px) {
+        .wizard-sidebar { display: none; }
+        .wizard-main { padding: 0 24px; }
+        .mobile-step-bar { display: flex; align-items: center; gap: 8px; padding: 16px 24px; background: #1a1a1a; }
+        .mobile-step-dot { width: 8px; height: 8px; border-radius: 50%; background: #333; transition: background 0.2s; }
+        .mobile-step-dot.active { background: #FFF469; }
+        .mobile-step-dot.done   { background: #4ade80; }
+        .mobile-step-text { font-family: 'Monument', monospace; font-size: 11px; color: #fff; letter-spacing: 0.06em; }
+        .wizard-footer { padding: 16px 24px; }
+    }
   </style>
 </head>
 <body>
@@ -571,6 +585,7 @@
 
     const CONFIG = {
         TOOL_SLUG: 'digital-heart',
+        TOTAL_STEPS: 5,
         TOOL_TITLE: 'INDIVIDUAL AI DECISION OPTIMIZATION',
         TOOL_SUBTITLE: 'Optimise your core decisions with AI-powered data and technology.',
         COVER_IMAGE: 'https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=1600&q=80',
@@ -691,6 +706,21 @@
     }
 
     // Main App Component
+
+    function MobileStepBar({ currentStep, totalSteps }) {
+        return (
+            <div className="mobile-step-bar">
+                <span className="mobile-step-text">STEP {Math.ceil(currentStep)} OF {totalSteps}</span>
+                {Array.from({ length: totalSteps }, (_, i) => {
+                    const n = i + 1;
+                    const isDone   = currentStep > n;
+                    const isActive = Math.floor(currentStep) === n;
+                    return <div key={n} className={`mobile-step-dot ${isActive ? 'active' : isDone ? 'done' : ''}`} />;
+                })}
+            </div>
+        );
+    }
+
     function DigitalHeartApp() {
             const [deps, setDeps] = useState([]);
       const [authState, setAuthState] = useState({ loading: true, authenticated: false, error: null });
@@ -1264,7 +1294,7 @@
                       placeholder="e.g., Product pricing strategy for new market segments"
                     />
                     <div className={`char-counter ${(decision.decisionName || '').length < 50 ? 'invalid' : ''}`}>
-                      {(decision.decisionName || '').length} / 50 characters minimum
+                      {(decision.decisionName || '').length} / 20 characters minimum
                     </div>
                   </div>
 
@@ -2497,6 +2527,8 @@
                   const tech = technology.find(t => t.decisionId === decision.id);
                   const api = apis.find(a => a.decisionId === decision.id);
 
+                  const isWizardStep = Number.isInteger(step) && step >= 1 && step <= totalSteps;
+                  const isTransition = !Number.isInteger(step) && step > 0.5;
                   return (
                     <div key={decision.id} className="mb-8 border-2 border-black p-6">
                       <h3 className="riforma-bold text-2xl mb-6">{decision.decisionName}</h3>

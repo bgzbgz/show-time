@@ -433,6 +433,20 @@
         .wizard-sidebar { display: none; }
         .wizard-main { padding: 0 24px; }
     }
+    .tool-frame { background: #fff; min-height: 100vh; }
+    .tool-inner { background: #fff; min-height: 100vh; }
+    .step-indicator { font-family: 'Monument', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #666; margin-bottom: 8px; }
+    .mobile-step-bar { display: none; }
+    @media (max-width: 768px) {
+        .wizard-sidebar { display: none; }
+        .wizard-main { padding: 0 24px; }
+        .mobile-step-bar { display: flex; align-items: center; gap: 8px; padding: 16px 24px; background: #1a1a1a; }
+        .mobile-step-dot { width: 8px; height: 8px; border-radius: 50%; background: #333; transition: background 0.2s; }
+        .mobile-step-dot.active { background: #FFF469; }
+        .mobile-step-dot.done   { background: #4ade80; }
+        .mobile-step-text { font-family: 'Monument', monospace; font-size: 11px; color: #fff; letter-spacing: 0.06em; }
+        .wizard-footer { padding: 16px 24px; }
+    }
   </style>
 </head>
 <body>
@@ -443,6 +457,7 @@
 
     const CONFIG = {
         TOOL_SLUG: 'employer-branding',
+        TOTAL_STEPS: 6,
         TOOL_TITLE: 'EMPLOYER BRANDING & RECRUITMENT',
         TOOL_SUBTITLE: 'Build an employer brand that attracts and retains top talent.',
         COVER_IMAGE: 'https://images.unsplash.com/photo-1521791136064-7986c2920216?w=1600&q=80',
@@ -534,6 +549,21 @@
     }
 
     // Main App Component
+
+    function MobileStepBar({ currentStep, totalSteps }) {
+        return (
+            <div className="mobile-step-bar">
+                <span className="mobile-step-text">STEP {Math.ceil(currentStep)} OF {totalSteps}</span>
+                {Array.from({ length: totalSteps }, (_, i) => {
+                    const n = i + 1;
+                    const isDone   = currentStep > n;
+                    const isActive = Math.floor(currentStep) === n;
+                    return <div key={n} className={`mobile-step-dot ${isActive ? 'active' : isDone ? 'done' : ''}`} />;
+                })}
+            </div>
+        );
+    }
+
     function EmployerBrandingApp() {
             const [deps, setDeps] = useState([]);
       const [authState, setAuthState] = useState({ loading: true, authenticated: false, error: null });
@@ -815,7 +845,7 @@
           (evp.primaryNeed || '').length > 0 &&
           (evp.corePromise || '').length >= 30 &&
           (evp.differentiator || '').length >= 30 &&
-          (evp.evpStatement || '').length >= 50
+          (evp.evpStatement || '').length >= 20
         );
       };
 
@@ -827,7 +857,7 @@
         const antiStatements = (testing.antiEVP || []).filter(a =>
           (a.statement || '').length >= 20
         );
-        return truths.length >= 3 && antiStatements.length >= 2;
+        return truths.length >= 1 && antiStatements.length >= 2;
       };
 
       const isStep5Valid = () => {
@@ -1300,7 +1330,7 @@
                     className="w-full min-h-[120px]"
                   />
                   <div className={`char-counter ${(evp.evpStatement || '').length < 50 ? 'invalid' : ''}`}>
-                    {(evp.evpStatement || '').length} / 50 minimum
+                    {(evp.evpStatement || '').length} / 20 minimum
                   </div>
                 </div>
 
@@ -2119,6 +2149,8 @@
     // Render App
 
         function IntroPage({ onNext }) {
+          const isWizardStep = Number.isInteger(step) && step >= 1 && step <= totalSteps;
+          const isTransition = !Number.isInteger(step) && step > 0.5;
           return (
             <div style={{ background: '#000', color: '#fff', minHeight: '100vh', padding: '64px' }}>
               <div style={{ maxWidth: '1000px', margin: '0 auto' }}>

@@ -499,6 +499,19 @@
         .wizard-main { padding: 0 24px; }
         .wizard-footer { padding: 16px 24px; }
     }
+    .tool-frame { background: #fff; min-height: 100vh; }
+    .tool-inner { background: #fff; min-height: 100vh; }
+    .mobile-step-bar { display: none; }
+    @media (max-width: 768px) {
+        .wizard-sidebar { display: none; }
+        .wizard-main { padding: 0 24px; }
+        .mobile-step-bar { display: flex; align-items: center; gap: 8px; padding: 16px 24px; background: #1a1a1a; }
+        .mobile-step-dot { width: 8px; height: 8px; border-radius: 50%; background: #333; transition: background 0.2s; }
+        .mobile-step-dot.active { background: #FFF469; }
+        .mobile-step-dot.done   { background: #4ade80; }
+        .mobile-step-text { font-family: 'Monument', monospace; font-size: 11px; color: #fff; letter-spacing: 0.06em; }
+        .wizard-footer { padding: 16px 24px; }
+    }
   </style>
 </head>
 <body>
@@ -509,6 +522,7 @@
 
     const CONFIG = {
         TOOL_SLUG: 'org-redesign',
+        TOTAL_STEPS: 6,
         TOOL_TITLE: 'ORGANIZATIONAL REDESIGN & PDPs',
         TOOL_SUBTITLE: 'Redesign your organisation and build personal development plans for every role.',
         COVER_IMAGE: 'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=1600&q=80',
@@ -577,6 +591,21 @@
         }
 
     // Main App Component
+
+    function MobileStepBar({ currentStep, totalSteps }) {
+        return (
+            <div className="mobile-step-bar">
+                <span className="mobile-step-text">STEP {Math.ceil(currentStep)} OF {totalSteps}</span>
+                {Array.from({ length: totalSteps }, (_, i) => {
+                    const n = i + 1;
+                    const isDone   = currentStep > n;
+                    const isActive = Math.floor(currentStep) === n;
+                    return <div key={n} className={`mobile-step-dot ${isActive ? 'active' : isDone ? 'done' : ''}`} />;
+                })}
+            </div>
+        );
+    }
+
     function OrganizationalRedesignApp() {
             const [deps, setDeps] = useState([]);
       const [authState, setAuthState] = useState({ loading: true, authenticated: false, error: null });
@@ -2373,6 +2402,8 @@
               <div style={{ border: '4px solid #000', padding: 24 }}>
                 {(data.currentTeam || []).map((member) => {
                   const fitInterpretation = getFitInterpretation(member.totalFit || 0);
+                  const isWizardStep = Number.isInteger(step) && step >= 1 && step <= totalSteps;
+                  const isTransition = !Number.isInteger(step) && step > 0.5;
                   return (
                     <div key={member.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: '2px solid #e5e7eb' }}>
                       <div style={{ flex: 1 }}>

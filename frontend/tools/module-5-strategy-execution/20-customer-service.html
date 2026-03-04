@@ -321,6 +321,24 @@
     .space-y-5 > * + * { margin-top: 20px; }
     .space-y-12 > * + * { margin-top: 48px; }
     .transition-all { transition: all 0.2s ease; }
+    .tool-frame { background: #fff; min-height: 100vh; }
+    .tool-inner { background: #fff; min-height: 100vh; }
+    .step-content { max-width: 100%; padding: 40px 0; flex: 1; }
+    .step-indicator { font-family: 'Monument', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #666; margin-bottom: 8px; }
+    .opening-box { margin-bottom: 32px; }
+    .opening-box .step-heading { font-family: 'Plaak', sans-serif; font-weight: bold; font-size: 32px; letter-spacing: -0.01em; line-height: 1.2; color: #000; margin-bottom: 6px; }
+    .opening-box .step-hint { font-size: 14px; color: #666; line-height: 1.5; margin: 0; }
+    .mobile-step-bar { display: none; }
+    @media (max-width: 768px) {
+        .wizard-sidebar { display: none; }
+        .wizard-main { padding: 0 24px; }
+        .mobile-step-bar { display: flex; align-items: center; gap: 8px; padding: 16px 24px; background: #1a1a1a; }
+        .mobile-step-dot { width: 8px; height: 8px; border-radius: 50%; background: #333; transition: background 0.2s; }
+        .mobile-step-dot.active { background: #FFF469; }
+        .mobile-step-dot.done   { background: #4ade80; }
+        .mobile-step-text { font-family: 'Monument', monospace; font-size: 11px; color: #fff; letter-spacing: 0.06em; }
+        .wizard-footer { padding: 16px 24px; }
+    }
   </style>
 </head>
 <body>
@@ -332,6 +350,7 @@
     // Configuration
     const CONFIG = {
       TOOL_SLUG: 'customer-service',
+      TOTAL_STEPS: 6,
       AUTOSAVE_DELAY: 2000,
       TRANSITION_CONTENT: {
         1: {
@@ -416,6 +435,21 @@
     // ─────────────────────────────────────────────
     // Main App Component
     // ─────────────────────────────────────────────
+
+    function MobileStepBar({ currentStep, totalSteps }) {
+        return (
+            <div className="mobile-step-bar">
+                <span className="mobile-step-text">STEP {Math.ceil(currentStep)} OF {totalSteps}</span>
+                {Array.from({ length: totalSteps }, (_, i) => {
+                    const n = i + 1;
+                    const isDone   = currentStep > n;
+                    const isActive = Math.floor(currentStep) === n;
+                    return <div key={n} className={`mobile-step-dot ${isActive ? 'active' : isDone ? 'done' : ''}`} />;
+                })}
+            </div>
+        );
+    }
+
     function ServiceApp() {
             const [deps, setDeps] = useState([]);
       const [authState, setAuthState] = useState({ loading: true, authenticated: false, error: null });
@@ -800,6 +834,7 @@
           };
 
           await ToolDB.save(userId, questionMappings);
+          await ToolDB.markComplete(userId);
           setSubmitStatus('success');
           setSubmitMessage('Submission saved successfully!');
         } catch (error) {
@@ -1647,6 +1682,8 @@
     // Canvas Page Component
     // ─────────────────────────────────────────────
     function CanvasPage({ data, onExport, onSubmit }) {
+      const isWizardStep = Number.isInteger(step) && step >= 1 && step <= totalSteps;
+      const isTransition = !Number.isInteger(step) && step > 0.5;
       return (
         <div className="bg-black text-white min-h-screen p-16">
           <div className="max-w-7xl mx-auto">

@@ -328,6 +328,10 @@
             border-left: 3px solid #FFF469 !important;
             background-color: #fffde6 !important;
         }
+    .step-content { max-width: 100%; padding: 40px 0; flex: 1; }
+    .opening-box { margin-bottom: 32px; }
+    .opening-box .step-heading { font-family: 'Plaak', sans-serif; font-weight: bold; font-size: 32px; letter-spacing: -0.01em; line-height: 1.2; color: #000; margin-bottom: 6px; }
+    .opening-box .step-hint { font-size: 14px; color: #666; line-height: 1.5; margin: 0; }
     </style>
 </head>
 <body>
@@ -338,6 +342,7 @@
 
         const CONFIG = {
             TOOL_SLUG: 'values',
+            TOTAL_STEPS: 7,
             AUTOSAVE_DELAY: 2000,
             STORAGE_KEY: 'fasttrack_company_values',
             TOOL_NAME: 'company_values_tool'
@@ -670,7 +675,7 @@
 
             // Validation functions — return true if valid, set error message if not
             const validateStep1 = () => {
-                const filledBehaviors = formData.behaviors.filter(b => b.trim().length >= 50);
+                const filledBehaviors = formData.behaviors.filter(b => b.trim().length >= 20);
                 const filledValues = formData.top5Values.filter(v => v.trim().length >= 2);
                 if (filledBehaviors.length < 3) {
                     setValidationError(`Please describe at least 3 behaviors in detail (50+ characters each). You have ${filledBehaviors.length} so far.`);
@@ -685,15 +690,15 @@
             };
 
             const validateStep2 = () => {
-                if (formData.dream.trim().length < 50) {
+                if (formData.dream.trim().length < 20) {
                     setValidationError('Please describe your company dream in more detail (50+ characters).');
                     return false;
                 }
-                if (formData.requiredValues.trim().length < 50) {
+                if (formData.requiredValues.trim().length < 20) {
                     setValidationError('Please describe the required values for your dream in more detail (50+ characters).');
                     return false;
                 }
-                if (formData.gap.trim().length < 50) {
+                if (formData.gap.trim().length < 20) {
                     setValidationError('Please describe the values gap in more detail (50+ characters).');
                     return false;
                 }
@@ -704,8 +709,8 @@
             const validateStep3 = () => {
                 const validValues = formData.valuesBehaviors.filter(v =>
                     v.value.trim().length >= 2 &&
-                    v.cool.trim().length >= 50 &&
-                    v.notCool.trim().length >= 50
+                    v.cool.trim().length >= 20 &&
+                    v.notCool.trim().length >= 20
                 );
                 if (validValues.length < 3) {
                     setValidationError(`Please define Cool and Not Cool behaviors for at least 3 values (50+ characters each). You have ${validValues.length} complete.`);
@@ -731,7 +736,7 @@
             };
 
             const validateStep5 = () => {
-                const validQuestions = formData.recruitmentQuestions.filter(q => q.trim().length >= 50);
+                const validQuestions = formData.recruitmentQuestions.filter(q => q.trim().length >= 20);
                 if (validQuestions.length < 3) {
                     setValidationError(`Please write at least 3 recruitment questions (50+ characters each). You have ${validQuestions.length} so far.`);
                     return false;
@@ -802,6 +807,7 @@
                     };
 
                     await ToolDB.save(userId, questionMappings);
+                    await ToolDB.markComplete(userId);
                     setSubmitStatus('success');
                     setSubmitMessage('Submitted successfully! Your values system has been saved.');
 
@@ -1502,6 +1508,8 @@
 
         // RESULTS PAGE
         function ResultsPage({ formData, userEmail, handleSubmit, onBack, submitStatus, submitMessage }) {
+            const isWizardStep = Number.isInteger(step) && step >= 1 && step <= totalSteps;
+            const isTransition = !Number.isInteger(step) && step > 0.5;
             return (
                 <div className="min-h-screen bg-white p-12">
                     <div className="max-w-6xl mx-auto">

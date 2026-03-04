@@ -399,6 +399,20 @@
     .step-content { max-width: 100%; padding: 40px 0; flex: 1; }
     @media (max-width: 768px) { .wizard-sidebar { display: none; } .wizard-main { padding: 0 24px; } }
 
+    .tool-frame { background: #fff; min-height: 100vh; }
+    .tool-inner { background: #fff; min-height: 100vh; }
+    .step-indicator { font-family: 'Monument', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #666; margin-bottom: 8px; }
+    .mobile-step-bar { display: none; }
+    @media (max-width: 768px) {
+        .wizard-sidebar { display: none; }
+        .wizard-main { padding: 0 24px; }
+        .mobile-step-bar { display: flex; align-items: center; gap: 8px; padding: 16px 24px; background: #1a1a1a; }
+        .mobile-step-dot { width: 8px; height: 8px; border-radius: 50%; background: #333; transition: background 0.2s; }
+        .mobile-step-dot.active { background: #FFF469; }
+        .mobile-step-dot.done   { background: #4ade80; }
+        .mobile-step-text { font-family: 'Monument', monospace; font-size: 11px; color: #fff; letter-spacing: 0.06em; }
+        .wizard-footer { padding: 16px 24px; }
+    }
   </style>
 </head>
 <body>
@@ -409,6 +423,7 @@
 
     const CONFIG = {
         TOOL_SLUG: 'digitalization',
+        TOTAL_STEPS: 5,
         TOOL_TITLE: 'APPLY AGGRESSIVELY TECH & AI',
         TOOL_SUBTITLE: 'Map your AI decisions, automate processes, and select the right tools.',
         COVER_IMAGE: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1600&q=80',
@@ -505,6 +520,21 @@
     }
 
     // Main App Component
+
+    function MobileStepBar({ currentStep, totalSteps }) {
+        return (
+            <div className="mobile-step-bar">
+                <span className="mobile-step-text">STEP {Math.ceil(currentStep)} OF {totalSteps}</span>
+                {Array.from({ length: totalSteps }, (_, i) => {
+                    const n = i + 1;
+                    const isDone   = currentStep > n;
+                    const isActive = Math.floor(currentStep) === n;
+                    return <div key={n} className={`mobile-step-dot ${isActive ? 'active' : isDone ? 'done' : ''}`} />;
+                })}
+            </div>
+        );
+    }
+
     function AIDigitalizationApp() {
             const [deps, setDeps] = useState([]);
       const [authState, setAuthState] = useState({ loading: true, authenticated: false, error: null });
@@ -990,12 +1020,12 @@
       const canProceedIndividualStep1 = () => {
         return (data.individual.decisions || []).length === 3 &&
                (data.individual.decisions || []).every(d =>
-                 (d.decisionName || '').length >= 50 &&
+                 (d.decisionName || '').length >= 20 &&
                  (d.frequency || '').length > 0 &&
                  (d.impact || '').length > 0 &&
-                 (d.dataNeeded || '').length >= 100 &&
-                 (d.currentDataSource || '').length >= 50 &&
-                 (d.aiOpportunity || '').length >= 100 &&
+                 (d.dataNeeded || '').length >= 30 &&
+                 (d.currentDataSource || '').length >= 20 &&
+                 (d.aiOpportunity || '').length >= 30 &&
                  (d.aiTool || '').length >= 10
                );
       };
@@ -1003,12 +1033,12 @@
       const canProceedIndividualStep2 = () => {
         return (data.individual.processes || []).length === 3 &&
                (data.individual.processes || []).every(p =>
-                 (p.processName || '').length >= 50 &&
+                 (p.processName || '').length >= 20 &&
                  (p.timeConsumed || '').length > 0 &&
                  (p.repetition || '').length > 0 &&
-                 (p.currentSteps || '').length >= 200 &&
-                 (p.automationOpportunity || '').length >= 150 &&
-                 (p.kpis || '').length >= 100 &&
+                 (p.currentSteps || '').length >= 20 &&
+                 (p.automationOpportunity || '').length >= 20 &&
+                 (p.kpis || '').length >= 30 &&
                  (p.aiTool || '').length >= 10
                );
       };
@@ -1021,9 +1051,9 @@
                  (t.cost || '').length >= 5 &&
                  (t.timeline || '').length >= 10
                ) &&
-               (data.individual.implementation?.successMetrics || '').length >= 200 &&
-               (data.individual.implementation?.obstacles || '').length >= 150 &&
-               (data.individual.implementation?.supportNeeded || '').length >= 100 &&
+               (data.individual.implementation?.successMetrics || '').length >= 20 &&
+               (data.individual.implementation?.obstacles || '').length >= 20 &&
+               (data.individual.implementation?.supportNeeded || '').length >= 30 &&
                (data.individual.implementation?.startDate || '').length > 0;
       };
 
@@ -1032,38 +1062,38 @@
                (data.team.individualAnalyses || []).every(m =>
                  (m.memberName || '').length >= 5 &&
                  (m.role || '').length >= 5 &&
-                 (m.top3Decisions || '').length >= 100 &&
-                 (m.top3Processes || '').length >= 100 &&
-                 (m.aiOpportunities || '').length >= 100
+                 (m.top3Decisions || '').length >= 30 &&
+                 (m.top3Processes || '').length >= 30 &&
+                 (m.aiOpportunities || '').length >= 30
                );
       };
 
       const canProceedTeamStep2 = () => {
-        return (data.team.patterns?.commonDecisions || '').length >= 100 &&
-               (data.team.patterns?.commonProcesses || '').length >= 100 &&
-               (data.team.patterns?.sharedAITools || '').length >= 100 &&
-               (data.team.patterns?.collaborationOpportunities || '').length >= 100;
+        return (data.team.patterns?.commonDecisions || '').length >= 30 &&
+               (data.team.patterns?.commonProcesses || '').length >= 30 &&
+               (data.team.patterns?.sharedAITools || '').length >= 30 &&
+               (data.team.patterns?.collaborationOpportunities || '').length >= 30;
       };
 
       const canProceedTeamStep3 = () => {
-        return (data.team.strategy?.companyGoals || '').length >= 150 &&
-               (data.team.strategy?.priorityAreas || '').length >= 150 &&
-               (data.team.strategy?.crossFunctionalOpportunities || '').length >= 150 &&
-               (data.team.strategy?.unifiedApproach || '').length >= 150;
+        return (data.team.strategy?.companyGoals || '').length >= 20 &&
+               (data.team.strategy?.priorityAreas || '').length >= 20 &&
+               (data.team.strategy?.crossFunctionalOpportunities || '').length >= 20 &&
+               (data.team.strategy?.unifiedApproach || '').length >= 20;
       };
 
       const canProceedTeamStep4 = () => {
-        return (data.team.implementationPlan?.week1Actions || '').length >= 200 &&
-               (data.team.implementationPlan?.week2Actions || '').length >= 200 &&
-               (data.team.implementationPlan?.week3Actions || '').length >= 200 &&
+        return (data.team.implementationPlan?.week1Actions || '').length >= 20 &&
+               (data.team.implementationPlan?.week2Actions || '').length >= 20 &&
+               (data.team.implementationPlan?.week3Actions || '').length >= 20 &&
                (data.team.implementationPlan?.owners || []).length >= 5 &&
                (data.team.implementationPlan?.owners || []).every(o =>
                  (o.action || '').length >= 10 &&
                  (o.owner || '').length >= 3 &&
                  (o.deadline || '').length > 0
                ) &&
-               (data.team.implementationPlan?.reviewSchedule || '').length >= 50 &&
-               (data.team.implementationPlan?.successMetrics || '').length >= 150;
+               (data.team.implementationPlan?.reviewSchedule || '').length >= 20 &&
+               (data.team.implementationPlan?.successMetrics || '').length >= 20;
       };
 
       const handleSubmit = async () => {
@@ -2424,6 +2454,8 @@
 
     // Team Canvas
     function TeamCanvas({ data, onExport, onSubmit }) {
+      const isWizardStep = Number.isInteger(step) && step >= 1 && step <= totalSteps;
+      const isTransition = !Number.isInteger(step) && step > 0.5;
       return (
         <div className="min-h-screen bg-neutral-900 p-8">
           <div className="max-w-7xl mx-auto">
