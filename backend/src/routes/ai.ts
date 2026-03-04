@@ -103,12 +103,12 @@ const AIChallengeActionSchema = z.object({
   action: z.enum(['revised', 'submitted_anyway']),
 });
 
-// Rate limit by user_id in body (no JWT) — 20/hour
+// Rate limit by user_id in body (no JWT) — 120/hour
 const challengeRateLimiter = createRateLimiter({
-  maxRequests: 20,
+  maxRequests: 120,
   windowMs: 60 * 60 * 1000,
   keyGenerator: (req: Request) => `challenge:${req.body?.user_id || req.ip}`,
-  message: 'Challenge limit reached. Maximum 20 AI reviews per hour.',
+  message: 'Challenge limit reached. Maximum 120 AI reviews per hour.',
 });
 
 // =============================================================================

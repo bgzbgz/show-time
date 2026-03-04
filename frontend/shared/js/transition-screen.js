@@ -165,7 +165,7 @@
                 R.createElement(TransitionButton, {
                     label: buttonLabel,
                     onClick: function () {
-                        setStepFn(isLastStep ? 999 : nextStep);
+                        setStepFn(isLastStep ? totalSteps + 1 : nextStep);
                     }
                 })
             )
