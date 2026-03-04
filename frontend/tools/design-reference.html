@@ -230,40 +230,115 @@
         );
     }
 
-    // ── TransitionScreen — clean, single-flow layout ────────────────────────
+    // ── TransitionScreen — bold motivational layout with progress ring ──────
     function TransitionScreen({ stepNum, totalSteps, onNext }) {
         const t = CONFIG.TRANSITION_CONTENT[stepNum];
         const c = CONFIG.CLOSING_MESSAGES[stepNum];
         if (!t) { onNext(); return null; }
         const pct = Math.round((stepNum / totalSteps) * 100);
+        const stepsLeft = totalSteps - stepNum;
+        const nextStepNum = stepNum + 1;
+        const circumference = 2 * Math.PI * 54;
+        const dashOffset = circumference - (pct / 100) * circumference;
+
+        // Split brutal truth into first word + rest for yellow accent
+        const words = (t.brutalTruth || '').replace(/^"/, '').replace(/"$/, '').split(' ');
+        const accentWord = words.length > 2 ? words.slice(-1)[0].replace(/[.,!?"]/g, '') : '';
+
         return (
             <div style={{ position: 'fixed', inset: 0, background: '#000', color: '#fff',
-                          zIndex: 200, overflowY: 'auto', display: 'flex', alignItems: 'center',
-                          justifyContent: 'center', padding: '64px 32px' }}>
-                <div style={{ maxWidth: 720, width: '100%' }} className="animate-in">
-                    {/* Progress bar */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 48 }}>
-                        <div style={{ flex: 1, height: 4, background: '#333', borderRadius: 2 }}>
-                            <div style={{ height: 4, background: '#FFF469', borderRadius: 2, width: `${pct}%`, transition: 'width 0.5s ease' }} />
+                          zIndex: 200, overflowY: 'auto' }}>
+
+                {/* Vertical sidebar text */}
+                <div style={{ position: 'fixed', left: 0, top: 0, bottom: 0, width: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 201 }}>
+                    <span style={{ fontFamily: "'Monument', monospace", fontSize: 9, letterSpacing: '0.15em', color: '#555', textTransform: 'uppercase', writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
+                        [ FAST TRACK TOOL ]
+                    </span>
+                </div>
+
+                {/* Top bar — finalized label */}
+                <div style={{ padding: '32px 64px 0 80px' }}>
+                    <p style={{ fontFamily: "'Monument', monospace", fontSize: 11, letterSpacing: '0.12em', color: '#ddd', textTransform: 'uppercase' }}>
+                        [ FINALIZED STEP {String(stepNum).padStart(2, '0')} — {SIDEBAR_STEPS[stepNum - 1]?.label?.toUpperCase() || ''} ]
+                    </p>
+                </div>
+
+                {/* Main content area */}
+                <div style={{ display: 'flex', alignItems: 'center', minHeight: 'calc(100vh - 160px)', padding: '0 80px', gap: 48 }}>
+
+                    {/* Left — motivational heading + content */}
+                    <div style={{ flex: 1 }} className="animate-in">
+                        {/* Score badges */}
+                        <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
+                            <span style={{ background: '#FFF469', color: '#000', fontFamily: "'Monument', monospace", fontSize: 13, fontWeight: 'bold', padding: '6px 14px', borderRadius: 20, letterSpacing: '0.06em' }}>
+                                {stepNum}/{totalSteps}
+                            </span>
+                            <span style={{ background: '#fff', color: '#000', fontFamily: "'Monument', monospace", fontSize: 13, fontWeight: 'bold', padding: '6px 14px', borderRadius: 20, letterSpacing: '0.06em' }}>
+                                {pct}%
+                            </span>
                         </div>
-                        <span style={{ fontFamily: "'Monument', monospace", fontSize: 13, color: '#FFF469', fontWeight: 'bold', letterSpacing: '0.08em' }}>{pct}%</span>
+
+                        {/* Big heading */}
+                        <h1 className="plaak" style={{ fontSize: 72, lineHeight: 0.95, marginBottom: 24 }}>
+                            KEEP <span style={{ color: '#FFF469' }}>PUSHING</span>
+                        </h1>
+
+                        {/* Arrow + subtitle */}
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 40 }}>
+                            <span style={{ color: '#FFF469', fontSize: 24, marginTop: 2 }}>&rarr;</span>
+                            <p style={{ fontSize: 22, lineHeight: 1.5, maxWidth: 520 }}>
+                                {stepsLeft > 0
+                                    ? `Just ${stepsLeft} step${stepsLeft > 1 ? 's' : ''} left. You're building something real.`
+                                    : 'Final step complete. Time to see the full picture.'
+                                }
+                            </p>
+                        </div>
+
+                        {/* Brutal truth */}
+                        <div style={{ borderLeft: '4px solid #DC2626', paddingLeft: 20, marginBottom: 28 }}>
+                            <p style={{ fontFamily: "'Monument', monospace", fontSize: 9, color: '#DC2626', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 8 }}>BRUTAL TRUTH</p>
+                            <p style={{ fontSize: 16, lineHeight: 1.7, color: '#fff' }}>{t.brutalTruth}</p>
+                        </div>
+
+                        {/* Peer proof */}
+                        <div style={{ borderLeft: '4px solid #FFF469', paddingLeft: 20, marginBottom: 28 }}>
+                            <p style={{ fontFamily: "'Monument', monospace", fontSize: 9, color: '#FFF469', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 8 }}>PEER PROOF</p>
+                            <p style={{ fontSize: 15, lineHeight: 1.7, color: '#ddd', fontStyle: 'italic' }}>{t.peerProof}</p>
+                        </div>
+
+                        {/* Insight */}
+                        {t.insight && (
+                            <p style={{ fontSize: 14, lineHeight: 1.7, color: '#ddd', marginBottom: 28, maxWidth: 560 }}>{t.insight}</p>
+                        )}
                     </div>
 
-                    {c && <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#4ade80', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 32 }}>&#10003; {c.title}</div>}
+                    {/* Right — progress ring */}
+                    <div className="animate-in" style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24, animationDelay: '0.15s' }}>
+                        <div style={{ position: 'relative', width: 160, height: 160 }}>
+                            <svg width="160" height="160" viewBox="0 0 120 120" style={{ transform: 'rotate(-90deg)' }}>
+                                <circle cx="60" cy="60" r="54" fill="none" stroke="#222" strokeWidth="4" />
+                                <circle cx="60" cy="60" r="54" fill="none" stroke="#FFF469" strokeWidth="4"
+                                    strokeDasharray={circumference} strokeDashoffset={dashOffset}
+                                    strokeLinecap="round" style={{ transition: 'stroke-dashoffset 0.8s ease' }} />
+                            </svg>
+                            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <span className="plaak" style={{ fontSize: 44, color: '#fff' }}>{pct}</span>
+                            </div>
+                        </div>
+                        <p style={{ fontFamily: "'Monument', monospace", fontSize: 10, letterSpacing: '0.12em', color: '#ddd', textTransform: 'uppercase' }}>[ KEEP GOING ]</p>
 
-                    {/* Single content block — brutal truth quote, then peer proof inline */}
-                    <p className="plaak" style={{ fontSize: 28, lineHeight: 1.4, marginBottom: 32, color: '#fff' }}>{t.brutalTruth}</p>
+                        {/* Yellow up arrow */}
+                        <span style={{ fontSize: 48, color: '#FFF469', lineHeight: 1 }}>&uarr;</span>
+                    </div>
+                </div>
 
-                    <p style={{ fontSize: 16, color: '#ddd', lineHeight: 1.8, marginBottom: 48, fontStyle: 'italic' }}>{t.peerProof}</p>
-
-                    {/* Insight as a subtle line */}
-                    {t.insight && (
-                        <p style={{ fontSize: 14, color: '#fff', lineHeight: 1.7, borderTop: '1px solid #333', paddingTop: 24, marginBottom: 48 }}>{t.insight}</p>
-                    )}
-
-                    <button onClick={onNext} className="plaak"
-                        style={{ background: '#FFF469', color: '#000', border: 'none', padding: '18px 48px', fontSize: 18, cursor: 'pointer', letterSpacing: '0.05em', transition: 'all 0.2s' }}>
-                        CONTINUE &rarr;
+                {/* Bottom — next step pill button */}
+                <div style={{ padding: '0 80px 40px', display: 'flex', justifyContent: 'flex-end' }}>
+                    <button onClick={onNext}
+                        style={{ background: '#FFF469', color: '#000', border: 'none', padding: '14px 32px', borderRadius: 28, fontFamily: "'Monument', monospace", fontSize: 13, fontWeight: 'bold', letterSpacing: '0.08em', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, transition: 'all 0.2s' }}
+                        onMouseOver={e => { e.currentTarget.style.background = '#fff'; }}
+                        onMouseOut={e => { e.currentTarget.style.background = '#FFF469'; }}>
+                        {stepNum < totalSteps ? `STEP ${String(nextStepNum).padStart(2, '0')}` : 'CANVAS'} &rarr;
                     </button>
                 </div>
             </div>
