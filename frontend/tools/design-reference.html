@@ -353,6 +353,45 @@
         );
     }
 
+    // ── NumField + Lever — defined outside Step2 to prevent focus loss on re-render
+    function NumField({ label, hint, field, prefix, suffix, max, value, onChange }) {
+        return (
+            <div className="field-group">
+                <label className="field-label">{label}</label>
+                {hint && <p className="field-sub">{hint}</p>}
+                <div style={{ position: 'relative' }}>
+                    {prefix && <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#999', fontSize: 15, pointerEvents: 'none' }}>{prefix}</span>}
+                    <input type="number" className="field-input"
+                        style={{ paddingLeft: prefix ? 32 : 16, paddingRight: suffix ? 36 : 16 }}
+                        value={value}
+                        onChange={e => onChange(field, e.target.value)}
+                        placeholder="0"
+                        min="0"
+                        max={max}
+                    />
+                    {suffix && <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', color: '#999', fontSize: 15, pointerEvents: 'none' }}>{suffix}</span>}
+                </div>
+            </div>
+        );
+    }
+
+    function Lever({ label, field, unit, min, max, step, value, onChange }) {
+        return (
+            <div style={{ marginBottom: 20 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <span style={{ fontSize: 14, fontWeight: 600 }}>{label}</span>
+                    <span style={{ fontFamily: "'Monument', monospace", fontSize: 13, color: '#000', fontWeight: 'bold' }}>
+                        {value > 0 ? '+' : ''}{value}{unit}
+                    </span>
+                </div>
+                <input type="range" min={min} max={max} step={step} value={value}
+                    onChange={e => onChange(field, parseFloat(e.target.value))}
+                    style={{ width: '100%', accentColor: '#000', height: 4, cursor: 'pointer' }}
+                />
+            </div>
+        );
+    }
+
     // ── STEP 2: Market Calculator — number inputs + real-time calculations ──
     function Step2({ data, updateData }) {
         const customers = parseFloat(data.totalCustomers) || 0;
@@ -372,40 +411,6 @@
         const newRevenue = marketSize + priceImpact + volumeImpact;
         const newProfit = profitPool + priceImpact + volumeImpact + costSavings;
 
-        const NumField = ({ label, hint, field, prefix, suffix, max }) => (
-            <div className="field-group">
-                <label className="field-label">{label}</label>
-                {hint && <p className="field-sub">{hint}</p>}
-                <div style={{ position: 'relative' }}>
-                    {prefix && <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#999', fontSize: 15, pointerEvents: 'none' }}>{prefix}</span>}
-                    <input type="number" className="field-input"
-                        style={{ paddingLeft: prefix ? 32 : 16, paddingRight: suffix ? 36 : 16 }}
-                        value={data[field]}
-                        onChange={e => updateData(field, e.target.value)}
-                        placeholder="0"
-                        min="0"
-                        max={max}
-                    />
-                    {suffix && <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', color: '#999', fontSize: 15, pointerEvents: 'none' }}>{suffix}</span>}
-                </div>
-            </div>
-        );
-
-        const Lever = ({ label, field, unit, min, max, step }) => (
-            <div style={{ marginBottom: 20 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                    <span style={{ fontSize: 14, fontWeight: 600 }}>{label}</span>
-                    <span style={{ fontFamily: "'Monument', monospace", fontSize: 13, color: '#000', fontWeight: 'bold' }}>
-                        {data[field] > 0 ? '+' : ''}{data[field]}{unit}
-                    </span>
-                </div>
-                <input type="range" min={min} max={max} step={step} value={data[field]}
-                    onChange={e => updateData(field, parseFloat(e.target.value))}
-                    style={{ width: '100%', accentColor: '#000', height: 4, cursor: 'pointer' }}
-                />
-            </div>
-        );
-
         return (
             <div className="step-content animate-in">
                 <p className="step-indicator">STEP 2 OF {CONFIG.TOTAL_STEPS}</p>
@@ -416,12 +421,12 @@
 
                 {/* Input fields — 2x2 grid */}
                 <div className="field-split">
-                    <NumField label="Total Customers" hint="Total addressable customers in your market" field="totalCustomers" />
-                    <NumField label="Avg Revenue per Customer" hint="Annual revenue per customer" field="avgRevenue" prefix="€" />
+                    <NumField label="Total Customers" hint="Total addressable customers in your market" field="totalCustomers" value={data.totalCustomers} onChange={updateData} />
+                    <NumField label="Avg Revenue per Customer" hint="Annual revenue per customer" field="avgRevenue" prefix="€" value={data.avgRevenue} onChange={updateData} />
                 </div>
                 <div className="field-split">
-                    <NumField label="Purchases per Year" hint="Average transactions per customer annually" field="purchasesPerYear" />
-                    <NumField label="Gross Margin" hint="Your gross profit margin" field="grossMargin" suffix="%" max="100" />
+                    <NumField label="Purchases per Year" hint="Average transactions per customer annually" field="purchasesPerYear" value={data.purchasesPerYear} onChange={updateData} />
+                    <NumField label="Gross Margin" hint="Your gross profit margin" field="grossMargin" suffix="%" max="100" value={data.grossMargin} onChange={updateData} />
                 </div>
 
                 {/* Live calculation result — appears when all 4 inputs provided */}
@@ -450,9 +455,9 @@
                 {hasCalc && (
                     <div className="animate-in" style={{ marginBottom: 28 }}>
                         <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 20, fontWeight: 'bold' }}>GROWTH SCENARIO — WHAT IF...</div>
-                        <Lever label="Price Increase" field="priceIncrease" unit="%" min={0} max={20} step={0.5} />
-                        <Lever label="Volume Growth" field="volumeGrowth" unit="%" min={0} max={50} step={1} />
-                        <Lever label="Cost Reduction" field="costReduction" unit="%" min={0} max={30} step={0.5} />
+                        <Lever label="Price Increase" field="priceIncrease" unit="%" min={0} max={20} step={0.5} value={data.priceIncrease} onChange={updateData} />
+                        <Lever label="Volume Growth" field="volumeGrowth" unit="%" min={0} max={50} step={1} value={data.volumeGrowth} onChange={updateData} />
+                        <Lever label="Cost Reduction" field="costReduction" unit="%" min={0} max={30} step={0.5} value={data.costReduction} onChange={updateData} />
                     </div>
                 )}
 
