@@ -111,7 +111,7 @@
         TOOL_TITLE: 'DESIGN REFERENCE',
         TOOL_SUBTITLE: 'A complete showcase of every UI pattern used across Fast Track tools.',
         TOOL_NUM: 'REF',
-        TOTAL_STEPS: 3,
+        TOTAL_STEPS: 4,
         COVER_IMAGE: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80',
         TRANSITION_CONTENT: {
             1: {
@@ -120,11 +120,16 @@
                 insight: 'Companies with a clearly articulated vision are 2.4x more likely to achieve their strategic objectives. The specificity of your language determines the alignment of your team\'s execution.'
             },
             2: {
+                brutalTruth: '"If you cannot quantify your market, you are guessing. And guessing is not a strategy — it is a hobby."',
+                peerProof: '"We assumed our market was €50M. When we actually calculated it, it was €12M. That single number changed our entire go-to-market approach." — CEO, B2B SaaS, 28 employees',
+                insight: 'Companies that quantify their total addressable market before setting growth targets are 3.1x more likely to hit their revenue goals. The numbers do not lie.'
+            },
+            3: {
                 brutalTruth: '"Prioritisation is not choosing what to do — it is choosing what to stop doing. If everything is important, nothing is."',
                 peerProof: '"We had 23 initiatives running in parallel. After this exercise we cut to 5. Revenue grew 34% in the next quarter — not because we added anything, but because we finally focused." — COO, e-commerce, 85 employees',
                 insight: 'Research shows teams with more than 5 priorities effectively have zero priorities. The scoring matrix forces objectivity over politics.'
             },
-            3: {
+            4: {
                 brutalTruth: '"A checklist without honesty is theatre. If you say yes to something your team has not genuinely completed, you are lying to yourself — and your guru will see through it."',
                 peerProof: '"The checklist was humbling. We answered NO to two items and it forced a conversation we had been avoiding for months. Best decision we made." — Founder, logistics startup',
                 insight: 'Teams that complete honest self-assessments improve execution speed by 40% in the following quarter. The gaps you identify today become your roadmap.'
@@ -132,22 +137,40 @@
         },
         CLOSING_MESSAGES: {
             1: { title: 'STEP 1 COMPLETE', text: 'Your strategic foundation is set. Everything that follows will be anchored to this.' },
-            2: { title: 'STEP 2 COMPLETE', text: 'Your priorities are ranked. The data speaks — now trust it.' },
-            3: { title: 'STEP 3 COMPLETE', text: 'Honest self-assessment is the hardest part. Well done.' },
+            2: { title: 'STEP 2 COMPLETE', text: 'Your market is quantified. No more guessing — you have the numbers.' },
+            3: { title: 'STEP 3 COMPLETE', text: 'Your priorities are ranked. The data speaks — now trust it.' },
+            4: { title: 'STEP 4 COMPLETE', text: 'Honest self-assessment is the hardest part. Well done.' },
         },
     };
 
     const SIDEBAR_STEPS = [
         { num: 1, label: 'Strategic Foundation' },
-        { num: 2, label: 'Priority Matrix' },
-        { num: 3, label: 'Sprint Checklist' },
+        { num: 2, label: 'Market Calculator' },
+        { num: 3, label: 'Priority Matrix' },
+        { num: 4, label: 'Sprint Checklist' },
     ];
+
+    const fmt = (v) => {
+        if (!v && v !== 0) return '—';
+        return '€ ' + Math.round(v).toLocaleString('en-US');
+    };
+    const fmtPct = (v) => {
+        if (v === null || v === undefined) return '—';
+        return v.toFixed(1) + '%';
+    };
 
     function makeDefaultData() {
         return {
             visionStatement: '',
             currentChallenges: '',
             targetOutcome: '',
+            totalCustomers: '',
+            avgRevenue: '',
+            purchasesPerYear: '',
+            grossMargin: '',
+            priceIncrease: 0,
+            volumeGrowth: 0,
+            costReduction: 0,
             priorities: [
                 { name: '', impact: 0, ease: 0 },
                 { name: '', impact: 0, ease: 0 },
@@ -330,8 +353,154 @@
         );
     }
 
-    // ── STEP 2: Priority Matrix ─────────────────────────────────────────────
+    // ── STEP 2: Market Calculator — number inputs + real-time calculations ──
     function Step2({ data, updateData }) {
+        const customers = parseFloat(data.totalCustomers) || 0;
+        const avgRev = parseFloat(data.avgRevenue) || 0;
+        const purchases = parseFloat(data.purchasesPerYear) || 0;
+        const margin = parseFloat(data.grossMargin) || 0;
+
+        const marketSize = customers * avgRev * purchases;
+        const profitPool = marketSize * (margin / 100);
+        const hasCalc = customers > 0 && avgRev > 0 && purchases > 0 && margin > 0;
+
+        // Levers
+        const priceImpact = marketSize * (data.priceIncrease / 100);
+        const volumeImpact = marketSize * (data.volumeGrowth / 100);
+        const costSavings = (marketSize - profitPool) * (data.costReduction / 100);
+        const totalImpact = priceImpact + volumeImpact + costSavings;
+        const newRevenue = marketSize + priceImpact + volumeImpact;
+        const newProfit = profitPool + priceImpact + volumeImpact + costSavings;
+
+        const NumField = ({ label, hint, field, prefix, suffix, max }) => (
+            <div className="field-group">
+                <label className="field-label">{label}</label>
+                {hint && <p className="field-sub">{hint}</p>}
+                <div style={{ position: 'relative' }}>
+                    {prefix && <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#999', fontSize: 15, pointerEvents: 'none' }}>{prefix}</span>}
+                    <input type="number" className="field-input"
+                        style={{ paddingLeft: prefix ? 32 : 16, paddingRight: suffix ? 36 : 16 }}
+                        value={data[field]}
+                        onChange={e => updateData(field, e.target.value)}
+                        placeholder="0"
+                        min="0"
+                        max={max}
+                    />
+                    {suffix && <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', color: '#999', fontSize: 15, pointerEvents: 'none' }}>{suffix}</span>}
+                </div>
+            </div>
+        );
+
+        const Lever = ({ label, field, unit, min, max, step }) => (
+            <div style={{ marginBottom: 20 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <span style={{ fontSize: 14, fontWeight: 600 }}>{label}</span>
+                    <span style={{ fontFamily: "'Monument', monospace", fontSize: 13, color: '#000', fontWeight: 'bold' }}>
+                        {data[field] > 0 ? '+' : ''}{data[field]}{unit}
+                    </span>
+                </div>
+                <input type="range" min={min} max={max} step={step} value={data[field]}
+                    onChange={e => updateData(field, parseFloat(e.target.value))}
+                    style={{ width: '100%', accentColor: '#000', height: 4, cursor: 'pointer' }}
+                />
+            </div>
+        );
+
+        return (
+            <div className="step-content animate-in">
+                <p className="step-indicator">STEP 2 OF {CONFIG.TOTAL_STEPS}</p>
+                <div className="opening-box">
+                    <h1 className="step-heading">Market Calculator</h1>
+                    <p className="step-hint">Enter your core market data. The tool calculates your total market size and profit pool in real time, then lets you model growth scenarios.</p>
+                </div>
+
+                {/* Input fields — 2x2 grid */}
+                <div className="field-split">
+                    <NumField label="Total Customers" hint="Total addressable customers in your market" field="totalCustomers" />
+                    <NumField label="Avg Revenue per Customer" hint="Annual revenue per customer" field="avgRevenue" prefix="€" />
+                </div>
+                <div className="field-split">
+                    <NumField label="Purchases per Year" hint="Average transactions per customer annually" field="purchasesPerYear" />
+                    <NumField label="Gross Margin" hint="Your gross profit margin" field="grossMargin" suffix="%" max="100" />
+                </div>
+
+                {/* Live calculation result — appears when all 4 inputs provided */}
+                {hasCalc && (
+                    <div className="animate-in" style={{ background: '#000', color: '#fff', padding: '32px 36px', marginBottom: 28 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 32, flexWrap: 'wrap' }}>
+                            <div>
+                                <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#FFF469', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 8 }}>TOTAL MARKET SIZE</div>
+                                <p className="plaak" style={{ fontSize: 40, color: '#fff', lineHeight: 1 }}>{fmt(marketSize)}</p>
+                            </div>
+                            <div>
+                                <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#FFF469', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 8 }}>PROFIT POOL</div>
+                                <p className="plaak" style={{ fontSize: 40, color: '#FFF469', lineHeight: 1 }}>{fmt(profitPool)}</p>
+                            </div>
+                        </div>
+                        <div style={{ marginTop: 16, display: 'flex', gap: 24 }}>
+                            <span style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#ddd' }}>{customers.toLocaleString()} customers</span>
+                            <span style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#ddd' }}>× {fmt(avgRev)} avg</span>
+                            <span style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#ddd' }}>× {purchases} purchases</span>
+                            <span style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#ddd' }}>@ {fmtPct(margin)} margin</span>
+                        </div>
+                    </div>
+                )}
+
+                {/* Growth scenario sliders — only after base is calculated */}
+                {hasCalc && (
+                    <div className="animate-in" style={{ marginBottom: 28 }}>
+                        <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 20, fontWeight: 'bold' }}>GROWTH SCENARIO — WHAT IF...</div>
+                        <Lever label="Price Increase" field="priceIncrease" unit="%" min={0} max={20} step={0.5} />
+                        <Lever label="Volume Growth" field="volumeGrowth" unit="%" min={0} max={50} step={1} />
+                        <Lever label="Cost Reduction" field="costReduction" unit="%" min={0} max={30} step={0.5} />
+                    </div>
+                )}
+
+                {/* Impact result — before / after comparison */}
+                {hasCalc && (data.priceIncrease > 0 || data.volumeGrowth > 0 || data.costReduction > 0) && (
+                    <div className="animate-in" style={{ border: '2px solid #000', marginBottom: 28 }}>
+                        <div style={{ background: '#000', color: '#fff', padding: '16px 24px' }}>
+                            <span style={{ fontFamily: "'Monument', monospace", fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase' }}>SCENARIO IMPACT</span>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 0 }}>
+                            {[
+                                { label: 'CURRENT REVENUE', val: fmt(marketSize), color: '#000' },
+                                { label: 'NEW REVENUE', val: fmt(newRevenue), color: '#000' },
+                                { label: 'CHANGE', val: '+' + fmt(newRevenue - marketSize), color: '#16a34a' },
+                            ].map((item, i) => (
+                                <div key={i} style={{ padding: '20px 24px', borderRight: i < 2 ? '1px solid #E0E0E0' : 'none' }}>
+                                    <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#666', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>{item.label}</div>
+                                    <p className="plaak" style={{ fontSize: 22, color: item.color }}>{item.val}</p>
+                                </div>
+                            ))}
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 0, borderTop: '1px solid #E0E0E0' }}>
+                            {[
+                                { label: 'CURRENT PROFIT', val: fmt(profitPool), color: '#000' },
+                                { label: 'NEW PROFIT', val: fmt(newProfit), color: '#000' },
+                                { label: 'ADDITIONAL PROFIT', val: '+' + fmt(totalImpact), color: '#16a34a' },
+                            ].map((item, i) => (
+                                <div key={i} style={{ padding: '20px 24px', borderRight: i < 2 ? '1px solid #E0E0E0' : 'none' }}>
+                                    <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#666', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>{item.label}</div>
+                                    <p className="plaak" style={{ fontSize: 22, color: item.color }}>{item.val}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {hasCalc && (
+                    <div className="closing-box animate-in">
+                        <p className="closing-title">{CONFIG.CLOSING_MESSAGES[2].title}</p>
+                        <p style={{ fontSize: 14, color: '#555', lineHeight: 1.6 }}>{CONFIG.CLOSING_MESSAGES[2].text}</p>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // ── STEP 3: Priority Matrix ─────────────────────────────────────────────
+    function Step3({ data, updateData }) {
         const priorities = data.priorities;
         const filled = priorities.filter(p => (p.name || '').trim()).length;
         const allScored = priorities.filter(p => (p.name || '').trim() && p.impact > 0 && p.ease > 0).length;
@@ -367,7 +536,7 @@
 
         return (
             <div className="step-content animate-in">
-                <p className="step-indicator">STEP 2 OF {CONFIG.TOTAL_STEPS}</p>
+                <p className="step-indicator">STEP 3 OF {CONFIG.TOTAL_STEPS}</p>
                 <div className="opening-box">
                     <h1 className="step-heading">Priority Matrix</h1>
                     <p className="step-hint">List your initiatives, then rate each by strategic impact and execution ease. Score = (Impact x 2) + Ease. Max score: 9.</p>
@@ -459,16 +628,16 @@
 
                 {allFilled && allScored >= 3 && (
                     <div className="closing-box animate-in" style={{ marginTop: 16 }}>
-                        <p className="closing-title">{CONFIG.CLOSING_MESSAGES[2].title}</p>
-                        <p style={{ fontSize: 14, color: '#555', lineHeight: 1.6 }}>{CONFIG.CLOSING_MESSAGES[2].text}</p>
+                        <p className="closing-title">{CONFIG.CLOSING_MESSAGES[3].title}</p>
+                        <p style={{ fontSize: 14, color: '#555', lineHeight: 1.6 }}>{CONFIG.CLOSING_MESSAGES[3].text}</p>
                     </div>
                 )}
             </div>
         );
     }
 
-    // ── STEP 3: Sprint Checklist — tight layout ─────────────────────────────
-    function Step3({ data, updateData }) {
+    // ── STEP 4: Sprint Checklist — tight layout ─────────────────────────────
+    function Step4({ data, updateData }) {
         const { checklist } = data;
         const questions = [
             { key: 'q1', text: 'We have a clearly articulated vision statement that the entire team can recite.' },
@@ -481,7 +650,7 @@
 
         return (
             <div className="step-content animate-in" style={{ paddingBottom: 0 }}>
-                <p className="step-indicator">STEP 3 OF {CONFIG.TOTAL_STEPS}</p>
+                <p className="step-indicator">STEP 4 OF {CONFIG.TOTAL_STEPS}</p>
                 <div className="opening-box">
                     <h1 className="step-heading">Sprint Checklist</h1>
                     <p className="step-hint">Before you proceed, confirm your team has genuinely completed each item. Be honest — partial credit is worse than no credit.</p>
@@ -512,8 +681,8 @@
 
                 {allAnswered && (
                     <div className="closing-box animate-in">
-                        <p className="closing-title">{CONFIG.CLOSING_MESSAGES[3].title}</p>
-                        <p style={{ fontSize: 14, color: '#555', lineHeight: 1.6 }}>{CONFIG.CLOSING_MESSAGES[3].text}</p>
+                        <p className="closing-title">{CONFIG.CLOSING_MESSAGES[4].title}</p>
+                        <p style={{ fontSize: 14, color: '#555', lineHeight: 1.6 }}>{CONFIG.CLOSING_MESSAGES[4].text}</p>
                     </div>
                 )}
             </div>
@@ -526,6 +695,21 @@
             .filter(p => (p.name || '').trim())
             .map(p => ({ ...p, score: priorityScore(p) }))
             .sort((a, b) => b.score - a.score);
+
+        const customers = parseFloat(data.totalCustomers) || 0;
+        const avgRev = parseFloat(data.avgRevenue) || 0;
+        const purchases = parseFloat(data.purchasesPerYear) || 0;
+        const margin = parseFloat(data.grossMargin) || 0;
+        const marketSize = customers * avgRev * purchases;
+        const profitPool = marketSize * (margin / 100);
+        const hasMarket = marketSize > 0;
+        const priceImpact = marketSize * (data.priceIncrease / 100);
+        const volumeImpact = marketSize * (data.volumeGrowth / 100);
+        const costSavings = (marketSize - profitPool) * (data.costReduction / 100);
+        const newRevenue = marketSize + priceImpact + volumeImpact;
+        const newProfit = profitPool + priceImpact + volumeImpact + costSavings;
+        const hasScenario = data.priceIncrease > 0 || data.volumeGrowth > 0 || data.costReduction > 0;
+        const growthPct = marketSize > 0 ? ((newRevenue - marketSize) / marketSize) * 100 : 0;
 
         const checkQuestions = [
             'Vision statement the team can recite',
@@ -561,6 +745,38 @@
                         <p style={{ fontSize: 15, lineHeight: 1.7, color: '#fff' }}>{data.targetOutcome || '\u2014'}</p>
                     </div>
                 </div>
+
+                {/* Market Calculator Results */}
+                {hasMarket && (
+                    <div style={{ marginBottom: 24 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: hasScenario ? '1fr 1fr' : '1fr 1fr', gap: 0 }}>
+                            <div style={{ background: '#000', color: '#fff', padding: '28px 28px' }}>
+                                <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#FFF469', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>MARKET SIZE</div>
+                                <p className="plaak" style={{ fontSize: 28, color: '#fff' }}>{fmt(marketSize)}</p>
+                            </div>
+                            <div style={{ background: '#000', color: '#fff', padding: '28px 28px', borderLeft: '1px solid #333' }}>
+                                <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#FFF469', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>PROFIT POOL</div>
+                                <p className="plaak" style={{ fontSize: 28, color: '#FFF469' }}>{fmt(profitPool)}</p>
+                            </div>
+                        </div>
+                        {hasScenario && (
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 0, borderTop: '1px solid #333' }}>
+                                <div style={{ background: '#111', padding: '20px 28px' }}>
+                                    <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#ddd', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>NEW REVENUE</div>
+                                    <p className="plaak" style={{ fontSize: 22, color: '#fff' }}>{fmt(newRevenue)}</p>
+                                </div>
+                                <div style={{ background: '#111', padding: '20px 28px', borderLeft: '1px solid #333' }}>
+                                    <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#ddd', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>NEW PROFIT</div>
+                                    <p className="plaak" style={{ fontSize: 22, color: '#fff' }}>{fmt(newProfit)}</p>
+                                </div>
+                                <div style={{ background: '#111', padding: '20px 28px', borderLeft: '1px solid #333' }}>
+                                    <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#4ade80', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>GROWTH</div>
+                                    <p className="plaak" style={{ fontSize: 22, color: '#4ade80' }}>+{growthPct.toFixed(1)}%</p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Priorities — bold numbered list */}
                 <div style={{ marginBottom: 24 }}>
@@ -640,12 +856,13 @@
                     {/* The Journey */}
                     <div className="animate-in" style={{ marginBottom: '48px', animationDelay: '0.15s' }}>
                         <p style={{ fontSize: 14, color: '#ddd', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'Monument', monospace", marginBottom: 24 }}>THE JOURNEY</p>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', textAlign: 'center' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '16px', textAlign: 'center' }}>
                             {[
                                 ['01', 'Foundation',    'Define your vision, challenges, and target outcome'],
-                                ['02', 'Prioritise',     'Score initiatives by impact and ease'],
-                                ['03', 'Checklist',      'Honest assessment of readiness'],
-                                ['04', 'Canvas',         'Review and submit your work'],
+                                ['02', 'Calculator',    'Quantify your market size and model growth scenarios'],
+                                ['03', 'Prioritise',     'Score initiatives by impact and ease'],
+                                ['04', 'Checklist',      'Honest assessment of readiness'],
+                                ['05', 'Canvas',         'Review and submit your work'],
                             ].map(([num, title, sub]) => (
                                 <div key={num} style={{ border: '1px solid #333', padding: '28px 16px' }}>
                                     <p style={{ fontSize: '48px', fontWeight: 'bold', marginBottom: '12px', color: '#fff' }}>{num}</p>
@@ -718,9 +935,15 @@
                     && (data.targetOutcome || '').trim().length >= 20;
             }
             if (step === 2) {
-                return data.priorities.filter(p => (p.name || '').trim() && p.impact > 0 && p.ease > 0).length >= 3;
+                return parseFloat(data.totalCustomers) > 0
+                    && parseFloat(data.avgRevenue) > 0
+                    && parseFloat(data.purchasesPerYear) > 0
+                    && parseFloat(data.grossMargin) > 0;
             }
             if (step === 3) {
+                return data.priorities.filter(p => (p.name || '').trim() && p.impact > 0 && p.ease > 0).length >= 3;
+            }
+            if (step === 4) {
                 const { checklist } = data;
                 return ['q1','q2','q3','q4'].every(k => checklist[k] !== null);
             }
@@ -789,6 +1012,7 @@
                                     {step === 1 && <Step1 data={data} updateData={updateData} />}
                                     {step === 2 && <Step2 data={data} updateData={updateData} />}
                                     {step === 3 && <Step3 data={data} updateData={updateData} />}
+                                    {step === 4 && <Step4 data={data} updateData={updateData} />}
                                     {step === 'canvas' && <CanvasStep data={data} submitStatus={submitStatus} />}
                                 </div>
                                 <div className="wizard-footer">
