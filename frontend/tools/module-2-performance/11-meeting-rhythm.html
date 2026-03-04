@@ -794,11 +794,13 @@
         const handleIndividualSubmit = async () => {
             const userId = localStorage.getItem('ft_user_id');
             if (!userId) { alert('User not authenticated.'); return; }
-            const questionMappings = {
-                rhythm_dates: { priorities: data.priorities, agendaItems: data.agendaItems, effectiveness: data.effectiveness, bigRock: data.bigRock }
-            };
-            await window.AIChallenge.submitWithChallenge(userId, 'meeting-rhythm-individual', questionMappings, {
-                onReviewStart: () => { setSubmitStatus('saving'); setSubmitMessage('AI coach is reviewing...'); },
+            if (submitStatus === 'saving' || submitStatus === 'success') return;
+            setSubmitStatus('saving');
+            setSubmitMessage('Saving your meeting toolkit...');
+            const flat = {};
+            Object.entries(data).forEach(([k, v]) => { flat[k] = typeof v === 'object' ? JSON.stringify(v) : String(v); });
+            await window.AIChallenge.submitWithChallenge(userId, CONFIG.TOOL_SLUG, flat, {
+                onReviewStart: () => {},
                 onRevise: () => { setSubmitStatus(null); setSubmitMessage(''); goToStep(4); },
                 onSubmitAnyway: () => { setSubmitStatus('success'); setSubmitMessage('Individual assessment submitted!'); setIndividualSubmitted(true); },
                 onError: (err) => { setSubmitStatus('error'); setSubmitMessage('Failed: ' + err.message); }
