@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Design Reference | Fast Track Program</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    @font-face { font-family: 'Plaak';    src: url('module-6-org-structure/Plaak3Trial-43-Bold.woff2') format('woff2'); font-weight: bold; }
+    @font-face { font-family: 'Riforma';  src: url('module-6-org-structure/RiformaLL-Regular.woff2')   format('woff2'); font-weight: normal; }
+    @font-face { font-family: 'Monument'; src: url('module-6-org-structure/MonumentGrotesk-Mono.woff2') format('woff2'); }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Riforma', -apple-system, sans-serif; font-size: 16px; color: #000; background: #000; -webkit-font-smoothing: antialiased; }
+
+    .plaak   { font-family: 'Plaak', sans-serif; font-weight: bold; letter-spacing: -0.01em; line-height: 1.2; }
+    .monument { font-family: 'Monument', monospace; letter-spacing: 0.05em; }
+
+    .tool-frame { background: #fff; min-height: 100vh; }
+    .tool-inner { background: #fff; min-height: 100vh; }
+
+    /* Sidebar on RIGHT */
+    .wizard-layout  { display: flex; min-height: 100vh; }
+    .wizard-main    { flex: 1; display: flex; flex-direction: column; min-height: 100vh; background: #fff; padding: 0 48px; }
+    .wizard-sidebar { width: 280px; background: #1a1a1a; min-height: 100vh; padding: 48px 32px; display: flex; flex-direction: column; position: sticky; top: 0; align-self: flex-start; height: 100vh; overflow-y: auto; }
+
+    .step-content   { max-width: 100%; padding: 40px 0; flex: 1; }
+    .step-indicator { font-family: 'Monument', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #666; margin-bottom: 8px; }
+    .opening-box    { margin-bottom: 32px; }
+    .opening-box .step-heading { font-family: 'Plaak', sans-serif; font-size: 32px; color: #000; margin-bottom: 6px; }
+    .opening-box .step-hint    { font-size: 14px; color: #666; line-height: 1.5; }
+
+    .field-group    { margin-bottom: 28px; }
+    .field-group:last-child { margin-bottom: 0; }
+    .field-label    { font-weight: 600; font-size: 15px; color: #000; margin-bottom: 6px; display: block; }
+    .field-sub      { font-size: 13px; color: #666; margin-bottom: 6px; line-height: 1.5; }
+    .field-input    { border: 1px solid #E0E0E0; padding: 12px 16px; font-family: 'Riforma', sans-serif; font-size: 16px; width: 100%; color: #000; background: #fff; transition: border-color 0.2s; }
+    .field-input:focus { outline: none; border-color: #000; }
+    .field-textarea { border: 1px solid #E0E0E0; padding: 12px 16px; font-family: 'Riforma', sans-serif; font-size: 16px; width: 100%; min-height: 100px; resize: none !important; color: #000; background: #fff; transition: border-color 0.2s; }
+    .field-textarea:focus { outline: none; border-color: #000; }
+    .field-help     { font-size: 13px; color: #666; margin-top: 4px; }
+
+    .field-split    { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 28px; }
+
+    .wizard-footer  { display: flex; justify-content: space-between; align-items: center; padding: 24px 48px; border-top: 1px solid #e5e7eb; background: #fff; }
+    .btn-wiz-back   { background: transparent; border: 2px solid #d1d5db; color: #6b7280; padding: 12px 28px; font-family: 'Monument', monospace; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
+    .btn-wiz-back:hover { border-color: #000; color: #000; }
+    .btn-wiz-next   { background: #000; color: #fff; border: 2px solid #000; padding: 12px 36px; font-family: 'Monument', monospace; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
+    .btn-wiz-next:hover:not(:disabled) { background: #FFF469; color: #000; border-color: #FFF469; }
+    .btn-wiz-next:disabled { background: #E0E0E0; color: #9CA3AF; border-color: #E0E0E0; cursor: not-allowed; }
+
+    .sidebar-tool-num   { font-family: 'Monument', monospace; font-size: 10px; color: #555; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 8px; }
+    .sidebar-tool-title { font-family: 'Plaak', sans-serif; font-size: 22px; color: #fff; margin-bottom: 32px; line-height: 1.1; }
+    .sidebar-step       { padding: 8px 0; border-bottom: 1px solid #2a2a2a; display: flex; align-items: center; gap: 8px; }
+    .sidebar-step:last-child { border-bottom: none; }
+    .sidebar-step-dot   { width: 6px; height: 6px; border-radius: 50%; background: #555; flex-shrink: 0; transition: background 0.2s; }
+    .sidebar-step-dot.active { background: #FFF469; }
+    .sidebar-step-dot.done   { background: #4ade80; }
+    .sidebar-step-label { font-family: 'Monument', monospace; font-size: 10px; letter-spacing: 0.08em; color: #555; text-transform: uppercase; transition: color 0.2s; }
+    .sidebar-step-label.active { color: #FFF469; }
+    .sidebar-step-label.done   { color: #4ade80; }
+
+    .ai-message { background: #FFF9C4; border: 1px solid #FFF469; border-left: 4px solid #FFF469; padding: 12px 16px; font-size: 14px; color: #333; margin-bottom: 16px; line-height: 1.6; }
+
+    .animate-in { animation: fadeSlideIn 0.4s ease both; }
+    @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Canvas */
+    .canvas-section        { border: 1px solid #E0E0E0; margin-bottom: 24px; overflow: hidden; }
+    .canvas-section-header { background: #000; color: #fff; padding: 16px 24px; }
+    .canvas-section-title  { font-family: 'Plaak', sans-serif; font-size: 22px; color: #fff; }
+    .canvas-body           { padding: 24px; overflow: hidden; }
+    .canvas-split          { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+    .canvas-split > *      { min-width: 0; }
+    .canvas-field          { margin-bottom: 16px; min-width: 0; }
+    .canvas-field-label    { font-family: 'Monument', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #999; margin-bottom: 6px; }
+    .canvas-field-value    { font-size: 15px; color: #000; line-height: 1.6; white-space: pre-wrap; overflow-wrap: break-word; word-break: break-word; }
+
+    /* Checklist */
+    .checklist-item { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 0; border-bottom: 1px solid #F0F0F0; }
+    .checklist-item:last-child { border-bottom: none; }
+    .checklist-item-text { font-size: 15px; line-height: 1.5; flex: 1; }
+    .checklist-toggle { display: flex; gap: 4px; flex-shrink: 0; }
+    .checklist-btn { padding: 6px 16px; border: 2px solid #E0E0E0; background: #fff; font-family: 'Monument', monospace; font-size: 10px; letter-spacing: 0.06em; cursor: pointer; transition: all 0.15s; }
+    .checklist-btn.selected-yes { background: #000; color: #FFF469; border-color: #000; }
+    .checklist-btn.selected-no  { background: #DC2626; color: #fff; border-color: #DC2626; }
+
+    /* Item nav (pagination) */
+    .item-nav { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+    .item-nav-btn { width: 44px; height: 44px; border: 2px solid #E0E0E0; background: #F0F0F0; font-family: 'Monument', monospace; font-size: 13px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
+    .item-nav-btn.active { background: #000; color: #FFF469; border-color: #000; }
+    .item-nav-btn:hover:not(.active) { border-color: #000; }
+    .item-nav-btn.add-btn { background: transparent; border: 2px dashed #E0E0E0; color: #999; font-size: 20px; }
+    .item-nav-btn.add-btn:hover { border-color: #000; color: #000; }
+
+    /* Closing box */
+    .closing-box { background: #F9F9F9; border-left: 4px solid #000; padding: 16px 20px; margin-top: 24px; }
+    .closing-title { font-family: 'Monument', monospace; font-size: 10px; color: '#666'; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; font-weight: 600; }
+
+    /* Progress bar */
+    .progress-bar-wrap { height: 2px; background: #E0E0E0; margin-bottom: 0; }
+    .progress-bar-fill { height: 2px; background: #000; transition: width 0.3s ease; }
+
+    /* Mobile */
+    .mobile-step-bar { display: none; }
+    @media (max-width: 768px) {
+        .wizard-sidebar { display: none; }
+        .wizard-main { padding: 0 24px; }
+        .mobile-step-bar { display: flex; align-items: center; gap: 8px; padding: 16px 24px; background: #1a1a1a; }
+        .mobile-step-dot { width: 8px; height: 8px; border-radius: 50%; background: #333; transition: background 0.2s; }
+        .mobile-step-dot.active { background: #FFF469; }
+        .mobile-step-dot.done   { background: #4ade80; }
+        .mobile-step-text { font-family: 'Monument', monospace; font-size: 11px; color: #fff; letter-spacing: 0.06em; margin-right: 8px; }
+        .wizard-footer { padding: 16px 24px; }
+        .field-split { grid-template-columns: 1fr; }
+        .canvas-split { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+    const { useState, useEffect, useRef, useCallback } = React;
+
+    const CONFIG = {
+        TOOL_SLUG: 'design-reference',
+        TOOL_TITLE: 'DESIGN REFERENCE',
+        TOOL_SUBTITLE: 'A complete showcase of every UI pattern used across Fast Track tools.',
+        TOOL_NUM: 'REF',
+        TOTAL_STEPS: 3,
+        COVER_IMAGE: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80',
+        TRANSITION_CONTENT: {
+            1: {
+                brutalTruth: '"Most companies confuse having a strategy with writing it down. If your team cannot recite your value proposition in one sentence, you do not have one."',
+                peerProof: '"We thought everyone understood our direction — until we asked. Six different team members gave six different answers. That was the moment we realised we needed this exercise." — CEO, SaaS company, 42 employees'
+            },
+            2: {
+                brutalTruth: '"Prioritisation is not choosing what to do — it is choosing what to stop doing. If everything is important, nothing is."',
+                peerProof: '"We had 23 initiatives running in parallel. After this exercise we cut to 5. Revenue grew 34% in the next quarter — not because we added anything, but because we finally focused." — COO, e-commerce, 85 employees'
+            },
+            3: {
+                brutalTruth: '"A checklist without honesty is theatre. If you say yes to something your team has not genuinely completed, you are lying to yourself — and your guru will see through it."',
+                peerProof: '"The checklist was humbling. We answered NO to two items and it forced a conversation we had been avoiding for months. Best decision we made." — Founder, logistics startup'
+            },
+            4: {
+                brutalTruth: '"Your canvas is your operational blueprint. If it does not survive contact with your team on Monday morning, it was an exercise in self-deception."',
+                peerProof: '"We printed the canvas and pinned it to the office wall. Three months later, every new hire still references it. That is how you know it worked." — HR Director, manufacturing, 200 employees'
+            },
+        },
+        CLOSING_MESSAGES: {
+            1: { title: 'STEP 1 COMPLETE', text: 'Your strategic foundation is set. Everything that follows will be anchored to this.' },
+            2: { title: 'STEP 2 COMPLETE', text: 'Your priorities are ranked. The data speaks — now trust it.' },
+            3: { title: 'STEP 3 COMPLETE', text: 'Honest self-assessment is the hardest part. Well done.' },
+            4: { title: 'STEP 4 COMPLETE', text: 'Your canvas is ready for review. This is your operational blueprint.' },
+        },
+    };
+
+    const SIDEBAR_STEPS = [
+        { num: 1, label: 'Strategic Foundation' },
+        { num: 2, label: 'Priority Matrix' },
+        { num: 3, label: 'Sprint Checklist' },
+    ];
+
+    // ── Default data ────────────────────────────────────────────────────────
+    function makeDefaultData() {
+        return {
+            // Step 1: text fields
+            visionStatement: '',
+            currentChallenges: '',
+            targetOutcome: '',
+            // Step 2: rating matrix items
+            priorities: [
+                { name: '', impact: 0, ease: 0 },
+                { name: '', impact: 0, ease: 0 },
+                { name: '', impact: 0, ease: 0 },
+                { name: '', impact: 0, ease: 0 },
+                { name: '', impact: 0, ease: 0 },
+            ],
+            // Step 3: checklist
+            checklist: { q1: null, q2: null, q3: null, q4: null },
+        };
+    }
+
+    function priorityScore(p) {
+        if (!p.impact || !p.ease) return 0;
+        return (p.impact * 2) + p.ease;
+    }
+
+    // ── Sidebar ─────────────────────────────────────────────────────────────
+    function WizardSidebar({ currentStep, data }) {
+        const stepNum = typeof currentStep === 'number' ? currentStep : CONFIG.TOTAL_STEPS + 1;
+        const pct = Math.round((Math.min(stepNum, CONFIG.TOTAL_STEPS) / CONFIG.TOTAL_STEPS) * 100);
+
+        return (
+            <div className="wizard-sidebar">
+                <div className="sidebar-tool-num">SPRINT {CONFIG.TOOL_NUM} / DESIGN REFERENCE</div>
+                <div className="sidebar-tool-title">{CONFIG.TOOL_TITLE}</div>
+
+                {SIDEBAR_STEPS.map(s => {
+                    const isActive = stepNum === s.num;
+                    const isDone = stepNum > s.num || currentStep === 'canvas';
+                    return (
+                        <div className="sidebar-step" key={s.num}>
+                            <div className={`sidebar-step-dot ${isActive ? 'active' : ''} ${isDone ? 'done' : ''}`} />
+                            <span className={`sidebar-step-label ${isActive ? 'active' : ''} ${isDone ? 'done' : ''}`}>{s.label}</span>
+                        </div>
+                    );
+                })}
+
+                <div style={{ marginTop: 'auto', paddingTop: 24 }}>
+                    <p style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#555', letterSpacing: '0.1em', marginBottom: 6 }}>PROGRESS</p>
+                    <div className="progress-bar-wrap">
+                        <div className="progress-bar-fill" style={{ width: `${pct}%` }} />
+                    </div>
+                    <p style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#555', marginTop: 4 }}>{pct}%</p>
+                </div>
+            </div>
+        );
+    }
+
+    // ── MobileStepBar ───────────────────────────────────────────────────────
+    function MobileStepBar({ currentStep, totalSteps }) {
+        return (
+            <div className="mobile-step-bar">
+                <span className="mobile-step-text">Step {currentStep}/{totalSteps}</span>
+                {Array.from({ length: totalSteps }, (_, i) => (
+                    <div key={i} className={`mobile-step-dot ${i + 1 === currentStep ? 'active' : ''} ${i + 1 < currentStep ? 'done' : ''}`} />
+                ))}
+            </div>
+        );
+    }
+
+    // ── TransitionScreen ────────────────────────────────────────────────────
+    function TransitionScreen({ stepNum, onNext }) {
+        const t = CONFIG.TRANSITION_CONTENT[stepNum];
+        const c = CONFIG.CLOSING_MESSAGES[stepNum];
+        if (!t) { onNext(); return null; }
+        return (
+            <div style={{ position: 'fixed', inset: 0, background: '#000', color: '#fff',
+                          zIndex: 200, overflowY: 'auto', display: 'flex', alignItems: 'center',
+                          justifyContent: 'center', padding: '64px 32px' }}>
+                <div style={{ maxWidth: 720, width: '100%' }} className="animate-in">
+                    <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#555', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 32 }}>
+                        SPRINT {CONFIG.TOOL_NUM} — DESIGN REFERENCE
+                    </div>
+                    {c && <div style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#4ade80', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 16 }}>&#10003; {c.title}</div>}
+                    <div style={{ borderLeft: '4px solid #DC2626', paddingLeft: 24, marginBottom: 48 }}>
+                        <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#DC2626', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 12 }}>BRUTAL TRUTH</div>
+                        <p className="plaak" style={{ fontSize: 26, lineHeight: 1.35 }}>{t.brutalTruth}</p>
+                    </div>
+                    <div style={{ borderLeft: '4px solid #FFF469', paddingLeft: 24, marginBottom: 64 }}>
+                        <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#FFF469', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 12 }}>PEER PROOF</div>
+                        <p style={{ fontSize: 18, color: '#ccc', lineHeight: 1.7, fontStyle: 'italic' }}>{t.peerProof}</p>
+                    </div>
+                    <button onClick={onNext} className="plaak"
+                        style={{ background: '#FFF469', color: '#000', border: 'none', padding: '18px 48px', fontSize: 18, cursor: 'pointer', letterSpacing: '0.05em', transition: 'all 0.2s' }}>
+                        CONTINUE &rarr;
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // ── RatingBtn ────────────────────────────────────────────────────────────
+    function RatingBtn({ label, value, selected, color, onClick }) {
+        return (
+            <button onClick={onClick} style={{
+                padding: '5px 10px',
+                border: `2px solid ${selected ? color : '#E0E0E0'}`,
+                background: selected ? color : '#fff',
+                color: selected ? (color === '#FFF469' ? '#000' : '#fff') : '#999',
+                fontFamily: "'Monument', monospace",
+                fontSize: 10,
+                letterSpacing: '0.05em',
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+                textTransform: 'uppercase',
+                whiteSpace: 'nowrap',
+            }}>{label}</button>
+        );
+    }
+
+    // ── STEP 1: Strategic Foundation — showcases textareas, info boxes, reveal ─
+    function Step1({ data, updateData }) {
+        return (
+            <div className="step-content animate-in">
+                <p className="step-indicator">STEP 1 OF {CONFIG.TOTAL_STEPS}</p>
+                <div className="opening-box">
+                    <h1 className="step-heading">Strategic Foundation</h1>
+                    <p className="step-hint">This step showcases text input fields, info boxes, and the "Fast Track Insight" reveal pattern.</p>
+                </div>
+
+                {/* Neutral info box */}
+                <div style={{ background: '#F9F9F9', borderLeft: '4px solid #000', padding: '14px 20px', marginBottom: 24 }}>
+                    <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#666', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>DESIGN NOTE</div>
+                    <p style={{ fontSize: 13, color: '#555', lineHeight: 1.6 }}>This is a neutral info box. Used for hints, context, and educational notes. Black left border on light grey background.</p>
+                </div>
+
+                <div className="field-group">
+                    <label className="field-label">Vision Statement</label>
+                    <p className="field-sub">Describe your company's long-term vision in 2-3 sentences. Be specific and ambitious.</p>
+                    <textarea className="field-textarea" style={{ minHeight: 120 }}
+                        value={data.visionStatement}
+                        onChange={e => updateData('visionStatement', e.target.value)}
+                        placeholder="e.g. We will become the leading provider of sustainable packaging solutions in Europe by 2028, serving 500+ enterprise clients."
+                        maxLength={600}
+                    />
+                    <p className="field-help">{(data.visionStatement || '').length}/600 (min 20 characters)</p>
+                </div>
+
+                {/* Side-by-side paired fields */}
+                <div className="field-split">
+                    <div>
+                        <label className="field-label">Current Challenges</label>
+                        <p className="field-sub">What is blocking progress right now?</p>
+                        <textarea className="field-textarea"
+                            value={data.currentChallenges}
+                            onChange={e => updateData('currentChallenges', e.target.value)}
+                            placeholder="e.g. Slow decision-making, unclear priorities across departments..."
+                        />
+                        <p className="field-help">{(data.currentChallenges || '').length}/300</p>
+                    </div>
+                    <div>
+                        <label className="field-label">Target Outcome</label>
+                        <p className="field-sub">What does success look like in 90 days?</p>
+                        <textarea className="field-textarea"
+                            value={data.targetOutcome}
+                            onChange={e => updateData('targetOutcome', e.target.value)}
+                            placeholder="e.g. Clear strategic priorities communicated to all teams, 3 key initiatives launched..."
+                        />
+                        <p className="field-help">{(data.targetOutcome || '').length}/300</p>
+                    </div>
+                </div>
+
+                {/* Warning box */}
+                <div style={{ background: '#FEF2F2', borderLeft: '4px solid #DC2626', padding: '14px 20px', marginBottom: 24 }}>
+                    <p style={{ fontSize: 13, color: '#333', lineHeight: 1.6 }}>This is a warning/error box. Used for critical reminders, validation feedback, or cautionary notes. Red left border on soft red background.</p>
+                </div>
+
+                {/* AI message (shown when AI coach reviews) */}
+                <div className="ai-message">This is the AI Coach feedback box. It appears after the AI reviews the user's answers with suggestions for improvement. Yellow-gold left border on pale yellow background.</div>
+
+                {/* Fast Track Insight — reveals when field is filled */}
+                {(data.visionStatement || '').length >= 20 && (
+                    <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid #e5e7eb' }} className="animate-in">
+                        <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, letterSpacing: '0.12em', color: '#888', textTransform: 'uppercase', marginBottom: 8 }}>FAST TRACK INSIGHT</div>
+                        <p style={{ fontSize: 14, color: '#555', lineHeight: 1.8 }}>Companies with a clearly articulated vision are 2.4x more likely to achieve their strategic objectives. The specificity of your language here determines the alignment of your team's execution. This insight box appears only after the user has typed enough content — creating a sense of progressive disclosure.</p>
+                    </div>
+                )}
+
+                {/* Closing box */}
+                {(data.visionStatement || '').length >= 20 && (
+                    <div className="closing-box animate-in">
+                        <p className="closing-title">{CONFIG.CLOSING_MESSAGES[1].title}</p>
+                        <p style={{ fontSize: 14, color: '#555', lineHeight: 1.6 }}>{CONFIG.CLOSING_MESSAGES[1].text}</p>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // ── STEP 2: Priority Matrix — showcases rating buttons, scoring, ranking ──
+    function Step2({ data, updateData }) {
+        const priorities = data.priorities;
+        const filled = priorities.filter(p => (p.name || '').trim()).length;
+
+        const updatePriority = (idx, field, val) => {
+            const next = priorities.map((p, i) => i === idx ? { ...p, [field]: val } : p);
+            updateData('priorities', next);
+        };
+        const addRow = () => {
+            if (priorities.length < 10) updateData('priorities', [...priorities, { name: '', impact: 0, ease: 0 }]);
+        };
+        const removeRow = (idx) => {
+            if (priorities.length <= 3) return;
+            updateData('priorities', priorities.filter((_, i) => i !== idx));
+        };
+
+        const IMPACT_OPTS = [
+            { label: 'Low',  val: 1, color: '#94a3b8' },
+            { label: 'Med',  val: 2, color: '#f59e0b' },
+            { label: 'High', val: 3, color: '#22c55e' },
+        ];
+        const EASE_OPTS = [
+            { label: 'Hard', val: 1, color: '#DC2626' },
+            { label: 'Med',  val: 2, color: '#f59e0b' },
+            { label: 'Easy', val: 3, color: '#22c55e' },
+        ];
+
+        const scored = priorities
+            .map((p, i) => ({ ...p, idx: i, score: priorityScore(p) }))
+            .filter(p => (p.name || '').trim())
+            .sort((a, b) => b.score - a.score);
+
+        return (
+            <div className="step-content animate-in">
+                <p className="step-indicator">STEP 2 OF {CONFIG.TOTAL_STEPS}</p>
+                <div className="opening-box">
+                    <h1 className="step-heading">Priority Matrix</h1>
+                    <p className="step-hint">This step showcases the Impact/Ease rating matrix with live scoring and ranking. Each row has rating buttons and an auto-calculated score.</p>
+                </div>
+
+                {/* Column headers */}
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8, padding: '0 0 10px', borderBottom: '2px solid #000' }}>
+                    <span style={{ minWidth: 28 }}></span>
+                    <span style={{ flex: 1, fontFamily: "'Monument', monospace", fontSize: 10, color: '#666', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Initiative</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 160, justifyContent: 'center' }}>
+                        <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#22c55e', textTransform: 'uppercase', letterSpacing: '0.08em' }}>IMPACT</span>
+                    </div>
+                    <div style={{ width: 1, height: 16, background: '#E0E0E0', flexShrink: 0 }}></div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 160, justifyContent: 'center' }}>
+                        <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.08em' }}>EASE</span>
+                    </div>
+                    <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#666', textTransform: 'uppercase', letterSpacing: '0.08em', minWidth: 48, textAlign: 'center' }}>Score</span>
+                    <span style={{ minWidth: 28 }}></span>
+                </div>
+
+                {priorities.map((p, idx) => {
+                    const score = priorityScore(p);
+                    const isTop3 = (p.name || '').trim() && scored.findIndex(s => s.idx === idx) < 3;
+                    const scoreColor = score >= 7 ? '#22c55e' : score >= 5 ? '#f59e0b' : score > 0 ? '#94a3b8' : '#ddd';
+                    return (
+                        <div key={idx} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10, padding: '10px 8px', background: isTop3 ? '#FFFDE7' : '#fff', border: `1px solid ${isTop3 ? '#FFF469' : '#E0E0E0'}`, transition: 'all 0.2s' }}>
+                            <span style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: isTop3 ? '#000' : '#bbb', minWidth: 28 }}>{String(idx+1).padStart(2,'0')}</span>
+                            <input type="text" className="field-input" style={{ padding: '8px 12px', fontSize: 14, flex: 1 }}
+                                value={p.name}
+                                onChange={e => updatePriority(idx, 'name', e.target.value)}
+                                placeholder={idx === 0 ? 'e.g. Launch new product line' : idx === 1 ? 'e.g. Hire senior developer' : 'Add an initiative...'}
+                            />
+                            <div style={{ display: 'flex', gap: 3, minWidth: 160, justifyContent: 'center' }}>
+                                {IMPACT_OPTS.map(o => (
+                                    <RatingBtn key={o.val} label={o.label} value={o.val} selected={p.impact === o.val} color={o.color}
+                                        onClick={() => updatePriority(idx, 'impact', o.val)} />
+                                ))}
+                            </div>
+                            <div style={{ width: 1, height: 32, background: '#E0E0E0', flexShrink: 0 }}></div>
+                            <div style={{ display: 'flex', gap: 3, minWidth: 160, justifyContent: 'center' }}>
+                                {EASE_OPTS.map(o => (
+                                    <RatingBtn key={o.val} label={o.label} value={o.val} selected={p.ease === o.val} color={o.color}
+                                        onClick={() => updatePriority(idx, 'ease', o.val)} />
+                                ))}
+                            </div>
+                            <div style={{ textAlign: 'center', fontFamily: "'Monument', monospace", fontSize: score >= 7 ? 18 : 14, fontWeight: score >= 7 ? 'bold' : 'normal', color: scoreColor, minWidth: 48, transition: 'all 0.2s' }}>
+                                {score > 0 ? score : '\u2014'}
+                            </div>
+                            <button onClick={() => removeRow(idx)} disabled={priorities.length <= 3}
+                                style={{ background: 'transparent', border: 'none', fontSize: 18, color: '#ccc', cursor: priorities.length <= 3 ? 'not-allowed' : 'pointer', opacity: priorities.length <= 3 ? 0.3 : 1, minWidth: 28 }}>&times;</button>
+                        </div>
+                    );
+                })}
+
+                {priorities.length < 10 && (
+                    <button onClick={addRow} style={{ marginTop: 4, background: 'transparent', border: '2px dashed #E0E0E0', padding: '10px 20px', fontFamily: "'Monument', monospace", fontSize: 11, color: '#999', cursor: 'pointer', letterSpacing: '0.06em', transition: 'all 0.2s' }}
+                        onMouseOver={e => { e.target.style.borderColor = '#000'; e.target.style.color = '#000'; }}
+                        onMouseOut={e => { e.target.style.borderColor = '#E0E0E0'; e.target.style.color = '#999'; }}>
+                        + Add Initiative
+                    </button>
+                )}
+
+                <p className="field-help" style={{ marginTop: 12 }}>
+                    {filled} initiatives added. Score = (Impact &times; 2) + Ease. Max = 9. Highlighted = Top 3.
+                </p>
+
+                {/* Live ranking */}
+                {scored.length >= 2 && (
+                    <div style={{ marginTop: 24, border: '1px solid #E0E0E0', padding: 16 }}>
+                        <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#666', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>CURRENT TOP 3 BY SCORE</div>
+                        {scored.slice(0, 3).map((p, rank) => (
+                            <div key={rank} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '6px 0', borderBottom: rank < 2 ? '1px solid #F0F0F0' : 'none' }}>
+                                <span style={{ fontFamily: "'Plaak', sans-serif", fontSize: 20, color: '#FFF469', background: '#000', padding: '2px 8px', minWidth: 36, textAlign: 'center' }}>{rank+1}</span>
+                                <span style={{ fontSize: 13, flex: 1 }}>{p.name}</span>
+                                <span style={{ fontFamily: "'Monument', monospace", fontSize: 12, fontWeight: 'bold', color: '#DC2626' }}>{p.score}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {filled >= 3 && (
+                    <div className="closing-box animate-in" style={{ marginTop: 24 }}>
+                        <p className="closing-title">{CONFIG.CLOSING_MESSAGES[2].title}</p>
+                        <p style={{ fontSize: 14, color: '#555', lineHeight: 1.6 }}>{CONFIG.CLOSING_MESSAGES[2].text}</p>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // ── STEP 3: Sprint Checklist — showcases YES/NO toggles ─────────────────
+    function Step3({ data, updateData }) {
+        const { checklist } = data;
+        const questions = [
+            { key: 'q1', text: 'We have a clearly articulated vision statement that the entire team can recite.' },
+            { key: 'q2', text: 'Our top priorities are ranked by impact and ease, not by who shouted loudest.' },
+            { key: 'q3', text: 'Every initiative has a named owner and a measurable 90-day target.' },
+            { key: 'q4', text: 'We have identified what we will STOP doing to make room for the top priorities.' },
+        ];
+        const allAnswered = questions.every(q => checklist[q.key] !== null);
+        const setAnswer = (key, val) => updateData('checklist', { ...checklist, [key]: val });
+
+        return (
+            <div className="step-content animate-in">
+                <p className="step-indicator">STEP 3 OF {CONFIG.TOTAL_STEPS}</p>
+                <div className="opening-box">
+                    <h1 className="step-heading">Sprint Checklist</h1>
+                    <p className="step-hint">This step showcases the YES/NO checklist pattern. Users must honestly assess whether each item is complete.</p>
+                </div>
+
+                <div style={{ marginTop: 24 }}>
+                    {questions.map((q, i) => (
+                        <div key={q.key} className="checklist-item">
+                            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flex: 1 }}>
+                                <span style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: '#FFF469', background: '#000', padding: '3px 7px', marginTop: 2, flexShrink: 0 }}>{String(i+1).padStart(2,'0')}</span>
+                                <p className="checklist-item-text">{q.text}</p>
+                            </div>
+                            <div className="checklist-toggle">
+                                <button className={`checklist-btn ${checklist[q.key] === true ? 'selected-yes' : ''}`}
+                                    onClick={() => setAnswer(q.key, true)}>YES</button>
+                                <button className={`checklist-btn ${checklist[q.key] === false ? 'selected-no' : ''}`}
+                                    onClick={() => setAnswer(q.key, false)}>NO</button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                {allAnswered && questions.some(q => checklist[q.key] === false) && (
+                    <div style={{ background: '#FEF2F2', border: '1px solid #FCA5A5', borderLeft: '4px solid #DC2626', padding: 16, marginTop: 20, fontSize: 14, color: '#333', lineHeight: 1.6 }}>
+                        <strong>Some items are incomplete.</strong> You can still proceed, but your guru will prioritise the gaps in your review.
+                    </div>
+                )}
+
+                {allAnswered && (
+                    <div className="closing-box animate-in" style={{ marginTop: 24 }}>
+                        <p className="closing-title">{CONFIG.CLOSING_MESSAGES[3].title}</p>
+                        <p style={{ fontSize: 14, color: '#555', lineHeight: 1.6 }}>{CONFIG.CLOSING_MESSAGES[3].text}</p>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // ── STEP 4 (Canvas) — showcases summary/canvas view ─────────────────────
+    function Step4({ data, submitStatus }) {
+        const scored = data.priorities
+            .filter(p => (p.name || '').trim())
+            .map(p => ({ ...p, score: priorityScore(p) }))
+            .sort((a, b) => b.score - a.score);
+
+        if (submitStatus === 'success') {
+            return (
+                <div className="step-content animate-in">
+                    <div style={{ background: '#f0fdf4', border: '1px solid #86efac', padding: 48, textAlign: 'center', marginTop: 32 }}>
+                        <div style={{ fontSize: 48, marginBottom: 16 }}>&#10003;</div>
+                        <h2 className="plaak" style={{ fontSize: 32, marginBottom: 16 }}>SUBMITTED</h2>
+                        <p style={{ fontSize: 16, color: '#555', marginBottom: 32 }}>Your answers have been saved. Your guru will review before Wednesday.</p>
+                        <a href="/dashboard" style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: '#000', letterSpacing: '0.06em', textDecoration: 'underline' }}>&larr; Back to Dashboard</a>
+                    </div>
+                </div>
+            );
+        }
+
+        return (
+            <div className="step-content animate-in">
+                <p className="step-indicator">CANVAS</p>
+                <div className="opening-box">
+                    <h1 className="step-heading">Your Canvas</h1>
+                    <p className="step-hint">This showcases the canvas/summary view where users review all their answers before submitting.</p>
+                </div>
+
+                {/* Canvas panel */}
+                <div style={{ border: '2px solid #000', marginBottom: 32 }}>
+                    {/* Vision */}
+                    <div style={{ padding: '24px 28px', borderBottom: '1px solid #E0E0E0' }}>
+                        <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#666', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>VISION STATEMENT</div>
+                        <p style={{ fontSize: 16, lineHeight: 1.7, color: data.visionStatement ? '#000' : '#999' }}>
+                            {data.visionStatement || 'Not filled'}
+                        </p>
+                    </div>
+
+                    {/* Side-by-side canvas fields */}
+                    <div style={{ padding: '24px 28px', borderBottom: '1px solid #E0E0E0' }}>
+                        <div className="canvas-split">
+                            <div className="canvas-field">
+                                <div className="canvas-field-label">Current Challenges</div>
+                                <div className="canvas-field-value">{data.currentChallenges || '\u2014'}</div>
+                            </div>
+                            <div className="canvas-field">
+                                <div className="canvas-field-label">Target Outcome</div>
+                                <div className="canvas-field-value">{data.targetOutcome || '\u2014'}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Top priorities */}
+                    <div style={{ padding: '24px 28px', borderBottom: '1px solid #E0E0E0' }}>
+                        <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#666', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>TOP PRIORITIES BY SCORE</div>
+                        {scored.length > 0 ? scored.slice(0, 5).map((p, i) => (
+                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 0', borderBottom: i < scored.length - 1 && i < 4 ? '1px solid #F0F0F0' : 'none' }}>
+                                <span className="plaak" style={{ fontSize: 22, color: '#FFF469', background: '#000', padding: '4px 10px', minWidth: 44, textAlign: 'center' }}>{i+1}</span>
+                                <span style={{ fontSize: 16, fontWeight: 600, flex: 1 }}>{p.name}</span>
+                                <span style={{ fontFamily: "'Monument', monospace", fontSize: 14, fontWeight: 'bold', color: '#DC2626' }}>{p.score}</span>
+                            </div>
+                        )) : (
+                            <p style={{ color: '#999', fontSize: 14 }}>No priorities added yet</p>
+                        )}
+                    </div>
+
+                    {/* Checklist summary */}
+                    <div style={{ padding: '24px 28px', borderBottom: '1px solid #E0E0E0' }}>
+                        <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#666', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>CHECKLIST RESULTS</div>
+                        {['q1', 'q2', 'q3', 'q4'].map((key, i) => (
+                            <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0' }}>
+                                <span style={{ fontFamily: "'Monument', monospace", fontSize: 11, color: data.checklist[key] === true ? '#4ade80' : data.checklist[key] === false ? '#DC2626' : '#ccc' }}>
+                                    {data.checklist[key] === true ? '&#10003; YES' : data.checklist[key] === false ? '&#10007; NO' : '\u2014'}
+                                </span>
+                                <span style={{ fontSize: 13, color: '#666' }}>Item {i + 1}</span>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Case study block (dark) */}
+                    <div style={{ padding: '24px 28px', background: '#000', color: '#fff' }}>
+                        <div style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#FFF469', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>CASE STUDY</div>
+                        <p style={{ fontSize: 14, lineHeight: 1.8, color: '#ccc' }}>
+                            This is where a relevant case study appears in the canvas. It reinforces the learning with a real-world example that connects to the user's work. The dark background and yellow label create visual contrast that anchors the educational content.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // ── IntroPage ────────────────────────────────────────────────────────────
+    function IntroPage({ onNext }) {
+        return (
+            <div style={{ background: '#000', color: '#fff', minHeight: '100vh', padding: '64px' }}>
+                <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+                    <h1 className="plaak animate-in" style={{ fontSize: '100px', marginBottom: '64px' }}>
+                        BEFORE WE START
+                    </h1>
+
+                    {/* Sprint Info */}
+                    <div className="animate-in" style={{ marginBottom: '48px', animationDelay: '0.08s' }}>
+                        <h2 className="plaak" style={{ fontSize: '48px', color: '#FFF469', marginBottom: '24px' }}>SPRINT INFO</h2>
+                        <div style={{ background: '#fff', color: '#000', padding: '32px' }}>
+                            <p style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '16px' }}>Design Reference Tool</p>
+                            <p style={{ fontSize: '18px', lineHeight: 1.6, marginBottom: '16px' }}>
+                                This is a showcase of every UI component and pattern used across Fast Track tools. It demonstrates the cover page, intro page, wizard steps with sidebar, transition screens, field types, rating matrices, checklists, and the canvas summary view.
+                            </p>
+                            <div style={{ borderLeft: '4px solid #000', paddingLeft: '16px', fontStyle: 'italic', fontSize: '16px' }}>
+                                "Strategy without process is a daydream. Process without strategy is a nightmare." &mdash; Sun Tzu
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Purpose */}
+                    <div className="animate-in" style={{ marginBottom: '48px', animationDelay: '0.1s' }}>
+                        <h2 className="plaak" style={{ fontSize: '48px', marginBottom: '24px' }}>PURPOSE</h2>
+                        <div style={{ borderLeft: '4px solid #fff', paddingLeft: '24px', marginBottom: '24px' }}>
+                            <p style={{ fontSize: '28px', fontStyle: 'italic', marginBottom: '8px' }}>
+                                "Design is not just what it looks like and feels like. Design is how it works."
+                            </p>
+                            <p style={{ fontSize: '18px', color: '#999' }}>&mdash; Steve Jobs</p>
+                        </div>
+                        <p style={{ fontSize: '22px', lineHeight: 1.6, marginBottom: '16px' }}>
+                            This reference tool showcases every UI pattern so designers can review the visual system in context. Each step demonstrates a different interaction pattern used across the 31 Fast Track tools.
+                        </p>
+                        <p style={{ fontSize: '18px', color: '#999' }}>
+                            The design system uses three typefaces (Plaak for headings, Riforma for body, Monument for labels), a strict black/white/yellow palette, and consistent spacing patterns.
+                        </p>
+                    </div>
+
+                    {/* Mistakes to Avoid */}
+                    <div className="animate-in" style={{ marginBottom: '48px', animationDelay: '0.2s' }}>
+                        <h2 className="plaak" style={{ fontSize: '48px', color: '#FFF469', marginBottom: '24px' }}>MISTAKES TO AVOID</h2>
+                        <ul style={{ fontSize: '20px', listStyle: 'none', padding: 0 }}>
+                            {[
+                                'Using colours outside the brand palette \u2014 no blues, purples, or Tailwind defaults. Yellow (#FFF469) is for accents only.',
+                                'Breaking the type hierarchy \u2014 Plaak is for headings and numbers only. Monument is for labels and metadata. Riforma is for everything else.',
+                                'Adding decorative elements \u2014 the design is intentionally minimal. Every element must serve a functional purpose.',
+                                'Inconsistent spacing \u2014 use the established padding values (48px main, 32px sidebar, 24px groups, 16px gaps).',
+                            ].map((item, i) => (
+                                <li key={i} style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '16px' }}>
+                                    <span style={{ fontSize: '32px', marginRight: '16px', lineHeight: 1, flexShrink: 0 }}>&bull;</span>
+                                    <span>{item}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+
+                    {/* The Journey */}
+                    <div className="animate-in" style={{ marginBottom: '64px', animationDelay: '0.3s' }}>
+                        <h2 className="plaak" style={{ fontSize: '48px', marginBottom: '32px' }}>THE JOURNEY</h2>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', textAlign: 'center' }}>
+                            {[
+                                ['01', 'TEXT FIELDS',     'Textareas, splits, info boxes'],
+                                ['02', 'RATING MATRIX',   'Impact/ease buttons, scoring'],
+                                ['03', 'CHECKLIST',        'YES/NO toggles, validation'],
+                                ['04', 'CANVAS',           'Summary view, submission'],
+                            ].map(([num, title, sub]) => (
+                                <div key={num} style={{ border: '2px solid #fff', padding: '20px 12px' }}>
+                                    <div className="plaak" style={{ fontSize: '52px', marginBottom: '12px' }}>{num}</div>
+                                    <p style={{ fontWeight: 'bold', marginBottom: '6px', fontSize: '13px' }}>{title}</p>
+                                    <p style={{ fontSize: '12px', color: '#999' }}>{sub}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <button onClick={onNext} className="plaak"
+                        style={{ width: '100%', padding: '32px', background: '#FFF469', color: '#000', border: 'none', fontSize: '28px', cursor: 'pointer', letterSpacing: '0.05em', transition: 'opacity 0.2s' }}>
+                        LET'S START &rarr;
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // ── Main App ─────────────────────────────────────────────────────────────
+    function App() {
+        const [step, setStep]               = useState(0);
+        const [data, setData]               = useState(makeDefaultData());
+        const [submitStatus, setSubmitStatus] = useState('idle');
+
+        const totalSteps = CONFIG.TOTAL_STEPS;
+
+        const updateData = useCallback((field, val) => {
+            setData(prev => ({ ...prev, [field]: val }));
+        }, []);
+
+        const canProceed = () => {
+            if (step === 1) return (data.visionStatement || '').trim().length >= 20;
+            if (step === 2) return data.priorities.filter(p => (p.name || '').trim()).length >= 3;
+            if (step === 3) {
+                const { checklist } = data;
+                return ['q1','q2','q3','q4'].every(k => checklist[k] !== null);
+            }
+            return true;
+        };
+
+        const handleNext = () => {
+            if (!canProceed()) return;
+            if (step === totalSteps) {
+                setStep(step + 0.5);
+                return;
+            }
+            setStep(step + 0.5);
+        };
+
+        const handleTransitionNext = () => {
+            const next = Math.floor(step) + 1;
+            if (Math.floor(step) === totalSteps) {
+                setStep('canvas');
+            } else {
+                setStep(next);
+            }
+        };
+
+        const handleBack = () => {
+            if (step === 'canvas') { setStep(totalSteps); return; }
+            if (step === 1) { setStep(0.5); return; }
+            setStep(step - 1);
+        };
+
+        const handleSubmit = () => {
+            setSubmitStatus('success');
+        };
+
+        const isWizardStep = Number.isInteger(step) && step >= 1 && step <= totalSteps;
+        const isTransition = !Number.isInteger(step) && step > 0.5 && step !== 'canvas';
+
+        return (
+            <div className="tool-frame">
+                {/* Cover page */}
+                {step === 0 && (
+                    <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+                        <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${CONFIG.COVER_IMAGE})`, backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.4 }} />
+                        <div style={{ position: 'relative', textAlign: 'center', color: '#fff', padding: '0 32px' }} className="animate-in">
+                            <div style={{ fontFamily: "'Monument', monospace", fontSize: 12, color: '#FFF469', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 24 }}>
+                                SPRINT {CONFIG.TOOL_NUM} / DESIGN REFERENCE
+                            </div>
+                            <h1 className="plaak" style={{ fontSize: 80, marginBottom: 16 }}>{CONFIG.TOOL_TITLE}</h1>
+                            <p style={{ fontSize: 18, color: '#ccc', marginBottom: 48, maxWidth: 560, margin: '0 auto 48px' }}>{CONFIG.TOOL_SUBTITLE}</p>
+                            <button onClick={() => setStep(0.5)}
+                                style={{ background: '#fff', color: '#000', border: 'none', padding: '16px 48px', fontSize: 16, fontFamily: "'Monument', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s' }}
+                                onMouseOver={e => { e.target.style.background = '#FFF469'; }}
+                                onMouseOut={e => { e.target.style.background = '#fff'; }}>
+                                START
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Intro page */}
+                {step === 0.5 && (
+                    <IntroPage onNext={() => setStep(1)} />
+                )}
+
+                {/* Transition screens */}
+                {isTransition && (
+                    <TransitionScreen stepNum={Math.floor(step)} onNext={handleTransitionNext} />
+                )}
+
+                {/* Wizard steps + canvas */}
+                {(isWizardStep || step === 'canvas') && (
+                    <div className="tool-inner">
+                        <div className="wizard-layout">
+                            <div className="wizard-main">
+                                <MobileStepBar currentStep={typeof step === 'number' ? step : totalSteps + 1} totalSteps={totalSteps} />
+                                <div style={{ flex: 1 }}>
+                                    {step === 1 && <Step1 data={data} updateData={updateData} />}
+                                    {step === 2 && <Step2 data={data} updateData={updateData} />}
+                                    {step === 3 && <Step3 data={data} updateData={updateData} />}
+                                    {step === 'canvas' && <Step4 data={data} submitStatus={submitStatus} />}
+                                </div>
+                                {submitStatus !== 'success' && (
+                                    <div className="wizard-footer">
+                                        <button className="btn-wiz-back" onClick={handleBack}>&larr; BACK</button>
+                                        {step !== 'canvas' ? (
+                                            <button className="btn-wiz-next" onClick={handleNext} disabled={!canProceed()}>
+                                                NEXT &rarr;
+                                            </button>
+                                        ) : null}
+                                        {step === 'canvas' && (
+                                            <button className="btn-wiz-next" onClick={handleSubmit}>
+                                                SUBMIT ANSWERS &rarr;
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                            <WizardSidebar currentStep={step} data={data} />
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+</script>
+</body>
+</html>
