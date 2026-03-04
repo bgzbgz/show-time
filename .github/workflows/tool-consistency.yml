@@ -23,24 +23,19 @@ jobs:
       - name: Run tool consistency audit
         id: audit
         run: |
-          node scripts/audit-tool-consistency.js --json > audit-results.json 2>&1 || true
-          ISSUES=$(node -e "const r = require('./audit-results.json'); console.log(r.totalIssues || 0)")
+          node scripts/audit-tool-consistency.js --json
+          ISSUES=$(node -e "const r = JSON.parse(require('fs').readFileSync('scripts/audit-results.json','utf8')); console.log(r.totalIssues || 0)")
           echo "issues=$ISSUES" >> $GITHUB_OUTPUT
           echo "## Tool Consistency Audit" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Total issues: **$ISSUES**" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          # Show compliant tools
           node -e "
-            const r = require('./audit-results.json');
+            const r = JSON.parse(require('fs').readFileSync('scripts/audit-results.json','utf8'));
             if (r.fullyCompliant && r.fullyCompliant.length) {
               console.log('### Fully Compliant');
-              r.fullyCompliant.forEach(t => console.log('- ✅ ' + t));
+              r.fullyCompliant.forEach(t => console.log('- ' + t));
             }
-          " >> $GITHUB_STEP_SUMMARY
-          # Show failures
-          node -e "
-            const r = require('./audit-results.json');
             const tools = r.tools || {};
             let hasFailures = false;
             for (const [name, checks] of Object.entries(tools)) {
@@ -59,8 +54,8 @@ jobs:
           # Fail if issues increase above baseline + 5 tolerance
           THRESHOLD=94
           if [ "$ISSUES" -gt "$THRESHOLD" ]; then
-            echo "❌ Tool consistency regression: $ISSUES issues (threshold: $THRESHOLD)"
+            echo "::error::Tool consistency regression: $ISSUES issues (threshold: $THRESHOLD)"
             echo "Run 'node scripts/audit-tool-consistency.js' locally to see details."
             exit 1
           fi
-          echo "✅ Tool consistency check passed: $ISSUES issues (threshold: $THRESHOLD)"
+          echo "Tool consistency check passed: $ISSUES issues (threshold: $THRESHOLD)"
