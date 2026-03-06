@@ -124,6 +124,30 @@
         .opening-box .step-heading { font-size: 30px; }
     }
 
+    /* ── World Class Tool (Step 5) ── */
+    .wct-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .wct-card { background: #111; border: 1px solid rgba(255,255,255,0.1); padding: 28px; position: relative; overflow: hidden; }
+    .wct-card-full { grid-column: 1 / -1; }
+    .wct-tag { font-family: 'Monument', monospace; font-size: 9px; letter-spacing: 0.15em; color: rgba(255,255,255,0.5); margin-bottom: 14px; }
+    .wct-title { font-family: 'Plaak', sans-serif; font-size: 22px; color: #fff; margin-bottom: 8px; line-height: 1.2; letter-spacing: -0.02em; }
+    .wct-desc { font-family: 'Riforma', sans-serif; font-size: 13px; color: rgba(255,255,255,0.6); line-height: 1.6; margin-bottom: 20px; }
+    .wct-fix { font-family: 'Riforma', sans-serif; font-size: 11px; color: rgba(255,255,255,0.55); line-height: 1.6; margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.06); }
+    .wct-input { border: 2px solid #333; padding: 12px 16px; font-family: 'Riforma', sans-serif; font-size: 14px; width: 100%; color: #fff; background: transparent; transition: border-color 0.3s ease; border-radius: 0; }
+    .wct-input:focus { outline: none; border-color: var(--yellow); }
+    .wct-input::placeholder { color: #444; }
+    .wct-textarea { border: 2px solid #333; padding: 12px 16px; font-family: 'Riforma', sans-serif; font-size: 14px; width: 100%; min-height: 80px; resize: none; color: #fff; background: transparent; transition: border-color 0.3s ease; border-radius: 0; }
+    .wct-textarea:focus { outline: none; border-color: var(--yellow); }
+    .wct-textarea::placeholder { color: #444; }
+    .wct-label { font-family: 'Riforma', sans-serif; font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.8); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+    @keyframes wctPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    @keyframes wctSlideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+    @keyframes wctSlideUp { from { transform: translateY(0); } to { transform: translateY(-100%); } }
+    @keyframes wctFlash { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+    @media (max-width: 768px) {
+        .wct-grid { grid-template-columns: 1fr; }
+    }
+
     @media (max-width: 768px) {
         .wizard-sidebar { display: none; }
         .wizard-main { padding: 0 24px; }
@@ -182,6 +206,7 @@
         { num: 2, label: 'Market Calculator', mins: 8 },
         { num: 3, label: 'Priority Matrix', mins: 10 },
         { num: 4, label: 'Sprint Checklist', mins: 3 },
+        { num: 5, label: 'World Class Tool', mins: 5 },
     ];
 
     const fmt = (v) => {
@@ -254,8 +279,8 @@
                     <p style={{ fontFamily: "Riforma, sans-serif", fontSize: 12, color: "#fff", opacity: 0.8, lineHeight: 1.5 }}>Build your strategic plan in 4 focused steps.</p>
                 </div>
                 {SIDEBAR_STEPS.map(s => {
-                    const isActive = stepNum === s.num;
-                    const isDone = stepNum > s.num || currentStep === 'canvas';
+                    const isActive = currentStep !== 'canvas' && stepNum === s.num;
+                    const isDone = stepNum > s.num || (currentStep === 'canvas' && s.num <= 4);
                     return (
                         <div className="sidebar-step" key={s.num} style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', ...(isActive ? { background: 'var(--yellow)', borderColor: 'var(--yellow)' } : isDone ? {} : {}) }}>
                             <div className={`sidebar-step-dot ${isActive ? 'active' : ''} ${isDone ? 'done' : ''}`} />
@@ -1211,6 +1236,246 @@
         );
     }
 
+    // ── STEP 5 — World Class Tool ──────────────────────────────────────────
+    function WctTooltip({ data }) {
+        const [open, setOpen] = useState(false);
+        const ref = useRef(null);
+        useEffect(() => {
+            const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+            document.addEventListener('mousedown', handler);
+            return () => document.removeEventListener('mousedown', handler);
+        }, []);
+        const example = (data.visionStatement || '').trim() || "We help SME CEOs restructure operations in 9 weeks — without hiring consultants";
+        return (
+            <div ref={ref}>
+                <div className="wct-label">
+                    Value Proposition
+                    <button onClick={() => setOpen(!open)} style={{ width: 18, height: 18, borderRadius: '50%', border: '1px solid #555', background: 'transparent', color: '#888', fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s ease', flexShrink: 0 }}
+                        onMouseOver={e => { e.target.style.borderColor = 'var(--yellow)'; e.target.style.color = 'var(--yellow)'; }}
+                        onMouseOut={e => { e.target.style.borderColor = '#555'; e.target.style.color = '#888'; }}>ℹ</button>
+                </div>
+                {open && (
+                    <div className="animate-in" style={{ background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', padding: '20px', marginBottom: 12 }}>
+                        {[
+                            { tag: 'WHAT TO WRITE', text: 'What specific value do you deliver? What problem do you solve for your customer?' },
+                            { tag: 'EXAMPLE', text: example },
+                            { tag: 'CONSTRAINT', text: 'Max 3 propositions. If you need more than 3, you haven\'t thought hard enough.' },
+                        ].map(t => (
+                            <div key={t.tag} style={{ marginBottom: 14 }}>
+                                <span style={{ fontFamily: "'Monument', monospace", fontSize: 9, letterSpacing: '0.12em', color: 'var(--yellow)' }}>{t.tag}</span>
+                                <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', lineHeight: 1.6, marginTop: 4 }}>{t.text}</p>
+                            </div>
+                        ))}
+                    </div>
+                )}
+                <input type="text" className="wct-input" placeholder="e.g. We deliver sustainable packaging at 30% lower cost..." />
+            </div>
+        );
+    }
+
+    function WctSaveState() {
+        const [status, setStatus] = useState('saved');
+        const timerRef = useRef(null);
+        const handleKey = () => {
+            setStatus('saving');
+            clearTimeout(timerRef.current);
+            timerRef.current = setTimeout(() => setStatus('saved'), 800);
+        };
+        return (
+            <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                    <div style={{ width: 5, height: 5, borderRadius: '50%', background: status === 'saved' ? '#4ade80' : 'var(--yellow)', animation: status === 'saved' ? 'wctPulse 2s ease-in-out infinite' : 'none' }} />
+                    <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: status === 'saved' ? '#4ade80' : 'var(--yellow)', letterSpacing: '0.08em', transition: 'color 0.3s ease' }}>
+                        {status === 'saved' ? 'Saved automatically' : 'Saving...'}
+                    </span>
+                </div>
+                <div className="wct-label" style={{ marginBottom: 8 }}>Type anything to trigger save state</div>
+                <input type="text" className="wct-input" placeholder="Start typing..." onKeyDown={handleKey} />
+            </div>
+        );
+    }
+
+    function WctMicroWin() {
+        const [show, setShow] = useState(false);
+        const [exiting, setExiting] = useState(false);
+        const fire = () => {
+            setShow(true); setExiting(false);
+            setTimeout(() => { setExiting(true); setTimeout(() => { setShow(false); setExiting(false); }, 400); }, 2000);
+        };
+        return (
+            <div style={{ position: 'relative' }}>
+                {show && (
+                    <div style={{ position: 'absolute', top: -28, left: -28, right: -28, background: 'var(--yellow)', color: '#000', padding: '16px 24px', fontFamily: "'Riforma', sans-serif", fontWeight: 700, fontSize: 14, zIndex: 10, animation: exiting ? 'wctSlideUp 0.4s var(--ease-out-expo) forwards' : 'wctSlideDown 0.4s var(--ease-out-expo) forwards' }}>
+                        ✦ Strategic Foundation complete — Market Calculator unlocked.
+                    </div>
+                )}
+                <button onClick={fire} style={{ width: '100%', padding: '22px', background: '#000', color: '#fff', border: '2px solid #333', fontFamily: "'Riforma', sans-serif", fontSize: 14, fontWeight: 600, letterSpacing: '0.02em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.3s var(--ease-out-expo)' }}
+                    onMouseOver={e => { e.target.style.background = 'var(--yellow)'; e.target.style.color = '#000'; e.target.style.borderColor = 'var(--yellow)'; }}
+                    onMouseOut={e => { e.target.style.background = '#000'; e.target.style.color = '#fff'; e.target.style.borderColor = '#333'; }}>
+                    ✦ COMPLETE STEP (click me)
+                </button>
+            </div>
+        );
+    }
+
+    function WctProgressBar() {
+        const [fields, setFields] = useState({ vision: '', market: '', priority: '' });
+        const checks = [
+            (fields.vision || '').trim().length >= 10,
+            parseFloat(fields.market) > 0,
+            (fields.priority || '').trim().length >= 5,
+        ];
+        const done = checks.filter(Boolean).length;
+        const pct = (done / 3) * 100;
+        const allDone = done === 3;
+        return (
+            <div>
+                <div style={{ height: 3, background: '#333', width: '100%', marginBottom: 16, position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', background: allDone ? '#4ade80' : 'var(--yellow)', width: pct + '%', transition: 'all 0.4s var(--ease-out-expo)', animation: allDone ? 'wctFlash 0.6s ease' : 'none' }} />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+                    <span style={{ fontFamily: "'Monument', monospace", fontSize: 9, letterSpacing: '0.08em', color: allDone ? '#4ade80' : 'rgba(255,255,255,0.5)' }}>
+                        {allDone ? '3 / 3 — step complete ✓' : `${done} / 3 fields`}
+                    </span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <div>
+                        <div className="wct-label">Vision Statement <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)' }}>(min 10 chars)</span></div>
+                        <input type="text" className="wct-input" placeholder="Your vision..." value={fields.vision} onChange={e => setFields(f => ({ ...f, vision: e.target.value }))} />
+                    </div>
+                    <div>
+                        <div className="wct-label">Market Size € <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)' }}>(> 0)</span></div>
+                        <input type="number" className="wct-input" placeholder="0" value={fields.market} onChange={e => setFields(f => ({ ...f, market: e.target.value }))} />
+                    </div>
+                    <div>
+                        <div className="wct-label">Top Priority <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)' }}>(min 5 chars)</span></div>
+                        <input type="text" className="wct-input" placeholder="Your priority..." value={fields.priority} onChange={e => setFields(f => ({ ...f, priority: e.target.value }))} />
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    function WctCanvasBlock({ data }) {
+        const vision = (data.visionStatement || '').trim() || 'We will become the leading provider of sustainable packaging in Europe by 2028, serving 500+ enterprise clients.';
+        const customers = parseFloat(data.totalCustomers) || 0;
+        const avgRev = parseFloat(data.avgRevenue) || 0;
+        const purchases = parseFloat(data.purchasesPerYear) || 0;
+        const margin = parseFloat(data.grossMargin) || 0;
+        const marketSize = customers * avgRev * purchases || 4200000;
+        const profitPool = customers > 0 ? marketSize * (margin / 100) : 4200000 * 0.35;
+        const marginPct = margin || 35;
+        return (
+            <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+                <div style={{ padding: '28px', borderRight: '1px solid rgba(255,255,255,0.08)' }}>
+                    <div style={{ fontFamily: "'Monument', monospace", fontSize: 8, letterSpacing: '0.18em', color: 'rgba(255,255,255,0.35)', marginBottom: 12 }}>STRATEGIC VISION</div>
+                    <p style={{ fontFamily: "Georgia, serif", fontSize: 16, fontStyle: 'italic', color: '#fff', lineHeight: 1.7 }}>{vision}</p>
+                </div>
+                <div style={{ padding: '28px' }}>
+                    <div style={{ fontFamily: "'Monument', monospace", fontSize: 8, letterSpacing: '0.18em', color: 'rgba(255,255,255,0.35)', marginBottom: 12 }}>TOTAL MARKET SIZE</div>
+                    <p className="plaak" style={{ fontSize: 52, color: 'var(--yellow)', lineHeight: 1 }}>
+                        <AnimNum value={Math.round(marketSize)} prefix="€ " duration={500} />
+                    </p>
+                    <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 8 }}>
+                        Profit pool: € {Math.round(profitPool).toLocaleString('en-US')} at {marginPct}%
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
+    function WctConstraintBar() {
+        const [text, setText] = useState('');
+        const len = text.length;
+        const pct = (len / 140) * 100;
+        const [flashRed, setFlashRed] = useState(false);
+        const statusLabel = len === 0 ? '' : len < 40 ? 'Keep going' : len < 100 ? 'Good' : len < 126 ? 'Almost there' : len < 140 ? 'Near limit' : 'Max reached';
+        const statusColor = len < 40 ? 'rgba(255,255,255,0.5)' : len < 100 ? '#fff' : len < 126 ? 'var(--yellow)' : len < 140 ? '#f97316' : '#ef4444';
+        const barColor = pct > 90 ? '#ef4444' : 'var(--yellow)';
+
+        const handleChange = (e) => {
+            const val = e.target.value.slice(0, 140);
+            setText(val);
+            if (val.length === 140 && !flashRed) {
+                setFlashRed(true);
+                setTimeout(() => setFlashRed(false), 600);
+            }
+        };
+
+        return (
+            <div>
+                <textarea className="wct-textarea" placeholder="Describe your company's strategic vision..." value={text} onChange={handleChange} maxLength={140}
+                    style={{ borderColor: flashRed ? '#ef4444' : undefined, transition: 'border-color 0.3s ease' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
+                    <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: 'rgba(255,255,255,0.5)', minWidth: 60 }}>{len} / 140</span>
+                    <div style={{ flex: 1, height: 4, background: '#333', position: 'relative', overflow: 'hidden' }}>
+                        <div style={{ height: '100%', background: barColor, width: pct + '%', transition: 'all 0.2s ease' }} />
+                    </div>
+                    <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: statusColor, minWidth: 80, textAlign: 'right', transition: 'color 0.3s ease' }}>{statusLabel}</span>
+                </div>
+            </div>
+        );
+    }
+
+    function WctMobilePreview() {
+        return (
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <div style={{ width: 375, border: '2px solid rgba(255,255,255,0.15)', borderRadius: 24, overflow: 'hidden', background: '#000', position: 'relative' }}>
+                    {/* Mockup content */}
+                    <div style={{ padding: '40px 24px 80px' }}>
+                        <div style={{ fontFamily: "'Monument', monospace", fontSize: 9, letterSpacing: '0.12em', color: 'rgba(255,255,255,0.5)', marginBottom: 12 }}>STEP 01</div>
+                        <h3 className="plaak" style={{ fontSize: 28, color: '#fff', marginBottom: 20 }}>Strategic Foundation</h3>
+                        <div style={{ fontFamily: "'Riforma', sans-serif", fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 8 }}>Vision Statement</div>
+                        <div style={{ border: '1px solid #333', padding: '12px 16px', height: 40 }} />
+                    </div>
+                    {/* Bottom bar */}
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0 }}>
+                        <div style={{ height: 3, background: '#222' }}>
+                            <div style={{ height: '100%', width: '50%', background: 'var(--yellow)' }} />
+                        </div>
+                        <div style={{ background: '#000', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                            <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: '#fff', letterSpacing: '0.05em' }}>02 / 04</span>
+                            <span style={{ fontFamily: "'Riforma', sans-serif", fontSize: 13, fontWeight: 700, color: '#fff' }}>Market Calculator</span>
+                            <span style={{ fontFamily: "'Monument', monospace", fontSize: 10, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.05em' }}>[8 min]</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    function Step5({ data }) {
+        const patterns = [
+            { num: '01', name: 'TOOLTIP GUIDANCE SYSTEM', title: 'Tooltip Guidance System', desc: 'A 3-part contextual tooltip system that coaches the CEO through every field — what to write, an example, and a constraint.', fix: "Strategyzer's biggest UX advantage. CEOs facing a blank field with a vague hint will skip or write garbage. The tooltip acts as a silent coach.", full: true, render: () => <WctTooltip data={data} /> },
+            { num: '02', name: 'PERSISTENT SAVE STATE', title: 'Save State Indicator', desc: 'A live component that shows save status. The CEO never wonders if their work is lost.', fix: "Your tool already saves to localStorage on every state change. The CEO just never sees it. This one UI element removes the anxiety of losing work — and costs 20 lines of code.", render: () => <WctSaveState /> },
+            { num: '03', name: 'MICRO-WIN COMPLETION', title: 'Completion Moment', desc: 'An interactive celebration that transforms a navigation click into an achievement moment.', fix: "The transition screens between steps are exceptional. But the moment of completion — clicking NEXT after the step validates — currently feels like navigation, not achievement. This 2-second moment changes that perception entirely.", render: () => <WctMicroWin /> },
+            { num: '04', name: 'IN-STEP PROGRESS BAR', title: 'Progress Bar', desc: 'A live progress bar that fills as required fields are completed within a step.', fix: "The sidebar shows step-level progress. But within a step — especially Step 2 with 4 required numeric fields — the CEO has no signal of how close they are to unlocking NEXT. This bar maintains momentum inside the step.", render: () => <WctProgressBar /> },
+            { num: '05', name: 'CANVAS AT BOARDROOM QUALITY', title: 'Boardroom Canvas', desc: 'One canvas output block, redesigned to boardroom-ready quality. Uses your real data from earlier steps.', fix: "The current canvas step renders data correctly. But a CEO should want to screenshot this and send it to their board. This is what the same data looks like when designed as a deliverable, not a form summary.", full: true, render: () => <WctCanvasBlock data={data} /> },
+            { num: '06', name: 'CONSTRAINT LIVE FEEDBACK', title: 'Constraint Feedback Bar', desc: 'A textarea with a live animated constraint bar that shifts colour and language as you approach the limit.', fix: "You already have character counters in Monument monospace — distinctive and correct. This adds the visual urgency layer that makes the constraint feel like a guide, not a wall.", render: () => <WctConstraintBar /> },
+            { num: '07', name: 'MOBILE NAVIGATION PREVIEW', title: 'Mobile Bottom Bar', desc: 'A static mockup of what the mobile bottom navigation bar would look like, replacing the hidden sidebar.', fix: "The sidebar disappears entirely on mobile. This bottom bar pattern (used by Typeform and Linear) gives the CEO full context at all times without disrupting the content area.", render: () => <WctMobilePreview /> },
+        ];
+
+        return (
+            <div className="step-content animate-in" style={{ background: '#000', padding: '48px 0 32px', margin: '0' }}>
+                <div className="opening-box" style={{ marginBottom: 32 }}>
+                    <h1 className="step-heading" style={{ color: '#fff' }}>World Class Tool</h1>
+                    <p className="step-hint" style={{ color: 'rgba(255,255,255,0.6)' }}>Seven UX patterns from world-class C-suite tools — applied to the Fast Track design system. Each is interactive. Each solves a specific gap identified in our design audit.</p>
+                </div>
+                <div className="wct-grid">
+                    {patterns.map(p => (
+                        <div key={p.num} className={`wct-card ${p.full ? 'wct-card-full' : ''}`}>
+                            <div className="wct-tag">PATTERN {p.num} — {p.name}</div>
+                            <div className="wct-title">{p.title}</div>
+                            <div className="wct-desc">{p.desc}</div>
+                            {p.render()}
+                            <div className="wct-fix">{p.fix}</div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
     // ── Main App ─────────────────────────────────────────────────────────────
     function App() {
         const saved = (() => { try { return JSON.parse(localStorage.getItem('designRefState')); } catch { return null; } })();
@@ -1273,6 +1538,7 @@
 
         const handleBack = () => {
             window.scrollTo(0, 0);
+            if (step === 5) { setStep('canvas'); return; }
             if (step === 'canvas') { setStep(totalSteps); return; }
             if (step === 2 && s2Sub === 1) { setS2Sub(0); return; }
             if (step === 1) { setStep('map'); return; }
@@ -1285,6 +1551,7 @@
         };
 
         const isWizardStep = Number.isInteger(step) && step >= 1 && step <= totalSteps;
+        const isStep5 = step === 5;
         const isTransition = !Number.isInteger(step) && step > 0.5 && step !== 'canvas';
 
         if (submitStatus === 'success') return <SuccessPage />;
@@ -1303,26 +1570,31 @@
                     <TransitionScreen stepNum={Math.floor(step)} totalSteps={totalSteps} onNext={handleTransitionNext} />
                 )}
 
-                {(isWizardStep || step === 'canvas') && (
+                {(isWizardStep || step === 'canvas' || isStep5) && (
                     <div className="tool-inner">
                         <div className="wizard-layout">
-                            <div className="wizard-main" style={step === 4 ? { background: 'var(--yellow)' } : {}}>
+                            <div className="wizard-main" style={step === 4 ? { background: 'var(--yellow)' } : step === 5 ? { background: '#000', color: '#fff' } : {}}>
                                 <div style={{ flex: 1 }}>
                                     {step === 1 && <Step1 data={data} updateData={updateData} />}
                                     {step === 2 && <Step2 data={data} updateData={updateData} subStep={s2Sub} setSubStep={setS2Sub} />}
                                     {step === 3 && <Step3 data={data} updateData={updateData} />}
                                     {step === 4 && <Step4 data={data} updateData={updateData} />}
                                     {step === 'canvas' && <CanvasStep data={data} />}
+                                    {step === 5 && <Step5 data={data} />}
                                 </div>
-                                <div className="wizard-footer" style={step === 4 ? { background: 'var(--yellow)', borderTopColor: 'rgba(0,0,0,0.08)' } : {}}>
+                                <div className="wizard-footer" style={step === 4 ? { background: 'var(--yellow)', borderTopColor: 'rgba(0,0,0,0.08)' } : step === 5 ? { background: '#000', borderTopColor: 'rgba(255,255,255,0.15)' } : {}}>
                                     <button className="btn-wiz-back" onClick={handleBack} style={step === 4 ? { background: '#000', color: '#fff' } : {}}>&larr; BACK</button>
-                                    {step !== 'canvas' ? (
-                                        <button className="btn-wiz-next" onClick={handleNext} disabled={!canProceed()}>
-                                            {step === 2 && s2Sub === 0 ? 'GROWTH SCENARIO \u2192' : 'NEXT \u2192'}
-                                        </button>
-                                    ) : (
+                                    {step === 5 ? (
                                         <button className="btn-wiz-next" onClick={handleSubmit}>
                                             SUBMIT ANSWERS &rarr;
+                                        </button>
+                                    ) : step === 'canvas' ? (
+                                        <button className="btn-wiz-next" onClick={() => { setStep(5); window.scrollTo(0, 0); }}>
+                                            WORLD CLASS &rarr;
+                                        </button>
+                                    ) : (
+                                        <button className="btn-wiz-next" onClick={handleNext} disabled={!canProceed()}>
+                                            {step === 2 && s2Sub === 0 ? 'GROWTH SCENARIO \u2192' : 'NEXT \u2192'}
                                         </button>
                                     )}
                                 </div>
